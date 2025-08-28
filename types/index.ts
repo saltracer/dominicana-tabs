@@ -121,40 +121,47 @@ export interface RosaryPrayer {
   isDominican: boolean;
 }
 
-// Dominican Province Types
-export interface DominicanProvince {
-  id: string;
-  name: string;
-  country: string;
-  region: string;
-  coordinates: {
-    latitude: number;
-    longitude: number;
-  };
-  founded: string;
-  description: string;
-  website?: string;
-  contact: ContactInfo;
-  communities: Community[];
-}
-
-export interface Community {
-  id: string;
-  name: string;
-  type: 'priory' | 'convent' | 'house' | 'mission';
-  address: string;
-  coordinates: {
-    latitude: number;
-    longitude: number;
-  };
-  contact: ContactInfo;
-}
-
-export interface ContactInfo {
-  email?: string;
-  phone?: string;
-  website?: string;
-  address: string;
+export interface Province {
+  id: string
+  name: string
+  latinName?: string
+  patronSaint?: string
+  formation_date: string | number
+  region: string
+  region_expanded?: string
+  province_saint?: string
+  province_saint_feast_day?: string
+  countries: string[]
+  website: string
+  lay_website?: string
+  short_description: string
+  description: string
+  description_array: string[]
+  coordinates: [number, number] // [longitude, latitude]
+  boundaries: {
+    type: string
+    coordinates?: any
+    properties?: any
+    geometry?: {
+      type: string
+      coordinates?: any
+    }
+  }
+  color: string
+  notable_dominicans?: {
+    name: string
+    dates: string
+    description: string
+  }[]
+  priories?: {
+    name: string
+    location: string
+    coordinates?: [number, number]
+    founded?: number
+    description?: string
+    isProvincialHouse?: boolean
+  }[]
+  apostolates?: string[]
 }
 
 // Study/Library Types
@@ -162,12 +169,15 @@ export interface Book {
   id: string;
   title: string;
   author: string;
+  year?: string;
   category: BookCategory;
   language: string;
   filePath: string;
   coverImage?: string;
   description: string;
   isDominican: boolean;
+  epubPath?: string;
+  epubSamplePath?: string;
   tags: string[];
   bookmarks: Bookmark[];
   readingProgress: ReadingProgress;
@@ -293,7 +303,7 @@ export interface DatabaseSchema {
   users: User[];
   saints: Saint[];
   feasts: Feast[];
-  provinces: DominicanProvince[];
+  provinces: Province[];
   books: Book[];
   reflections: Reflection[];
   blogPosts: BlogPost[];

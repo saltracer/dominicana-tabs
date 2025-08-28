@@ -60,7 +60,7 @@ export const Colors = {
     // Text colors
     text: '#FFFFFF',
     textSecondary: '#B0B0B0',
-    textMuted: '#808080',
+    textMuted: '#AAAAAA',
     
     // Status colors
     success: '#4CAF50',

@@ -333,7 +333,6 @@ export default function StudyScreen() {
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
         onDateChange={handleDateChange}
-        showDatePicker={false}
       />
     </SafeAreaView>
   );

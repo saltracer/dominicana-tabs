@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Calendar } from 'react-native-calendars';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../../components/ThemeProvider';
 import FeastBanner from '../../components/FeastBanner';
 import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
-import { LiturgicalDay, Saint, DominicanProvince } from '../../types';
+import { LiturgicalDay, Saint, Province } from '../../types';
 
 export default function CommunityScreen() {
   const { colorScheme } = useTheme();
@@ -22,7 +23,8 @@ export default function CommunityScreen() {
   const [activeTab, setActiveTab] = useState<'calendar' | 'saints' | 'provinces'>('calendar');
   const [searchQuery, setSearchQuery] = useState('');
   const [saints, setSaints] = useState<Saint[]>([]);
-  const [provinces, setProvinces] = useState<DominicanProvince[]>([]);
+  const [provinces, setProvinces] = useState<Province[]>([]);
+  const [markedDates, setMarkedDates] = useState<any>({});
 
   useEffect(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -32,6 +34,106 @@ export default function CommunityScreen() {
     loadSaints();
     loadProvinces();
   }, []);
+
+  useEffect(() => {
+    generateMarkedDates();
+  }, [colorScheme, liturgicalDay]);
+
+  const generateMarkedDates = () => {
+    const calendarService = LiturgicalCalendarService.getInstance();
+    const marked: any = {};
+    let feastCount = 0;
+    
+    // Generate feast days for the current year
+    const currentYear = new Date().getFullYear();
+    for (let month = 0; month < 12; month++) {
+      // Get the number of days in each month
+      const daysInMonth = new Date(currentYear, month + 1, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(currentYear, month, day);
+        const liturgicalDay = calendarService.getLiturgicalDay(date);
+        
+        if (liturgicalDay.feasts.length > 0) {
+          feastCount++;
+          const dateString = date.toISOString().split('T')[0];
+          
+          // Check if any feast is Dominican
+          const hasDominicanFeast = liturgicalDay.feasts.some(feast => feast.isDominican);
+          
+          marked[dateString] = {
+            marked: true,
+            dotColor: hasDominicanFeast ? Colors[colorScheme ?? 'light'].primary : liturgicalDay.feasts[0].color,
+            textColor: hasDominicanFeast ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].text,
+          };
+        }
+      }
+    }
+    
+    console.log(`Generated ${feastCount} feast days for calendar`);
+    console.log('Marked dates:', Object.keys(marked).length);
+    
+    // Debug: Check current month for feast days
+    const currentMonth = new Date().getMonth();
+    const currentDay = new Date().getDate();
+    console.log(`Current month: ${currentMonth}, day: ${currentDay}`);
+    
+    // Test a few specific dates
+    const testDates = [
+      new Date(currentYear, 0, 1),   // January 1
+      new Date(currentYear, 0, 6),   // January 6
+      new Date(currentYear, 3, 29),  // April 29 (St. Catherine)
+      new Date(currentYear, 7, 8),   // August 8 (St. Dominic)
+    ];
+    
+    testDates.forEach(date => {
+      const testLiturgicalDay = calendarService.getLiturgicalDay(date);
+      console.log(`${date.toDateString()}: ${testLiturgicalDay.feasts.length} feasts`);
+      if (testLiturgicalDay.feasts.length > 0) {
+        console.log(`  - ${testLiturgicalDay.feasts[0].name} (Dominican: ${testLiturgicalDay.feasts[0].isDominican})`);
+      }
+    });
+    
+    // Mark the selected date
+    if (liturgicalDay) {
+      const selectedDateString = new Date(liturgicalDay.date).toISOString().split('T')[0];
+      marked[selectedDateString] = {
+        ...marked[selectedDateString],
+        selected: true,
+        selectedColor: Colors[colorScheme ?? 'light'].primary,
+        selectedTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+      };
+    }
+    
+    setMarkedDates(marked);
+  };
+
+  const handleDayPress = (day: any) => {
+    const calendarService = LiturgicalCalendarService.getInstance();
+    const selectedDate = new Date(day.timestamp);
+    const liturgicalDay = calendarService.getLiturgicalDay(selectedDate);
+    setLiturgicalDay(liturgicalDay);
+    
+    // Update marked dates to show new selection
+    const newMarkedDates = { ...markedDates };
+    Object.keys(newMarkedDates).forEach(key => {
+      if (newMarkedDates[key].selected) {
+        delete newMarkedDates[key].selected;
+        delete newMarkedDates[key].selectedColor;
+        delete newMarkedDates[key].selectedTextColor;
+      }
+    });
+    
+    const dateString = day.dateString;
+    newMarkedDates[dateString] = {
+      ...newMarkedDates[dateString],
+      selected: true,
+      selectedColor: Colors[colorScheme ?? 'light'].primary,
+      selectedTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+    };
+    
+    setMarkedDates(newMarkedDates);
+  };
 
   const handleDateChange = (date: Date) => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -46,7 +148,7 @@ export default function CommunityScreen() {
   };
 
   const loadProvinces = () => {
-    const sampleProvinces: DominicanProvince[] = [
+    const sampleProvinces: Province[] = [
       {
         id: 'province-st-joseph',
         name: 'Province of St. Joseph',
@@ -131,7 +233,7 @@ export default function CommunityScreen() {
     );
   };
 
-  const handleProvincePress = (province: DominicanProvince) => {
+  const handleProvincePress = (province: Province) => {
     Alert.alert(
       province.name,
       `${province.description}\n\nFounded: ${province.founded}\nRegion: ${province.region}`,
@@ -164,7 +266,7 @@ export default function CommunityScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
 
         {/* Tab Navigation */}
-        <View style={styles.tabContainer}>
+        <View style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
           <TouchableOpacity
             style={[
               styles.tab,
@@ -262,41 +364,114 @@ export default function CommunityScreen() {
         {/* Calendar Tab */}
         {activeTab === 'calendar' && (
           <View style={styles.tabContent}>
-            <View style={styles.calendarInfo}>
-              <View style={[styles.seasonCard, { backgroundColor: liturgicalDay.color }]}>
-                <Text style={[styles.seasonTitle, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                  {liturgicalDay.season.name}
+            {/* Liturgical Calendar */}
+            <View style={[styles.calendarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <Text style={[styles.calendarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Liturgical Calendar
+              </Text>
+              
+              {/* Calendar Component */}
+                      <Calendar
+          current={new Date(liturgicalDay?.date || Date.now()).toISOString().split('T')[0]}
+          onDayPress={handleDayPress}
+          markedDates={markedDates}
+          theme={{
+            backgroundColor: Colors[colorScheme ?? 'light'].card,
+            calendarBackground: Colors[colorScheme ?? 'light'].card,
+            textSectionTitleColor: Colors[colorScheme ?? 'light'].text,
+            selectedDayBackgroundColor: Colors[colorScheme ?? 'light'].primary,
+            selectedDayTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+            todayTextColor: Colors[colorScheme ?? 'light'].primary,
+            dayTextColor: Colors[colorScheme ?? 'light'].text,
+            textDisabledColor: Colors[colorScheme ?? 'light'].textMuted,
+            dotColor: Colors[colorScheme ?? 'light'].primary,
+            selectedDotColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+            arrowColor: Colors[colorScheme ?? 'light'].primary,
+            monthTextColor: Colors[colorScheme ?? 'light'].text,
+            indicatorColor: Colors[colorScheme ?? 'light'].primary,
+            textDayFontFamily: 'Georgia',
+            textMonthFontFamily: 'Georgia',
+            textDayHeaderFontFamily: 'Georgia',
+            textDayFontSize: 16,
+            textMonthFontSize: 18,
+            textDayHeaderFontSize: 14,
+          }}
+          minDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+          maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+          key={colorScheme} // Force re-render when theme changes
+        />
+
+              {/* Calendar Legend */}
+              <View style={[styles.calendarLegend, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                <Text style={[styles.legendTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Calendar Legend
                 </Text>
-                <Text style={[styles.seasonDescription, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                  {liturgicalDay.season.description}
-                </Text>
-                <Text style={[styles.weekInfo, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                  Week {liturgicalDay.week}
-                </Text>
+                <View style={styles.legendItems}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Regular Feast
+                    </Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]} />
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Dominican Feast
+                    </Text>
+                  </View>
+                </View>
               </View>
 
-              {liturgicalDay.feasts.length > 0 && (
-                <View style={styles.feastsSection}>
-                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Today's Feasts
+              {/* Selected Date Info */}
+              {liturgicalDay && (
+                <View style={[styles.selectedDateInfo, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                  <Text style={[styles.selectedDateLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Selected Date
                   </Text>
-                  {liturgicalDay.feasts.map((feast, index) => (
-                    <View key={index} style={[styles.feastCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-                      <View style={styles.feastHeader}>
-                        <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                          {feast.name}
-                        </Text>
-                        <View style={[styles.feastRank, { backgroundColor: feast.color }]}>
-                          <Text style={[styles.feastRankText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                            {feast.rank.toUpperCase()}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={[styles.feastDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        {feast.description}
+                  <Text style={[styles.selectedDateText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {new Date(liturgicalDay.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                  
+                  {/* Liturgical Season */}
+                  <View style={[styles.seasonInfo, { backgroundColor: liturgicalDay.color }]}>
+                    <Text style={[styles.seasonName, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                      {liturgicalDay.season.name}
+                    </Text>
+                    <Text style={[styles.seasonWeek, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                      Week {liturgicalDay.week}
+                    </Text>
+                  </View>
+
+                  {/* Feasts for Selected Date */}
+                  {liturgicalDay.feasts.length > 0 && (
+                    <View style={styles.selectedFeasts}>
+                      <Text style={[styles.feastsLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        Feasts
                       </Text>
+                      {liturgicalDay.feasts.map((feast, index) => (
+                        <View key={index} style={styles.selectedFeast}>
+                          <View style={[styles.feastRank, { backgroundColor: feast.color }]}>
+                            <Text style={[styles.feastRankText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                              {feast.rank.charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                          <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                            {feast.name}
+                          </Text>
+                          {feast.isDominican && (
+                            <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                              ⚫⚪
+                            </Text>
+                          )}
+                        </View>
+                      ))}
                     </View>
-                  ))}
+                  )}
                 </View>
               )}
             </View>
@@ -428,7 +603,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 16,
     marginVertical: 8,
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 4,
   },
@@ -632,9 +806,221 @@ const styles = StyleSheet.create({
   },
   provinceDescription: {
     fontSize: 14,
+  },
+  // Calendar styles
+  calendarContainer: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  calendarTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+    fontFamily: 'Georgia',
+  },
+  selectedDateCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  selectedDateLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+    fontFamily: 'Georgia',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  selectedDateText: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  dominicanIndicator: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
+  dominicanText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  noFeastsCard: {
+    padding: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  noFeastsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 4,
+    fontFamily: 'Georgia',
+  },
+  noFeastsSubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontFamily: 'Georgia',
+  },
+  // Calendar Grid Styles
+  monthNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  monthNavButton: {
+    padding: 8,
+  },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  calendarGrid: {
+    marginBottom: 20,
+  },
+  dayHeaders: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  dayHeader: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    padding: 4,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 8,
+    margin: 1,
+  },
+  dayNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  feastIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  feastDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginHorizontal: 1,
+  },
+  moreFeastsText: {
+    fontSize: 8,
+    fontFamily: 'Georgia',
+  },
+  selectedDateInfo: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  seasonInfo: {
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  seasonName: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  seasonWeek: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    marginTop: 4,
+  },
+  selectedFeasts: {
+    marginTop: 16,
+  },
+  feastsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+    fontFamily: 'Georgia',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  selectedFeast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  // Calendar Day Component Styles
+  dayComponent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 4,
+    borderRadius: 8,
+  },
+  dayComponentText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  // Calendar Legend Styles
+  calendarLegend: {
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  legendTitle: {
+    fontSize: 14,
+    fontWeight: '700',
     marginBottom: 12,
     fontFamily: 'Georgia',
-    lineHeight: 20,
+  },
+  legendItems: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
   },
   provinceStats: {
     flexDirection: 'row',

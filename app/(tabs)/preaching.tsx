@@ -205,7 +205,7 @@ export default function PreachingScreen() {
         )}
 
         {/* Tab Navigation */}
-        <View style={styles.tabContainer}>
+        <View style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
           <TouchableOpacity
             style={[
               styles.tab,
@@ -301,7 +301,10 @@ export default function PreachingScreen() {
         </View>
 
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
+        <View style={[styles.searchContainer, { 
+          backgroundColor: Colors[colorScheme ?? 'light'].surface,
+          borderColor: Colors[colorScheme ?? 'light'].border
+        }]}>
           <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
@@ -452,7 +455,6 @@ export default function PreachingScreen() {
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
         onDateChange={handleDateChange}
-        showDatePicker={false}
       />
     </SafeAreaView>
   );
@@ -505,7 +507,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: 16,
     marginVertical: 8,
-    backgroundColor: Colors.light.surface,
     borderRadius: 12,
     padding: 4,
   },
@@ -527,13 +528,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.surface,
     marginHorizontal: 16,
     marginVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.light.border,
   },
   searchInput: {
     flex: 1,
