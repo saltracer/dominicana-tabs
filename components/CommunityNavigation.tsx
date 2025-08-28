@@ -13,7 +13,7 @@ export default function CommunityNavigation({ activeTab }: CommunityNavigationPr
   const router = useRouter();
 
   const handleTabPress = (tab: string) => {
-    router.push(`/(tabs)/community/${tab}`);
+    router.push(`/(tabs)/community/${tab}` as any);
   };
 
   return (
