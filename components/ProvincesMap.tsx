@@ -46,6 +46,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
     });
   }, []);
 
+
   // Map all region names to the 5 main regions
   const getMainRegion = (region: string): string => {
     const regionMapping: { [key: string]: string } = {
@@ -157,12 +158,12 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
             longitude: province.coordinates[1],
           }));
         
-        if (coordinates.length > 0) {
-          mapRef.current.fitToCoordinates(coordinates, {
-            edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-            animated: true,
-          });
-        }
+        // if (coordinates.length > 0) {
+        //   mapRef.current.fitToCoordinates(coordinates, {
+        //     edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+        //     animated: true,
+        //   });
+        // }
       }
     }, 1000);
   };
@@ -335,10 +336,10 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: 20,
+          latitude: 0,
           longitude: 0,
-          latitudeDelta: 60,
-          longitudeDelta: 60,
+          //latitudeDelta: 100,
+          //longitudeDelta: 100,
         }}
         showsUserLocation={false}
         showsMyLocationButton={false}
@@ -349,7 +350,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
         scrollEnabled={true}
         rotateEnabled={true}
         pitchEnabled={true}
-        mapType="standard"
+        mapType={colorScheme === 'dark' ? 'standard' : 'standard'}
         onMapReady={handleMapReady}
       >
         {filteredProvinces.map((province) => {
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Platform.OS === 'ios' ? '#E0E0E0' : '#CCCCCC',
   },
   modalTitle: {
     fontSize: 20,
@@ -645,7 +646,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: Platform.OS === 'ios' ? '#E0E0E0' : '#CCCCCC',
   },
   filterScroll: {
     flexGrow: 0,
@@ -656,7 +657,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 6,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: Platform.OS === 'ios' ? '#E0E0E0' : '#CCCCCC',
   },
   filterButtonText: {
     fontSize: 11,
