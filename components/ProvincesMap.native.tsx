@@ -13,17 +13,11 @@ import { useTheme } from './ThemeProvider';
 import { Province } from '../types';
 import { allProvinces } from '../assets/data/provinces';
 
-// Platform-specific imports
-let MapView: any = null;
-let Marker: any = null;
-let Polygon: any = null;
-
-if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  Polygon = Maps.Polygon;
-}
+// Import react-native-maps for native platforms
+const Maps = require('react-native-maps');
+const MapView = Maps.default;
+const Marker = Maps.Marker;
+const Polygon = Maps.Polygon;
 
 interface ProvincesMapProps {
   onProvinceSelect?: (province: Province) => void;

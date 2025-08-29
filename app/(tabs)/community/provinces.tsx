@@ -4,15 +4,18 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import FeastBanner from '../../../components/FeastBanner';
 import CommunityNavigation from '../../../components/CommunityNavigation';
-import ProvincesMap from '../../../components/ProvincesMap';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay, Province } from '../../../types';
+
+// Import ProvincesMap - Metro will automatically choose the right platform-specific file
+import ProvincesMap from '../../../components/ProvincesMap';
 
 export default function ProvincesScreen() {
   const { colorScheme } = useTheme();
