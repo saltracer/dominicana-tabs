@@ -117,6 +117,13 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
     : allProvinces;
 
   const handleMarkerPress = (province: Province) => {
+    // Only set the selected province for border highlighting, don't show modal
+    setSelectedProvince(province);
+    onProvinceSelect?.(province);
+  };
+
+  const handleCalloutPress = (province: Province) => {
+    // Show modal only when the callout (description bubble) is pressed
     setSelectedProvince(province);
     setShowModal(true);
     onProvinceSelect?.(province);
@@ -205,7 +212,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
                 coordinates={coordinates}
                 fillColor={`${regionColor}20`}
                 strokeColor={regionColor}
-                strokeWidth={1}
+                strokeWidth={selectedProvince?.id === province.id ? 4 : 1}
                 onPress={() => handleMarkerPress(province)}
               />
             );
@@ -230,7 +237,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
               coordinates={coordinates}
               fillColor={`${regionColor}20`}
               strokeColor={regionColor}
-              strokeWidth={1}
+              strokeWidth={selectedProvince?.id === province.id ? 4 : 1}
               onPress={() => handleMarkerPress(province)}
             />
           );
@@ -375,6 +382,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
                 title={province.name}
                 description={province.short_description}
                 onPress={() => handleMarkerPress(province)}
+                onCalloutPress={() => handleCalloutPress(province)}
                 pinColor={getProvinceColor(province)}
               />
             );
@@ -385,7 +393,11 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
         })}
         
         {/* Render province boundaries as polygons */}
-        {mapReady && renderPolygons()}
+        {mapReady && (
+          <View key={`polygons-${selectedProvince?.id || 'none'}`}>
+            {renderPolygons()}
+          </View>
+        )}
       </MapView>
 
       {/* Province Detail Modal */}
