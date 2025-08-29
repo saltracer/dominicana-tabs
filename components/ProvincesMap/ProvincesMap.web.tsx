@@ -15,17 +15,31 @@ import { useTheme } from '../ThemeProvider';
 import { Province } from '../../types';
 import { allProvinces } from '../../assets/data/provinces';
 
-// Import Leaflet for web
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
-import L from 'leaflet';
+// Import Leaflet for web - only on client side
+let MapContainer: any, TileLayer: any, Marker: any, Popup: any, Polygon: any, useMap: any;
+let L: any;
 
-// Fix Leaflet marker icons for web
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// Only import Leaflet on client side to avoid SSR issues
+if (typeof window !== 'undefined') {
+  const leafletModule = require('react-leaflet');
+  const leafletCore = require('leaflet');
+  
+  MapContainer = leafletModule.MapContainer as any;
+  TileLayer = leafletModule.TileLayer as any;
+  Marker = leafletModule.Marker as any;
+  Popup = leafletModule.Popup as any;
+  Polygon = leafletModule.Polygon as any;
+  useMap = leafletModule.useMap as any;
+  L = leafletCore;
+
+  // Fix Leaflet marker icons for web
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  });
+}
 
 interface ProvincesMapProps {
   onProvinceSelect?: (province: Province) => void;
@@ -414,27 +428,11 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
                     }}
                   >
                     <Popup>
-                      <div style={{ textAlign: 'center', fontFamily: 'Georgia' }}>
-                        <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>{province.name}</h3>
-                        <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '14px' }}>
-                          {province.short_description}
-                        </p>
-                        <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '12px' }}>
-                          {province.countries.join(', ')}
-                        </p>
-                        <button
-                          onClick={() => handleCalloutPress(province)}
-                          style={{
-                            background: '#007AFF',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            fontFamily: 'Georgia'
-                          }}
-                        >
+                      <div>
+                        <h3>{province.name}</h3>
+                        <p>{province.short_description}</p>
+                        <p>{province.countries.join(', ')}</p>
+                        <button onClick={() => handleCalloutPress(province)}>
                           View Details
                         </button>
                       </div>
@@ -560,49 +558,67 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    padding: 16,
+    padding: 20,
+    minHeight: '80vh',
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 24,
+    textAlign: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'Georgia',
+    textAlign: 'center',
+    opacity: 0.7,
   },
   searchContainer: {
-    marginBottom: 16,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    marginBottom: 20,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   searchInput: {
-    height: 44,
+    height: 48,
     fontSize: 16,
     fontFamily: 'Georgia',
+    paddingVertical: 12,
   },
   regionFilter: {
-    marginBottom: 16,
+    marginBottom: 20,
+    paddingHorizontal: 4,
   },
   regionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    marginRight: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   regionButtonActive: {
     backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
   regionButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Georgia',
     fontWeight: '500',
   },
@@ -612,22 +628,29 @@ const styles = StyleSheet.create({
   },
   viewToggle: {
     flexDirection: 'row',
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 20,
+    gap: 12,
+    paddingHorizontal: 4,
   },
   toggleButton: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   toggleButtonActive: {
     backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
   toggleButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Georgia',
     fontWeight: '500',
   },
@@ -637,10 +660,16 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     flex: 1,
-    borderRadius: 8,
+    borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    minHeight: '60vh',
   },
   map: {
     width: '100%',
@@ -648,13 +677,19 @@ const styles = StyleSheet.create({
   },
   provincesList: {
     flex: 1,
+    paddingHorizontal: 4,
   },
   provinceItem: {
-    padding: 16,
-    borderRadius: 8,
+    padding: 20,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    marginBottom: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   provinceHeader: {
     flexDirection: 'row',
@@ -663,18 +698,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   provinceName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     fontFamily: 'Georgia',
     flex: 1,
+    marginBottom: 4,
   },
   regionBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   regionBadgeText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#fff',
     fontFamily: 'Georgia',
@@ -691,27 +727,33 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
-    width: '90%',
-    maxWidth: 400,
-    borderRadius: 12,
-    maxHeight: '80%',
+    width: '95%',
+    maxWidth: 500,
+    borderRadius: 20,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
     fontFamily: 'Georgia',
     flex: 1,
   },
