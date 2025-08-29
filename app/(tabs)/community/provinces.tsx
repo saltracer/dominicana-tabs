@@ -10,12 +10,14 @@ import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import FeastBanner from '../../../components/FeastBanner';
 import CommunityNavigation from '../../../components/CommunityNavigation';
+import ProvincesMap from '../../../components/ProvincesMap';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
-import { LiturgicalDay } from '../../../types';
+import { LiturgicalDay, Province } from '../../../types';
 
 export default function ProvincesScreen() {
   const { colorScheme } = useTheme();
   const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
   useEffect(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -28,6 +30,10 @@ export default function ProvincesScreen() {
     const calendarService = LiturgicalCalendarService.getInstance();
     const day = calendarService.getLiturgicalDay(date);
     setLiturgicalDay(day);
+  };
+
+  const handleProvinceSelect = (province: Province) => {
+    setSelectedProvince(province);
   };
 
   if (!liturgicalDay) {
@@ -50,16 +56,9 @@ export default function ProvincesScreen() {
         
         <View style={styles.tabContent}>
           <View style={[styles.provincesContainer, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <Text style={[styles.provincesTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Dominican Provinces
-            </Text>
-            <Text style={[styles.provincesDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              Interactive map of Dominican provinces around the world.
-            </Text>
-            <View style={[styles.mapPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
-              <Text style={[styles.mapPlaceholderText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                🌍 World Map Coming Soon
-              </Text>
+            
+            <View style={styles.mapContainer}>
+              <ProvincesMap onProvinceSelect={handleProvinceSelect} />
             </View>
           </View>
         </View>
@@ -91,41 +90,34 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
   tabContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 8,
   },
   provincesContainer: {
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   provincesTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    marginBottom: 8,
+    marginBottom: 6,
     fontFamily: 'Georgia',
   },
   provincesDescription: {
-    fontSize: 16,
-    marginBottom: 20,
+    fontSize: 14,
+    marginBottom: 12,
     fontFamily: 'Georgia',
-    lineHeight: 22,
+    lineHeight: 18,
   },
-  mapPlaceholder: {
-    height: 200,
+  mapContainer: {
+    height: 500,
+    marginTop: 8,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-  },
-  mapPlaceholderText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
+    overflow: 'hidden',
   },
 });
