@@ -39,23 +39,26 @@ Metro automatically resolves to:
 - `ProvincesMap.native.tsx` for mobile platforms (iOS/Android)
 
 The platform-specific files handle their own imports:
-- `.web.tsx` uses mock modules
-- `.native.tsx` uses real react-native-maps
+- `.web.tsx` uses actual provinces data with web-optimized UI (no react-native-maps)
+- `.native.tsx` uses real react-native-maps for full map functionality
 
-### Mock Module
+### Web Component Features
 
-The `./components/react-native-maps-mock.tsx` file provides:
-- Mock implementations of all `react-native-maps` components
-- Proper TypeScript types and exports
-- User-friendly placeholder UI for web users
-- Backward compatibility with existing code
+The `ProvincesMap.web.tsx` provides a rich web experience:
+
+- **Search Functionality**: Search provinces by name, country, or region
+- **Region Filtering**: Filter by main regions (Africa, Americas, Asia-Pacific, Europe, Oceania)
+- **Interactive List**: Scrollable list with province details
+- **Province Details Modal**: Click on provinces to see detailed information
+- **Responsive Design**: Optimized for web browsers
+- **Real Data**: Uses actual provinces data from `allProvinces`
 
 ### File Architecture
 
 The solution uses platform-specific file extensions:
-- **Web**: `ProvincesMap.web.tsx` - Web-specific version with list view
-- **Mobile**: `ProvincesMap.native.tsx` - Mobile version with full map functionality
-- **Mock Module**: `react-native-maps-mock.tsx` - Provides mock components for web
+- **Web**: `ProvincesMap.web.tsx` - Web-specific version with interactive list view, search, and filtering
+- **Mobile**: `ProvincesMap.native.tsx` - Mobile version with full map functionality using react-native-maps
+- **Mock Module**: `react-native-maps-mock.tsx` - Provides mock components for web (used by other components if needed)
 - **Main Import**: `ProvincesMap` - Metro automatically resolves to the right file
 
 ## Configuration Details

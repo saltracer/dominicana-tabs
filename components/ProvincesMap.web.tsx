@@ -6,18 +6,13 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  Platform,
+  TextInput,
+  FlatList,
 } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { Province } from '../types';
 import { allProvinces } from '../assets/data/provinces';
-
-// Import mock module for web
-const Maps = require('./react-native-maps-mock');
-const MapView = Maps.default;
-const Marker = Maps.Marker;
-const Polygon = Maps.Polygon;
 
 interface ProvincesMapProps {
   onProvinceSelect?: (province: Province) => void;
@@ -27,18 +22,9 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   const { colorScheme } = useTheme();
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const mapRef = useRef<any>(null);
-
-  // Debug: Log the provinces being loaded
-  useEffect(() => {
-    console.log('ProvincesMap: Loading provinces:', allProvinces.length);
-    console.log('ProvincesMap: Regions found:', [...new Set(allProvinces.map(p => p.region))]);
-    allProvinces.forEach(province => {
-      console.log(`Province: ${province.name} - Region: ${province.region} - Coordinates: [${province.coordinates[0]}, ${province.coordinates[1]}]`);
-    });
-  }, []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredProvinces, setFilteredProvinces] = useState<Province[]>(allProvinces);
 
   // Map all region names to the 5 main regions
   const getMainRegion = (region: string): string => {
@@ -104,10 +90,27 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   // Get the 5 main regions
   const mainRegions = ['Africa', 'Americas', 'Asia-Pacific', 'Europe', 'Oceania'];
   
-  // Filter provinces by selected main region
-  const filteredProvinces = selectedRegion 
-    ? allProvinces.filter(province => getMainRegion(province.region) === selectedRegion)
-    : allProvinces;
+  // Filter and search provinces
+  useEffect(() => {
+    let filtered = allProvinces;
+    
+    // Filter by region
+    if (selectedRegion) {
+      filtered = filtered.filter(province => getMainRegion(province.region) === selectedRegion);
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(province => 
+        province.name.toLowerCase().includes(query) ||
+        province.countries.some(country => country.toLowerCase().includes(query)) ||
+        province.region.toLowerCase().includes(query)
+      );
+    }
+    
+    setFilteredProvinces(filtered);
+  }, [selectedRegion, searchQuery]);
 
   const handleMarkerPress = (province: Province) => {
     setSelectedProvince(province);
@@ -141,43 +144,150 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
     return regionColors[mainRegion] || '#95A5A6';
   };
 
-  const handleMapReady = () => {
-    setMapReady(true);
-  };
-
-  // Web fallback - show list view instead of map
+  // Web interface with search and filtering
   return (
-    <View style={[styles.container, styles.webFallback]}>
-      <Text style={[styles.webFallbackText, { color: Colors[colorScheme ?? 'light'].text }]}>
-        🌍 Interactive Map
-      </Text>
-      <Text style={[styles.webFallbackSubtext, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-        Map view is available on mobile devices
-      </Text>
-      <View style={styles.provincesList}>
-        <Text style={[styles.provinceCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-          Showing {allProvinces.length} provinces worldwide
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+          🌍 Dominican Provinces
         </Text>
-        {allProvinces.slice(0, 10).map((province) => (
+        <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+          {filteredProvinces.length} of {allProvinces.length} provinces
+        </Text>
+      </View>
+
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <TextInput
+          style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+          placeholder="Search provinces, countries, or regions..."
+          placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
+      {/* Region Filter */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.regionFilter}>
+        <TouchableOpacity
+          style={[
+            styles.regionButton,
+            !selectedRegion && styles.regionButtonActive,
+            { backgroundColor: Colors[colorScheme ?? 'light'].surface }
+          ]}
+          onPress={() => setSelectedRegion(null)}
+        >
+          <Text style={[
+            styles.regionButtonText,
+            !selectedRegion && styles.regionButtonTextActive,
+            { color: !selectedRegion ? '#fff' : Colors[colorScheme ?? 'light'].text }
+          ]}>
+            All Regions
+          </Text>
+        </TouchableOpacity>
+        {mainRegions.map((region) => (
           <TouchableOpacity
-            key={province.id}
-            style={[styles.provinceItem, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-            onPress={() => handleMarkerPress(province)}
+            key={region}
+            style={[
+              styles.regionButton,
+              selectedRegion === region && styles.regionButtonActive,
+              { backgroundColor: Colors[colorScheme ?? 'light'].surface }
+            ]}
+            onPress={() => setSelectedRegion(region)}
           >
-            <Text style={[styles.provinceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {province.name}
-            </Text>
-            <Text style={[styles.provinceRegion, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {getMainRegion(province.region)} • {province.countries.join(', ')}
+            <Text style={[
+              styles.regionButtonText,
+              selectedRegion === region && styles.regionButtonTextActive,
+              { color: selectedRegion === region ? '#fff' : Colors[colorScheme ?? 'light'].text }
+            ]}>
+              {region}
             </Text>
           </TouchableOpacity>
         ))}
-        {allProvinces.length > 10 && (
-          <Text style={[styles.provinceCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            ... and {allProvinces.length - 10} more provinces
-          </Text>
+      </ScrollView>
+
+      {/* Provinces List */}
+      <FlatList
+        data={filteredProvinces}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item: province }) => (
+          <TouchableOpacity
+            style={[styles.provinceItem, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
+            onPress={() => handleMarkerPress(province)}
+          >
+            <View style={styles.provinceHeader}>
+              <Text style={[styles.provinceName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                {province.name}
+              </Text>
+              <View style={[styles.regionBadge, { backgroundColor: getProvinceColor(province) }]}>
+                <Text style={styles.regionBadgeText}>
+                  {getMainRegion(province.region)}
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.provinceCountries, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              {province.countries.join(', ')}
+            </Text>
+            <Text style={[styles.provinceRegion, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              {province.region}
+            </Text>
+          </TouchableOpacity>
         )}
-      </View>
+        style={styles.provincesList}
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Province Detail Modal */}
+      <Modal
+        visible={showModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+            {selectedProvince && (
+              <>
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {selectedProvince.name}
+                  </Text>
+                  <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+                    <Text style={[styles.closeButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.modalBody}>
+                  <View style={[styles.modalSection, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                    <Text style={[styles.modalSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Countries
+                    </Text>
+                    <Text style={[styles.modalSectionText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      {selectedProvince.countries.join(', ')}
+                    </Text>
+                  </View>
+                  <View style={[styles.modalSection, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                    <Text style={[styles.modalSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Region
+                    </Text>
+                    <Text style={[styles.modalSectionText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      {selectedProvince.region}
+                    </Text>
+                  </View>
+                  <View style={[styles.modalSection, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                    <Text style={[styles.modalSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Coordinates
+                    </Text>
+                    <Text style={[styles.modalSectionText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      {selectedProvince.coordinates[0]}, {selectedProvince.coordinates[1]}
+                    </Text>
+                  </View>
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -187,48 +297,147 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 12,
     overflow: 'hidden',
+    padding: 16,
   },
-  webFallback: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  webFallbackText: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    marginBottom: 8,
-  },
-  webFallbackSubtext: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
+  header: {
     marginBottom: 20,
   },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
+  searchContainer: {
+    marginBottom: 16,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  searchInput: {
+    height: 44,
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
+  regionFilter: {
+    marginBottom: 16,
+  },
+  regionButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  regionButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  regionButtonText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
+  },
+  regionButtonTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
   provincesList: {
-    width: '100%',
-    gap: 12,
+    flex: 1,
   },
   provinceItem: {
     padding: 16,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    marginBottom: 12,
+  },
+  provinceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   provinceName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
+    fontFamily: 'Georgia',
+    flex: 1,
+  },
+  regionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  regionBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+    fontFamily: 'Georgia',
+  },
+  provinceCountries: {
+    fontSize: 14,
     fontFamily: 'Georgia',
     marginBottom: 4,
   },
   provinceRegion: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Georgia',
+    fontStyle: 'italic',
   },
-  provinceCount: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 400,
+    borderRadius: 12,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  modalBody: {
+    padding: 20,
+  },
+  modalSection: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 8,
+  },
+  modalSectionText: {
     fontSize: 14,
     fontFamily: 'Georgia',
-    textAlign: 'center',
-    marginBottom: 12,
+    lineHeight: 20,
   },
 });
