@@ -10,36 +10,22 @@ import {
   FlatList,
   Platform,
 } from 'react-native';
-import { Colors } from '../constants/Colors';
-import { useTheme } from './ThemeProvider';
-import { Province } from '../types';
-import { allProvinces } from '../assets/data/provinces';
+import { Colors } from '../../constants/Colors';
+import { useTheme } from '../ThemeProvider';
+import { Province } from '../../types';
+import { allProvinces } from '../../assets/data/provinces';
 
-// Import Leaflet for web - only on client side
-let MapContainer: any, TileLayer: any, Marker: any, Popup: any, Polygon: any, useMap: any;
-let L: any;
+// Import Leaflet for web
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
+import L from 'leaflet';
 
-// Only import Leaflet on client side to avoid SSR issues
-if (typeof window !== 'undefined') {
-  const leafletModule = require('react-leaflet');
-  const leafletCore = require('leaflet');
-  
-  MapContainer = leafletModule.MapContainer;
-  TileLayer = leafletModule.TileLayer;
-  Marker = leafletModule.Marker;
-  Popup = leafletModule.Popup;
-  Polygon = leafletModule.Polygon;
-  useMap = leafletModule.useMap;
-  L = leafletCore;
-
-  // Fix Leaflet marker icons for web
-  delete (L.Icon.Default.prototype as any)._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  });
-}
+// Fix Leaflet marker icons for web
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface ProvincesMapProps {
   onProvinceSelect?: (province: Province) => void;
@@ -73,12 +59,6 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showListView, setShowListView] = useState(false);
   const [filteredProvinces, setFilteredProvinces] = useState<Province[]>(allProvinces);
-  const [isClient, setIsClient] = useState(false);
-
-  // Check if we're on the client side
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // Map all region names to the 5 main regions
   const getMainRegion = (region: string): string => {
@@ -391,7 +371,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
       </View>
 
       {/* Map View */}
-      {!showListView && isClient && MapContainer ? (
+      {!showListView && (
         <View style={styles.mapContainer}>
           <MapContainer
             center={[0, 0]}
@@ -470,13 +450,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
             <MapUpdater selectedRegion={selectedRegion} filteredProvinces={filteredProvinces} />
           </MapContainer>
         </View>
-      ) : !showListView ? (
-        <View style={[styles.mapContainer, styles.loadingContainer]}>
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading map...
-          </Text>
-        </View>
-      ) : null}
+      )}
 
       {/* List View */}
       {showListView && (
@@ -766,14 +740,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
     lineHeight: 20,
-  },
-  loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
   },
 });

@@ -8,10 +8,10 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { Colors } from '../constants/Colors';
-import { useTheme } from './ThemeProvider';
-import { Province } from '../types';
-import { allProvinces } from '../assets/data/provinces';
+import { Colors } from '../../constants/Colors';
+import { useTheme } from '../ThemeProvider';
+import { Province } from '../../types';
+import { allProvinces } from '../../assets/data/provinces';
 
 // Import react-native-maps for native platforms
 const Maps = require('react-native-maps');
