@@ -131,6 +131,11 @@ export default function SaintsScreen() {
         </View>
       </ScrollView>
       
+      {/* Feast Banner at Bottom */}
+      <FeastBanner 
+        liturgicalDay={liturgicalDay} 
+        onDateChange={handleDateChange}
+      />
     </SafeAreaView>
   );
 }
