@@ -7,6 +7,7 @@ import {
   Modal,
   ScrollView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
@@ -14,10 +15,19 @@ import { Province } from '../../types';
 import { allProvinces } from '../../assets/data/provinces';
 
 // Import react-native-maps for native platforms
-const Maps = require('react-native-maps');
-const MapView = Maps.default;
-const Marker = Maps.Marker;
-const Polygon = Maps.Polygon;
+let Maps: any;
+let MapView: any;
+let Marker: any;
+let Polygon: any;
+
+try {
+  Maps = require('react-native-maps');
+  MapView = Maps.default;
+  Marker = Maps.Marker;
+  Polygon = Maps.Polygon;
+} catch (error) {
+  console.error('Failed to load react-native-maps:', error);
+}
 
 interface ProvincesMapProps {
   onProvinceSelect?: (province: Province) => void;
@@ -34,10 +44,10 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   // Debug: Log the provinces being loaded
   useEffect(() => {
     console.log('ProvincesMap: Loading provinces:', allProvinces.length);
-    console.log('ProvincesMap: Regions found:', [...new Set(allProvinces.map(p => p.region))]);
-    allProvinces.forEach(province => {
-      console.log(`Province: ${province.name} - Region: ${province.region} - Coordinates: [${province.coordinates[0]}, ${province.coordinates[1]}]`);
-    });
+    //console.log('ProvincesMap: Regions found:', [...new Set(allProvinces.map(p => p.region))]);
+    //allProvinces.forEach(province => {
+      //console.log(`Province: ${province.name} - Region: ${province.region} - Coordinates: [${province.coordinates[0]}, ${province.coordinates[1]}]`);
+    //});
   }, []);
 
 
@@ -147,6 +157,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   };
 
   const handleMapReady = () => {
+    console.log('Map is ready');
     setMapReady(true);
     
     // Zoom to fit all provinces after a short delay
@@ -167,6 +178,15 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
         // }
       }
     }, 1000);
+  };
+
+  const handleMapError = (error: any) => {
+    console.error('Map error:', error);
+    Alert.alert(
+      'Map Error',
+      'There was an error loading the map. Please check your internet connection and try again.',
+      [{ text: 'OK' }]
+    );
   };
 
   const renderPolygons = () => {
@@ -294,53 +314,31 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
     );
   }
 
+  // Check if react-native-maps is available
+  if (!MapView || !Marker || !Polygon) {
+    return (
+      <View style={[styles.container, styles.errorContainer]}>
+        <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].text }]}>
+          Maps are not available on this device
+        </Text>
+        <Text style={[styles.errorSubtext, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+          Please check your internet connection and try again
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {/* Region Filter */}
-      <View style={[styles.filterContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              { backgroundColor: selectedRegion === null ? Colors[colorScheme ?? 'light'].primary : 'transparent' }
-            ]}
-            onPress={() => setSelectedRegion(null)}
-          >
-            <Text style={[
-              styles.filterButtonText,
-              { color: selectedRegion === null ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].text }
-            ]}>
-              All ({allProvinces.length})
-            </Text>
-          </TouchableOpacity>
-          {mainRegions.map((region) => (
-            <TouchableOpacity
-              key={region}
-              style={[
-                styles.filterButton,
-                { backgroundColor: selectedRegion === region ? Colors[colorScheme ?? 'light'].primary : 'transparent' }
-              ]}
-              onPress={() => setSelectedRegion(region)}
-            >
-              <Text style={[
-                styles.filterButtonText,
-                { color: selectedRegion === region ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].text }
-              ]}>
-                {region} ({allProvinces.filter(p => getMainRegion(p.region) === region).length})
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
       
       <MapView
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: 0,
+          latitude: 20,
           longitude: 0,
-          //latitudeDelta: 100,
-          //longitudeDelta: 100,
+          latitudeDelta: 100,
+          longitudeDelta: 100,
         }}
         showsUserLocation={false}
         showsMyLocationButton={false}
@@ -353,6 +351,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
         pitchEnabled={true}
         mapType={colorScheme === 'dark' ? 'standard' : 'standard'}
         onMapReady={handleMapReady}
+        onError={handleMapError}
       >
         {filteredProvinces.map((province) => {
           try {
@@ -393,6 +392,44 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
           </View>
         )}
       </MapView>
+
+      {/* Region Filter */}
+      <View style={[styles.filterContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              { backgroundColor: selectedRegion === null ? Colors[colorScheme ?? 'light'].primary : 'transparent' }
+            ]}
+            onPress={() => setSelectedRegion(null)}
+          >
+            <Text style={[
+              styles.filterButtonText,
+              { color: selectedRegion === null ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].text }
+            ]}>
+              All ({allProvinces.length})
+            </Text>
+          </TouchableOpacity>
+          {mainRegions.map((region) => (
+            <TouchableOpacity
+              key={region}
+              style={[
+                styles.filterButton,
+                { backgroundColor: selectedRegion === region ? Colors[colorScheme ?? 'light'].primary : 'transparent' }
+              ]}
+              onPress={() => setSelectedRegion(region)}
+            >
+              <Text style={[
+                styles.filterButtonText,
+                { color: selectedRegion === region ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].text }
+              ]}>
+                {region} ({allProvinces.filter(p => getMainRegion(p.region) === region).length})
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+      
 
       {/* Province Detail Modal */}
       <Modal
@@ -517,7 +554,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 5,
     overflow: 'hidden',
   },
   map: {
@@ -609,6 +646,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     textAlign: 'center',
   },
+  errorSubtext: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginTop: 8,
+  },
   webFallback: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -649,8 +692,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   filterContainer: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
     borderBottomWidth: 1,
     borderBottomColor: Platform.OS === 'ios' ? '#E0E0E0' : '#CCCCCC',
   },
@@ -666,7 +709,7 @@ const styles = StyleSheet.create({
     borderColor: Platform.OS === 'ios' ? '#E0E0E0' : '#CCCCCC',
   },
   filterButtonText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: 'Georgia',
   },

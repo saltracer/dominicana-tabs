@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
@@ -54,18 +55,12 @@ export default function ProvincesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <CommunityNavigation activeTab="provinces" />
-        
-        <View style={styles.tabContent}>
-          <View style={[styles.provincesContainer, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            
-            <View style={styles.mapContainer}>
-              <ProvincesMap onProvinceSelect={handleProvinceSelect} />
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+      <CommunityNavigation activeTab="provinces" />
+      
+      {/* Map takes full remaining space */}
+      <View style={styles.mapContainer}>
+        <ProvincesMap onProvinceSelect={handleProvinceSelect} />
+      </View>
       
       {/* Feast Banner at Bottom */}
       <FeastBanner 
@@ -80,9 +75,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -92,33 +84,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
   },
-  tabContent: {
-    paddingHorizontal: 8,
-  },
-  provincesContainer: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  provincesTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 6,
-    fontFamily: 'Georgia',
-  },
-  provincesDescription: {
-    fontSize: 14,
-    marginBottom: 12,
-    fontFamily: 'Georgia',
-    lineHeight: 18,
-  },
   mapContainer: {
-    height: 500,
+    flex: 1,
+    marginHorizontal: 8,
     marginTop: 8,
     borderRadius: 8,
     overflow: 'hidden',

@@ -29,8 +29,14 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ]
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyD7IgMJPbxOyNigm9U8dj5_6wozeQN3Jpo"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
