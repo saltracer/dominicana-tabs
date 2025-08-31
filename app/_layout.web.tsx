@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFonts } from 'expo-font';
 import { Stack, Link } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,6 +10,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { Colors } from '@/constants/Colors';
 import Footer from '@/components/Footer.web';
+import FeastBanner from '@/components/FeastBanner.web';
+import LiturgicalCalendarService from '@/services/LiturgicalCalendar';
+import { LiturgicalDay } from '@/types';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -54,6 +57,20 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { colorScheme } = useTheme();
+  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+
+  useEffect(() => {
+    const calendarService = LiturgicalCalendarService.getInstance();
+    const today = new Date();
+    const day = calendarService.getLiturgicalDay(today);
+    setLiturgicalDay(day);
+  }, []);
+
+  const handleDateChange = (date: Date) => {
+    const calendarService = LiturgicalCalendarService.getInstance();
+    const day = calendarService.getLiturgicalDay(date);
+    setLiturgicalDay(day);
+  };
 
   return (
     <SafeAreaProvider>
@@ -109,33 +126,17 @@ function RootLayoutNav() {
               </TouchableOpacity>
             </View>
           </View>
-          
-          {/* Date Bar */}
-          <View style={[styles.dateBar, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <View style={styles.dateSelector}>
-              <TouchableOpacity style={styles.dateArrow}>
-                <Ionicons name="chevron-back" size={16} color={Colors[colorScheme ?? 'light'].text} />
-              </TouchableOpacity>
-              <Ionicons name="calendar-outline" size={16} color={Colors[colorScheme ?? 'light'].text} />
-              <Text style={[styles.dateText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Thursday, Aug 28, 2025
-              </Text>
-              <TouchableOpacity style={styles.dateArrow}>
-                <Ionicons name="chevron-forward" size={16} color={Colors[colorScheme ?? 'light'].text} />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.feastInfo}>
-              <Text style={[styles.feastLabel, { color: Colors[colorScheme ?? 'light'].text }]}>Feast</Text>
-              <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                St. Augustine of Hippo
-              </Text>
-              <TouchableOpacity style={styles.feastInfoIcon}>
-                <Ionicons name="information-circle-outline" size={16} color={Colors[colorScheme ?? 'light'].text} />
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
+
+        {/* Feast Banner */}
+        {liturgicalDay && (
+          <View style={styles.feastBannerContainer}>
+            <FeastBanner 
+              liturgicalDay={liturgicalDay} 
+              onDateChange={handleDateChange}
+            />
+          </View>
+        )}
 
         {/* Main Content */}
         <View style={styles.mainContent}>
@@ -267,5 +268,9 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+  },
+  feastBannerContainer: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
   },
 });

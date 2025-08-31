@@ -11,27 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../../components/ThemeProvider';
-import FeastBanner from '../../components/FeastBanner.web';
-import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
-import { LiturgicalDay, HourType } from '../../types';
+import { HourType } from '../../types';
 
 export default function PrayerScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
   const [selectedHour, setSelectedHour] = useState<HourType>('lauds');
-
-  useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
-  }, []);
-
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
 
   const prayerHours: { type: HourType; name: string; time: string; icon: string; description: string }[] = [
     { 
@@ -111,18 +95,6 @@ export default function PrayerScreen() {
       description: 'The Baptism, Wedding at Cana, Proclamation of the Kingdom, Transfiguration, and Institution of the Eucharist'
     },
   ];
-
-  if (!liturgicalDay) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading liturgical information...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
@@ -309,14 +281,6 @@ export default function PrayerScreen() {
             ))}
           </View>
         </View>
-
-        {/* Feast Banner */}
-        <View style={styles.feastBannerContainer}>
-          <FeastBanner 
-            liturgicalDay={liturgicalDay} 
-            onDateChange={handleDateChange}
-          />
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -476,9 +440,5 @@ const styles = StyleSheet.create({
   },
   rosaryMysteryDescription: {
     fontSize: 14,
-  },
-  feastBannerContainer: {
-    marginTop: 32,
-    marginBottom: 48,
   },
 });
