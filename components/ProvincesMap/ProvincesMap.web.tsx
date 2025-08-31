@@ -71,7 +71,6 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   const [showModal, setShowModal] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showListView, setShowListView] = useState(false);
   const [filteredProvinces, setFilteredProvinces] = useState<Province[]>(allProvinces);
 
   // Map all region names to the 5 main regions
@@ -288,15 +287,6 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-          🌍 Dominican Provinces
-        </Text>
-        <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-          {filteredProvinces.length} of {allProvinces.length} provinces
-        </Text>
-      </View>
 
       {/* Search Bar */}
       <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
@@ -310,7 +300,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
       </View>
 
       {/* Region Filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.regionFilter}>
+       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.regionFilter}>
         <TouchableOpacity
           style={[
             styles.regionButton,
@@ -322,7 +312,6 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
           <Text style={[
             styles.regionButtonText,
             !selectedRegion && styles.regionButtonTextActive,
-            { color: !selectedRegion ? '#fff' : Colors[colorScheme ?? 'light'].text }
           ]}>
             All Regions
           </Text>
@@ -340,148 +329,80 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
             <Text style={[
               styles.regionButtonText,
               selectedRegion === region && styles.regionButtonTextActive,
-              { color: selectedRegion === region ? '#fff' : Colors[colorScheme ?? 'light'].text }
             ]}>
               {region}
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </ScrollView> 
 
-      {/* View Toggle */}
-      <View style={styles.viewToggle}>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            !showListView && styles.toggleButtonActive,
-            { backgroundColor: Colors[colorScheme ?? 'light'].surface }
-          ]}
-          onPress={() => setShowListView(false)}
-        >
-          <Text style={[
-            styles.toggleButtonText,
-            !showListView && styles.toggleButtonTextActive,
-            { color: !showListView ? '#fff' : Colors[colorScheme ?? 'light'].text }
-          ]}>
-            🗺️ Map
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            showListView && styles.toggleButtonActive,
-            { backgroundColor: Colors[colorScheme ?? 'light'].surface }
-          ]}
-          onPress={() => setShowListView(true)}
-        >
-          <Text style={[
-            styles.toggleButtonText,
-            showListView && styles.toggleButtonTextActive,
-            { color: showListView ? '#fff' : Colors[colorScheme ?? 'light'].text }
-          ]}>
-            📋 List
-          </Text>
-        </TouchableOpacity>
-      </View>
+
 
       {/* Map View */}
-      {!showListView && (
-        <View style={styles.mapContainer}>
-          <MapContainer
-            center={[0, 0]}
-            zoom={2}
-            style={styles.map}
-            zoomControl={true}
-            scrollWheelZoom={true}
-            doubleClickZoom={true}
-            boxZoom={true}
-            keyboard={true}
-            dragging={true}
-            touchZoom={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
-            {/* Render province boundaries */}
-            {renderPolygons()}
-            
-            {/* Render province markers */}
-            {filteredProvinces.map((province) => {
-              try {
-                if (!province.coordinates || 
-                    typeof province.coordinates[0] !== 'number' || 
-                    typeof province.coordinates[1] !== 'number' ||
-                    isNaN(province.coordinates[0]) || 
-                    isNaN(province.coordinates[1])) {
-                  return null;
-                }
-
-                return (
-                  <Marker
-                    key={province.id}
-                    position={[province.coordinates[0], province.coordinates[1]]}
-                    icon={createCustomIcon(getProvinceColor(province))}
-                    eventHandlers={{
-                      click: () => handleMarkerPress(province),
-                    }}
-                  >
-                    <Popup>
-                      <div>
-                        <h3>{province.name}</h3>
-                        <p>{province.short_description}</p>
-                        <p>{province.countries.join(', ')}</p>
-                        <button onClick={() => handleCalloutPress(province)}>
-                          View Details
-                        </button>
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              } catch (error) {
-                console.warn(`Error rendering marker for province ${province.id}:`, error);
+      <View style={styles.mapContainer}>
+        <MapContainer
+          center={[0, 0]}
+          zoom={2}
+          style={styles.map}
+          zoomControl={true}
+          scrollWheelZoom={true}
+          doubleClickZoom={true}
+          boxZoom={true}
+          keyboard={true}
+          dragging={true}
+          touchZoom={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          {/* Render province boundaries */}
+          {renderPolygons()}
+          
+          {/* Render province markers */}
+          {filteredProvinces.map((province) => {
+            try {
+              if (!province.coordinates || 
+                  typeof province.coordinates[0] !== 'number' || 
+                  typeof province.coordinates[1] !== 'number' ||
+                  isNaN(province.coordinates[0]) || 
+                  isNaN(province.coordinates[1])) {
                 return null;
               }
-            })}
-            
-            <MapUpdater selectedRegion={selectedRegion} filteredProvinces={filteredProvinces} />
-          </MapContainer>
-        </View>
-      )}
 
-      {/* List View */}
-      {showListView && (
-        <FlatList
-          data={filteredProvinces}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item: province }) => (
-            <TouchableOpacity
-              style={[styles.provinceItem, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-              onPress={() => handleMarkerPress(province)}
-            >
-              <View style={styles.provinceHeader}>
-                <Text style={[styles.provinceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {province.name}
-                </Text>
-                <View style={[styles.regionBadge, { backgroundColor: getProvinceColor(province) }]}>
-                  <Text style={styles.regionBadgeText}>
-                    {getMainRegion(province.region)}
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.provinceCountries, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {province.countries.join(', ')}
-              </Text>
-              <Text style={[styles.provinceRegion, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {province.region}
-              </Text>
-            </TouchableOpacity>
-          )}
-          style={styles.provincesList}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+              return (
+                <Marker
+                  key={province.id}
+                  position={[province.coordinates[0], province.coordinates[1]]}
+                  icon={createCustomIcon(getProvinceColor(province))}
+                  eventHandlers={{
+                    click: () => handleMarkerPress(province),
+                  }}
+                >
+                  <Popup>
+                    <div>
+                      <h3>{province.name}</h3>
+                      <p>{province.short_description}</p>
+                      <p>{province.countries.join(', ')}</p>
+                      <button onClick={() => handleCalloutPress(province)}>
+                        View Details
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            } catch (error) {
+              console.warn(`Error rendering marker for province ${province.id}:`, error);
+              return null;
+            }
+          })}
+          
+          <MapUpdater selectedRegion={selectedRegion} filteredProvinces={filteredProvinces} />
+        </MapContainer>
+      </View>
+
+
 
       {/* Province Detail Modal */}
       <Modal
@@ -559,11 +480,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     borderRadius: 16,
-    overflow: 'hidden',
     padding: 20,
     minHeight: '80vh',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+    zIndex: 1,
   },
   header: {
+    marginTop: 20,
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -603,7 +528,7 @@ const styles = StyleSheet.create({
   regionButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 25,
+    borderRadius: 15,
     marginRight: 12,
     borderWidth: 1,
     borderColor: '#E0E0E0',
@@ -612,10 +537,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+    maxHeight: 50,
   },
   regionButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    //backgroundColor: '#8B0000', //'#007AFF',
+    borderColor: '#8B0000', //'#007AFF',
   },
   regionButtonText: {
     fontSize: 15,
@@ -623,8 +549,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   regionButtonTextActive: {
-    color: '#fff',
-    fontWeight: '600',
+    // color: '#fff',
+    fontWeight: '700',
   },
   viewToggle: {
     flexDirection: 'row',
@@ -669,7 +595,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    minHeight: '60vh',
+    minHeight: '50vh',
+    maxHeight: '70vh',
   },
   map: {
     width: '100%',
