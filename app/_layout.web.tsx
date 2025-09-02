@@ -59,7 +59,13 @@ function RootLayoutNav() {
   const { colorScheme } = useTheme();
   const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
   const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
-  const dropdownRef = useRef<View>(null);
+  const [preachingDropdownOpen, setPreachingDropdownOpen] = useState(false);
+  const [studyDropdownOpen, setStudyDropdownOpen] = useState(false);
+  const [prayerDropdownOpen, setPrayerDropdownOpen] = useState(false);
+  const communityDropdownRef = useRef<View>(null);
+  const preachingDropdownRef = useRef<View>(null);
+  const studyDropdownRef = useRef<View>(null);
+  const prayerDropdownRef = useRef<View>(null);
 
   useEffect(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -71,9 +77,12 @@ function RootLayoutNav() {
   useEffect(() => {
     const handleGlobalClick = () => {
       setCommunityDropdownOpen(false);
+      setPreachingDropdownOpen(false);
+      setStudyDropdownOpen(false);
+      setPrayerDropdownOpen(false);
     };
 
-    if (communityDropdownOpen) {
+    if (communityDropdownOpen || preachingDropdownOpen || studyDropdownOpen || prayerDropdownOpen) {
       // Add a small delay to prevent immediate closure
       const timer = setTimeout(() => {
         document.addEventListener('click', handleGlobalClick);
@@ -84,7 +93,7 @@ function RootLayoutNav() {
         document.removeEventListener('click', handleGlobalClick);
       };
     }
-  }, [communityDropdownOpen]);
+  }, [communityDropdownOpen, preachingDropdownOpen, studyDropdownOpen, prayerDropdownOpen]);
 
   const handleDateChange = (date: Date) => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -94,10 +103,58 @@ function RootLayoutNav() {
 
   const toggleCommunityDropdown = () => {
     setCommunityDropdownOpen(!communityDropdownOpen);
+    // Close other dropdowns
+    if (!communityDropdownOpen) {
+      setPreachingDropdownOpen(false);
+      setStudyDropdownOpen(false);
+      setPrayerDropdownOpen(false);
+    }
   };
 
   const closeCommunityDropdown = () => {
     setCommunityDropdownOpen(false);
+  };
+
+  const togglePreachingDropdown = () => {
+    setPreachingDropdownOpen(!preachingDropdownOpen);
+    // Close other dropdowns
+    if (!preachingDropdownOpen) {
+      setCommunityDropdownOpen(false);
+      setStudyDropdownOpen(false);
+      setPrayerDropdownOpen(false);
+    }
+  };
+
+  const closePreachingDropdown = () => {
+    setPreachingDropdownOpen(false);
+  };
+
+  const toggleStudyDropdown = () => {
+    setStudyDropdownOpen(!studyDropdownOpen);
+    // Close other dropdowns
+    if (!studyDropdownOpen) {
+      setCommunityDropdownOpen(false);
+      setPreachingDropdownOpen(false);
+      setPrayerDropdownOpen(false);
+    }
+  };
+
+  const closeStudyDropdown = () => {
+    setStudyDropdownOpen(false);
+  };
+
+  const togglePrayerDropdown = () => {
+    setPrayerDropdownOpen(!prayerDropdownOpen);
+    // Close other dropdowns
+    if (!prayerDropdownOpen) {
+      setCommunityDropdownOpen(false);
+      setPreachingDropdownOpen(false);
+      setStudyDropdownOpen(false);
+    }
+  };
+
+  const closePrayerDropdown = () => {
+    setPrayerDropdownOpen(false);
   };
 
   return (
@@ -119,20 +176,87 @@ function RootLayoutNav() {
             </Link>
             
             <View style={styles.navLinks}>
-              <Link href="/(tabs)/prayer" asChild>
-                <TouchableOpacity style={styles.navLink}>
+              {/* Prayer Dropdown */}
+              <View style={styles.dropdownContainer} ref={prayerDropdownRef}>
+                <TouchableOpacity 
+                  style={styles.navLink}
+                  onPress={togglePrayerDropdown}
+                >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Prayer</Text>
-                  <Ionicons name="chevron-down" size={12} color={Colors[colorScheme ?? 'light'].text} />
+                  <Ionicons 
+                    name={prayerDropdownOpen ? "chevron-up" : "chevron-down"} 
+                    size={12} 
+                    color={Colors[colorScheme ?? 'light'].text} 
+                  />
                 </TouchableOpacity>
-              </Link>
-              <Link href="/(tabs)/study" asChild>
-                <TouchableOpacity style={styles.navLink}>
+                
+                {prayerDropdownOpen && (
+                  <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
+                    
+                    <Link href="/(tabs)/prayer" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closePrayerDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Liturgy of the Hours</Text>
+                      </TouchableOpacity>
+                    </Link>
+                    <Link href="/(tabs)/prayer" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closePrayerDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Rosary</Text>
+                      </TouchableOpacity>
+                    </Link>
+                    <Link href="/(tabs)/prayer" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closePrayerDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Devotions</Text>
+                      </TouchableOpacity>
+                    </Link>
+                  </View>
+                )}
+              </View>
+              {/* Study Dropdown */}
+              <View style={styles.dropdownContainer} ref={studyDropdownRef}>
+                <TouchableOpacity 
+                  style={styles.navLink}
+                  onPress={toggleStudyDropdown}
+                >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Study</Text>
-                  <Ionicons name="chevron-down" size={12} color={Colors[colorScheme ?? 'light'].text} />
+                  <Ionicons 
+                    name={studyDropdownOpen ? "chevron-up" : "chevron-down"} 
+                    size={12} 
+                    color={Colors[colorScheme ?? 'light'].text} 
+                  />
                 </TouchableOpacity>
-              </Link>
+                
+                {studyDropdownOpen && (
+                  <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
+                    <Link href="/(tabs)/study" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closeStudyDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Courses</Text>
+                      </TouchableOpacity>
+                    </Link>
+                    <Link href="/(tabs)/study" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closeStudyDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Library</Text>
+                      </TouchableOpacity>
+                    </Link>
+                  </View>
+                )}
+              </View>
               {/* Community Dropdown */}
-              <View style={styles.dropdownContainer} ref={dropdownRef}>
+              <View style={styles.dropdownContainer} ref={communityDropdownRef}>
                 <TouchableOpacity 
                   style={styles.navLink}
                   onPress={toggleCommunityDropdown}
@@ -174,12 +298,49 @@ function RootLayoutNav() {
                   </View>
                 )}
               </View>
-              <Link href="/(tabs)/preaching" asChild>
-                <TouchableOpacity style={styles.navLink}>
+              {/* Preaching Dropdown */}
+              <View style={styles.dropdownContainer} ref={preachingDropdownRef}>
+                <TouchableOpacity 
+                  style={styles.navLink}
+                  onPress={togglePreachingDropdown}
+                >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Preaching</Text>
-                  <Ionicons name="chevron-down" size={12} color={Colors[colorScheme ?? 'light'].text} />
+                  <Ionicons 
+                    name={preachingDropdownOpen ? "chevron-up" : "chevron-down"} 
+                    size={12} 
+                    color={Colors[colorScheme ?? 'light'].text} 
+                  />
                 </TouchableOpacity>
-              </Link>
+                
+                {preachingDropdownOpen && (
+                  <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
+                    <Link href="/(tabs)/preaching" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closePreachingDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Sermons</Text>
+                      </TouchableOpacity>
+                    </Link>
+                    <Link href="/(tabs)/preaching" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closePreachingDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Reflections</Text>
+                      </TouchableOpacity>
+                    </Link>
+                    <Link href="/(tabs)/preaching" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closePreachingDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Blog</Text>
+                      </TouchableOpacity>
+                    </Link>
+                  </View>
+                )}
+              </View>
             </View>
             
             <View style={styles.headerActions}>
