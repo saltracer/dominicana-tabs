@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFonts } from 'expo-font';
 import { Stack, Link } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -58,6 +58,8 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { colorScheme } = useTheme();
   const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
+  const dropdownRef = useRef<View>(null);
 
   useEffect(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -66,10 +68,36 @@ function RootLayoutNav() {
     setLiturgicalDay(day);
   }, []);
 
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setCommunityDropdownOpen(false);
+    };
+
+    if (communityDropdownOpen) {
+      // Add a small delay to prevent immediate closure
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleGlobalClick);
+      }, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('click', handleGlobalClick);
+      };
+    }
+  }, [communityDropdownOpen]);
+
   const handleDateChange = (date: Date) => {
     const calendarService = LiturgicalCalendarService.getInstance();
     const day = calendarService.getLiturgicalDay(date);
     setLiturgicalDay(day);
+  };
+
+  const toggleCommunityDropdown = () => {
+    setCommunityDropdownOpen(!communityDropdownOpen);
+  };
+
+  const closeCommunityDropdown = () => {
+    setCommunityDropdownOpen(false);
   };
 
   return (
@@ -103,12 +131,49 @@ function RootLayoutNav() {
                   <Ionicons name="chevron-down" size={12} color={Colors[colorScheme ?? 'light'].text} />
                 </TouchableOpacity>
               </Link>
-              <Link href="/(tabs)/community" asChild>
-                <TouchableOpacity style={styles.navLink}>
+              {/* Community Dropdown */}
+              <View style={styles.dropdownContainer} ref={dropdownRef}>
+                <TouchableOpacity 
+                  style={styles.navLink}
+                  onPress={toggleCommunityDropdown}
+                >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Community</Text>
-                  <Ionicons name="chevron-down" size={12} color={Colors[colorScheme ?? 'light'].text} />
+                  <Ionicons 
+                    name={communityDropdownOpen ? "chevron-up" : "chevron-down"} 
+                    size={12} 
+                    color={Colors[colorScheme ?? 'light'].text} 
+                  />
                 </TouchableOpacity>
-              </Link>
+                
+                {communityDropdownOpen && (
+                  <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
+                    <Link href="/(tabs)/community/calendar" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closeCommunityDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Calendar</Text>
+                      </TouchableOpacity>
+                    </Link>
+                    <Link href="/(tabs)/community/saints" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closeCommunityDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Saints</Text>
+                      </TouchableOpacity>
+                    </Link>
+                    <Link href="/(tabs)/community/provinces" asChild>
+                      <TouchableOpacity 
+                        style={styles.dropdownItem}
+                        onPress={closeCommunityDropdown}
+                      >
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Provinces</Text>
+                      </TouchableOpacity>
+                    </Link>
+                  </View>
+                )}
+              </View>
               <Link href="/(tabs)/preaching" asChild>
                 <TouchableOpacity style={styles.navLink}>
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Preaching</Text>
@@ -164,6 +229,8 @@ const styles = StyleSheet.create({
   header: {
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    zIndex: 10000,
+    position: 'relative',
   },
   topNav: {
     flexDirection: 'row',
@@ -172,6 +239,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     minHeight: 64,
+    zIndex: 10000,
+    position: 'relative',
   },
   logoSection: {
     flexDirection: 'row',
@@ -198,6 +267,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 32,
+    zIndex: 10000,
+    position: 'relative',
   },
   navLink: {
     flexDirection: 'row',
@@ -275,5 +346,38 @@ const styles = StyleSheet.create({
   feastBannerContainer: {
     paddingTop: 0,
     paddingBottom: 16,
+    zIndex: 1,
+    position: 'relative',
+  },
+  dropdownContainer: {
+    position: 'relative',
+    marginHorizontal: 16,
+    zIndex: 10001,
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    minWidth: 160,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 9999,
+    marginTop: 4,
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
