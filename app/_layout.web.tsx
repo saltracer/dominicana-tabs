@@ -140,7 +140,10 @@ function RootLayoutNav() {
 
         {/* Main Content */}
         <View style={styles.mainContent}>
-          <Stack>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
             <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
