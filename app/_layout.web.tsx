@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   feastBannerContainer: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingTop: 0,
+    paddingBottom: 16,
   },
 });

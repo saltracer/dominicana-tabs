@@ -282,8 +282,6 @@ export default function FeastBanner({
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: 12,
-    marginVertical: 16,
   },
   bannerContent: {
     padding: 16,
@@ -291,8 +289,6 @@ const styles = StyleSheet.create({
   seasonColorBar: {
     height: 4,
     width: '100%',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
   },
   dateSection: {
     flexDirection: 'row',
