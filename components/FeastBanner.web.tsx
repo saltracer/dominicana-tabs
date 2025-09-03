@@ -350,12 +350,24 @@ export default function FeastBanner({
             </View>
             
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {/* Date Range */}
-              <View style={styles.dateRangeSection}>
-                <Text style={[styles.dateRangeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  {format(parseISO(liturgicalDay.date), 'MMMM d, yyyy')}
-                </Text>
-              </View>
+              {/* Saint Dates */}
+              {primaryFeast?.birthYear || primaryFeast?.deathYear ? (
+                <View style={styles.dateRangeSection}>
+                  <Text style={[styles.dateRangeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {primaryFeast?.birthYear && primaryFeast?.deathYear 
+                      ? `${primaryFeast.birthYear} - ${primaryFeast.deathYear}`
+                      : `d. ${primaryFeast?.deathYear}` || `b. ${primaryFeast?.birthYear}`
+                    }
+                  </Text>
+                </View>
+              ) : (
+                /* Fallback to liturgical day if no saint dates */
+                <View style={styles.dateRangeSection}>
+                  <Text style={[styles.dateRangeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {format(parseISO(liturgicalDay.date), 'MMMM d, yyyy')}
+                  </Text>
+                </View>
+              )}
 
               {/* Patronage Section */}
               {primaryFeast?.patronage && (
