@@ -39,32 +39,32 @@ export default function FeastBanner({
     });
   };
 
-  const getSeasonEmoji = (season: string) => {
-    switch (season.toLowerCase()) {
-      case 'advent':
-        return '🕯️';
-      case 'christmas':
-        return '⭐';
-      case 'lent':
-        return '🕊️';
-      case 'easter':
-        return '🌅';
-      case 'pentecost':
-        return '🔥';
-      case 'ordinary':
-        return '🌿';
-      default:
-        return '📖';
-    }
-  };
+  // const getSeasonEmoji = (season: string) => {
+  //   switch (season.toLowerCase()) {
+  //     case 'advent':
+  //       return '🕯️';
+  //     case 'christmas':
+  //       return '⭐';
+  //     case 'lent':
+  //       return '🕊️';
+  //     case 'easter':
+  //       return '🌅';
+  //     case 'pentecost':
+  //       return '🔥';
+  //     case 'ordinary':
+  //       return '🌿';
+  //     default:
+  //       return '📖';
+  //   }
+  // };
 
-  const getFeastEmoji = (feast: Feast) => {
-    if (feast.isDominican) return '⚫⚪';
-    if (feast.rank === 'solemnity') return '👑';
-    if (feast.rank === 'feast') return '⭐';
-    if (feast.rank === 'memorial') return '🌹';
-    return '📖';
-  };
+  // const getFeastEmoji = (feast: Feast) => {
+  //   if (feast.isDominican) return '⚫⚪';
+  //   if (feast.rank === 'solemnity') return '👑';
+  //   if (feast.rank === 'feast') return '⭐';
+  //   if (feast.rank === 'memorial') return '🌹';
+  //   return '📖';
+  // };
 
   const getSeasonColor = (season: string) => {
     switch (season.toLowerCase()) {
@@ -110,9 +110,9 @@ export default function FeastBanner({
         activeOpacity={0.8}
       >
         <View style={styles.dateSection}>
-          <Text style={styles.seasonEmoji}>
+          {/* <Text style={styles.seasonEmoji}>
             {getSeasonEmoji(liturgicalDay.season.name)}
-          </Text>
+          </Text> */}
           <View style={styles.dateTextContainer}>
             <Text style={[styles.dateText, { color: Colors[colorScheme ?? 'light'].text }]}>
               {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
@@ -128,9 +128,9 @@ export default function FeastBanner({
 
         {primaryFeast && (
           <View style={styles.feastSection}>
-            <Text style={styles.feastEmoji}>
+            {/* <Text style={styles.feastEmoji}>
               {getFeastEmoji(primaryFeast)}
-            </Text>
+            </Text> */}
             <View style={styles.feastTextContainer}>
               <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
                 {primaryFeast.name}

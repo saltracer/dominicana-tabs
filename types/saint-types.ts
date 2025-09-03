@@ -9,8 +9,8 @@ export interface Saint {
   biography?: string[]
   image_url?: string
   patronage?: string
-  birth_year?: number
-  death_year?: number
+  birth_year?: number | null
+  death_year?: number | null
   prayers?: string
   is_dominican: boolean
   is_doctor?: boolean

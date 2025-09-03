@@ -1,9 +1,9 @@
 
 import { format } from "date-fns"
 
-import type { Saint } from "./saint-types"
-import { CelebrationRank } from "../celebrations"
-import type { Celebration } from "../celebrations"
+import type { Saint } from "@/types/saint-types"
+import { CelebrationRank } from "@/types/celebrations-types"
+import type { Celebration } from "@/types/celebrations-types"
 
 import { dominicanSaints } from "./saint-dominicans"
 import { doctorSaints } from "./doctors"
@@ -71,7 +71,7 @@ export function getSaintsForDate(date: Date): Celebration[] {
       isDominican: saint.is_dominican,
       description: saint.short_bio || saint.biography?.join(" "),
       // Add more detailed information
-      birthYear: saint.birth_year,
+      birthYear: saint.birth_year || undefined,
       deathYear: saint.death_year,
       patronage: saint.patronage,
       biography: saint.biography,
