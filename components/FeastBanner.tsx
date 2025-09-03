@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -15,15 +15,16 @@ import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
 import { LiturgicalDay, Feast } from '../types';
+import { parseISO, format } from 'date-fns';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
   showDatePicker?: boolean;
 }
 
-export default function FeastBanner({ 
-  liturgicalDay, 
-  showDatePicker = true 
+export default function FeastBanner({
+  liturgicalDay,
+  showDatePicker = true
 }: FeastBannerProps) {
   const { colorScheme } = useTheme();
   const { selectedDate, setSelectedDate } = useCalendar();
@@ -86,9 +87,8 @@ export default function FeastBanner({
 
   const handleDateChange = (day: any) => {
     if (day) {
-      // Use dateString to avoid timezone issues - it represents the local date
-      const [year, month, dayOfMonth] = day.dateString.split('-').map(Number);
-      const selectedDate = new Date(year, month - 1, dayOfMonth); // month is 0-indexed
+      // Use date-fns parseISO for clean date parsing
+      const selectedDate = parseISO(day.dateString);
       setSelectedDate(selectedDate);
       setIsDatePickerVisible(false);
     }
@@ -104,7 +104,7 @@ export default function FeastBanner({
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.bannerContent}
         onPress={showDatePickerModal}
         activeOpacity={0.8}
@@ -115,7 +115,7 @@ export default function FeastBanner({
           </Text>
           <View style={styles.dateTextContainer}>
             <Text style={[styles.dateText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {formatDate(new Date(liturgicalDay.date + 'T00:00:00'))}
+              {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
             </Text>
             <Text style={[styles.seasonText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
               {liturgicalDay.season.name} • Week {liturgicalDay.week}
@@ -151,7 +151,7 @@ export default function FeastBanner({
           </View>
         )}
       </TouchableOpacity>
-      
+
       {/* Liturgical Season Color Bar */}
       <View style={[
         styles.seasonColorBar,
@@ -171,16 +171,16 @@ export default function FeastBanner({
             <View style={[styles.modalContent, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>Select Date</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setIsDatePickerVisible(false)}
                   style={styles.closeButton}
                 >
                   <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].text} />
                 </TouchableOpacity>
               </View>
-              
+
               <Calendar
-                current={selectedDate.toISOString().split('T')[0]}
+                current={format(selectedDate, 'yyyy-MM-dd')}
                 onDayPress={handleDateChange}
                 markedDates={{
                   [selectedDate.toISOString().split('T')[0]]: {
@@ -212,9 +212,9 @@ export default function FeastBanner({
                 minDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
                 maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
               />
-              
+
               <View style={styles.modalFooter}>
-                                  <TouchableOpacity 
+                                  <TouchableOpacity
                     style={[styles.todayButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
                     onPress={() => {
                       const today = new Date();

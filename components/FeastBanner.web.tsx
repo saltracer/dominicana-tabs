@@ -15,6 +15,7 @@ import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
 import { LiturgicalDay, Feast } from '../types';
+import { parseISO, format } from 'date-fns';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
@@ -89,9 +90,8 @@ export default function FeastBanner({
 
   const handleDateChange = (day: any) => {
     if (day) {
-      // Use dateString to avoid timezone issues - it represents the local date
-      const [year, month, dayOfMonth] = day.dateString.split('-').map(Number);
-      const selectedDate = new Date(year, month - 1, dayOfMonth); // month is 0-indexed
+      // Use date-fns parseISO for clean date parsing
+      const selectedDate = parseISO(day.dateString);
       setSelectedDate(selectedDate);
       setIsDatePickerVisible(false);
     }
@@ -144,7 +144,7 @@ export default function FeastBanner({
               styles.dateText, 
               { color: Colors[colorScheme ?? 'light'].text }
             ]}>
-              {formatDate(new Date(liturgicalDay.date + 'T00:00:00'))}
+              {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
             </Text>
             <Text style={[
               styles.seasonText, 
@@ -241,7 +241,7 @@ export default function FeastBanner({
               <Calendar
                 onDayPress={handleDateChange}
                 markedDates={{
-                  [selectedDate.toISOString().split('T')[0]]: {
+                  [format(selectedDate, 'yyyy-MM-dd')]: {
                     selected: true,
                     selectedColor: Colors[colorScheme ?? 'light'].primary,
                   }

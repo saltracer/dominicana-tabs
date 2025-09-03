@@ -1,17 +1,12 @@
 import { LiturgicalDay, LiturgicalSeason, Feast, Saint } from '../types';
+import { format } from 'date-fns';
 
 export class LiturgicalCalendarService {
   private static instance: LiturgicalCalendarService;
   private saints: Map<string, Saint> = new Map();
   private feasts: Map<string, Feast[]> = new Map();
 
-  // Helper function to convert Date to local date string (YYYY-MM-DD)
-  private toLocalDateString(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
+
 
   private constructor() {
     this.initializeSaints();
@@ -63,43 +58,43 @@ export class LiturgicalCalendarService {
       {
         name: 'Advent',
         color: '#4B0082',
-        startDate: this.toLocalDateString(firstSundayAdvent),
-        endDate: this.toLocalDateString(new Date(year, 11, 24, 23, 59, 59)),
+        startDate: format(firstSundayAdvent, 'yyyy-MM-dd'),
+        endDate: format(new Date(year, 11, 24, 23, 59, 59), 'yyyy-MM-dd'),
         description: 'Season of preparation for the coming of Christ'
       },
       {
         name: 'Christmas',
         color: '#FFFFFF',
-        startDate: this.toLocalDateString(new Date(year, 11, 25)),
-        endDate: this.toLocalDateString(new Date(year + 1, 0, 5, 23, 59, 59)),
+        startDate: format(new Date(year, 11, 25), 'yyyy-MM-dd'),
+        endDate: format(new Date(year + 1, 0, 5, 23, 59, 59), 'yyyy-MM-dd'),
         description: 'Celebration of the birth of Jesus Christ'
       },
       {
         name: 'Ordinary Time I',
         color: '#2E7D32',
-        startDate: this.toLocalDateString(new Date(year + 1, 0, 6)),
-        endDate: this.toLocalDateString(new Date(ashWednesday.getTime() - 24 * 60 * 60 * 1000)),
+        startDate: format(new Date(year + 1, 0, 6), 'yyyy-MM-dd'),
+        endDate: format(new Date(ashWednesday.getTime() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         description: 'First period of Ordinary Time'
       },
       {
         name: 'Lent',
         color: '#6A1B9A',
-        startDate: this.toLocalDateString(ashWednesday),
-        endDate: this.toLocalDateString(new Date(easter.getTime() - 24 * 60 * 60 * 1000)),
+        startDate: format(ashWednesday, 'yyyy-MM-dd'),
+        endDate: format(new Date(easter.getTime() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         description: 'Season of penance and preparation for Easter'
       },
       {
         name: 'Easter',
         color: '#FFFFFF',
-        startDate: this.toLocalDateString(easter),
-        endDate: this.toLocalDateString(new Date(pentecost.getTime() - 24 * 60 * 60 * 1000)),
+        startDate: format(easter, 'yyyy-MM-dd'),
+        endDate: format(new Date(pentecost.getTime() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         description: 'Celebration of the Resurrection of Christ'
       },
       {
         name: 'Ordinary Time II',
         color: '#2E7D32',
-        startDate: this.toLocalDateString(new Date(pentecost.getTime() + 7 * 24 * 60 * 60 * 1000)),
-        endDate: this.toLocalDateString(new Date(firstSundayAdvent.getTime() - 24 * 60 * 60 * 1000)),
+        startDate: format(new Date(pentecost.getTime() + 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
+        endDate: format(new Date(firstSundayAdvent.getTime() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
         description: 'Second period of Ordinary Time'
       }
     ];
@@ -109,8 +104,8 @@ export class LiturgicalCalendarService {
   public getLiturgicalDay(date: Date): LiturgicalDay {
     const year = date.getFullYear();
     const seasons = this.calculateLiturgicalSeasons(year);
-    // Use local date methods to avoid timezone issues
-    const dateString = this.toLocalDateString(date);
+    // Use date-fns format for consistent date string formatting
+    const dateString = format(date, 'yyyy-MM-dd');
     
     // Find current season
     const currentSeason = seasons.find(season => {
@@ -124,7 +119,7 @@ export class LiturgicalCalendarService {
     const week = Math.floor((date.getTime() - seasonStart.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
 
     // Get feasts for this date
-    const feasts = this.getFeastsForDate(dateString);
+    const feasts = this.getFeastsForDate(date);
 
     return {
       date: dateString,
@@ -244,7 +239,8 @@ export class LiturgicalCalendarService {
   }
 
   // Get feasts for a specific date
-  private getFeastsForDate(dateString: string): Feast[] {
+  public getFeastsForDate(date: Date): Feast[] {
+    const dateString = format(date, 'yyyy-MM-dd');
     return this.feasts.get(dateString) || [];
   }
 
@@ -269,8 +265,8 @@ export class LiturgicalCalendarService {
     const currentDate = new Date(startDate);
     
     while (currentDate <= endDate) {
-      const dateString = this.toLocalDateString(currentDate);
-      const dayFeasts = this.getFeastsForDate(dateString);
+      const dateString = format(currentDate, 'yyyy-MM-dd');
+      const dayFeasts = this.getFeastsForDate(currentDate);
       feasts.push(...dayFeasts);
       currentDate.setDate(currentDate.getDate() + 1);
     }
@@ -299,8 +295,8 @@ export class LiturgicalCalendarService {
 
   // Check if date is a feast day
   public isFeastDay(date: Date): boolean {
-    const dateString = this.toLocalDateString(date);
-    const feasts = this.getFeastsForDate(dateString);
+    const dateString = format(date, 'yyyy-MM-dd');
+    const feasts = this.getFeastsForDate(date);
     return feasts.length > 0;
   }
 

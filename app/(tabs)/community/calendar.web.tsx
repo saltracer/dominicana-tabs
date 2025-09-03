@@ -14,6 +14,7 @@ import FeastBanner from '../../../components/FeastBanner';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
+import { parseISO, format, subDays, addDays } from 'date-fns';
 
 export default function CalendarScreen() {
   const { colorScheme } = useTheme();
@@ -69,9 +70,8 @@ export default function CalendarScreen() {
   };
 
   const handleDayPress = (day: any) => {
-    // Use dateString to avoid timezone issues - it represents the local date
-    const [year, month, dayOfMonth] = day.dateString.split('-').map(Number);
-    const selectedDate = new Date(year, month - 1, dayOfMonth); // month is 0-indexed
+    // Use date-fns parseISO for clean date parsing
+    const selectedDate = parseISO(day.dateString);
     updateCalendarSelection(selectedDate);
     
     // Update marked dates to show new selection
@@ -123,7 +123,7 @@ export default function CalendarScreen() {
           
           {/* Calendar Component */}
           <Calendar
-            current={liturgicalDay?.date || new Date().toISOString().split('T')[0]}
+            current={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
             onDayPress={handleDayPress}
             markedDates={markedDates}
             theme={{
@@ -147,8 +147,8 @@ export default function CalendarScreen() {
               textMonthFontSize: 18,
               textDayHeaderFontSize: 14,
             }}
-            minDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
-            maxDate={new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+            minDate={format(subDays(new Date(), 365), 'yyyy-MM-dd')}
+            maxDate={format(addDays(new Date(), 365), 'yyyy-MM-dd')}
             key={colorScheme}
           />
 
@@ -179,12 +179,7 @@ export default function CalendarScreen() {
               Selected Date
             </Text>
             <Text style={[styles.selectedDateText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {new Date(liturgicalDay.date + 'T00:00:00').toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
+              {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
             </Text>
             
             {/* Liturgical Season */}
