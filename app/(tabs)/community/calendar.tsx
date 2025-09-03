@@ -43,12 +43,20 @@ export default function CalendarScreen() {
         if (liturgicalDay.feasts.length > 0) {
           const dateString = date.toISOString().split('T')[0];
           
+          // Get the highest rank feast for this date
+          const primaryFeast = liturgicalDay.feasts.reduce((highest, current) => {
+            const rankOrder: { [key: string]: number } = { 'Solemnity': 1, 'Feast': 2, 'Memorial': 3, 'Optional Memorial': 4, 'Ferial': 5 };
+            const currentRank = rankOrder[current.rank] || 5;
+            const highestRank = rankOrder[highest.rank] || 5;
+            return currentRank < highestRank ? current : highest;
+          }, liturgicalDay.feasts[0]);
+          
           // Check if any feast is Dominican
           const hasDominicanFeast = liturgicalDay.feasts.some(feast => feast.isDominican);
           
           marked[dateString] = {
             marked: true,
-            dotColor: hasDominicanFeast ? Colors[colorScheme ?? 'light'].primary : liturgicalDay.feasts[0].color,
+            dotColor: hasDominicanFeast ? Colors[colorScheme ?? 'light'].primary : (primaryFeast?.color || '#2E7D32'),
             textColor: hasDominicanFeast ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].text,
           };
         }
@@ -161,13 +169,40 @@ export default function CalendarScreen() {
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
                 <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Regular Feast
+                  Solemnity
                 </Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#4B0082' }]} />
                 <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Dominican Feast
+                  Feast
+                </Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#DAA520' }]} />
+                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Memorial
+                </Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#2E7D32' }]} />
+                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Ferial Day
+                </Text>
+              </View>
+            </View>
+            
+            {/* Dominican Indicator */}
+            <View style={styles.dominicanLegend}>
+              <Text style={[styles.legendSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                Dominican Celebrations
+              </Text>
+              <View style={styles.legendItem}>
+                <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                  ⚫⚪
+                </Text>
+                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Dominican Saint/Feast
                 </Text>
               </View>
             </View>
@@ -276,10 +311,14 @@ const styles = StyleSheet.create({
   legendItems: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    marginBottom: 16,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
+    minWidth: '45%',
   },
   legendDot: {
     width: 12,
@@ -289,6 +328,24 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
+    fontFamily: 'Georgia',
+  },
+  dominicanLegend: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.light.border,
+    paddingTop: 16,
+  },
+  legendSubtitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+    fontFamily: 'Georgia',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dominicanSymbol: {
+    fontSize: 14,
+    marginRight: 8,
     fontFamily: 'Georgia',
   },
   selectedDateInfo: {
