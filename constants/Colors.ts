@@ -142,19 +142,36 @@ export const getFeastColor = (rank: string, isDark: boolean = false) => {
 export const getLiturgicalColorHex = (liturgicalColor: string, isDark: boolean = false): string => {
   const theme = isDark ? Colors.dark : Colors.light;
   
-  switch (liturgicalColor) {
-    case 'Red':
+  // First, handle liturgical color names (case-insensitive)
+  switch (liturgicalColor.toLowerCase()) {
+    case 'red':
       return theme.liturgicalRed || '#B42025'; // Use theme color or fallback
-    case 'White':
+    case 'white':
       return '#FFFFFF';
-    case 'Green':
+    case 'green':
       return theme.ordinary || '#4CAF50'; // Use theme green or fallback
-    case 'Purple':
+    case 'purple':
       return theme.advent || '#9C27B0'; // Use theme purple or fallback
-    case 'Rose':
+    case 'rose':
       return '#E91E63'; // Rose pink
-    case 'Gold':
+    case 'gold':
       return theme.dominicanGold || '#DAA520'; // Use theme gold or fallback
+  }
+  
+  // If not a liturgical color, try to handle as season name
+  switch (liturgicalColor.toLowerCase()) {
+    case 'advent':
+      return theme.advent;
+    case 'christmas':
+      return theme.christmas;
+    case 'ordinary':
+      return theme.ordinary;
+    case 'lent':
+      return theme.lent;
+    case 'easter':
+      return theme.easter;
+    case 'pentecost':
+      return theme.pentecost;
     default:
       return theme.primary; // Fallback to primary color
   }

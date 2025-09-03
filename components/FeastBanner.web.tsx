@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
-import { Colors } from '../constants/Colors';
+import { Colors, getLiturgicalColorHex } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
 import { LiturgicalDay } from '../types';
@@ -82,27 +82,32 @@ export default function FeastBanner({
   //   return '📖';
   // };
 
-  const getSeasonColor = (season: string) => {
-    switch (season.toLowerCase()) {
-      case 'advent':
-        return '#4B0082'; // Purple
-      case 'christmas':
-        return '#FFFFFF'; // White
-      case 'lent':
-        return '#800080'; // Purple
-      case 'easter':
-        return '#FFFFFF'; // White
-      case 'pentecost':
-        return '#FF0000'; // Red
-      case 'ordinary':
-        return '#228B22'; // Green
-      default:
-        return '#228B22'; // Green
-    }
-  };
+  // const getSeasonColor = (season: string) => {
+  //   switch (season.toLowerCase()) {
+  //     case 'advent':
+  //       return '#4B0082'; // Purple
+  //     case 'christmas':
+  //       return '#FFFFFF'; // White
+  //     case 'lent':
+  //       return '#800080'; // Purple
+  //     case 'easter':
+  //       return '#FFFFFF'; // White
+  //     case 'pentecost':
+  //       return '#FF0000'; // Red
+  //     case 'ordinary':
+  //       return '#228B22'; // Green
+  //     default:
+  //       return '#228B22'; // Green
+  //   }
+  // };
 
   // Get the primary feast (highest rank feast)
   const primaryFeast = liturgicalDay.feasts.find(f => f.rank === 'Solemnity' || f.rank === 'Feast') || liturgicalDay.feasts[0];
+  
+  // For the color strip: use feast color if available, otherwise use season color
+  const displayColor = primaryFeast?.color 
+    ? getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark')
+    : getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark');
 
   const handleDateChange = (day: any) => {
     if (day) {
@@ -145,7 +150,7 @@ export default function FeastBanner({
         <View 
           style={[
             styles.seasonColorBar, 
-            { backgroundColor: primaryFeast?.color || getSeasonColor(liturgicalDay.season.name) }
+            { backgroundColor: displayColor }
           ]} 
         />
       
@@ -200,15 +205,15 @@ export default function FeastBanner({
                 <View style={[
                   styles.rankContainer, 
                   { 
-                    backgroundColor: primaryFeast.color || '#2E7D32',
-                    borderWidth: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') ? 1 : 0,
-                    borderColor: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') ? '#000000' : 'transparent'
+                    backgroundColor: getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark'),
+                    borderWidth: (primaryFeast.color?.toLowerCase() === 'white') ? 1 : 0,
+                    borderColor: (primaryFeast.color?.toLowerCase() === 'white') ? '#000000' : 'transparent'
                   }
                 ]}>
                   <Text style={[
                     styles.rankText, 
                     { 
-                      color: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') 
+                      color: (primaryFeast.color?.toLowerCase() === 'white') 
                         ? '#000000' 
                         : Colors[colorScheme ?? 'light'].dominicanWhite 
                     }
@@ -340,12 +345,12 @@ export default function FeastBanner({
                               <View style={[
                   styles.modalTitleContainer, 
                   { 
-                    backgroundColor: primaryFeast?.color || Colors[colorScheme ?? 'light'].text,
-                    borderWidth: primaryFeast?.color === 'white' ? 1 : 0,
-                    borderColor: primaryFeast?.color === 'white' ? '#000000' : 'transparent'
+                    backgroundColor: getLiturgicalColorHex(primaryFeast?.color, colorScheme === 'dark'),
+                    borderWidth: (primaryFeast?.color?.toLowerCase() === 'white') ? 1 : 0,
+                    borderColor: (primaryFeast?.color?.toLowerCase() === 'white') ? '#000000' : 'transparent'
                   }
                 ]}>
-                  <Text style={[styles.modalTitle, { color: primaryFeast?.color === 'white' ? '#000000' : '#FFFFFF' }]}>
+                  <Text style={[styles.modalTitle, { color: (primaryFeast?.color?.toLowerCase() === 'white') ? '#000000' : '#FFFFFF' }]}>
                     {primaryFeast?.name} - {primaryFeast?.rank}
                   </Text>
                 </View>
