@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
+import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
 import PrayerNavigation from '../../../components/PrayerNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
@@ -17,20 +18,9 @@ import { LiturgicalDay } from '../../../types';
 
 export default function DevotionsScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
 
-  useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
-  }, []);
 
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
 
   const popularDevotions = [
     { 
@@ -199,7 +189,6 @@ export default function DevotionsScreen() {
       {/* Feast Banner at Bottom */}
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
-        onDateChange={handleDateChange}
       />
     </SafeAreaView>
   );

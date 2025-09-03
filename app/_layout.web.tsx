@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
+import { CalendarProvider, useCalendar } from '@/components/CalendarContext';
 import { Colors } from '@/constants/Colors';
 import Footer from '@/components/Footer.web';
 import FeastBanner from '@/components/FeastBanner.web';
@@ -50,14 +51,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <RootLayoutNav />
+      <CalendarProvider>
+        <RootLayoutNav />
+      </CalendarProvider>
     </ThemeProvider>
   );
 }
 
 function RootLayoutNav() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
   const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
   const [preachingDropdownOpen, setPreachingDropdownOpen] = useState(false);
   const [studyDropdownOpen, setStudyDropdownOpen] = useState(false);
@@ -67,12 +70,7 @@ function RootLayoutNav() {
   const studyDropdownRef = useRef<View>(null);
   const prayerDropdownRef = useRef<View>(null);
 
-  useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
-  }, []);
+
 
   useEffect(() => {
     const handleGlobalClick = () => {
@@ -95,11 +93,7 @@ function RootLayoutNav() {
     }
   }, [communityDropdownOpen, preachingDropdownOpen, studyDropdownOpen, prayerDropdownOpen]);
 
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
+
 
   const toggleCommunityDropdown = () => {
     setCommunityDropdownOpen(!communityDropdownOpen);
@@ -491,7 +485,6 @@ function RootLayoutNav() {
           <View style={styles.feastBannerContainer}>
             <FeastBanner 
               liturgicalDay={liturgicalDay} 
-              onDateChange={handleDateChange}
             />
           </View>
         )}

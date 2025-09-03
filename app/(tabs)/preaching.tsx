@@ -12,13 +12,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../../components/ThemeProvider';
+import { useCalendar } from '../../components/CalendarContext';
 import FeastBanner from '../../components/FeastBanner';
 import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
 import { LiturgicalDay, Reflection, BlogPost } from '../../types';
 
 export default function PreachingScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
   const [activeTab, setActiveTab] = useState<'reflections' | 'blog' | 'audio'>('reflections');
   const [searchQuery, setSearchQuery] = useState('');
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -26,19 +27,9 @@ export default function PreachingScreen() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
 
   useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
     loadReflections();
     loadBlogPosts();
   }, []);
-
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
 
   const loadReflections = () => {
     const sampleReflections: Reflection[] = [
@@ -454,7 +445,6 @@ export default function PreachingScreen() {
       {/* Feast Banner at Bottom */}
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
-        onDateChange={handleDateChange}
       />
     </SafeAreaView>
   );

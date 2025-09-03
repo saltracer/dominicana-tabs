@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
+import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
@@ -20,21 +21,10 @@ import ProvincesMap from '../../../components/ProvincesMap';
 
 export default function ProvincesScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
-  useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
-  }, []);
 
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
 
   const handleProvinceSelect = (province: Province) => {
     setSelectedProvince(province);
@@ -65,7 +55,6 @@ export default function ProvincesScreen() {
       {/* Feast Banner at Bottom */}
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
-        onDateChange={handleDateChange}
       />
     </SafeAreaView>
   );

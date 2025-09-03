@@ -13,22 +13,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
+import { useCalendar } from './CalendarContext';
 import { LiturgicalDay, Feast } from '../types';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
-  onDateChange?: (date: Date) => void;
   showDatePicker?: boolean;
 }
 
 export default function FeastBanner({ 
   liturgicalDay, 
-  onDateChange,
   showDatePicker = true 
 }: FeastBannerProps) {
   const { colorScheme } = useTheme();
+  const { selectedDate, setSelectedDate } = useCalendar();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -89,10 +88,11 @@ export default function FeastBanner({
   const primaryFeast = liturgicalDay.feasts.length > 0 ? liturgicalDay.feasts[0] : null;
 
   const handleDateChange = (day: any) => {
-    if (day && onDateChange) {
-      const selectedDate = new Date(day.timestamp);
+    if (day) {
+      // Use dateString to avoid timezone issues - it represents the local date
+      const [year, month, dayOfMonth] = day.dateString.split('-').map(Number);
+      const selectedDate = new Date(year, month - 1, dayOfMonth); // month is 0-indexed
       setSelectedDate(selectedDate);
-      onDateChange(selectedDate);
       setIsDatePickerVisible(false);
     }
   };
@@ -144,7 +144,7 @@ export default function FeastBanner({
               styles.dateText, 
               { color: Colors[colorScheme ?? 'light'].text }
             ]}>
-              {formatDate(new Date(liturgicalDay.date))}
+              {formatDate(new Date(liturgicalDay.date + 'T00:00:00'))}
             </Text>
             <Text style={[
               styles.seasonText, 

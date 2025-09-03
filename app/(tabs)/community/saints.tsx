@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
+import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
@@ -19,15 +20,11 @@ import { LiturgicalDay, Saint } from '../../../types';
 
 export default function SaintsScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
   const [searchQuery, setSearchQuery] = useState('');
   const [saints, setSaints] = useState<Saint[]>([]);
 
   useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
     loadSaints();
   }, []);
 
@@ -59,11 +56,7 @@ export default function SaintsScreen() {
     );
   };
 
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
+
 
   if (!liturgicalDay) {
     return (
@@ -134,7 +127,6 @@ export default function SaintsScreen() {
       {/* Feast Banner at Bottom */}
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
-        onDateChange={handleDateChange}
       />
     </SafeAreaView>
   );

@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
+import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
@@ -16,15 +17,10 @@ import { LiturgicalDay } from '../../../types';
 
 export default function CalendarScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay, selectedDate, updateCalendarSelection } = useCalendar();
   const [markedDates, setMarkedDates] = useState<any>({});
 
-  useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
-  }, []);
+
 
   useEffect(() => {
     generateMarkedDates();
@@ -73,10 +69,10 @@ export default function CalendarScreen() {
   };
 
   const handleDayPress = (day: any) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const selectedDate = new Date(day.timestamp);
-    const liturgicalDay = calendarService.getLiturgicalDay(selectedDate);
-    setLiturgicalDay(liturgicalDay);
+    // Use dateString to avoid timezone issues - it represents the local date
+    const [year, month, dayOfMonth] = day.dateString.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, dayOfMonth); // month is 0-indexed
+    updateCalendarSelection(selectedDate);
     
     // Update marked dates to show new selection
     const newMarkedDates = { ...markedDates };
@@ -99,11 +95,7 @@ export default function CalendarScreen() {
     setMarkedDates(newMarkedDates);
   };
 
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
+
 
   if (!liturgicalDay) {
     return (
@@ -131,7 +123,7 @@ export default function CalendarScreen() {
           
           {/* Calendar Component */}
           <Calendar
-            current={new Date(liturgicalDay?.date || Date.now()).toISOString().split('T')[0]}
+            current={liturgicalDay?.date || new Date().toISOString().split('T')[0]}
             onDayPress={handleDayPress}
             markedDates={markedDates}
             theme={{
@@ -187,7 +179,7 @@ export default function CalendarScreen() {
               Selected Date
             </Text>
             <Text style={[styles.selectedDateText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {new Date(liturgicalDay.date).toLocaleDateString('en-US', {
+              {new Date(liturgicalDay.date + 'T00:00:00').toLocaleDateString('en-US', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
@@ -237,7 +229,6 @@ export default function CalendarScreen() {
       {/* Feast Banner at Bottom */}
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
-        onDateChange={handleDateChange}
       />
     </SafeAreaView>
   );

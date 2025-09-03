@@ -12,31 +12,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../../components/ThemeProvider';
+import { useCalendar } from '../../components/CalendarContext';
 import FeastBanner from '../../components/FeastBanner';
 import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
 import { LiturgicalDay, Book, BookCategory } from '../../types';
 
 export default function StudyScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
   const [books, setBooks] = useState<Book[]>([]);
 
   useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
     loadSampleBooks();
   }, []);
-
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
 
   const loadSampleBooks = () => {
     const sampleBooks: Book[] = [
@@ -332,7 +323,6 @@ export default function StudyScreen() {
       {/* Feast Banner at Bottom */}
       <FeastBanner 
         liturgicalDay={liturgicalDay} 
-        onDateChange={handleDateChange}
       />
     </SafeAreaView>
   );

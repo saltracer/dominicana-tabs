@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
+import { CalendarProvider } from '@/components/CalendarContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -45,7 +46,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <RootLayoutNav />
+      <CalendarProvider>
+        <RootLayoutNav />
+      </CalendarProvider>
     </ThemeProvider>
   );
 }
