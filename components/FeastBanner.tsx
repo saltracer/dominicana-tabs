@@ -127,7 +127,7 @@ export default function FeastBanner({
     : getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark');
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
       <View style={styles.bannerContent}>
                 {/* Carousel Container */}
         <View style={styles.carouselContainer}>
@@ -570,8 +570,11 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   seasonColorBar: {
-    height: 4,
+    height: 5,
     width: '100%',
+    borderTopWidth: 1,
+    // borderBottomWidth: 1,
+    borderColor: '#DDDDDD',
   },
   topRow: {
     flexDirection: 'row',
