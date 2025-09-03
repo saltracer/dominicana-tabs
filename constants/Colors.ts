@@ -137,3 +137,25 @@ export const getFeastColor = (rank: string, isDark: boolean = false) => {
       return theme.text;
   }
 };
+
+// Helper function to convert LiturgicalColor enum values to hex colors
+export const getLiturgicalColorHex = (liturgicalColor: string, isDark: boolean = false): string => {
+  const theme = isDark ? Colors.dark : Colors.light;
+  
+  switch (liturgicalColor) {
+    case 'Red':
+      return theme.liturgicalRed || '#B42025'; // Use theme color or fallback
+    case 'White':
+      return '#FFFFFF';
+    case 'Green':
+      return theme.ordinary || '#4CAF50'; // Use theme green or fallback
+    case 'Purple':
+      return theme.advent || '#9C27B0'; // Use theme purple or fallback
+    case 'Rose':
+      return '#E91E63'; // Rose pink
+    case 'Gold':
+      return theme.dominicanGold || '#DAA520'; // Use theme gold or fallback
+    default:
+      return theme.primary; // Fallback to primary color
+  }
+};
