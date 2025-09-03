@@ -31,6 +31,20 @@ export default function FeastBanner({
   const { selectedDate, setSelectedDate } = useCalendar();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
+  const navigateToPreviousDay = () => {
+    const currentDate = parseISO(liturgicalDay.date);
+    const previousDate = new Date(currentDate);
+    previousDate.setDate(previousDate.getDate() - 1);
+    setSelectedDate(previousDate);
+  };
+
+  const navigateToNextDay = () => {
+    const currentDate = parseISO(liturgicalDay.date);
+    const nextDate = new Date(currentDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+    setSelectedDate(nextDate);
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -86,8 +100,8 @@ export default function FeastBanner({
     }
   };
 
-  // Get the primary feast (first feast in the array)
-  const primaryFeast = liturgicalDay.feasts.length > 0 ? liturgicalDay.feasts[0] : null;
+  // Get the primary feast (highest rank feast)
+  const primaryFeast = liturgicalDay.feasts.find(f => f.rank === 'Solemnity' || f.rank === 'Feast') || liturgicalDay.feasts[0];
 
   const handleDateChange = (day: any) => {
     if (day) {
@@ -135,73 +149,64 @@ export default function FeastBanner({
         />
       
       <View style={styles.bannerContent}>
-        {/* Date Section */}
-        <View style={styles.dateSection}>
-          {/* <Text style={styles.seasonEmoji}>
-            {getSeasonEmoji(liturgicalDay.season.name)}
-          </Text> */}
-          <View style={styles.dateTextContainer}>
-            <Text style={[
-              styles.dateText, 
-              { color: Colors[colorScheme ?? 'light'].text }
-            ]}>
-              {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
-            </Text>
-            <Text style={[
-              styles.seasonText, 
-              { color: Colors[colorScheme ?? 'light'].textSecondary }
-            ]}>
-              {liturgicalDay.season.name} • Week {liturgicalDay.week}
-            </Text>
-          </View>
-          {showDatePicker && (
-            <TouchableOpacity 
-              style={styles.datePickerButton}
-              onPress={showDatePickerModal}
+        {/* Date/Feast Section with Navigation */}
+        <View style={styles.topRow}>
+          <View style={styles.leftSection}>
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={navigateToPreviousDay}
+              activeOpacity={0.7}
             >
-              <Ionicons 
-                name="calendar-outline" 
-                size={24} 
-                color={Colors[colorScheme ?? 'light'].primary} 
-              />
+              <Ionicons name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
             </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Feast Section */}
-        {primaryFeast && (
-          <View style={styles.feastSection}>
-            {/* <Text style={styles.feastEmoji}>
-              {getFeastEmoji(primaryFeast)}
-            </Text> */}
-            <View style={styles.feastTextContainer}>
+            
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={showDatePickerModal}
+              activeOpacity={0.8}
+            >
+              <Text style={[
+                styles.dateText, 
+                { color: Colors[colorScheme ?? 'light'].text }
+              ]}>
+                {format(parseISO(liturgicalDay.date), 'EEEE, MMM d, yyyy')}
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Reset to Today Button - Only show if not on today's date */}
+            {format(parseISO(liturgicalDay.date), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={() => setSelectedDate(new Date())}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="arrow-undo" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity
+              style={styles.navButton}
+              onPress={navigateToNextDay}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            </TouchableOpacity>
+          </View>
+          
+          {primaryFeast && (
+            <View style={styles.rightSection}>
               <Text style={[
                 styles.feastName, 
                 { color: Colors[colorScheme ?? 'light'].text }
-              ]}>
+              ]} numberOfLines={1}>
                 {getFeastDisplayName(primaryFeast)}
               </Text>
-              <Text style={[
-                styles.feastRank, 
-                { color: Colors[colorScheme ?? 'light'].textSecondary }
-              ]}>
+              <Text style={[styles.feastRank, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                 {getFeastRankText(primaryFeast)}
               </Text>
             </View>
-          </View>
-        )}
-
-        {/* Additional Feasts */}
-        {liturgicalDay.feasts.length > 1 && (
-          <View style={styles.additionalFeasts}>
-            <Text style={[
-              styles.additionalFeastsText, 
-              { color: Colors[colorScheme ?? 'light'].textSecondary }
-            ]}>
-              +{liturgicalDay.feasts.length - 1} more feasts
-            </Text>
-          </View>
-        )}
+          )}
+        </View>
       </View>
 
       {/* Date Picker Modal */}
@@ -291,6 +296,55 @@ const styles = StyleSheet.create({
     height: 4,
     width: '100%',
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  rightSection: {
+    alignItems: 'flex-end',
+    flex: 1,
+  },
+  navButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+  },
+  resetButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  centerSection: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 16,
+  },
+  dateAndFeastRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+  },
+  dateButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    marginHorizontal: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
   dateSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -304,7 +358,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Georgia',
   },
@@ -319,6 +373,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 8,
+  },
+  feastInfo: {
+    alignItems: 'center',
+    marginTop: 4,
   },
   feastEmoji: {
     fontSize: 20,
@@ -345,6 +403,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Georgia',
   },
+
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
