@@ -641,7 +641,6 @@ const styles = StyleSheet.create({
            width: '100%',
            fontSize: 20,
            fontWeight: '700',
-           flex: 1,
            textAlignVertical: 'top',
            flexWrap: 'wrap',
            flexShrink: 1,
