@@ -72,7 +72,7 @@ export function getSaintsForDate(date: Date): Celebration[] {
       description: saint.short_bio || saint.biography?.join(" "),
       // Add more detailed information
       birthYear: saint.birth_year || undefined,
-      deathYear: saint.death_year,
+      deathYear: saint.death_year || undefined,
       patronage: saint.patronage,
       biography: saint.biography,
       prayers: saint.prayers,

@@ -14,7 +14,7 @@ import { Calendar } from 'react-native-calendars';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
-import { LiturgicalDay, Feast } from '../types';
+import { LiturgicalDay } from '../types';
 import { parseISO, format } from 'date-fns';
 
 interface FeastBannerProps {
@@ -100,7 +100,7 @@ export default function FeastBanner({
     }
   };
 
-  const primaryFeast = liturgicalDay.feasts.find(f => f.rank === 'solemnity' || f.rank === 'feast') || liturgicalDay.feasts[0];
+  const primaryFeast = liturgicalDay.feasts.find(f => f.rank === 'Solemnity' || f.rank === 'Feast') || liturgicalDay.feasts[0];
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
@@ -136,7 +136,7 @@ export default function FeastBanner({
                 {primaryFeast.name}
               </Text>
               <Text style={[styles.feastRank, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {primaryFeast.rank.charAt(0).toUpperCase() + primaryFeast.rank.slice(1)}
+                {primaryFeast.rank}
                 {primaryFeast.isDominican && ' • Dominican'}
               </Text>
             </View>

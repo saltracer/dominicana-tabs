@@ -14,7 +14,8 @@ import { Calendar } from 'react-native-calendars';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
-import { LiturgicalDay, Feast } from '../types';
+import { LiturgicalDay } from '../types';
+import { Celebration } from '../types/celebrations-types';
 import { parseISO, format } from 'date-fns';
 
 interface FeastBannerProps {
@@ -103,18 +104,18 @@ export default function FeastBanner({
     }
   };
 
-  const getFeastDisplayName = (feast: Feast) => {
+  const getFeastDisplayName = (feast: Celebration) => {
     if (feast.isDominican) {
       return `${feast.name}, OP`;
     }
     return feast.name;
   };
 
-  const getFeastRankText = (feast: Feast) => {
+  const getFeastRankText = (feast: Celebration) => {
     if (feast.isDominican) {
       return 'Dominican Saint';
     }
-    return feast.rank.charAt(0).toUpperCase() + feast.rank.slice(1);
+    return feast.rank;
   };
 
   return (

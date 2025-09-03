@@ -1,10 +1,13 @@
+// Import Celebration type for use in this file
+import { Celebration } from './celebrations-types';
+
 // Liturgical Calendar Types
 export interface LiturgicalDay {
   date: string;
   season: LiturgicalSeason;
   week: number;
   dayOfWeek: number;
-  feasts: Feast[];
+  feasts: Celebration[];
   color: string;
   readings?: Reading[];
 }
