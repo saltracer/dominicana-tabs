@@ -35,11 +35,14 @@ export const Colors = {
     lent: '#6A1B9A', // Violet
     easter: '#FFFFFF', // White
     pentecost: '#FF6F00', // Orange/Red
+
+    liturgicalRed: '#B42025',
     
     // Dominican-specific colors
     dominicanBlack: '#000000',
     dominicanWhite: '#FFFFFF',
     dominicanGold: '#DAA520',
+    dominicanRed: '#B42025',
     
     tint: tintColorLight,
     icon: '#687076',
@@ -79,12 +82,15 @@ export const Colors = {
     lent: '#BA68C8', // Lighter violet
     easter: '#FFFFFF', // White
     pentecost: '#FF9800', // Orange
+
+    liturgicalRed: '#B42025',
     
     // Dominican-specific colors
     dominicanBlack: '#FFFFFF', // Inverted for dark mode
     dominicanWhite: '#DDDDDD',
     dominicanGold: '#FFD700',
-    
+    dominicanRed: '#B42025',
+
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
