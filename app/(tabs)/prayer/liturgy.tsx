@@ -8,13 +8,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { useTheme } from '../../components/ThemeProvider';
-import FeastBanner from '../../components/FeastBanner';
-import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
-import { LiturgicalDay, HourType } from '../../types';
+import { Colors } from '../../../constants/Colors';
+import { useTheme } from '../../../components/ThemeProvider';
+import FeastBanner from '../../../components/FeastBanner';
+import PrayerNavigation from '../../../components/PrayerNavigation';
+import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
+import { LiturgicalDay, HourType } from '../../../types';
 
-export default function PrayerScreen() {
+export default function LiturgyOfTheHoursScreen() {
   const { colorScheme } = useTheme();
   const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
   const [selectedHour, setSelectedHour] = useState<HourType>('lauds');
@@ -42,13 +43,6 @@ export default function PrayerScreen() {
     { type: 'compline', name: 'Compline (Night Prayer)', time: '9:00 PM', icon: 'moon' },
   ];
 
-  const rosaryMysteries = [
-    { name: 'Joyful Mysteries', day: 'Monday & Saturday', icon: 'happy-outline' },
-    { name: 'Sorrowful Mysteries', day: 'Tuesday & Friday', icon: 'heart-outline' },
-    { name: 'Glorious Mysteries', day: 'Wednesday & Sunday', icon: 'star-outline' },
-    { name: 'Luminous Mysteries', day: 'Thursday', icon: 'flash-outline' },
-  ];
-
   if (!liturgicalDay) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -64,36 +58,49 @@ export default function PrayerScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Liturgy of the Hours Section */}
+        {/* Prayer Navigation */}
+        <PrayerNavigation activeTab="liturgy" />
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Liturgy of the Hours
+          </Text>
+          <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            The official prayer of the Church
+          </Text>
+        </View>
+
+
+        {/* Quick Actions */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[
+              styles.quickActionCard,
+              { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+            ]}
+          >
+            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Start Current Hour
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.quickActionCard,
+              { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
+            ]}
+          >
+            <Ionicons name="calendar" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Today's Readings
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Prayer Hours Grid */}
         <View style={styles.section}>
-          
-          {/* Quick Actions */}
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={[
-                styles.quickActionCard,
-                { backgroundColor: Colors[colorScheme ?? 'light'].primary }
-              ]}
-            >
-              <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-              <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                Start Current Hour
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.quickActionCard,
-                { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
-              ]}
-            >
-              <Ionicons name="rose" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-              <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                Pray Rosary
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
           <View style={styles.sectionHeader}>
             <Ionicons 
               name="time-outline" 
@@ -101,7 +108,7 @@ export default function PrayerScreen() {
               color={Colors[colorScheme ?? 'light'].primary} 
             />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Liturgy of the Hours
+              Prayer Hours
             </Text>
           </View>
           
@@ -144,52 +151,6 @@ export default function PrayerScreen() {
             ))}
           </View>
         </View>
-
-        {/* Rosary Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="rose-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Dominican Rosary
-            </Text>
-          </View>
-          
-          <View style={styles.rosaryGrid}>
-            {rosaryMysteries.map((mystery, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.rosaryCard,
-                  { backgroundColor: Colors[colorScheme ?? 'light'].card }
-                ]}
-              >
-                <Ionicons 
-                  name={mystery.icon as any} 
-                  size={28} 
-                  color={Colors[colorScheme ?? 'light'].primary} 
-                />
-                <Text style={[
-                  styles.rosaryMysteryName,
-                  { color: Colors[colorScheme ?? 'light'].text }
-                ]}>
-                  {mystery.name}
-                </Text>
-                <Text style={[
-                  styles.rosaryMysteryDay,
-                  { color: Colors[colorScheme ?? 'light'].textSecondary }
-                ]}>
-                  {mystery.day}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-
       </ScrollView>
       
       {/* Feast Banner at Bottom */}
@@ -217,6 +178,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
   },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    marginTop: 8,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
   section: {
     marginVertical: 16,
     paddingHorizontal: 16,
@@ -229,6 +207,32 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
+    marginLeft: 8,
+    fontFamily: 'Georgia',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  quickActionCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  quickActionText: {
+    fontSize: 14,
+    fontWeight: '600',
     marginLeft: 8,
     fontFamily: 'Georgia',
   },
@@ -260,61 +264,6 @@ const styles = StyleSheet.create({
   prayerHourTime: {
     fontSize: 12,
     marginTop: 4,
-    fontFamily: 'Georgia',
-  },
-  rosaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  rosaryCard: {
-    width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  rosaryMysteryName: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
-    fontFamily: 'Georgia',
-  },
-  rosaryMysteryDay: {
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
-    fontFamily: 'Georgia',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  quickActionCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
     fontFamily: 'Georgia',
   },
 });

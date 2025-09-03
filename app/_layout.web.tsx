@@ -193,7 +193,7 @@ function RootLayoutNav() {
                 {prayerDropdownOpen && (
                   <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
                     
-                    <Link href="/(tabs)/prayer" asChild>
+                    <Link href="/(tabs)/prayer/liturgy" asChild>
                       <div 
                         style={{
                           padding: '12px 16px',
@@ -213,7 +213,7 @@ function RootLayoutNav() {
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Liturgy of the Hours</Text>
                       </div>
                     </Link>
-                    <Link href="/(tabs)/prayer" asChild>
+                    <Link href="/(tabs)/prayer/rosary" asChild>
                       <div 
                         style={{
                           padding: '12px 16px',
@@ -233,7 +233,7 @@ function RootLayoutNav() {
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Rosary</Text>
                       </div>
                     </Link>
-                    <Link href="/(tabs)/prayer" asChild>
+                    <Link href="/(tabs)/prayer/devotions" asChild>
                       <div 
                         style={{
                           padding: '12px 16px',
