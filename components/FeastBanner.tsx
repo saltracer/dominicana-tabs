@@ -29,6 +29,7 @@ export default function FeastBanner({
   const { colorScheme } = useTheme();
   const { selectedDate, setSelectedDate } = useCalendar();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const navigateToPreviousDay = () => {
     const currentDate = parseISO(liturgicalDay.date);
@@ -182,26 +183,33 @@ export default function FeastBanner({
                     {primaryFeast.rank}
                   </Text>
                 </View>
-                <View style={styles.feastTextContainer}>
-                  <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
-                    {primaryFeast.name}
-                  </Text>
-                  {primaryFeast.isDominican && (
-                    <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                      Dominican
-                    </Text>
-                  )}
-                </View>
+                                       <View style={styles.feastTextContainer}>
+                         <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
+                           {primaryFeast.name}
+                         </Text>
+                         {primaryFeast.isDominican && (
+                           <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                             Dominican
+                           </Text>
+                         )}
+                       </View>
+                       <TouchableOpacity 
+                         style={styles.infoButton} 
+                         onPress={() => setShowInfoModal(true)}
+                         activeOpacity={0.7}
+                       >
+                         <Ionicons name="information-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                       </TouchableOpacity>
               </View>
             </View>
           )}
         </View>
       </View>
 
-      {/* Liturgical Season Color Bar */}
+      {/* Liturgical Day Color Bar */}
       <View style={[
         styles.seasonColorBar,
-        { backgroundColor: getSeasonColor(liturgicalDay.season.name) }
+        { backgroundColor: primaryFeast?.color || getSeasonColor(liturgicalDay.season.name) }
       ]} />
 
             {isDatePickerVisible && (
@@ -275,6 +283,106 @@ export default function FeastBanner({
           </View>
         </Modal>
       )}
+
+      {/* Info Modal */}
+      <Modal
+        visible={showInfoModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowInfoModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalOverlayTouchable} 
+            activeOpacity={1} 
+            onPress={() => setShowInfoModal(false)}
+          >
+            <View style={styles.modalOverlayInner} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.infoModalContent} 
+            activeOpacity={1} 
+            onPress={() => {}} // Prevent dismissal when tapping content
+          >
+            <View style={[styles.infoModalContentInner, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {primaryFeast?.name}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.closeButton} 
+                  onPress={() => setShowInfoModal(false)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                </TouchableOpacity>
+              </View>
+            
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.infoSection}>
+                <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Rank
+                </Text>
+                <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {primaryFeast?.rank}
+                </Text>
+              </View>
+
+              {primaryFeast?.isDominican && (
+                <View style={styles.infoSection}>
+                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Type
+                  </Text>
+                  <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                    Dominican Celebration
+                  </Text>
+                </View>
+              )}
+
+              {primaryFeast?.description && (
+                <View style={styles.infoSection}>
+                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Description
+                  </Text>
+                  <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {primaryFeast.description}
+                  </Text>
+                </View>
+              )}
+
+              {primaryFeast?.date && (
+                <View style={styles.infoSection}>
+                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Date
+                  </Text>
+                  <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.infoSection}>
+                <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Liturgical Season
+                </Text>
+                <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {liturgicalDay.season.name}
+                </Text>
+              </View>
+
+              <View style={styles.infoSection}>
+                <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Liturgical Week
+                </Text>
+                <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Week {liturgicalDay.week}
+                </Text>
+              </View>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -391,12 +499,106 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     textAlign: 'center',
   },
-  dominicanIndicator: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    fontStyle: 'italic',
-    marginTop: 2,
-  },
+           dominicanIndicator: {
+           fontSize: 12,
+           fontFamily: 'Georgia',
+           fontStyle: 'italic',
+           marginTop: 2,
+         },
+         infoButton: {
+           padding: 8,
+           marginLeft: 8,
+           borderRadius: 20,
+           backgroundColor: 'transparent',
+         },
+         modalOverlay: {
+           flex: 1,
+           backgroundColor: 'rgba(0, 0, 0, 0.5)',
+           justifyContent: 'center',
+           alignItems: 'center',
+         },
+         modalOverlayTouchable: {
+           position: 'absolute',
+           top: 0,
+           left: 0,
+           right: 0,
+           bottom: 0,
+         },
+         modalOverlayInner: {
+           flex: 1,
+         },
+         infoModalContent: {
+           width: '90%',
+           maxHeight: '80%',
+           borderRadius: 16,
+           padding: 20,
+           elevation: 5,
+           shadowColor: '#000',
+           shadowOffset: { width: 0, height: 2 },
+           shadowOpacity: 0.25,
+           shadowRadius: 3.84,
+         },
+         infoModalContentInner: {
+           width: '100%',
+           height: '100%',
+           borderRadius: 16,
+           padding: 20,
+         },
+         modalHeader: {
+           flexDirection: 'row',
+           justifyContent: 'space-between',
+           alignItems: 'center',
+           marginBottom: 20,
+           paddingBottom: 15,
+           borderBottomWidth: 1,
+           borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+         },
+         modalTitle: {
+           fontSize: 20,
+           fontWeight: '700',
+           flex: 1,
+           marginRight: 10,
+         },
+         closeButton: {
+           padding: 4,
+         },
+         modalBody: {
+           flex: 1,
+         },
+         infoSection: {
+           marginBottom: 20,
+         },
+         infoLabel: {
+           fontSize: 14,
+           fontWeight: '600',
+           marginBottom: 8,
+           textTransform: 'uppercase',
+           letterSpacing: 0.5,
+         },
+         infoValue: {
+           fontSize: 16,
+           lineHeight: 24,
+         },
+         modalContent: {
+           borderRadius: 16,
+           padding: 20,
+           width: '90%',
+           maxWidth: 400,
+         },
+         modalFooter: {
+           marginTop: 20,
+           alignItems: 'center',
+         },
+         todayButton: {
+           paddingHorizontal: 24,
+           paddingVertical: 12,
+           borderRadius: 8,
+         },
+         todayButtonText: {
+           fontSize: 16,
+           fontWeight: '600',
+           fontFamily: 'Georgia',
+         },
   feastEmoji: {
     fontSize: 20,
     marginRight: 12,
@@ -423,43 +625,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
 
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    borderRadius: 16,
-    padding: 20,
-    width: '90%',
-    maxWidth: 400,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  closeButton: {
-    padding: 4,
-  },
-  modalFooter: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  todayButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  todayButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
+
 });
