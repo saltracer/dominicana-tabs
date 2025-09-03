@@ -349,13 +349,13 @@ export default function FeastBanner({
                     {primaryFeast?.name} - {primaryFeast?.rank}
                   </Text>
                 </View>
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 style={styles.closeButton} 
                 onPress={() => setShowInfoModal(false)}
                 activeOpacity={0.7}
               >
                 <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
             
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
-import { Colors } from '../constants/Colors';
+import { Colors, getLiturgicalColorHex } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
 import { LiturgicalDay } from '../types';
@@ -81,24 +81,24 @@ export default function FeastBanner({
   //   return '📖';
   // };
 
-  const getSeasonColor = (season: string) => {
-    switch (season.toLowerCase()) {
-      case 'advent':
-        return '#4B0082'; // Purple
-      case 'christmas':
-        return '#FFFFFF'; // White
-      case 'lent':
-        return '#800080'; // Purple
-      case 'easter':
-        return '#FFFFFF'; // White
-      case 'pentecost':
-        return '#FF0000'; // Red
-      case 'ordinary':
-        return '#228B22'; // Green
-      default:
-        return '#228B22'; // Green
-    }
-  };
+  // const getSeasonColor = (season: string) => {
+  //   switch (season.toLowerCase()) {
+  //     case 'advent':
+  //       return '#4B0082'; // Purple
+  //     case 'christmas':
+  //       return '#FFFFFF'; // White
+  //     case 'lent':
+  //       return '#800080'; // Purple
+  //     case 'easter':
+  //       return '#FFFFFF'; // White
+  //     case 'pentecost':
+  //       return '#FF0000'; // Red
+  //     case 'ordinary':
+  //       return '#228B22'; // Green
+  //     default:
+  //       return '#228B22'; // Green
+  //   }
+  // };
 
   const handleDateChange = (day: any) => {
     if (day) {
@@ -167,15 +167,15 @@ export default function FeastBanner({
                 <View style={[
                   styles.rankContainer, 
                   { 
-                    backgroundColor: primaryFeast.color || '#2E7D32',
-                    borderWidth: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') ? 1 : 0,
-                    borderColor: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') ? '#000000' : 'transparent'
+                    backgroundColor: primaryFeast.color ? getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark') : '#2E7D32',
+                    borderWidth: (primaryFeast.color === 'White' || primaryFeast.color === 'white') ? 1 : 0,
+                    borderColor: (primaryFeast.color === 'White' || primaryFeast.color === 'white') ? '#000000' : 'transparent'
                   }
                 ]}>
                   <Text style={[
                     styles.rankText, 
                     { 
-                      color: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') 
+                      color: (primaryFeast.color === 'White' || primaryFeast.color === 'white') 
                         ? '#000000' 
                         : Colors[colorScheme ?? 'light'].dominicanWhite 
                     }
@@ -209,7 +209,7 @@ export default function FeastBanner({
       {/* Liturgical Day Color Bar */}
       <View style={[
         styles.seasonColorBar,
-        { backgroundColor: primaryFeast?.color || getSeasonColor(liturgicalDay.season.name) }
+        { backgroundColor: primaryFeast?.color || getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark') }
       ]} />
 
             {isDatePickerVisible && (
@@ -309,22 +309,22 @@ export default function FeastBanner({
                               <View style={[
                   styles.modalTitleContainer, 
                   { 
-                    backgroundColor: primaryFeast?.color || Colors[colorScheme ?? 'light'].text,
-                    borderWidth: primaryFeast?.color === 'white' ? 1 : 0,
-                    borderColor: primaryFeast?.color === 'white' ? '#000000' : 'transparent'
+                    backgroundColor: primaryFeast?.color ? getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark') : Colors[colorScheme ?? 'light'].text,
+                    borderWidth: (primaryFeast?.color === 'White' || primaryFeast?.color === 'white') ? 1 : 0,
+                    borderColor: (primaryFeast?.color === 'White' || primaryFeast?.color === 'white') ? '#000000' : 'transparent'
                   }
                 ]}>
-                  <Text style={[styles.modalTitle, { color: primaryFeast?.color === 'white' ? '#000000' : '#FFFFFF' }]}>
+                  <Text style={[styles.modalTitle, { color: (primaryFeast?.color === 'White' || primaryFeast?.color === 'white') ? '#000000' : '#FFFFFF' }]}>
                     {primaryFeast?.name} - {primaryFeast?.rank}
                   </Text>
                 </View>
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 style={styles.closeButton} 
                 onPress={() => setShowInfoModal(false)}
                 activeOpacity={0.7}
               >
                 <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
             
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
@@ -622,25 +622,36 @@ const styles = StyleSheet.create({
            padding: 20,
          },
          modalHeader: {
+          width: '100%',
            flexDirection: 'row',
            justifyContent: 'space-between',
-           alignItems: 'center',
+           alignItems: 'flex-start',
            marginBottom: 20,
            paddingBottom: 15,
            borderBottomWidth: 1,
            borderBottomColor: 'rgba(0, 0, 0, 0.1)',
          },
          modalTitle: {
+           width: '100%',
            fontSize: 20,
            fontWeight: '700',
            flex: 1,
+           textAlignVertical: 'top',
+           flexWrap: 'wrap',
+           flexShrink: 1,
            marginRight: 10,
          },
          modalTitleContainer: {
+           width: '100%',
            paddingHorizontal: 16,
            paddingVertical: 8,
            borderRadius: 8,
            marginBottom: 16,
+           flexWrap: 'wrap',
+           flexShrink: 1,
+           flex: 1,
+           alignSelf: 'flex-start',
+           minHeight: 40,
          },
          closeButton: {
            padding: 4,
