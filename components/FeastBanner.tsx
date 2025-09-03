@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
@@ -30,6 +31,8 @@ export default function FeastBanner({
   const { selectedDate, setSelectedDate } = useCalendar();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const navigateToPreviousDay = () => {
     const currentDate = parseISO(liturgicalDay.date);
@@ -126,89 +129,174 @@ export default function FeastBanner({
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
       <View style={styles.bannerContent}>
-        {/* Date/Feast Section with Navigation */}
-        <View style={styles.topRow}>
-          <View style={styles.leftSection}>
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={navigateToPreviousDay}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={showDatePickerModal}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.dateText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                {format(parseISO(liturgicalDay.date), 'EEEE, MMM d, yyyy')}
-              </Text>
-            </TouchableOpacity>
-            
-            {/* Reset to Today Button - Only show if not on today's date */}
-            {format(parseISO(liturgicalDay.date), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => setSelectedDate(new Date())}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="arrow-undo" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              </TouchableOpacity>
-            )}
-            
-            <TouchableOpacity
-              style={styles.navButton}
-              onPress={navigateToNextDay}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-            </TouchableOpacity>
-          </View>
-          
-          {primaryFeast && (
-            <View style={styles.rightSection}>
-              <View style={styles.feastRow}>
-                <View style={[
-                  styles.rankContainer, 
-                  { 
-                    backgroundColor: getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark'),
-                    borderWidth: (primaryFeast.color?.toLowerCase() === 'white') ? 1 : 0,
-                    borderColor: (primaryFeast.color?.toLowerCase() === 'white') ? '#000000' : 'transparent'
-                  }
-                ]}>
-                  <Text style={[
-                    styles.rankText, 
-                    { 
-                      color: (primaryFeast.color?.toLowerCase() === 'white') 
-                        ? '#000000' 
-                        : Colors[colorScheme ?? 'light'].dominicanWhite 
-                    }
-                  ]}>
-                    {primaryFeast.rank}
-                  </Text>
-                </View>
-                                       <View style={styles.feastTextContainer}>
-                         <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
-                           {primaryFeast.name}
-                         </Text>
-                         {primaryFeast.isDominican && (
-                           <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                             Dominican
-                           </Text>
-                         )}
-                       </View>
-                       <TouchableOpacity 
-                         style={styles.infoButton} 
-                         onPress={() => setShowInfoModal(true)}
-                         activeOpacity={0.7}
-                       >
-                         <Ionicons name="information-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                       </TouchableOpacity>
-              </View>
+                {/* Carousel Container */}
+        <View style={styles.carouselContainer}>
+          <ScrollView
+            ref={scrollViewRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              const index = Math.round(event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width);
+              setCurrentCarouselIndex(index);
+            }}
+            style={styles.carouselScrollView}
+          >
+            {/* Saint/Feast Section - FIRST */}
+            <View style={styles.carouselItem}>
+              {/* <View style={styles.carouselSection}> */}
+                {primaryFeast ? (
+                  // Show feast information when available
+                  <View style={styles.feastRow}>
+                    <View style={[
+                      styles.rankContainer, 
+                      { 
+                        backgroundColor: getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark'),
+                        borderWidth: (primaryFeast.color?.toLowerCase() === 'white') ? 1 : 0,
+                        borderColor: (primaryFeast.color?.toLowerCase() === 'white') ? '#000000' : 'transparent'
+                      }
+                    ]}>
+                      <Text style={[
+                        styles.rankText, 
+                        { 
+                          color: (primaryFeast.color?.toLowerCase() === 'white') 
+                            ? '#000000' 
+                            : Colors[colorScheme ?? 'light'].dominicanWhite 
+                        }
+                      ]}>
+                        {primaryFeast.rank}
+                      </Text>
+                    </View>
+                    <View style={styles.feastTextContainer}>
+                      <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
+                        {primaryFeast.name}
+                      </Text>
+                      {primaryFeast.isDominican && (
+                        <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                          Dominican
+                        </Text>
+                      )}
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.infoButton} 
+                      onPress={() => setShowInfoModal(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="information-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  // Show season information when no feast
+                  <View style={styles.feastRow}>
+                    <View style={[
+                      styles.rankContainer, 
+                      { 
+                        backgroundColor: getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark')
+                      }
+                    ]}>
+                      <Text style={[
+                        styles.rankText, 
+                        { 
+                          color: Colors[colorScheme ?? 'light'].dominicanWhite 
+                        }
+                      ]}>
+                        Season
+                      </Text>
+                    </View>
+                    <View style={styles.feastTextContainer}>
+                      <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                        {liturgicalDay.season.name}
+                      </Text>
+                      <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        Liturgical Season
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              {/* </View> */}
             </View>
-          )}
+            
+            {/* Date Section - SECOND */}
+            <View style={styles.carouselItem}>
+              {/* <View style={styles.carouselSection}> */}
+                <View style={styles.leftSection}>
+                  <TouchableOpacity
+                    style={styles.navButton}
+                    onPress={navigateToPreviousDay}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={showDatePickerModal}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.dateText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {format(parseISO(liturgicalDay.date), 'EEEE, MMM d, yyyy')}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  {/* Reset to Today Button - Only show if not on today's date */}
+                  {format(parseISO(liturgicalDay.date), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
+                    <TouchableOpacity
+                      style={styles.resetButton}
+                      onPress={() => setSelectedDate(new Date())}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="arrow-undo" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                  )}
+                  
+                  <TouchableOpacity
+                    style={styles.navButton}
+                    onPress={navigateToNextDay}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              {/* </View> */}
+            </View>
+          </ScrollView>
+          
+          {/* Carousel Indicators */}
+          <View style={styles.carouselIndicators}>
+            <TouchableOpacity
+              style={[
+                styles.carouselDot,
+                { 
+                  backgroundColor: currentCarouselIndex === 0 
+                    ? Colors[colorScheme ?? 'light'].primary 
+                    : Colors[colorScheme ?? 'light'].textMuted 
+                }
+              ]}
+              onPress={() => {
+                // Scroll to saint/feast section (index 0)
+                scrollViewRef.current?.scrollTo({ x: 0, animated: true });
+                setCurrentCarouselIndex(0);
+              }}
+              activeOpacity={0.7}
+            />
+            <TouchableOpacity
+              style={[
+                styles.carouselDot,
+                { 
+                  backgroundColor: currentCarouselIndex === 1 
+                    ? Colors[colorScheme ?? 'light'].primary 
+                    : Colors[colorScheme ?? 'light'].textMuted 
+                }
+              ]}
+              onPress={() => {
+                // Scroll to date section (index 1)
+                const screenWidth = Dimensions.get('window').width;
+                scrollViewRef.current?.scrollTo({ x: screenWidth, animated: true });
+                setCurrentCarouselIndex(1);
+              }}
+              activeOpacity={0.7}
+            />
+          </View>
         </View>
       </View>
 
@@ -479,7 +567,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   bannerContent: {
-    padding: 16,
+    padding: 12,
   },
   seasonColorBar: {
     height: 4,
@@ -566,6 +654,7 @@ const styles = StyleSheet.create({
   },
   feastRow: {
     flexDirection: 'row',
+    width: '100%',
     alignItems: 'center',
   },
   rankContainer: {
@@ -736,10 +825,12 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   feastTextContainer: {
-    flex: 1,
+    //flex: 1,
+    //maxWidth: '70%',
+    flexShrink: 1,
   },
   feastName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     fontFamily: 'Georgia',
   },
@@ -755,6 +846,53 @@ const styles = StyleSheet.create({
   additionalFeastsText: {
     fontSize: 12,
     fontFamily: 'Georgia',
+  },
+  carouselContainer: {
+    height: 'auto',
+    marginBottom: 0,
+    width: '100%',
+  },
+  carouselScrollView: {
+    width: '100%',
+  },
+  carouselItem: {
+    width: Dimensions.get('window').width - 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  carouselSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 16,
+  },
+  carouselDateSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 16,
+  },
+  carouselFeastSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 16,
+  },
+  carouselIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 4,
+    marginBottom: -4,
+  },
+  carouselDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
   },
 
 
