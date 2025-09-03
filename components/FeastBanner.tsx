@@ -656,6 +656,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   rankContainer: {
     paddingHorizontal: 12,
@@ -825,8 +826,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   feastTextContainer: {
-    //flex: 1,
-    //maxWidth: '70%',
     flexShrink: 1,
   },
   feastName: {
@@ -862,20 +861,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   carouselSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    paddingHorizontal: 16,
-  },
-  carouselDateSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    paddingHorizontal: 16,
-  },
-  carouselFeastSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
