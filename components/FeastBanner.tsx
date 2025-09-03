@@ -307,7 +307,7 @@ export default function FeastBanner({
             <View style={[styles.infoModalContentInner, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
               <View style={styles.modalHeader}>
                 <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {primaryFeast?.name}
+                  {primaryFeast?.name} - {primaryFeast?.rank}
                 </Text>
                 <TouchableOpacity 
                   style={styles.closeButton} 
@@ -319,66 +319,122 @@ export default function FeastBanner({
               </View>
             
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <View style={styles.infoSection}>
-                <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Rank
-                </Text>
-                <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {primaryFeast?.rank}
+              {/* Date Range */}
+              <View style={styles.dateRangeSection}>
+                <Text style={[styles.dateRangeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  {format(parseISO(liturgicalDay.date), 'MMMM d, yyyy')}
                 </Text>
               </View>
 
-              {primaryFeast?.isDominican && (
+              {/* Patronage Section */}
+              {primaryFeast?.patronage && (
                 <View style={styles.infoSection}>
-                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    Type
-                  </Text>
-                  <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                    Dominican Celebration
-                  </Text>
-                </View>
-              )}
-
-              {primaryFeast?.description && (
-                <View style={styles.infoSection}>
-                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    Description
+                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    Patronage
                   </Text>
                   <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {primaryFeast.description}
+                    {primaryFeast.patronage}
                   </Text>
                 </View>
               )}
 
-              {primaryFeast?.date && (
+              {/* Biography Section */}
+              {primaryFeast?.biography && (
                 <View style={styles.infoSection}>
-                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    Date
+                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    Biography
                   </Text>
-                  <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
+                  {Array.isArray(primaryFeast.biography) ? (
+                    primaryFeast.biography.map((paragraph, index) => (
+                      <Text 
+                        key={index} 
+                        style={[
+                          styles.infoValue, 
+                          { color: Colors[colorScheme ?? 'light'].text },
+                          index > 0 && styles.biographyParagraph
+                        ]}
+                      >
+                        {paragraph}
+                      </Text>
+                    ))
+                  ) : (
+                    <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {primaryFeast.biography}
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              {/* Prayers Section */}
+              {primaryFeast?.prayers && (
+                <View style={styles.infoSection}>
+                  <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    Prayers
+                  </Text>
+                  <Text style={[styles.prayerText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {primaryFeast.prayers}
                   </Text>
                 </View>
               )}
 
-              <View style={styles.infoSection}>
-                <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Liturgical Season
-                </Text>
-                <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {liturgicalDay.season.name}
-                </Text>
-              </View>
+              {/* Fallback to basic info if no detailed sections */}
+              {!primaryFeast?.patronage && !primaryFeast?.biography && !primaryFeast?.prayers && (
+                <>
+                  {primaryFeast?.isDominican && (
+                    <View style={styles.infoSection}>
+                      <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        Type
+                      </Text>
+                      <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                        Dominican Celebration
+                      </Text>
+                    </View>
+                  )}
 
-              <View style={styles.infoSection}>
-                <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Liturgical Week
-                </Text>
-                <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Week {liturgicalDay.week}
-                </Text>
-              </View>
+                  {primaryFeast?.description && (
+                    <View style={styles.infoSection}>
+                      <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        Description
+                      </Text>
+                      <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                        {primaryFeast.description}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.infoSection}>
+                    <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      Liturgical Season
+                    </Text>
+                    <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {liturgicalDay.season.name}
+                    </Text>
+                  </View>
+
+                  <View style={styles.infoSection}>
+                    <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      Liturgical Week
+                    </Text>
+                    <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Week {liturgicalDay.week}
+                    </Text>
+                  </View>
+                </>
+              )}
             </ScrollView>
+            
+            {/* Bottom Close Button */}
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={[styles.bottomCloseButton, { backgroundColor: '#FFFFFF', borderColor: '#E0E0E0' }]}
+                onPress={() => setShowInfoModal(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.bottomCloseButtonText, { color: '#000000' }]}>
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </TouchableOpacity>
         </View>
@@ -579,6 +635,24 @@ const styles = StyleSheet.create({
            fontSize: 16,
            lineHeight: 24,
          },
+         dateRangeSection: {
+           marginBottom: 24,
+           alignItems: 'center',
+         },
+         dateRangeText: {
+           fontSize: 18,
+           fontFamily: 'Georgia',
+           fontStyle: 'italic',
+         },
+         prayerText: {
+           fontSize: 16,
+           lineHeight: 24,
+           fontStyle: 'italic',
+           fontFamily: 'Georgia',
+         },
+         biographyParagraph: {
+           marginTop: 16,
+         },
          modalContent: {
            borderRadius: 16,
            padding: 20,
@@ -588,6 +662,21 @@ const styles = StyleSheet.create({
          modalFooter: {
            marginTop: 20,
            alignItems: 'center',
+           paddingTop: 20,
+           borderTopWidth: 1,
+           borderTopColor: 'rgba(0, 0, 0, 0.1)',
+         },
+         bottomCloseButton: {
+           paddingHorizontal: 32,
+           paddingVertical: 12,
+           borderRadius: 8,
+           minWidth: 120,
+           borderWidth: 1,
+         },
+         bottomCloseButtonText: {
+           fontSize: 16,
+           fontWeight: '600',
+           textAlign: 'center',
          },
          todayButton: {
            paddingHorizontal: 24,
