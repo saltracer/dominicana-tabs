@@ -195,15 +195,40 @@ export default function FeastBanner({
           
           {primaryFeast && (
             <View style={styles.rightSection}>
-              <Text style={[
-                styles.feastName, 
-                { color: Colors[colorScheme ?? 'light'].text }
-              ]} numberOfLines={1}>
-                {getFeastDisplayName(primaryFeast)}
-              </Text>
-              <Text style={[styles.feastRank, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {getFeastRankText(primaryFeast)}
-              </Text>
+              <View style={styles.feastRow}>
+                <View style={[
+                  styles.rankContainer, 
+                  { 
+                    backgroundColor: primaryFeast.color || '#2E7D32',
+                    borderWidth: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') ? 1 : 0,
+                    borderColor: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') ? '#000000' : 'transparent'
+                  }
+                ]}>
+                  <Text style={[
+                    styles.rankText, 
+                    { 
+                      color: (primaryFeast.color === '#FFFFFF' || primaryFeast.color === 'white') 
+                        ? '#000000' 
+                        : Colors[colorScheme ?? 'light'].dominicanWhite 
+                    }
+                  ]}>
+                    {primaryFeast.rank}
+                  </Text>
+                </View>
+                <View style={styles.feastTextContainer}>
+                  <Text style={[
+                    styles.feastName, 
+                    { color: Colors[colorScheme ?? 'light'].text }
+                  ]} numberOfLines={1}>
+                    {getFeastDisplayName(primaryFeast)}
+                  </Text>
+                  {primaryFeast.isDominican && (
+                    <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      Dominican
+                    </Text>
+                  )}
+                </View>
+              </View>
             </View>
           )}
         </View>
@@ -377,6 +402,30 @@ const styles = StyleSheet.create({
   feastInfo: {
     alignItems: 'center',
     marginTop: 4,
+  },
+  feastRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rankContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    marginRight: 12,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  rankText: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
+  dominicanIndicator: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   feastEmoji: {
     fontSize: 20,
