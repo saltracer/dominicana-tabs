@@ -305,18 +305,27 @@ export default function FeastBanner({
             onPress={() => {}} // Prevent dismissal when tapping content
           >
             <View style={[styles.infoModalContentInner, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {primaryFeast?.name} - {primaryFeast?.rank}
-                </Text>
-                <TouchableOpacity 
-                  style={styles.closeButton} 
-                  onPress={() => setShowInfoModal(false)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                </TouchableOpacity>
-              </View>
+            <View style={styles.modalHeader}>
+                              <View style={[
+                  styles.modalTitleContainer, 
+                  { 
+                    backgroundColor: primaryFeast?.color || Colors[colorScheme ?? 'light'].text,
+                    borderWidth: primaryFeast?.color === 'white' ? 1 : 0,
+                    borderColor: primaryFeast?.color === 'white' ? '#000000' : 'transparent'
+                  }
+                ]}>
+                  <Text style={[styles.modalTitle, { color: primaryFeast?.color === 'white' ? '#000000' : '#FFFFFF' }]}>
+                    {primaryFeast?.name} - {primaryFeast?.rank}
+                  </Text>
+                </View>
+              <TouchableOpacity 
+                style={styles.closeButton} 
+                onPress={() => setShowInfoModal(false)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            </View>
             
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               {/* Saint Dates */}
@@ -626,6 +635,12 @@ const styles = StyleSheet.create({
            fontWeight: '700',
            flex: 1,
            marginRight: 10,
+         },
+         modalTitleContainer: {
+           paddingHorizontal: 16,
+           paddingVertical: 8,
+           borderRadius: 8,
+           marginBottom: 16,
          },
          closeButton: {
            padding: 4,

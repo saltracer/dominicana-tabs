@@ -337,9 +337,18 @@ export default function FeastBanner({
           >
             <View style={[styles.infoModalContentInner, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                {primaryFeast?.name}
-              </Text>
+                              <View style={[
+                  styles.modalTitleContainer, 
+                  { 
+                    backgroundColor: primaryFeast?.color || Colors[colorScheme ?? 'light'].text,
+                    borderWidth: primaryFeast?.color === 'white' ? 1 : 0,
+                    borderColor: primaryFeast?.color === 'white' ? '#000000' : 'transparent'
+                  }
+                ]}>
+                  <Text style={[styles.modalTitle, { color: primaryFeast?.color === 'white' ? '#000000' : '#FFFFFF' }]}>
+                    {primaryFeast?.name} - {primaryFeast?.rank}
+                  </Text>
+                </View>
               <TouchableOpacity 
                 style={styles.closeButton} 
                 onPress={() => setShowInfoModal(false)}
@@ -665,6 +674,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flex: 1,
     marginRight: 10,
+  },
+  modalTitleContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
   },
   closeButton: {
     padding: 4,
