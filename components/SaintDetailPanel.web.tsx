@@ -228,19 +228,6 @@ export default function SaintDetailPanel({
           </View>
         )}
 
-        {selectedSaint.biography && selectedSaint.biography.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Detailed Biography
-            </Text>
-            {selectedSaint.biography.map((paragraph: string, index: number) => (
-              <Text key={index} style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {paragraph}
-              </Text>
-            ))}
-          </View>
-        )}
-
         {selectedSaint.patronage && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -249,6 +236,23 @@ export default function SaintDetailPanel({
             <Text style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
               {selectedSaint.patronage}
             </Text>
+          </View>
+        )}
+
+        {selectedSaint.biography && selectedSaint.biography.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Detailed Biography
+            </Text>
+            {selectedSaint.biography.map((paragraph: string, index: number) => (
+              <Text key={index} style={[
+                styles.sectionContent, 
+                styles.biographyParagraph,
+                { color: Colors[colorScheme ?? 'light'].textSecondary }
+              ]}>
+                {paragraph}
+              </Text>
+            ))}
           </View>
         )}
 
@@ -469,6 +473,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
     lineHeight: 20,
+  },
+  biographyParagraph: {
+    marginBottom: 12,
   },
   quoteContainer: {
     padding: 12,

@@ -490,19 +490,6 @@ export default function SaintsScreen() {
                 </View>
               )}
 
-              {selectedSaint.biography && selectedSaint.biography.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Detailed Biography
-                  </Text>
-                  {selectedSaint.biography.map((paragraph, index) => (
-                    <Text key={index} style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      {paragraph}
-                    </Text>
-                  ))}
-                </View>
-              )}
-
               {selectedSaint.patronage && (
                 <View style={styles.section}>
                   <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -511,6 +498,23 @@ export default function SaintsScreen() {
                   <Text style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                     {selectedSaint.patronage}
                   </Text>
+                </View>
+              )}
+
+              {selectedSaint.biography && selectedSaint.biography.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    Detailed Biography
+                  </Text>
+                  {selectedSaint.biography.map((paragraph, index) => (
+                    <Text key={index} style={[
+                      styles.sectionContent, 
+                      styles.biographyParagraph,
+                      { color: Colors[colorScheme ?? 'light'].textSecondary }
+                    ]}>
+                      {paragraph}
+                    </Text>
+                  ))}
                 </View>
               )}
 
@@ -894,6 +898,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
     lineHeight: 24,
+  },
+  biographyParagraph: {
+    marginBottom: 12,
   },
   quoteContainer: {
     padding: 16,
