@@ -207,27 +207,29 @@ export default function SaintsScreen() {
         onPress={() => handleSaintPress(saint)}
       >
       <View style={styles.saintHeader}>
+        {/* Doctor badge - top left */}
+        {saint.is_doctor && (
+          <View style={[styles.doctorBadge, styles.topLeftBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+            <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Doctor
+            </Text>
+          </View>
+        )}
+        
+        {/* Dominican badge - top right */}
+        {saint.is_dominican && (
+          <View style={[styles.dominicanBadge, styles.topRightBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+            <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              OP
+            </Text>
+          </View>
+        )}
+        
         <Ionicons 
           name="person-circle" 
           size={40} 
           color={Colors[colorScheme ?? 'light'].primary} 
         />
-        <View style={styles.badgesContainer}>
-          {saint.is_dominican && (
-            <View style={[styles.dominicanBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                OP
-              </Text>
-            </View>
-          )}
-          {saint.is_doctor && (
-            <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                Doctor
-              </Text>
-            </View>
-          )}
-        </View>
       </View>
       <Text style={[styles.saintName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
         {saint.name}
@@ -617,6 +619,18 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '700',
     fontFamily: 'Georgia',
+  },
+  topLeftBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 1,
+  },
+  topRightBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 1,
   },
   saintName: {
     fontSize: 16,

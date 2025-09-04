@@ -59,6 +59,25 @@ export default function SaintDetailPanel({
     }
   };
 
+  const getLiturgicalColor = (color?: string) => {
+    switch (color?.toLowerCase()) {
+      case 'red':
+        return '#DC2626'; // Red for martyrs
+      case 'white':
+        return '#F3F4F6'; // White for non-martyrs
+      case 'green':
+        return '#059669'; // Green for ordinary time
+      case 'purple':
+        return '#7C3AED'; // Purple for penitential seasons
+      case 'rose':
+        return '#EC4899'; // Rose for Gaudete/Laetare Sunday
+      case 'gold':
+        return '#D97706'; // Gold for special celebrations
+      default:
+        return Colors[colorScheme ?? 'light'].textSecondary;
+    }
+  };
+
   if (!selectedSaint) return null;
 
   return (
@@ -156,6 +175,45 @@ export default function SaintDetailPanel({
                 {selectedSaint.birth_year} - {selectedSaint.death_year}
               </Text>
             )}
+            
+            {/* Badges */}
+            <View style={styles.badgesContainer}>
+              {selectedSaint.is_dominican && (
+                <View style={[styles.dominicanBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+                  <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                    Dominican
+                  </Text>
+                </View>
+              )}
+              {selectedSaint.is_doctor && (
+                <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+                  <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                    Doctor of the Church
+                  </Text>
+                </View>
+              )}
+              {selectedSaint.color && (
+                <View style={[
+                  styles.colorBadge, 
+                  { 
+                    backgroundColor: getLiturgicalColor(selectedSaint.color),
+                    borderWidth: selectedSaint.color === 'White' ? 1 : 0,
+                    borderColor: selectedSaint.color === 'White' ? '#666666' : 'transparent',
+                  }
+                ]}>
+                  <Text style={[
+                    styles.badgeText, 
+                    { 
+                      color: selectedSaint.color === 'White' 
+                        ? '#000000' 
+                        : Colors[colorScheme ?? 'light'].dominicanWhite 
+                    }
+                  ]}>
+                    {selectedSaint.color.charAt(0).toUpperCase() + selectedSaint.color.slice(1)}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -214,6 +272,21 @@ export default function SaintDetailPanel({
               <View key={index} style={[styles.quoteContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
                 <Text style={[styles.quoteText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                   "{quote}"
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {selectedSaint.books && selectedSaint.books.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Writings & Books
+            </Text>
+            {selectedSaint.books.map((book: string, index: number) => (
+              <View key={index} style={[styles.bookContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {book.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                 </Text>
               </View>
             ))}
@@ -350,6 +423,38 @@ const styles = StyleSheet.create({
   saintDetailYears: {
     fontSize: 12,
     fontFamily: 'Georgia',
+    marginBottom: 8,
+  },
+  badgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  dominicanBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  doctorBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  colorBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
   },
   section: {
     marginBottom: 20,
@@ -375,6 +480,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     fontStyle: 'italic',
     lineHeight: 20,
+  },
+  bookContainer: {
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  bookTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  bookDescription: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    lineHeight: 18,
+    marginBottom: 4,
+  },
+  bookYear: {
+    fontSize: 11,
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
   },
   infoGrid: {
     flexDirection: 'column',

@@ -111,6 +111,25 @@ export default function SaintsScreen() {
     }
   };
 
+  const getLiturgicalColor = (color?: string) => {
+    switch (color?.toLowerCase()) {
+      case 'red':
+        return '#DC2626'; // Red for martyrs
+      case 'white':
+        return '#F3F4F6'; // White for non-martyrs
+      case 'green':
+        return '#059669'; // Green for ordinary time
+      case 'purple':
+        return '#7C3AED'; // Purple for penitential seasons
+      case 'rose':
+        return '#EC4899'; // Rose for Gaudete/Laetare Sunday
+      case 'gold':
+        return '#D97706'; // Gold for special celebrations
+      default:
+        return Colors[colorScheme ?? 'light'].textSecondary;
+    }
+  };
+
 
 
   if (!liturgicalDay) {
@@ -132,27 +151,29 @@ export default function SaintsScreen() {
       onPress={() => handleSaintPress(saint)}
     >
       <View style={styles.saintHeader}>
+        {/* Doctor badge - top left */}
+        {saint.is_doctor && (
+          <View style={[styles.doctorBadge, styles.topLeftBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+            <Text style={[styles.badgeText, { color: 'black'/* Colors[colorScheme ?? 'light'].dominicanWhite */ }]}>
+              Doctor
+            </Text>
+          </View>
+        )}
+        
+        {/* Dominican badge - top right */}
+        {saint.is_dominican && (
+          <View style={[styles.dominicanBadge, styles.topRightBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+            <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              OP
+            </Text>
+          </View>
+        )}
+        
         <Ionicons 
           name="person-circle" 
           size={40} 
           color={Colors[colorScheme ?? 'light'].primary} 
         />
-        <View style={styles.badgesContainer}>
-          {saint.is_dominican && (
-            <View style={[styles.dominicanBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                OP
-              </Text>
-            </View>
-          )}
-          {saint.is_doctor && (
-            <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                Doctor
-              </Text>
-            </View>
-          )}
-        </View>
       </View>
       <Text style={[styles.saintName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
         {saint.name}
@@ -416,6 +437,45 @@ export default function SaintsScreen() {
                       {selectedSaint.birth_year} - {selectedSaint.death_year}
                     </Text>
                   )}
+                  
+                  {/* All badges under the date */}
+                  <View style={styles.dateBadgesContainer}>
+                    {selectedSaint.is_doctor && (
+                      <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+                        <Text style={[styles.badgeText, { color: 'black'/* Colors[colorScheme ?? 'light'].dominicanBlack */ }]}>
+                          Doctor
+                        </Text>
+                      </View>
+                    )}
+                    {selectedSaint.is_dominican && (
+                      <View style={[styles.dominicanBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+                        <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                          Dominican
+                        </Text>
+                      </View>
+                    )}
+                    {selectedSaint.color && (
+                      <View style={[
+                        styles.colorBadge, 
+                        { 
+                          backgroundColor: getLiturgicalColor(selectedSaint.color),
+                          borderWidth: selectedSaint.color === 'White' ? 1 : 0,
+                          borderColor: selectedSaint.color === 'White' ? '#666666' : 'transparent',
+                        }
+                      ]}>
+                        <Text style={[
+                          styles.badgeText, 
+                          { 
+                            color: selectedSaint.color === 'White' 
+                              ? '#000000' 
+                              : Colors[colorScheme ?? 'light'].dominicanWhite 
+                          }
+                        ]}>
+                          {selectedSaint.color.charAt(0).toUpperCase() + selectedSaint.color.slice(1)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
 
@@ -474,6 +534,21 @@ export default function SaintsScreen() {
                     <View key={index} style={[styles.quoteContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
                       <Text style={[styles.quoteText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                         "{quote}"
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {selectedSaint.books && selectedSaint.books.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    Writings & Books
+                  </Text>
+                  {selectedSaint.books.map((book: string, index: number) => (
+                    <View key={index} style={[styles.bookContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                      <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                        {book.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                       </Text>
                     </View>
                   ))}
@@ -655,22 +730,46 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
   },
+  colorBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+  },
   dominicanBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 4,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
   },
   doctorBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 4,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
   },
   badgeText: {
     fontSize: 8,
     fontWeight: '700',
     fontFamily: 'Georgia',
+  },
+  dateBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  topLeftBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 1,
+  },
+  topRightBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 1,
   },
   saintName: {
     fontSize: 16,
@@ -780,6 +879,7 @@ const styles = StyleSheet.create({
   saintDetailYears: {
     fontSize: 14,
     fontFamily: 'Georgia',
+    marginBottom: 8,
   },
   section: {
     marginBottom: 24,
@@ -805,6 +905,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     fontStyle: 'italic',
     lineHeight: 24,
+  },
+  bookContainer: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  bookDescription: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  bookYear: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
   },
   infoGrid: {
     flexDirection: 'row',
