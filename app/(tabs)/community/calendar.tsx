@@ -124,8 +124,8 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
           {/* Dominican Indicator */}
           {dayContent.isDominican && (
             <View style={styles.dominicanIndicatorContainer}>
-              <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                ⚫
+              <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                OP{/* ⚫ */}
               </Text>
             </View>
           )}
@@ -150,7 +150,7 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
           ]}
           numberOfLines={1}
         >
-          {dayContent.primaryFeast.name}
+          {/* {dayContent.primaryFeast.name} */}
         </Text>
       )}
     </Pressable>
@@ -392,7 +392,7 @@ export default function CalendarScreen() {
                     </Text>
                     {feast.isDominican && (
                       <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                        ⚫
+                        OP{/* ⚫ */}
                       </Text>
                     )}
                   </View>
@@ -562,10 +562,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Georgia',
   },
-  dominicanIndicator: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-  },
+  // dominicanIndicator: {
+  //   fontSize: 12,
+  //   fontFamily: 'Georgia',
+  // },
   // Custom Day Component Styles
   customDayContainer: {
     width: 40,
@@ -593,6 +593,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -605,6 +606,18 @@ const styles = StyleSheet.create({
   dominicanIndicatorContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dominicanIndicator: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'black',
+    color: 'white',
   },
   multipleFeastsIndicator: {
     backgroundColor: 'rgba(0,0,0,0.1)',
