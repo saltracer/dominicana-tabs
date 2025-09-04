@@ -624,6 +624,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 4,
     paddingVertical: 1,
+    borderWidth: 1,
   },
   multipleFeastsText: {
     fontSize: 8,

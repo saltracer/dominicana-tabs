@@ -359,3 +359,6 @@ export * from './celebrations-types';
 
 // Export saint types
 export * from './saint-types';
+
+// Export liturgy types
+export * from './liturgy-types';
