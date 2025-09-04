@@ -98,6 +98,7 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
       ]}
       onPress={() => onPress?.(date)}
     >
+
       {/* Day Number */}
       <Text style={[
         styles.dayNumber,
@@ -108,51 +109,57 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
       
       {/* Feast Indicators */}
       {hasFeasts && (
-        <View style={styles.feastIndicators}>
-          {/* Primary Feast Rank Badge */}
-          {dayContent.primaryFeast && (
-            <View style={[
-              styles.rankBadge,
-              { backgroundColor: getFeastIndicatorColor() }
-            ]}>
-              <Text style={styles.rankText}>
-                {dayContent.primaryFeast.rank.charAt(0).toUpperCase()}
+        <View style={styles.feastIndicatorsContainer}>
+          <View style={styles.feastIndicators}>
+            {/* Primary Feast Rank Badge */}
+            {dayContent.primaryFeast && (
+              <View style={[
+                styles.rankBadge,
+                { backgroundColor: getFeastIndicatorColor() }
+              ]}>
+                <Text style={styles.rankText}>
+                  {dayContent.primaryFeast.rank.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+            
+            {/* Feast Name Preview (for larger screens) */}
+            {hasFeasts && screenWidth > 400 && (
+              <Text 
+                style={[
+                  styles.feastNamePreview,
+                  { color: getDayTextColor() }
+                ]}
+                numberOfLines={1}
+              >
+                {dayContent.primaryFeast.name}
               </Text>
-            </View>
-          )}
+            )}
+
+            {/* Dominican Indicator */}
+            {dayContent.isDominican && (
+              <View style={styles.dominicanIndicatorContainer}>
+                <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                  ⚫
+                </Text>
+              </View>
+            )}
+          </View>
           
-          {/* Dominican Indicator */}
-          {dayContent.isDominican && (
-            <View style={styles.dominicanIndicatorContainer}>
-              <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                ⚫
-              </Text>
-            </View>
-          )}
-          
-          {/* Multiple Feasts Indicator */}
+          {/* Multiple Feasts Indicator - positioned on its own line on the right */}
           {dayContent.feastCount > 1 && (
-            <View style={[styles.multipleFeastsIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-              <Text style={[styles.multipleFeastsText, { color: getFeastIndicatorColor() }]}>
-                +{dayContent.feastCount - 1}
-              </Text>
+            <View style={styles.multipleFeastsContainer}>
+              <View style={[styles.multipleFeastsIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                <Text style={[styles.multipleFeastsText, { color: Colors[colorScheme ?? 'light'].text  }]}>
+                  +{dayContent.feastCount - 1}
+                </Text>
+              </View>
             </View>
           )}
         </View>
       )}
       
-      {/* Feast Name Preview (for larger screens) */}
-      {hasFeasts && screenWidth > 400 && (
-        <Text 
-          style={[
-            styles.feastNamePreview,
-            { color: getDayTextColor() }
-          ]}
-          numberOfLines={1}
-        >
-          {dayContent.primaryFeast.name}
-        </Text>
-      )}
+      
     </Pressable>
   );
 };
@@ -296,6 +303,26 @@ export default function CalendarScreen() {
               textDayFontSize: 16,
               textMonthFontSize: 18,
               textDayHeaderFontSize: 14,
+              'stylesheet.calendar.main': {
+                dayContainer: {
+                  borderColor: Colors[colorScheme ?? 'light'].border,
+                  borderWidth: 1,
+                  flex:1,
+                  padding:10
+                },
+                emptyDayContainer: {
+                  borderColor: Colors[colorScheme ?? 'light'].border,
+                  borderWidth: 1,
+                  flex:1,
+                  padding:10
+                },
+                week: {
+                  marginTop: 0,
+                  marginBottom: 0,
+                  flexDirection: 'row',
+                  justifyContent: 'space-around'
+                },
+              }
             }}
             minDate={format(subDays(new Date(), 365), 'yyyy-MM-dd')}
             maxDate={format(addDays(new Date(), 365), 'yyyy-MM-dd')}
@@ -566,7 +593,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     justifyContent: 'flex-start',
-    alignItems: 'center',
+    //alignItems: 'center',
     borderRadius: 8,
     position: 'relative',
     margin: 0, // Remove margin to allow grid lines to connect
@@ -578,23 +605,32 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     marginBottom: 2,
   },
+  feastIndicatorsContainer: {
+    width: '100%',
+    marginTop: 3,
+    marginLeft: 0,
+    marginBottom: 10,
+  },
   feastIndicators: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     flexWrap: 'wrap',
     gap: 2,
-    marginTop: 2,
+  },
+  multipleFeastsContainer: {
+    alignItems: 'flex-end',
+    marginTop: 5,
   },
   rankBadge: {
     width: 16,
     height: 16,
     borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rankText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '700',
     color: 'white',
     fontFamily: 'Georgia',
@@ -608,14 +644,16 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 4,
     paddingVertical: 1,
+    borderWidth: 1,
   },
   multipleFeastsText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: 'Georgia',
+    color: Colors.light.text,
   },
   feastNamePreview: {
-    fontSize: 8,
+    fontSize: 14,
     fontFamily: 'Georgia',
     textAlign: 'center',
     marginTop: 2,
