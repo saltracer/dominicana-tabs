@@ -385,20 +385,19 @@ export default function FeastBanner({
         animationType="fade"
         onRequestClose={() => setShowInfoModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { /*borderWidth: 1, borderColor: 'blue' */ }]}>
+          {/* Touchable overlay for dismissing when tapping outside */}
           <TouchableOpacity 
             style={styles.modalOverlayTouchable} 
             activeOpacity={1} 
             onPress={() => setShowInfoModal(false)}
-          >
-            <View style={styles.modalOverlayInner} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.infoModalContent} 
-            activeOpacity={1} 
-            onPress={() => {}} // Prevent dismissal when tapping content
-          >
-            <View style={[styles.infoModalContentInner, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+          />
+          
+          {/* Modal content container - positioned above the overlay */}
+          <View style={[styles.infoModalContent, { 
+            backgroundColor: Colors[colorScheme ?? 'light'].surface,
+            borderWidth: 2,
+          }]}>
             <View style={styles.modalHeader}>
                               <View style={[
                   styles.modalTitleContainer, 
@@ -412,16 +411,15 @@ export default function FeastBanner({
                     {primaryFeast?.name} - {primaryFeast?.rank}
                   </Text>
                 </View>
-              {/* <TouchableOpacity 
-                style={styles.closeButton} 
-                onPress={() => setShowInfoModal(false)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              </TouchableOpacity> */}
             </View>
             
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.modalBody} 
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+              contentContainerStyle={styles.modalBodyContent}
+            >
+
               {/* Saint Dates */}
               {primaryFeast?.birthYear || primaryFeast?.deathYear ? (
                 <View style={styles.dateRangeSection}>
@@ -536,10 +534,7 @@ export default function FeastBanner({
                   </View>
                 </>
               )}
-            </ScrollView>
-            
-            {/* Bottom Close Button */}
-            <View style={styles.modalFooter}>
+              {/* Bottom Close Button */}
               <TouchableOpacity 
                 style={[styles.bottomCloseButton, { backgroundColor: '#FFFFFF', borderColor: '#E0E0E0' }]}
                 onPress={() => setShowInfoModal(false)}
@@ -549,9 +544,10 @@ export default function FeastBanner({
                   Close
                 </Text>
               </TouchableOpacity>
-            </View>
+            </ScrollView>
+            
+            
           </View>
-        </TouchableOpacity>
         </View>
       </Modal>
     </View>
@@ -700,33 +696,28 @@ const styles = StyleSheet.create({
            right: 0,
            bottom: 0,
          },
-         modalOverlayInner: {
-           flex: 1,
-         },
          infoModalContent: {
-           width: '90%',
-           maxHeight: '80%',
+           width: '85%',
+           //maxHeight: '80%',
+           maxHeight: Dimensions.get('window').height * 0.8,
            borderRadius: 16,
-           padding: 20,
            elevation: 5,
            shadowColor: '#000',
            shadowOffset: { width: 0, height: 2 },
            shadowOpacity: 0.25,
            shadowRadius: 3.84,
-         },
-         infoModalContentInner: {
-           width: '100%',
-           height: '100%',
-           borderRadius: 16,
-           padding: 20,
+           zIndex: 1000,
+          //  borderWidth: 1,
+           borderColor: 'rgba(0, 0, 0, 0.0)',
          },
          modalHeader: {
           width: '100%',
            flexDirection: 'row',
            justifyContent: 'space-between',
            alignItems: 'flex-start',
-           marginBottom: 20,
-           paddingBottom: 15,
+           marginBottom: 5,
+           paddingHorizontal: 20,
+           paddingTop: 20,
            borderBottomWidth: 1,
            borderBottomColor: 'rgba(0, 0, 0, 0.1)',
          },
@@ -755,7 +746,10 @@ const styles = StyleSheet.create({
            padding: 4,
          },
          modalBody: {
-           flex: 1,
+         },
+         modalBodyContent: {
+           paddingHorizontal: 20,
+           paddingBottom: 20,
          },
          infoSection: {
            marginBottom: 20,
@@ -799,6 +793,8 @@ const styles = StyleSheet.create({
            marginTop: 20,
            alignItems: 'center',
            paddingTop: 20,
+           paddingHorizontal: 20,
+           paddingBottom: 20,
            borderTopWidth: 1,
            borderTopColor: 'rgba(0, 0, 0, 0.1)',
          },
