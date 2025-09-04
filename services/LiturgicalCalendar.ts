@@ -57,48 +57,48 @@ export class LiturgicalCalendarService {
 
   // Initialize saints database
   private initializeSaints(): void {
-    const dominicanSaints: Saint[] = [
-      {
-        id: 'st-thomas-aquinas',
-        name: 'St. Thomas Aquinas',
-        feastDay: '2024-01-28',
-        birthDate: '1225-01-28',
-        deathDate: '1274-03-07',
-        canonizationDate: '1323-07-18',
-        patronages: ['Catholic schools', 'Theologians', 'Students'],
-        biography: 'Dominican priest, philosopher, and Doctor of the Church. Known as the Angelic Doctor.',
-        isDominican: true,
-        order: 'Dominican Order'
-      },
-      {
-        id: 'st-dominic',
-        name: 'St. Dominic',
-        feastDay: '2024-08-08',
-        birthDate: '1170-08-08',
-        deathDate: '1221-08-06',
-        canonizationDate: '1234-07-13',
-        patronages: ['Dominican Order', 'Astronomers', 'Scientists'],
-        biography: 'Founder of the Order of Preachers (Dominicans).',
-        isDominican: true,
-        order: 'Dominican Order'
-      },
-      {
-        id: 'st-catherine-of-siena',
-        name: 'St. Catherine of Siena',
-        feastDay: '2024-04-29',
-        birthDate: '1347-03-25',
-        deathDate: '1380-04-29',
-        canonizationDate: '1461-06-29',
-        patronages: ['Italy', 'Nurses', 'Fire prevention'],
-        biography: 'Dominican tertiary, mystic, and Doctor of the Church.',
-        isDominican: true,
-        order: 'Dominican Order'
-      }
-    ];
+    // const dominicanSaints: Saint[] = [
+    //   {
+    //     id: 'st-thomas-aquinas',
+    //     name: 'St. Thomas Aquinas',
+    //     feastDay: '2024-01-28',
+    //     birthDate: '1225-01-28',
+    //     deathDate: '1274-03-07',
+    //     canonizationDate: '1323-07-18',
+    //     patronages: ['Catholic schools', 'Theologians', 'Students'],
+    //     biography: 'Dominican priest, philosopher, and Doctor of the Church. Known as the Angelic Doctor.',
+    //     isDominican: true,
+    //     order: 'Dominican Order'
+    //   },
+    //   {
+    //     id: 'st-dominic',
+    //     name: 'St. Dominic',
+    //     feastDay: '2024-08-08',
+    //     birthDate: '1170-08-08',
+    //     deathDate: '1221-08-06',
+    //     canonizationDate: '1234-07-13',
+    //     patronages: ['Dominican Order', 'Astronomers', 'Scientists'],
+    //     biography: 'Founder of the Order of Preachers (Dominicans).',
+    //     isDominican: true,
+    //     order: 'Dominican Order'
+    //   },
+    //   {
+    //     id: 'st-catherine-of-siena',
+    //     name: 'St. Catherine of Siena',
+    //     feastDay: '2024-04-29',
+    //     birthDate: '1347-03-25',
+    //     deathDate: '1380-04-29',
+    //     canonizationDate: '1461-06-29',
+    //     patronages: ['Italy', 'Nurses', 'Fire prevention'],
+    //     biography: 'Dominican tertiary, mystic, and Doctor of the Church.',
+    //     isDominican: true,
+    //     order: 'Dominican Order'
+    //   }
+    // ];
 
-    dominicanSaints.forEach(saint => {
-      this.saints.set(saint.id, saint);
-    });
+    // dominicanSaints.forEach(saint => {
+    //   this.saints.set(saint.id, saint);
+    // });
   }
 
 

@@ -4,6 +4,8 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Dimensions,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
@@ -15,6 +17,145 @@ import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
 import { parseISO, format, subDays, addDays } from 'date-fns';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+// Custom Day Component for rich content display
+interface CustomDayProps {
+  date?: {
+    dateString: string;
+    day: number;
+  };
+  state?: string;
+  marking?: any;
+  onPress?: (date?: any) => void;
+}
+
+const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) => {
+  const { colorScheme } = useTheme();
+  const [dayContent, setDayContent] = useState<any>(null);
+  
+  useEffect(() => {
+    if (date?.dateString) {
+      const calendarService = LiturgicalCalendarService.getInstance();
+      const selectedDate = parseISO(date.dateString);
+      const liturgicalDay = calendarService.getLiturgicalDay(selectedDate);
+      
+      if (liturgicalDay.feasts.length > 0) {
+        // Get the highest rank feast for this date
+        const primaryFeast = liturgicalDay.feasts.reduce((highest, current) => {
+          const rankOrder: { [key: string]: number } = { 'Solemnity': 1, 'Feast': 2, 'Memorial': 3, 'Optional Memorial': 4, 'Ferial': 5 };
+          const currentRank = rankOrder[current.rank] || 5;
+          const highestRank = rankOrder[highest.rank] || 5;
+          return currentRank < highestRank ? current : highest;
+        }, liturgicalDay.feasts[0]);
+        
+        const hasDominicanFeast = liturgicalDay.feasts.some(feast => feast.isDominican);
+        
+        setDayContent({
+          primaryFeast,
+          hasDominicanFeast,
+          feastCount: liturgicalDay.feasts.length,
+          isDominican: hasDominicanFeast
+        });
+      }
+    }
+  }, [date?.dateString]);
+
+  const isToday = date?.dateString === format(new Date(), 'yyyy-MM-dd');
+  const isSelected = marking?.selected;
+  const hasFeasts = dayContent && dayContent.feastCount > 0;
+  
+  const getDayBackgroundColor = () => {
+    if (isSelected) return Colors[colorScheme ?? 'light'].primary;
+    if (isToday) return Colors[colorScheme ?? 'light'].surface;
+    if (hasFeasts) return Colors[colorScheme ?? 'light'].card;
+    return 'transparent';
+  };
+
+  const getDayTextColor = () => {
+    if (isSelected) return Colors[colorScheme ?? 'light'].dominicanWhite;
+    if (isToday) return Colors[colorScheme ?? 'light'].primary;
+    if (hasFeasts) return Colors[colorScheme ?? 'light'].text;
+    return Colors[colorScheme ?? 'light'].textMuted;
+  };
+
+  const getFeastIndicatorColor = () => {
+    if (dayContent?.hasDominicanFeast) return Colors[colorScheme ?? 'light'].primary;
+    if (dayContent?.primaryFeast) return dayContent.primaryFeast.color;
+    return Colors[colorScheme ?? 'light'].textMuted;
+  };
+
+  return (
+    <Pressable
+      style={[
+        styles.customDayContainer,
+        {
+          backgroundColor: getDayBackgroundColor(),
+          borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].border,
+          borderWidth: isSelected ? 2 : (isToday ? 1 : 0),
+        }
+      ]}
+      onPress={() => onPress?.(date)}
+    >
+      {/* Day Number */}
+      <Text style={[
+        styles.dayNumber,
+        { color: getDayTextColor() }
+      ]}>
+        {date?.day}
+      </Text>
+      
+      {/* Feast Indicators */}
+      {hasFeasts && (
+        <View style={styles.feastIndicators}>
+          {/* Primary Feast Rank Badge */}
+          {dayContent.primaryFeast && (
+            <View style={[
+              styles.rankBadge,
+              { backgroundColor: getFeastIndicatorColor() }
+            ]}>
+              <Text style={styles.rankText}>
+                {dayContent.primaryFeast.rank.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          
+          {/* Dominican Indicator */}
+          {dayContent.isDominican && (
+            <View style={styles.dominicanIndicatorContainer}>
+              <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                ⚫
+              </Text>
+            </View>
+          )}
+          
+          {/* Multiple Feasts Indicator */}
+          {dayContent.feastCount > 1 && (
+            <View style={[styles.multipleFeastsIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+              <Text style={[styles.multipleFeastsText, { color: getFeastIndicatorColor() }]}>
+                +{dayContent.feastCount - 1}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+      
+      {/* Feast Name Preview (for larger screens) */}
+      {hasFeasts && screenWidth > 400 && (
+        <Text 
+          style={[
+            styles.feastNamePreview,
+            { color: getDayTextColor() }
+          ]}
+          numberOfLines={1}
+        >
+          {dayContent.primaryFeast.name}
+        </Text>
+      )}
+    </Pressable>
+  );
+};
 
 export default function CalendarScreen() {
   const { colorScheme } = useTheme();
@@ -129,11 +270,12 @@ export default function CalendarScreen() {
             Liturgical Calendar
           </Text>
           
-          {/* Calendar Component */}
+          {/* Enhanced Calendar Component */}
           <Calendar
             current={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
             onDayPress={handleDayPress}
             markedDates={markedDates}
+            dayComponent={CustomDayComponent}
             theme={{
               backgroundColor: Colors[colorScheme ?? 'light'].card,
               calendarBackground: Colors[colorScheme ?? 'light'].card,
@@ -192,17 +334,22 @@ export default function CalendarScreen() {
               </View>
             </View>
             
-            {/* Dominican Indicator */}
+            {/* Enhanced Dominican Indicator */}
             <View style={styles.dominicanLegend}>
               <Text style={[styles.legendSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                 Dominican Celebrations
               </Text>
               <View style={styles.legendItem}>
                 <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  ⚫⚪
+                  ⚫
                 </Text>
                 <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
                   Dominican Saint/Feast
+                </Text>
+              </View>
+              <View style={styles.legendItem}>
+                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  +N = Additional feasts
                 </Text>
               </View>
             </View>
@@ -245,7 +392,7 @@ export default function CalendarScreen() {
                     </Text>
                     {feast.isDominican && (
                       <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                        ⚫⚪
+                        ⚫
                       </Text>
                     )}
                   </View>
@@ -418,5 +565,63 @@ const styles = StyleSheet.create({
   dominicanIndicator: {
     fontSize: 12,
     fontFamily: 'Georgia',
+  },
+  // Custom Day Component Styles
+  customDayContainer: {
+    width: 40,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 4,
+    margin: 2,
+    borderRadius: 8,
+  },
+  dayNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 2,
+  },
+  feastIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  rankBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: 'white',
+    fontFamily: 'Georgia',
+  },
+  dominicanIndicatorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  multipleFeastsIndicator: {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  multipleFeastsText: {
+    fontSize: 8,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  feastNamePreview: {
+    fontSize: 8,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginTop: 2,
+    paddingHorizontal: 2,
   },
 });
