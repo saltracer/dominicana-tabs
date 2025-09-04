@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal,
   FlatList,
   Dimensions,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner.web';
 import CommunityNavigation from '../../../components/CommunityNavigation';
+import SaintDetailPanel from '../../../components/SaintDetailPanel.web';
 import { allSaints } from '../../../assets/data/calendar/saints';
 import { Saint } from '../../../types/saint-types';
 import { CelebrationRank } from '../../../types/celebrations-types';
@@ -34,6 +35,8 @@ export default function SaintsScreen() {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 24; // More items per page for web
+  const slideAnimation = useRef(new Animated.Value(0)).current;
+  const { width: screenWidth } = Dimensions.get('window');
 
   const filteredAndSortedSaints = useMemo(() => {
     let filtered = allSaints.filter(saint => {
@@ -82,12 +85,77 @@ export default function SaintsScreen() {
   const totalPages = Math.ceil(filteredAndSortedSaints.length / itemsPerPage);
 
   const handleSaintPress = (saint: Saint) => {
-    setSelectedSaint(saint);
+    if (selectedSaint === null) {
+      // First time opening panel - animate in
+      setSelectedSaint(saint);
+      Animated.timing(slideAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Panel already open - just update the saint
+      setSelectedSaint(saint);
+    }
   };
 
-  const closeModal = () => {
-    setSelectedSaint(null);
+  const closePanel = () => {
+    // Animate panel out
+    Animated.timing(slideAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setSelectedSaint(null);
+    });
   };
+
+  const navigateToPrevious = () => {
+    if (!selectedSaint) return;
+    const currentIndex = filteredAndSortedSaints.findIndex(saint => saint.id === selectedSaint.id);
+    if (currentIndex > 0) {
+      setSelectedSaint(filteredAndSortedSaints[currentIndex - 1]);
+    }
+  };
+
+  const navigateToNext = () => {
+    if (!selectedSaint) return;
+    const currentIndex = filteredAndSortedSaints.findIndex(saint => saint.id === selectedSaint.id);
+    if (currentIndex < filteredAndSortedSaints.length - 1) {
+      setSelectedSaint(filteredAndSortedSaints[currentIndex + 1]);
+    }
+  };
+
+  const getCurrentIndex = () => {
+    if (!selectedSaint) return -1;
+    return filteredAndSortedSaints.findIndex(saint => saint.id === selectedSaint.id);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (event: any) => {
+      if (!selectedSaint) return;
+      
+      switch (event.key) {
+        case 'Escape':
+          closePanel();
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          navigateToPrevious();
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          navigateToNext();
+          break;
+      }
+    };
+
+    if (selectedSaint) {
+      document.addEventListener('keydown', handleKeyPress);
+      return () => document.removeEventListener('keydown', handleKeyPress);
+    }
+  }, [selectedSaint]);
 
   const formatFeastDay = (feastDay: string) => {
     const [month, day] = feastDay.split('-');
@@ -124,11 +192,20 @@ export default function SaintsScreen() {
     );
   }
 
-  const renderSaintCard = ({ item: saint }: { item: Saint }) => (
-    <TouchableOpacity
-      style={[styles.saintCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-      onPress={() => handleSaintPress(saint)}
-    >
+  const renderSaintCard = ({ item: saint }: { item: Saint }) => {
+    const isSelected = selectedSaint?.id === saint.id;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.saintCard, 
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].card,
+            borderWidth: isSelected ? 2 : 0,
+            borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : 'transparent',
+          }
+        ]}
+        onPress={() => handleSaintPress(saint)}
+      >
       <View style={styles.saintHeader}>
         <Ionicons 
           name="person-circle" 
@@ -168,8 +245,9 @@ export default function SaintsScreen() {
           {saint.birth_year} - {saint.death_year}
         </Text>
       )}
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderFilterButton = (filter: FilterOption, label: string, icon: string) => (
     <TouchableOpacity
@@ -244,7 +322,17 @@ export default function SaintsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       {/* <CommunityNavigation activeTab="saints" /> */}
-      <View style={styles.tabContent}>
+      <Animated.View 
+        style={[
+          styles.tabContent,
+          {
+            width: slideAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['100%', `${100 - (Math.min(500, screenWidth * 0.45) / screenWidth * 100)}%`],
+            }),
+          }
+        ]}
+      >
       <Text style={[styles.communityPageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Saints & Blesseds
           </Text>
@@ -374,161 +462,20 @@ export default function SaintsScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </Animated.View>
       
-      {/* Saint Detail Modal */}
-      <Modal
-        visible={selectedSaint !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closeModal}
-      >
-        {selectedSaint && (
-          <SafeAreaView style={[styles.modalContainer, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}>
-              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].text} />
-              </TouchableOpacity>
-              <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                {selectedSaint.name}
-              </Text>
-              <View style={styles.placeholder} />
-            </View>
-            
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.saintDetailHeader}>
-                <Ionicons 
-                  name="person-circle" 
-                  size={80} 
-                  color={Colors[colorScheme ?? 'light'].primary} 
-                />
-                <View style={styles.saintDetailInfo}>
-                  <Text style={[styles.saintDetailName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {selectedSaint.name}
-                  </Text>
-                  <Text style={[styles.saintDetailFeast, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    Feast Day: {formatFeastDay(selectedSaint.feast_day)}
-                  </Text>
-                  {selectedSaint.birth_year && selectedSaint.death_year && (
-                    <Text style={[styles.saintDetailYears, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                      {selectedSaint.birth_year} - {selectedSaint.death_year}
-                    </Text>
-                  )}
-                </View>
-              </View>
 
-              {selectedSaint.short_bio && (
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Biography
-                  </Text>
-                  <Text style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    {selectedSaint.short_bio}
-                  </Text>
-                </View>
-              )}
-
-              {selectedSaint.biography && selectedSaint.biography.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Detailed Biography
-                  </Text>
-                  {selectedSaint.biography.map((paragraph, index) => (
-                    <Text key={index} style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      {paragraph}
-                    </Text>
-                  ))}
-                </View>
-              )}
-
-              {selectedSaint.patronage && (
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Patronage
-                  </Text>
-                  <Text style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    {selectedSaint.patronage}
-                  </Text>
-                </View>
-              )}
-
-              {selectedSaint.prayers && (
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Prayer
-                  </Text>
-                  <Text style={[styles.sectionContent, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    {selectedSaint.prayers}
-                  </Text>
-                </View>
-              )}
-
-              {selectedSaint.quotes && selectedSaint.quotes.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Quotes
-                  </Text>
-                  {selectedSaint.quotes.map((quote, index) => (
-                    <View key={index} style={[styles.quoteContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-                      <Text style={[styles.quoteText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        "{quote}"
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Additional Information
-                </Text>
-                <View style={styles.infoGrid}>
-                  {selectedSaint.birth_place && (
-                    <View style={styles.infoItem}>
-                      <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                        Birth Place
-                      </Text>
-                      <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        {selectedSaint.birth_place}
-                      </Text>
-                    </View>
-                  )}
-                  {selectedSaint.death_place && (
-                    <View style={styles.infoItem}>
-                      <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                        Death Place
-                      </Text>
-                      <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        {selectedSaint.death_place}
-                      </Text>
-                    </View>
-                  )}
-                  {selectedSaint.canonization_date && (
-                    <View style={styles.infoItem}>
-                      <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                        Canonized
-                      </Text>
-                      <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        {selectedSaint.canonization_date}
-                      </Text>
-                    </View>
-                  )}
-                  {selectedSaint.rank && (
-                    <View style={styles.infoItem}>
-                      <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                        Rank
-                      </Text>
-                      <Text style={[styles.infoValue, { color: getRankColor(selectedSaint.rank) }]}>
-                        {selectedSaint.rank.replace('_', ' ').toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </ScrollView>
-          </SafeAreaView>
-        )}
-      </Modal>
+      {/* Saint Detail Panel */}
+      <SaintDetailPanel
+        selectedSaint={selectedSaint}
+        isVisible={selectedSaint !== null}
+        onClose={closePanel}
+        onPrevious={navigateToPrevious}
+        onNext={navigateToNext}
+        hasPrevious={getCurrentIndex() > 0}
+        hasNext={getCurrentIndex() < filteredAndSortedSaints.length - 1}
+        slideAnimation={slideAnimation}
+      />
       
     </SafeAreaView>
   );
@@ -553,9 +500,7 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
     paddingHorizontal: 24, // More padding for web
-    //maxWidth: 1200, // Max width for better readability on large screens
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: 'flex-start', // Changed from center to flex-start
   },
   searchContainer: {
     flexDirection: 'row',
@@ -726,106 +671,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
     marginHorizontal: 16,
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    padding: 8,
-    cursor: 'pointer', // Web cursor
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
-  modalContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  saintDetailHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    marginBottom: 20,
-  },
-  saintDetailInfo: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  saintDetailName: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  saintDetailFeast: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  saintDetailYears: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 12,
-  },
-  sectionContent: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    lineHeight: 24,
-  },
-  quoteContainer: {
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  quoteText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    fontStyle: 'italic',
-    lineHeight: 24,
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  infoItem: {
-    width: '48%',
-    marginBottom: 12,
-  },
-  infoLabel: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  infoValue: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
   },
   communityPageTitle: {
     fontSize: 24,
