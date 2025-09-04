@@ -224,7 +224,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
               <Polygon
                 key={`polygon-${province.id}-${polygonIndex}`}
                 coordinates={coordinates}
-                fillColor={`${regionColor}20`}
+                fillColor={selectedProvince?.id === province.id ? `${regionColor}95` : `${regionColor}40`}
                 strokeColor={regionColor}
                 strokeWidth={selectedProvince?.id === province.id ? 4 : 1}
                 onPress={() => handleMarkerPress(province)}
@@ -249,7 +249,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
             <Polygon
               key={`polygon-${province.id}`}
               coordinates={coordinates}
-              fillColor={`${regionColor}20`}
+              fillColor={selectedProvince?.id === province.id ? `${regionColor}95` : `${regionColor}40`}
               strokeColor={regionColor}
               strokeWidth={selectedProvince?.id === province.id ? 4 : 1}
               onPress={() => handleMarkerPress(province)}

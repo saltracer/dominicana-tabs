@@ -222,7 +222,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
                 positions={coordinates as [number, number][]}
                 pathOptions={{
                   fillColor: regionColor,
-                  fillOpacity: 0.2,
+                  fillOpacity: selectedProvince?.id === province.id ? 0.5 : 0.2,
                   color: regionColor,
                   weight: selectedProvince?.id === province.id ? 4 : 1,
                 }}
@@ -249,7 +249,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
               positions={coordinates as [number, number][]}
               pathOptions={{
                 fillColor: regionColor,
-                fillOpacity: 0.2,
+                fillOpacity: selectedProvince?.id === province.id ? 0.5 : 0.2,
                 color: regionColor,
                 weight: selectedProvince?.id === province.id ? 4 : 1,
               }}
