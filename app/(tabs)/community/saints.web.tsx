@@ -243,9 +243,11 @@ export default function SaintsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <CommunityNavigation activeTab="saints" />
-      
+      {/* <CommunityNavigation activeTab="saints" /> */}
       <View style={styles.tabContent}>
+      <Text style={[styles.communityPageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Saints & Blesseds
+          </Text>
         {/* Search Bar */}
         <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
           <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
@@ -535,6 +537,9 @@ export default function SaintsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // maxWidth: 1400,
+    // alignSelf: 'center',
+    // width: '100%',
   },
   loadingContainer: {
     flex: 1,
@@ -548,7 +553,7 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
     paddingHorizontal: 24, // More padding for web
-    maxWidth: 1200, // Max width for better readability on large screens
+    //maxWidth: 1200, // Max width for better readability on large screens
     alignSelf: 'center',
     width: '100%',
   },
@@ -820,6 +825,12 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 14,
+    fontFamily: 'Georgia',
+  },
+  communityPageTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
     fontFamily: 'Georgia',
   },
 });

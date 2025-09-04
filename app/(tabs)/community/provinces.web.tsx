@@ -55,10 +55,13 @@ export default function ProvincesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <CommunityNavigation activeTab="provinces" />
+      {/* <CommunityNavigation activeTab="provinces" /> */}
       
       {/* Map takes full remaining space */}
       <View style={styles.mapContainer}>
+      <Text style={[styles.communityPageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Dominican Provinces
+          </Text>
         <ProvincesMap onProvinceSelect={handleProvinceSelect} />
       </View>
       
@@ -85,5 +88,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 8,
     overflow: 'hidden',
+  },
+
+  communityPageTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 20,
+    fontFamily: 'Georgia',
   },
 });

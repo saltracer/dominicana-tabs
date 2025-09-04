@@ -269,7 +269,7 @@ export default function CalendarScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <CommunityNavigation activeTab="calendar" />
+        {/* <CommunityNavigation activeTab="calendar" /> */}
         
         {/* Liturgical Calendar */}
         <View style={[styles.calendarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
