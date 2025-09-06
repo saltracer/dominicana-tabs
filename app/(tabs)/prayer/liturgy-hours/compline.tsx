@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,9 +24,14 @@ function ComplineScreenContent() {
   const [language, setLanguage] = useState<LanguageCode>('en');
   const [isInitialized, setIsInitialized] = useState(false);
   
+  // Memoize the date to prevent infinite re-renders
+  const targetDate = useMemo(() => {
+    return liturgicalDay ? new Date(liturgicalDay.date) : new Date();
+  }, [liturgicalDay?.date]);
+  
   // Get Compline data using the new hook
   const { complineData, loading, error } = useCompline(
-    liturgicalDay ? new Date(liturgicalDay.date) : new Date(),
+    targetDate,
     { language }
   );
 
@@ -355,7 +360,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Georgia',
   },
