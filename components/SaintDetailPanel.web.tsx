@@ -360,10 +360,7 @@ const styles = StyleSheet.create({
     height: '100%',
     borderLeftWidth: 1,
     elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: -2, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    boxShadow: '-2px 0px 8px rgba(0, 0, 0, 0.25)',
     zIndex: 1000,
   },
   panelHeader: {

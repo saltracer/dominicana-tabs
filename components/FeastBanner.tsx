@@ -557,10 +557,7 @@ export default function FeastBanner({
 const styles = StyleSheet.create({
   container: {
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    boxShadow: '0px -2px 4px rgba(0, 0, 0, 0.1)',
   },
   bannerContent: {
     padding: 12,
@@ -702,10 +699,7 @@ const styles = StyleSheet.create({
            maxHeight: Dimensions.get('window').height * 0.8,
            borderRadius: 16,
            elevation: 5,
-           shadowColor: '#000',
-           shadowOffset: { width: 0, height: 2 },
-           shadowOpacity: 0.25,
-           shadowRadius: 3.84,
+           boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
            zIndex: 1000,
           //  borderWidth: 1,
            borderColor: 'rgba(0, 0, 0, 0.0)',
