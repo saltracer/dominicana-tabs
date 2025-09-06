@@ -43,6 +43,9 @@ export function useCompline(
   const [error, setError] = useState<string | null>(null);
   const [cacheInfo, setCacheInfo] = useState<UseComplineReturn['cacheInfo']>(null);
 
+  // Memoize current date to prevent infinite loops
+  const currentDate = useMemo(() => new Date(), []);
+
   // Use useMemo to prevent service re-initialization on every render
   const complineService = useMemo(() => {
     try {
@@ -73,8 +76,8 @@ export function useCompline(
       setLoading(true);
       setError(null);
       
-      // Use current date if no date provided
-      const targetDate = date || new Date();
+      // Use provided date or memoized current date
+      const targetDate = date || currentDate;
       const data = await complineService.getComplineForDate(targetDate, language);
       setComplineData(data);
       
@@ -93,7 +96,7 @@ export function useCompline(
     } finally {
       setLoading(false);
     }
-  }, [date, language, complineService, offlineManager]);
+  }, [date, language, complineService, offlineManager, currentDate]);
 
   const refresh = useCallback(async () => {
     await loadComplineData();

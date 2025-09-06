@@ -35,7 +35,7 @@ function ComplineScreenContent() {
     if (liturgicalDay && !isInitialized) {
       setIsInitialized(true);
     }
-  }, [liturgicalDay, isInitialized]);
+  }, [liturgicalDay]);
 
   // Show loading state only if not initialized or still loading
   if (!isInitialized || loading) {
