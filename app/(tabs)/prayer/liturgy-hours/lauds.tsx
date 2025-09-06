@@ -260,10 +260,7 @@ export default function LaudsScreen() {
         </View>
       </ScrollView>
       
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
+      
     </SafeAreaView>
   );
 }

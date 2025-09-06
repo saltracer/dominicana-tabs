@@ -225,10 +225,6 @@ export default function SextScreen() {
         </View>
       </ScrollView>
       
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
     </SafeAreaView>
   );
 }

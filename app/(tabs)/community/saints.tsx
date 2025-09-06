@@ -610,11 +610,7 @@ export default function SaintsScreen() {
           </SafeAreaView>
         )}
       </Modal>
-      
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
+
     </SafeAreaView>
   );
 }

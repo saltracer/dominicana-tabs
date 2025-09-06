@@ -185,11 +185,7 @@ export default function DevotionsScreen() {
           </View>
         </View>
       </ScrollView>
-      
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
+
     </SafeAreaView>
   );
 }

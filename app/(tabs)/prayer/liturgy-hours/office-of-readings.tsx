@@ -144,10 +144,6 @@ export default function OfficeOfReadingsScreen() {
         </View>
       </ScrollView>
       
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
     </SafeAreaView>
   );
 }

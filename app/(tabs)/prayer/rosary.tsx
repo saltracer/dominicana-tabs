@@ -666,10 +666,6 @@ export default function RosaryScreen() {
         </View>
       </ScrollView>
       
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
     </SafeAreaView>
   );
 }

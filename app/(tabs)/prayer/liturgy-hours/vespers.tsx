@@ -261,10 +261,6 @@ export default function VespersScreen() {
         </View>
       </ScrollView>
       
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
     </SafeAreaView>
   );
 }

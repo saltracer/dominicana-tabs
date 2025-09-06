@@ -147,9 +147,9 @@ export default function LiturgyOfTheHoursScreen() {
       </ScrollView>
       
       {/* Feast Banner at Bottom */}
-      <FeastBanner 
+      {/* <FeastBanner 
         liturgicalDay={liturgicalDay} 
-      />
+      /> */}
     </SafeAreaView>
   );
 }

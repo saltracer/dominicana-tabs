@@ -319,11 +319,7 @@ export default function StudyScreen() {
           </View>
         )}
       </ScrollView>
-      
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
+
     </SafeAreaView>
   );
 }

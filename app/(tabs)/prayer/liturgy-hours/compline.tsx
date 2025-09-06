@@ -12,7 +12,6 @@ import { router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
-import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { useCompline } from '../../../../hooks/useCompline';
@@ -322,9 +321,6 @@ function ComplineScreenContent() {
           </View>
         </View>
       </ScrollView>
-      
-      {/* Feast Banner at Bottom */}
-      {liturgicalDay && <FeastBanner liturgicalDay={liturgicalDay} />}
     </SafeAreaView>
   );
 }

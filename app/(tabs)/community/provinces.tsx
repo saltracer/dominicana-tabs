@@ -51,11 +51,7 @@ export default function ProvincesScreen() {
       <View style={styles.mapContainer}>
         <ProvincesMap onProvinceSelect={handleProvinceSelect} />
       </View>
-      
-      {/* Feast Banner at Bottom */}
-      <FeastBanner 
-        liturgicalDay={liturgicalDay} 
-      />
+
     </SafeAreaView>
   );
 }

@@ -2,12 +2,14 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/Colors';
 import { useTheme } from '@/components/ThemeProvider';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { useCalendar } from '@/components/CalendarContext';
+import FeastBanner from '@/components/FeastBanner';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -27,9 +29,11 @@ function IoniconsTabBarIcon(props: {
 export default function TabLayout() {
   const { colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { liturgicalDay } = useCalendar();
 
   return (
-    <Tabs
+    <View style={styles.container}>
+      <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].text,
         tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].textMuted,
@@ -41,6 +45,8 @@ export default function TabLayout() {
           paddingTop: 10,
           height: 60 + Math.max(insets.bottom, 10),
           paddingHorizontal: 10,
+          //marginBottom: liturgicalDay ? 60 : 0, // Add space for FeastBanner
+          zIndex: 1001, // Ensure tab bar is above FeastBanner
         },
         tabBarLabelStyle: {
           fontFamily: 'System',
@@ -164,6 +170,26 @@ export default function TabLayout() {
         }}
       />
 
-    </Tabs>
+      </Tabs>
+      
+      {/* Feast Banner positioned above tab bar */}
+      {liturgicalDay && (
+        <View style={[styles.feastBannerContainer, { bottom: 60 + Math.max(insets.bottom, 10) }]}>
+          <FeastBanner liturgicalDay={liturgicalDay} />
+        </View>
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  feastBannerContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 999, // Lower than tab bar
+  },
+});
