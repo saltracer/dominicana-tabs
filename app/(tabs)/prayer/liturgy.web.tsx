@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import FeastBanner from '../../../components/FeastBanner';
@@ -32,14 +33,14 @@ export default function LiturgyOfTheHoursWebScreen() {
     setLiturgicalDay(day);
   };
 
-  const prayerHours: { type: HourType; name: string; time: string; icon: string }[] = [
-    { type: 'office_of_readings', name: 'Office of Readings', time: 'Any time', icon: 'book-outline' },
-    { type: 'lauds', name: 'Lauds (Morning Prayer)', time: '6:00 AM', icon: 'sunny-outline' },
-    { type: 'terce', name: 'Terce (Mid-Morning)', time: '9:00 AM', icon: 'time-outline' },
-    { type: 'sext', name: 'Sext (Midday)', time: '12:00 PM', icon: 'sunny' },
-    { type: 'none', name: 'None (Mid-Afternoon)', time: '3:00 PM', icon: 'time' },
-    { type: 'vespers', name: 'Vespers (Evening Prayer)', time: '6:00 PM', icon: 'moon-outline' },
-    { type: 'compline', name: 'Compline (Night Prayer)', time: '9:00 PM', icon: 'moon' },
+  const prayerHours: { type: HourType; name: string; time: string; icon: string; route: string }[] = [
+    { type: 'office_of_readings', name: 'Office of Readings', time: 'Any time', icon: 'book-outline', route: 'office-of-readings' },
+    { type: 'lauds', name: 'Lauds (Morning Prayer)', time: '6:00 AM', icon: 'sunny-outline', route: 'lauds' },
+    { type: 'terce', name: 'Terce (Mid-Morning)', time: '9:00 AM', icon: 'time-outline', route: 'terce' },
+    { type: 'sext', name: 'Sext (Midday)', time: '12:00 PM', icon: 'sunny', route: 'sext' },
+    { type: 'none', name: 'None (Mid-Afternoon)', time: '3:00 PM', icon: 'time', route: 'none' },
+    { type: 'vespers', name: 'Vespers (Evening Prayer)', time: '6:00 PM', icon: 'moon-outline', route: 'vespers' },
+    { type: 'compline', name: 'Compline (Night Prayer)', time: '9:00 PM', icon: 'moon', route: 'compline' },
   ];
 
   if (!liturgicalDay) {
@@ -115,20 +116,16 @@ export default function LiturgyOfTheHoursWebScreen() {
                   styles.prayerHourCard,
                   { 
                     backgroundColor: Colors[colorScheme ?? 'light'].card,
-                    borderColor: selectedHour === hour.type 
-                      ? Colors[colorScheme ?? 'light'].primary 
-                      : Colors[colorScheme ?? 'light'].border,
+                    borderColor: Colors[colorScheme ?? 'light'].border,
                   }
                 ]}
-                onPress={() => setSelectedHour(hour.type)}
+                onPress={() => router.push(`/(tabs)/prayer/liturgy-hours/${hour.route}` as any)}
+                activeOpacity={0.7}
               >
                 <Ionicons 
                   name={hour.icon as any} 
                   size={24} 
-                  color={selectedHour === hour.type 
-                    ? Colors[colorScheme ?? 'light'].primary 
-                    : Colors[colorScheme ?? 'light'].textSecondary
-                  } 
+                  color={Colors[colorScheme ?? 'light'].primary}
                 />
                 <Text style={[
                   styles.prayerHourName,
@@ -142,6 +139,12 @@ export default function LiturgyOfTheHoursWebScreen() {
                 ]}>
                   {hour.time}
                 </Text>
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={16} 
+                  color={Colors[colorScheme ?? 'light'].textSecondary}
+                  style={styles.chevron}
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 24,
+    //paddingVertical: 24,
     alignItems: 'center',
   },
   title: {
@@ -255,5 +258,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     fontFamily: 'Georgia',
+  },
+  chevron: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -8,
   },
 });

@@ -1,0 +1,203 @@
+import { LiturgicalSeason, FeastRank } from './index';
+
+export type LanguageCode = 'en' | 'la' | 'es' | 'fr' | 'de' | 'it';
+export type ChantNotation = 'gabc' | 'mei' | 'xml';
+export type AudioFormat = 'mp3' | 'wav' | 'm4a' | 'aac';
+export type AudioQuality = 'low' | 'medium' | 'high';
+
+export interface MultiLanguageContent {
+  [languageCode: string]: {
+    text: string;
+    audio?: AudioResource;
+    chant?: ChantResource;
+  };
+}
+
+export interface AudioResource {
+  id: string;
+  url: string;
+  duration: number;
+  format: AudioFormat;
+  quality: AudioQuality;
+  language: string;
+  size?: number; // in bytes
+  checksum?: string; // for integrity verification
+}
+
+export interface ChantResource {
+  id: string;
+  notation: ChantNotation;
+  data: string; // GABC, MEI, or XML notation
+  metadata: {
+    composer?: string;
+    century?: string;
+    source?: string;
+    gregobase_id?: string;
+    mode?: number; // Gregorian mode
+    clef?: string;
+  };
+}
+
+export interface ComplineData {
+  id: string;
+  version: string;
+  lastUpdated: string;
+  season: LiturgicalSeason;
+  rank: FeastRank;
+  components: ComplineComponents;
+  metadata: ComplineMetadata;
+}
+
+export interface ComplineComponents {
+  examinationOfConscience: ExaminationComponent;
+  opening: OpeningComponent;
+  hymn: HymnComponent;
+  psalmody: PsalmodyComponent;
+  reading: ReadingComponent;
+  responsory: ResponsoryComponent;
+  canticle: CanticleComponent;
+  concludingPrayer: PrayerComponent;
+  finalBlessing: BlessingComponent;
+}
+
+export interface ExaminationComponent {
+  id: string;
+  type: 'examination';
+  content: MultiLanguageContent;
+  rubric?: MultiLanguageContent;
+  audio?: AudioResource[];
+  chant?: ChantResource[];
+}
+
+export interface OpeningComponent {
+  id: string;
+  type: 'opening';
+  content: MultiLanguageContent;
+  audio?: AudioResource[];
+  chant?: ChantResource[];
+}
+
+export interface HymnComponent {
+  id: string;
+  type: 'hymn';
+  title: MultiLanguageContent;
+  content: MultiLanguageContent;
+  melody?: ChantResource;
+  audio?: AudioResource[];
+  metadata: {
+    composer?: string;
+    century?: string;
+    meter?: string;
+    tune?: string;
+  };
+}
+
+export interface PsalmodyComponent {
+  id: string;
+  type: 'psalm';
+  psalmNumber: number;
+  antiphon: MultiLanguageContent;
+  verses: MultiLanguageContent;
+  refrain?: MultiLanguageContent;
+  chant?: ChantResource;
+  audio?: AudioResource[];
+  metadata: {
+    tone?: string;
+    mode?: number;
+  };
+}
+
+export interface ReadingComponent {
+  id: string;
+  type: 'reading';
+  title: MultiLanguageContent;
+  content: MultiLanguageContent;
+  source: MultiLanguageContent;
+  audio?: AudioResource[];
+  metadata: {
+    book?: string;
+    chapter?: number;
+    verse?: string;
+    author?: string;
+  };
+}
+
+export interface ResponsoryComponent {
+  id: string;
+  type: 'responsory';
+  content: MultiLanguageContent;
+  audio?: AudioResource[];
+  chant?: ChantResource[];
+}
+
+export interface CanticleComponent {
+  id: string;
+  type: 'canticle';
+  name: string; // e.g., "Canticle of Simeon"
+  antiphon: MultiLanguageContent;
+  content: MultiLanguageContent;
+  chant?: ChantResource;
+  audio?: AudioResource[];
+  metadata: {
+    biblical_reference?: string;
+    mode?: number;
+  };
+}
+
+export interface PrayerComponent {
+  id: string;
+  type: 'prayer';
+  title: MultiLanguageContent;
+  content: MultiLanguageContent;
+  audio?: AudioResource[];
+  chant?: ChantResource[];
+}
+
+export interface BlessingComponent {
+  id: string;
+  type: 'blessing';
+  content: MultiLanguageContent;
+  audio?: AudioResource[];
+  chant?: ChantResource[];
+}
+
+export interface ComplineMetadata {
+  created: string;
+  lastModified: string;
+  version: string;
+  contributors?: string[];
+  sources?: string[];
+  notes?: string;
+}
+
+export interface ComplinePreferences {
+  primaryLanguage: LanguageCode;
+  secondaryLanguage?: LanguageCode;
+  displayMode: 'primary-only' | 'bilingual' | 'secondary-only';
+  audioEnabled: boolean;
+  audioQuality: AudioQuality;
+  chantEnabled: boolean;
+  chantNotation: ChantNotation;
+  fontSize: 'small' | 'medium' | 'large';
+  showRubrics: boolean;
+  autoPlay: boolean;
+}
+
+export interface ComplineCacheEntry {
+  data: ComplineData;
+  timestamp: number;
+  language: LanguageCode;
+  date: string;
+}
+
+export interface OfflineComplineData {
+  [key: string]: ComplineData; // key format: "YYYY-MM-DD-language"
+}
+
+export interface ComplineServiceConfig {
+  cacheSize: number; // maximum number of entries to cache
+  offlineStorageKey: string;
+  apiEndpoint?: string;
+  enableOfflineMode: boolean;
+  preloadDays: number; // days to preload for offline use
+}

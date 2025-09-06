@@ -362,3 +362,6 @@ export * from './saint-types';
 
 // Export liturgy types
 export * from './liturgy-types';
+
+// Export compline types
+export * from './compline-types';
