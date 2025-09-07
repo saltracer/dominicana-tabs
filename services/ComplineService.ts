@@ -7,6 +7,7 @@ import {
   OfflineComplineData 
 } from '../types/compline-types';
 import { LiturgicalDay } from '../types';
+import { getComplineForDate as getComplineDataForDate } from '../assets/data/liturgy/compline';
 
 // Platform-specific storage
 let AsyncStorage: any = null;
@@ -70,12 +71,6 @@ export class ComplineService {
       }
     }
 
-    // For now, return default data immediately to prevent flashing
-    // TODO: Implement proper async loading later
-    const defaultData = this.getDefaultCompline(language);
-    this.setCacheEntry(cacheKey, defaultData, language, date);
-    return defaultData;
-
     // Check offline storage
     if (this.config.enableOfflineMode) {
       const offlineData = await this.getOfflineCompline(date, language);
@@ -99,8 +94,10 @@ export class ComplineService {
       }
     }
 
-    // Fallback to default
-    return this.getDefaultCompline(language);
+    // Fallback to data from liturgy directory
+    const complineData = getComplineDataForDate(date, language);
+    this.setCacheEntry(cacheKey, complineData, language, date);
+    return complineData;
   }
 
   public async preloadComplineData(
@@ -164,7 +161,9 @@ export class ComplineService {
     // Manage cache size
     if (this.cache.size > this.config.cacheSize) {
       const oldestKey = this.cache.keys().next().value;
-      this.cache.delete(oldestKey);
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
     }
   }
 
@@ -231,128 +230,6 @@ export class ComplineService {
     return response.json();
   }
 
-  private getDefaultCompline(language: LanguageCode): ComplineData {
-    // Return a basic default structure
-    return {
-      id: 'compline-default',
-      version: '1.0.0',
-      lastUpdated: new Date().toISOString(),
-      season: { name: 'Ordinary Time', color: '#228B22', startDate: '', endDate: '', description: '' },
-      rank: 'ferial',
-      components: {
-        examinationOfConscience: {
-          id: 'examination-default',
-          type: 'examination',
-          content: {
-            [language]: {
-              text: "Brothers and sisters, let us examine our conscience and repent of our sins, that we may be worthy to offer our prayers to God."
-            }
-          }
-        },
-        opening: {
-          id: 'opening-default',
-          type: 'opening',
-          content: {
-            [language]: {
-              text: "O God, come to my assistance. O Lord, make haste to help me. Glory to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be for ever. Amen."
-            }
-          }
-        },
-        hymn: {
-          id: 'hymn-default',
-          type: 'hymn',
-          title: {
-            [language]: { text: "Night Hymn" }
-          },
-          content: {
-            [language]: {
-              text: "Before the ending of the day, Creator of the world, we pray, that with thy wonted favor thou wouldst be our guard and keeper now."
-            }
-          },
-          metadata: {}
-        },
-        psalmody: {
-          id: 'psalm-default',
-          type: 'psalm',
-          psalmNumber: 4,
-          antiphon: {
-            [language]: { text: "In peace I will lie down and sleep." }
-          },
-          verses: {
-            [language]: {
-              text: "Answer me when I call, O God of my righteousness! You have given me relief when I was in distress. Be gracious to me and hear my prayer!"
-            }
-          },
-          metadata: {}
-        },
-        reading: {
-          id: 'reading-default',
-          type: 'reading',
-          title: {
-            [language]: { text: "Short Reading" }
-          },
-          content: {
-            [language]: {
-              text: "Cast all your anxiety on him because he cares for you. Be alert and of sober mind. Your enemy the devil prowls around like a roaring lion looking for someone to devour. Resist him, standing firm in the faith."
-            }
-          },
-          source: {
-            [language]: { text: "From the First Letter of Peter" }
-          },
-          metadata: {}
-        },
-        responsory: {
-          id: 'responsory-default',
-          type: 'responsory',
-          content: {
-            [language]: {
-              text: "℟. Into your hands, O Lord, I commend my spirit. ℣. You have redeemed us, Lord God of truth. ℟. Glory to the Father, and to the Son, and to the Holy Spirit."
-            }
-          }
-        },
-        canticle: {
-          id: 'canticle-default',
-          type: 'canticle',
-          name: "Canticle of Simeon",
-          antiphon: {
-            [language]: { text: "Protect us, Lord, while we are awake and safeguard us while we sleep." }
-          },
-          content: {
-            [language]: {
-              text: "Lord, now you let your servant go in peace; your word has been fulfilled: my own eyes have seen the salvation which you have prepared in the sight of every people: a light to reveal you to the nations and the glory of your people Israel."
-            }
-          },
-          metadata: {}
-        },
-        concludingPrayer: {
-          id: 'prayer-default',
-          type: 'prayer',
-          title: {
-            [language]: { text: "Concluding Prayer" }
-          },
-          content: {
-            [language]: {
-              text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
-            }
-          }
-        },
-        finalBlessing: {
-          id: 'blessing-default',
-          type: 'blessing',
-          content: {
-            [language]: {
-              text: "May the almighty Lord grant us a quiet night and a perfect end. Amen."
-            }
-          }
-        }
-      },
-      metadata: {
-        created: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        version: '1.0.0'
-      }
-    };
-  }
 
   private generateDateRange(days: number): Date[] {
     const dates: Date[] = [];

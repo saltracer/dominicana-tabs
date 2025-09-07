@@ -152,15 +152,10 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Night Hymn
+              {complineData.components.hymn.title[language]?.text || 'Night Hymn'}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              "Before the ending of the day, Creator of the world, we pray, 
-              that with thy wonted favor thou wouldst be our guard and keeper now."
-            </Text>
-            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              "From all ill dreams defend our eyes, from nightly fears and fantasies; 
-              tread underfoot our ghostly foe, that no pollution we may know."
+              {complineData.components.hymn.content[language]?.text}
             </Text>
           </View>
         </View>
@@ -180,20 +175,16 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Psalm 4: Answer me when I call
+              Psalm {complineData.components.psalmody.psalmNumber}: Answer me when I call
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: In peace I will lie down and sleep.
+              Antiphon: {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Answer me when I call, O God of my righteousness! You have given me relief when I was in distress. 
-              Be gracious to me and hear my prayer!
-            </Text>
-            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              In peace I will both lie down and sleep; for you alone, O Lord, make me dwell in safety.
+              {complineData.components.psalmody.verses[language]?.text}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: In peace I will lie down and sleep.
+              Antiphon: {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
           </View>
         </View>
@@ -213,12 +204,10 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              From the First Letter of Peter
+              {complineData.components.reading.source[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              "Cast all your anxiety on him because he cares for you. Be alert and of sober mind. 
-              Your enemy the devil prowls around like a roaring lion looking for someone to devour. 
-              Resist him, standing firm in the faith."
+              {complineData.components.reading.content[language]?.text}
             </Text>
           </View>
         </View>
@@ -238,13 +227,7 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              ℟. Into your hands, O Lord, I commend my spirit.
-            </Text>
-            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              ℣. You have redeemed us, Lord God of truth.
-            </Text>
-            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              ℟. Glory to the Father, and to the Son, and to the Holy Spirit.
+              {complineData.components.responsory.content[language]?.text}
             </Text>
           </View>
         </View>
@@ -264,15 +247,13 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: Protect us, Lord, while we are awake and safeguard us while we sleep.
+              Antiphon: {complineData.components.canticle.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Lord, now you let your servant go in peace; your word has been fulfilled: 
-              my own eyes have seen the salvation which you have prepared in the sight of every people: 
-              a light to reveal you to the nations and the glory of your people Israel.
+              {complineData.components.canticle.content[language]?.text}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: Protect us, Lord, while we are awake and safeguard us while we sleep.
+              Antiphon: {complineData.components.canticle.antiphon[language]?.text}
             </Text>
           </View>
         </View>
@@ -292,10 +273,7 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Visit this place, O Lord, and drive far from it all snares of the enemy; 
-              let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. 
-              Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity 
-              of the Holy Spirit, one God, for ever and ever.
+              {complineData.components.concludingPrayer.content[language]?.text}
             </Text>
             <Text style={[styles.amen, { color: Colors[colorScheme ?? 'light'].primary }]}>
               Amen.
@@ -318,10 +296,7 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              May the almighty Lord grant us a quiet night and a perfect end.
-            </Text>
-            <Text style={[styles.amen, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Amen.
+              {complineData.components.finalBlessing.content[language]?.text}
             </Text>
           </View>
         </View>

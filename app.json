@@ -55,7 +55,7 @@
       "expo-av",
       "expo-calendar",
       "expo-location",
-      "expo-font",
+      ["expo-font",
       {
         "android": {
           "fonts": [
@@ -70,7 +70,7 @@
                   {
                     "path": "./assets/fonts/Neuton/Neuton-Bold.ttf",
                     "weight": 700
-                  }
+                  },
                   {
                     "path": "./assets/fonts/Neuton/Neuton-Italic.ttf",
                     "weight": 400,
@@ -84,9 +84,9 @@
                 ]
               }
             ]
-          },
+          }
         }
-      }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
