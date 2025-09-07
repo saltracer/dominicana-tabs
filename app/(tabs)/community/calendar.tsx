@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -66,32 +66,37 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
   const isSelected = marking?.selected;
   const hasFeasts = dayContent && dayContent.feastCount > 0;
   
-  const getDayBackgroundColor = () => {
-    if (isSelected) return Colors[colorScheme ?? 'light'].primary;
-    if (isToday) return Colors[colorScheme ?? 'light'].surface;
-    if (hasFeasts) return Colors[colorScheme ?? 'light'].card;
-    return 'transparent';
-  };
-
-  const getDayTextColor = () => {
-    if (isSelected) return Colors[colorScheme ?? 'light'].dominicanWhite;
-    if (isToday) return Colors[colorScheme ?? 'light'].primary;
-    if (hasFeasts) return Colors[colorScheme ?? 'light'].text;
-    return Colors[colorScheme ?? 'light'].textMuted;
-  };
-
-  const getFeastIndicatorColor = () => {
-    if (dayContent?.hasDominicanFeast) return Colors[colorScheme ?? 'light'].primary;
-    if (dayContent?.primaryFeast) return dayContent.primaryFeast.color;
-    return Colors[colorScheme ?? 'light'].textMuted;
-  };
+  // Memoize color calculations to avoid recalculation on every render
+  const colors = useMemo(() => {
+    const currentColors = Colors[colorScheme ?? 'light'];
+    
+    return {
+      backgroundColor: (() => {
+        if (isSelected) return currentColors.primary;
+        if (isToday) return currentColors.surface;
+        if (hasFeasts) return currentColors.card;
+        return 'transparent';
+      })(),
+      textColor: (() => {
+        if (isSelected) return currentColors.dominicanWhite;
+        if (isToday) return currentColors.primary;
+        if (hasFeasts) return currentColors.text;
+        return currentColors.textMuted;
+      })(),
+      feastIndicatorColor: (() => {
+        if (dayContent?.hasDominicanFeast) return currentColors.primary;
+        if (dayContent?.primaryFeast) return dayContent.primaryFeast.color;
+        return currentColors.textMuted;
+      })()
+    };
+  }, [isSelected, isToday, hasFeasts, dayContent, colorScheme]);
 
   return (
     <Pressable
       style={[
         styles.customDayContainer,
         {
-          backgroundColor: getDayBackgroundColor(),
+          backgroundColor: colors.backgroundColor,
           borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].border,
           borderWidth: isSelected ? 2 : (isToday ? 1 : 0),
         }
@@ -101,7 +106,7 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
       {/* Day Number */}
       <Text style={[
         styles.dayNumber,
-        { color: getDayTextColor() }
+        { color: colors.textColor }
       ]}>
         {date?.day}
       </Text>
@@ -113,7 +118,7 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
           {dayContent.primaryFeast && (
             <View style={[
               styles.rankBadge,
-              { backgroundColor: getFeastIndicatorColor() }
+              { backgroundColor: colors.feastIndicatorColor }
             ]}>
               <Text style={styles.rankText}>
                 {dayContent.primaryFeast.rank.charAt(0).toUpperCase()}
@@ -133,7 +138,7 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
           {/* Multiple Feasts Indicator */}
           {dayContent.feastCount > 1 && (
             <View style={[styles.multipleFeastsIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-              <Text style={[styles.multipleFeastsText, { color: getFeastIndicatorColor() }]}>
+              <Text style={[styles.multipleFeastsText, { color: colors.feastIndicatorColor }]}>
                 +{dayContent.feastCount - 1}
               </Text>
             </View>
@@ -146,7 +151,7 @@ const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) =
         <Text 
           style={[
             styles.feastNamePreview,
-            { color: getDayTextColor() }
+            { color: colors.textColor }
           ]}
           numberOfLines={1}
         >
@@ -172,7 +177,7 @@ export default function CalendarScreen() {
     generateMarkedDates();
   }, [colorScheme, liturgicalDay]);
 
-  const generateMarkedDates = () => {
+  const generateMarkedDates = useCallback(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
     const marked: any = {};
     
@@ -224,9 +229,9 @@ export default function CalendarScreen() {
     }
     
     setMarkedDates(marked);
-  };
+  }, [colorScheme, liturgicalDay]);
 
-  const handleDayPress = (day: any) => {
+  const handleDayPress = useCallback((day: any) => {
     // Use date-fns parseISO for clean date parsing
     const selectedDate = parseISO(day.dateString);
     updateCalendarSelection(selectedDate);
@@ -250,7 +255,7 @@ export default function CalendarScreen() {
     };
     
     setMarkedDates(newMarkedDates);
-  };
+  }, [markedDates, colorScheme, updateCalendarSelection]);
 
 
 
