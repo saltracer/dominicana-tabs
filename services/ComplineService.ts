@@ -4,7 +4,9 @@ import {
   ComplineCacheEntry, 
   LanguageCode, 
   ComplineServiceConfig,
-  OfflineComplineData 
+  OfflineComplineData,
+  getDayOfWeekFromDate,
+  getComponentForDay
 } from '../types/compline-types';
 import { LiturgicalDay } from '../types';
 import { getComplineForDate as getComplineDataForDate } from '../assets/data/liturgy/compline';

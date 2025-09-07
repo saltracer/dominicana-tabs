@@ -32,7 +32,7 @@ export interface Feast {
   date: string;
 }
 
-export type FeastRank = 'solemnity' | 'feast' | 'memorial' | 'optional';
+export type FeastRank = 'solemnity' | 'feast' | 'memorial' | 'optional' | 'ferial';
 export type FeastType = 'universal' | 'national' | 'diocesan' | 'religious' | 'dominican';
 
 // Saints Types
@@ -363,5 +363,30 @@ export * from './saint-types';
 // Export liturgy types
 export * from './liturgy-types';
 
-// Export compline types
-export * from './compline-types';
+// Export compline types (selective export to avoid conflicts)
+export type { 
+  ComplineData, 
+  ComplineComponents, 
+  ComplineMetadata,
+  ComplinePreferences,
+  ComplineCacheEntry,
+  OfflineComplineData,
+  ComplineServiceConfig,
+  DayOfWeekVariations,
+  DayOfWeek,
+  ExaminationComponent,
+  OpeningComponent,
+  HymnComponent,
+  PsalmodyComponent,
+  ReadingComponent,
+  ResponsoryComponent,
+  CanticleComponent,
+  PrayerComponent,
+  BlessingComponent
+} from './compline-types';
+
+export { 
+  getDayOfWeekFromDate,
+  getComponentForDay,
+  isDayOfWeekVariations
+} from './compline-types';

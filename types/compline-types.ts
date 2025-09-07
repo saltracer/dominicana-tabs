@@ -4,6 +4,7 @@ export type LanguageCode = 'en' | 'la' | 'es' | 'fr' | 'de' | 'it';
 export type ChantNotation = 'gabc' | 'mei' | 'xml';
 export type AudioFormat = 'mp3' | 'wav' | 'm4a' | 'aac';
 export type AudioQuality = 'low' | 'medium' | 'high';
+export type DayOfWeek = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
 
 export interface MultiLanguageContent {
   [languageCode: string]: {
@@ -38,6 +39,14 @@ export interface ChantResource {
   };
 }
 
+export interface DayOfWeekVariations<T> {
+  type: 'day-of-week-variations';
+  default: T;
+  variations: {
+    [key in DayOfWeek]?: T;
+  };
+}
+
 export interface ComplineData {
   id: string;
   version: string;
@@ -51,12 +60,12 @@ export interface ComplineData {
 export interface ComplineComponents {
   examinationOfConscience: ExaminationComponent;
   opening: OpeningComponent;
-  hymn: HymnComponent;
-  psalmody: PsalmodyComponent;
-  reading: ReadingComponent;
-  responsory: ResponsoryComponent;
-  canticle: CanticleComponent;
-  concludingPrayer: PrayerComponent;
+  hymn: HymnComponent | DayOfWeekVariations<HymnComponent>;
+  psalmody: PsalmodyComponent | DayOfWeekVariations<PsalmodyComponent>;
+  reading: ReadingComponent | DayOfWeekVariations<ReadingComponent>;
+  responsory: ResponsoryComponent | DayOfWeekVariations<ResponsoryComponent>;
+  canticle: CanticleComponent | DayOfWeekVariations<CanticleComponent>;
+  concludingPrayer: PrayerComponent | DayOfWeekVariations<PrayerComponent>;
   finalBlessing: BlessingComponent;
 }
 
@@ -200,4 +209,24 @@ export interface ComplineServiceConfig {
   apiEndpoint?: string;
   enableOfflineMode: boolean;
   preloadDays: number; // days to preload for offline use
+}
+
+// Helper functions for day-of-week variations
+export function getDayOfWeekFromDate(date: Date): DayOfWeek {
+  const days: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[date.getDay()];
+}
+
+export function getComponentForDay<T>(
+  component: T | DayOfWeekVariations<T>,
+  dayOfWeek: DayOfWeek
+): T {
+  if (isDayOfWeekVariations(component)) {
+    return component.variations[dayOfWeek] || component.default;
+  }
+  return component;
+}
+
+export function isDayOfWeekVariations<T>(component: T | DayOfWeekVariations<T>): component is DayOfWeekVariations<T> {
+  return typeof component === 'object' && component !== null && 'type' in component && component.type === 'day-of-week-variations';
 }

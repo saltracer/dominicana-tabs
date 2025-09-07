@@ -92,6 +92,27 @@ function ComplineScreenContent() {
           </View>
         </View>
 
+        {/* Opening */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons 
+              name="moon" 
+              size={24} 
+              color={Colors[colorScheme ?? 'light'].primary} 
+            />
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Opening
+            </Text>
+          </View>
+          
+          <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
+              {complineData.components.opening.content[language]?.text}
+            </Text>
+          </View>
+        </View>
+
+
         {/* Examination of Conscience */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -113,26 +134,6 @@ function ComplineScreenContent() {
             )}
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.examinationOfConscience.content[language]?.text}
-            </Text>
-          </View>
-        </View>
-
-        {/* Opening */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="moon" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Opening
-            </Text>
-          </View>
-          
-          <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {complineData.components.opening.content[language]?.text}
             </Text>
           </View>
         </View>
