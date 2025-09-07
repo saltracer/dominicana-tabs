@@ -165,6 +165,10 @@ export default function CalendarScreen() {
 
 
   useEffect(() => {
+    // Preload current month and adjacent months for better performance
+    const calendarService = LiturgicalCalendarService.getInstance();
+    calendarService.preloadCurrentMonth();
+    
     generateMarkedDates();
   }, [colorScheme, liturgicalDay]);
 
@@ -172,9 +176,13 @@ export default function CalendarScreen() {
     const calendarService = LiturgicalCalendarService.getInstance();
     const marked: any = {};
     
-    // Generate feast days for the current year
-    const currentYear = new Date().getFullYear();
-    for (let month = 0; month < 12; month++) {
+    // Only process visible months instead of entire year for better performance
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const startMonth = Math.max(0, today.getMonth() - 1); // Previous month
+    const endMonth = Math.min(11, today.getMonth() + 2);   // 2 months ahead
+    
+    for (let month = startMonth; month <= endMonth; month++) {
       const daysInMonth = new Date(currentYear, month + 1, 0).getDate();
       
       for (let day = 1; day <= daysInMonth; day++) {
