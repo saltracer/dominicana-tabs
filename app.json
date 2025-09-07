@@ -13,6 +13,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#8B0000"
     },
+    "assetBundlePatterns": [
+      "assets/images/*",
+      "assets/fonts/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -50,7 +54,39 @@
       "expo-document-picker",
       "expo-av",
       "expo-calendar",
-      "expo-location"
+      "expo-location",
+      "expo-font",
+      {
+        "android": {
+          "fonts": [
+              {
+                "fontFamily": "Neuton",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Neuton/Neuton-Regular.ttf",
+                    "weight": 400,
+                    "style": "normal"
+                  },
+                  {
+                    "path": "./assets/fonts/Neuton/Neuton-Bold.ttf",
+                    "weight": 700
+                  }
+                  {
+                    "path": "./assets/fonts/Neuton/Neuton-Italic.ttf",
+                    "weight": 400,
+                    "style": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Neuton/Neuton-Light.ttf",
+                    "weight": 300,
+                    "style": "normal"
+                  }
+                ]
+              }
+            ]
+          },
+        }
+      }
     ],
     "experiments": {
       "typedRoutes": true

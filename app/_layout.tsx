@@ -26,6 +26,10 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Georgia: require('../assets/fonts/Neuton/Neuton-Regular.ttf'),
+    'Georgia-Bold': require('../assets/fonts/Neuton/Neuton-Bold.ttf'),
+    'Georgia-Italic': require('../assets/fonts/Neuton/Neuton-Italic.ttf'),
+    'Georgia-Light': require('../assets/fonts/Neuton/Neuton-Light.ttf'),
     ...FontAwesome.font,
   });
 
