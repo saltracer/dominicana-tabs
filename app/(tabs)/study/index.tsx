@@ -10,33 +10,25 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { useTheme } from '../../components/ThemeProvider';
-import FeastBanner from '../../components/FeastBanner';
-import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
-import { LiturgicalDay, Book, BookCategory } from '../../types';
+import { router } from 'expo-router';
+import { Colors } from '../../../constants/Colors';
+import { useTheme } from '../../../components/ThemeProvider';
+import { useCalendar } from '../../../components/CalendarContext';
+import FeastBanner from '../../../components/FeastBanner';
+import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
+import { LiturgicalDay, Book, BookCategory } from '../../../types';
 
 export default function StudyScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
   const [books, setBooks] = useState<Book[]>([]);
 
   useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
     loadSampleBooks();
   }, []);
-
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
 
   const loadSampleBooks = () => {
     const sampleBooks: Book[] = [
@@ -269,6 +261,38 @@ export default function StudyScreen() {
           </ScrollView>
         </View>
 
+        {/* Bible Reading */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Sacred Scripture
+          </Text>
+          
+          <TouchableOpacity
+            style={[styles.bibleCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+            onPress={() => {
+              router.push('/(tabs)/study/bible');
+            }}
+          >
+            <View style={styles.bibleCardContent}>
+              <View style={styles.bibleIcon}>
+                <Ionicons name="book" size={32} color={Colors[colorScheme ?? 'light'].primary} />
+              </View>
+              <View style={styles.bibleInfo}>
+                <Text style={[styles.bibleTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Holy Bible
+                </Text>
+                <Text style={[styles.bibleSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Douay-Rheims Version
+                </Text>
+                <Text style={[styles.bibleDescription, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                  Read the complete Catholic Bible with search and navigation features
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Books Grid */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -328,7 +352,7 @@ export default function StudyScreen() {
           </View>
         )}
       </ScrollView>
-      
+
     </SafeAreaView>
   );
 }
@@ -490,5 +514,46 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 14,
     fontFamily: 'Georgia',
+  },
+  bibleCard: {
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  bibleCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bibleIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.light.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  bibleInfo: {
+    flex: 1,
+  },
+  bibleTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  bibleSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  bibleDescription: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    lineHeight: 16,
   },
 });

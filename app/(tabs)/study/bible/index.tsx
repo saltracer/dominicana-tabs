@@ -1,0 +1,437 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { Colors } from '../../../../constants/Colors';
+import { useTheme } from '../../../../components/ThemeProvider';
+import { bibleService, BibleBook } from '../../../../services/BibleService';
+import { BibleBook as BibleBookType } from '../../../../types';
+
+export default function BibleScreen() {
+  const { colorScheme } = useTheme();
+  const [books, setBooks] = useState<BibleBook[]>([]);
+  const [filteredBooks, setFilteredBooks] = useState<BibleBook[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'old-testament' | 'new-testament' | 'deuterocanonical'>('all');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadBibleBooks();
+  }, []);
+
+  useEffect(() => {
+    filterBooks();
+  }, [books, searchQuery, selectedCategory]);
+
+  const loadBibleBooks = async () => {
+    try {
+      setLoading(true);
+      const bibleBooks = bibleService.getBibleBooks();
+      setBooks(bibleBooks);
+    } catch (error) {
+      console.error('Error loading Bible books:', error);
+      Alert.alert('Error', 'Failed to load Bible books');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterBooks = () => {
+    let filtered = books;
+
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(book => book.category === selectedCategory);
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(book => 
+        book.title.toLowerCase().includes(query) ||
+        book.shortTitle.toLowerCase().includes(query) ||
+        book.abbreviation.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredBooks(filtered);
+  };
+
+  const handleBookPress = (book: BibleBook) => {
+    router.push(`/(tabs)/study/bible/${book.code}`);
+  };
+
+  const categories = [
+    { type: 'all' as const, name: 'All Books', icon: 'library' },
+    { type: 'old-testament' as const, name: 'Old Testament', icon: 'book' },
+    { type: 'new-testament' as const, name: 'New Testament', icon: 'bookmark' },
+    { type: 'deuterocanonical' as const, name: 'Deuterocanonical', icon: 'star' },
+  ];
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Loading Bible books...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Holy Bible
+          </Text>
+          <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            Douay-Rheims Version
+          </Text>
+          <TouchableOpacity
+            style={[styles.searchButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+            onPress={() => router.push('/(tabs)/study/bible/search')}
+          >
+            <Ionicons name="search" size={16} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            <Text style={[styles.searchButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Search Bible
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+            placeholder="Search books..."
+            placeholderTextColor={Colors[colorScheme ?? 'light'].textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {/* Categories */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Categories
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category.type}
+                style={[
+                  styles.categoryCard,
+                  { 
+                    backgroundColor: selectedCategory === category.type 
+                      ? Colors[colorScheme ?? 'light'].primary 
+                      : Colors[colorScheme ?? 'light'].card,
+                  }
+                ]}
+                onPress={() => setSelectedCategory(category.type)}
+              >
+                <Ionicons 
+                  name={category.icon as any} 
+                  size={20} 
+                  color={selectedCategory === category.type 
+                    ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                    : Colors[colorScheme ?? 'light'].textSecondary
+                  } 
+                />
+                <Text style={[
+                  styles.categoryText,
+                  { 
+                    color: selectedCategory === category.type 
+                      ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                      : Colors[colorScheme ?? 'light'].text
+                  }
+                ]}>
+                  {category.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Books List */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            {selectedCategory === 'all' ? 'All Books' : categories.find(c => c.type === selectedCategory)?.name}
+            <Text style={[styles.count, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              {' '}({filteredBooks.length})
+            </Text>
+          </Text>
+          
+          <View style={styles.booksList}>
+            {filteredBooks.map((book) => (
+              <TouchableOpacity
+                key={book.code}
+                style={[
+                  styles.bookCard,
+                  { backgroundColor: Colors[colorScheme ?? 'light'].card }
+                ]}
+                onPress={() => handleBookPress(book)}
+              >
+                <View style={styles.bookInfo}>
+                  <View style={styles.bookHeader}>
+                    <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {book.title}
+                    </Text>
+                    <Text style={[styles.bookAbbreviation, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      {book.abbreviation}
+                    </Text>
+                  </View>
+                  <Text style={[styles.bookCategory, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                    {categories.find(c => c.type === book.category)?.name}
+                  </Text>
+                </View>
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={20} 
+                  color={Colors[colorScheme ?? 'light'].textSecondary} 
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Quick Access */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Quick Access
+          </Text>
+          <View style={styles.quickAccessGrid}>
+            <TouchableOpacity
+              style={[styles.quickAccessCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+              onPress={() => {
+                const psalms = books.find(b => b.code === 'PSA');
+                if (psalms) handleBookPress(psalms);
+              }}
+            >
+              <Ionicons name="musical-notes" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+              <Text style={[styles.quickAccessText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Psalms
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.quickAccessCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+              onPress={() => {
+                const john = books.find(b => b.code === 'JHN');
+                if (john) handleBookPress(john);
+              }}
+            >
+              <Ionicons name="book" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+              <Text style={[styles.quickAccessText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                John
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.quickAccessCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+              onPress={() => {
+                const matthew = books.find(b => b.code === 'MAT');
+                if (matthew) handleBookPress(matthew);
+              }}
+            >
+              <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+              <Text style={[styles.quickAccessText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Matthew
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.quickAccessCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+              onPress={() => {
+                const genesis = books.find(b => b.code === 'GEN');
+                if (genesis) handleBookPress(genesis);
+              }}
+            >
+              <Ionicons name="star" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+              <Text style={[styles.quickAccessText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Genesis
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.surface,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
+  section: {
+    marginVertical: 16,
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    fontFamily: 'Georgia',
+  },
+  count: {
+    fontSize: 16,
+    fontWeight: '400',
+  },
+  categoriesScroll: {
+    marginBottom: 8,
+  },
+  categoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  categoryText: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  booksList: {
+    gap: 8,
+  },
+  bookCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  bookInfo: {
+    flex: 1,
+  },
+  bookHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    flex: 1,
+  },
+  bookAbbreviation: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginLeft: 8,
+  },
+  bookCategory: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+  },
+  quickAccessGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  quickAccessCard: {
+    width: '48%',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  quickAccessText: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 12,
+  },
+  searchButtonText: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+});

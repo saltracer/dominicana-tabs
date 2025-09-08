@@ -363,6 +363,78 @@ export * from './saint-types';
 // Export liturgy types
 export * from './liturgy-types';
 
+// Bible Types
+export interface BibleBook {
+  code: string;
+  title: string;
+  shortTitle: string;
+  abbreviation: string;
+  category: 'old-testament' | 'new-testament' | 'deuterocanonical';
+  order: number;
+  chapters?: number;
+}
+
+export interface BibleVerse {
+  number: number;
+  text: string;
+  reference: string;
+}
+
+export interface BibleChapter {
+  number: number;
+  verses: BibleVerse[];
+}
+
+export interface BibleSearchResult {
+  book: string;
+  chapter: number;
+  verse: number;
+  text: string;
+  reference: string;
+}
+
+export interface BibleReadingSession {
+  id: string;
+  bookCode: string;
+  chapter: number;
+  startVerse?: number;
+  endVerse?: number;
+  startTime: string;
+  endTime?: string;
+  notes?: string;
+  bookmarks?: BibleBookmark[];
+}
+
+export interface BibleBookmark {
+  id: string;
+  bookCode: string;
+  chapter: number;
+  verse: number;
+  note?: string;
+  createdAt: string;
+  tags?: string[];
+}
+
+export interface BibleReadingPlan {
+  id: string;
+  name: string;
+  description: string;
+  duration: number; // days
+  readings: BibleReadingPlanDay[];
+  isActive: boolean;
+  startDate?: string;
+}
+
+export interface BibleReadingPlanDay {
+  day: number;
+  readings: {
+    bookCode: string;
+    chapter: number;
+    startVerse?: number;
+    endVerse?: number;
+  }[];
+}
+
 // Export compline types (selective export to avoid conflicts)
 export type { 
   ComplineData, 
