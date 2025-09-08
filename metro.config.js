@@ -34,6 +34,12 @@ config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 config.resolver.assetExts = config.resolver.assetExts.filter(ext => ext !== 'svg');
 config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
 
+// Add Bible file extensions to asset extensions
+config.resolver.assetExts = [
+  ...config.resolver.assetExts,
+  'usx', 'xml', 'ldml', 'vrs'
+];
+
 // Configure watchman for better performance
 config.watchFolders = [__dirname];
 

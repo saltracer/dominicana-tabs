@@ -15,7 +15,8 @@
     },
     "assetBundlePatterns": [
       "assets/images/*",
-      "assets/fonts/*"
+      "assets/fonts/*",
+      "assets/bibles/*"
     ],
     "ios": {
       "supportsTablet": true,
