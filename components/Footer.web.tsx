@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { Colors } from '@/constants/Colors';
@@ -34,8 +34,12 @@ export default function Footer() {
         {/* Left Column */}
         <View style={styles.footerColumn}>
           <View style={styles.logoSection}>
-            <View style={[styles.logoIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-              <Text style={[styles.logoIconText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>✝</Text>
+            <View style={styles.logoIcon}>
+              <Image 
+                source={require('../assets/images/dominicana_logo.png')} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
               Dominicana
@@ -129,10 +133,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
+    backgroundColor: 'transparent',
   },
-  logoIconText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+  logoImage: {
+    width: 20,
+    height: 20,
+    backgroundColor: 'transparent',
   },
   logoText: {
     fontSize: 18,
