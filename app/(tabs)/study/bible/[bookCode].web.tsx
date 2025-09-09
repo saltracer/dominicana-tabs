@@ -62,6 +62,7 @@ export default function BibleReaderWebScreen() {
           abbreviation: originalBook.abbreviation,
           category: originalBook.category,
           order: originalBook.order,
+          chapters: originalBook.chapters,
           versionId: 'douay-rheims',
           available: true
         };

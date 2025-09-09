@@ -58,6 +58,7 @@ export default function BibleIndexWebScreen() {
           abbreviation: book.abbreviation,
           category: book.category,
           order: book.order,
+          chapters: book.chapters,
           versionId: 'douay-rheims',
           available: true
         }));
