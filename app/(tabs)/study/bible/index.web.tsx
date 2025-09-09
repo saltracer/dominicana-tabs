@@ -13,14 +13,16 @@ import { router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useBible } from '../../../../contexts/BibleContext';
-import { bibleService, BibleBook } from '../../../../services/BibleService.web';
+import { bibleService } from '../../../../services/BibleService.web';
+import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import BibleVersionSelector from '../../../../components/BibleVersionSelector';
+import { VersionBibleBook } from '../../../../types/bible-version-types';
 
 export default function BibleIndexWebScreen() {
   const { colorScheme } = useTheme();
   const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
-  const [books, setBooks] = useState<BibleBook[]>([]);
-  const [filteredBooks, setFilteredBooks] = useState<BibleBook[]>([]);
+  const [books, setBooks] = useState<VersionBibleBook[]>([]);
+  const [filteredBooks, setFilteredBooks] = useState<VersionBibleBook[]>([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -44,7 +46,26 @@ export default function BibleIndexWebScreen() {
   const loadBooks = async () => {
     try {
       setLoading(true);
-      const bibleBooks = await bibleService.getAvailableBooks();
+      let bibleBooks: VersionBibleBook[];
+      
+      if (currentVersion === 'douay-rheims') {
+        // Use original BibleService for Douay-Rheims (has all 73 books)
+        const originalBooks = await bibleService.getAvailableBooks();
+        bibleBooks = originalBooks.map(book => ({
+          code: book.code,
+          title: book.title,
+          shortTitle: book.shortTitle,
+          abbreviation: book.abbreviation,
+          category: book.category,
+          order: book.order,
+          versionId: 'douay-rheims',
+          available: true
+        }));
+      } else {
+        // Use MultiVersionBibleService for other versions (like Vulgate)
+        bibleBooks = await multiVersionBibleService.getAvailableBooks();
+      }
+      
       setBooks(bibleBooks);
       setFilteredBooks(bibleBooks);
     } catch (error) {
@@ -54,15 +75,15 @@ export default function BibleIndexWebScreen() {
     }
   };
 
-  const handleBookPress = (book: BibleBook) => {
-    router.push(`/(tabs)/study/bible/${book.code}`);
+  const handleBookPress = (book: VersionBibleBook) => {
+    router.push(`/(tabs)/study/bible/${book.code}?version=${currentVersion}`);
   };
 
   const handleSearchPress = () => {
     router.push('/(tabs)/study/bible/search');
   };
 
-  const renderBookSection = (title: string, books: BibleBook[]) => (
+  const renderBookSection = (title: string, books: VersionBibleBook[]) => (
     <View key={title} style={styles.section}>
       <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
         {title}

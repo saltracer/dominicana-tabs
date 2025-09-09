@@ -13,8 +13,10 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useBible } from '../../../../contexts/BibleContext';
-import { bibleService, BibleBook } from '../../../../services/BibleService.web';
+import { bibleService } from '../../../../services/BibleService.web';
+import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import { BibleChapter, BibleVerse } from '../../../../types';
+import { VersionBibleBook } from '../../../../types/bible-version-types';
 
 export default function BibleReaderWebScreen() {
   const { bookCode, chapter, version } = useLocalSearchParams();
@@ -24,7 +26,7 @@ export default function BibleReaderWebScreen() {
 
   const { colorScheme } = useTheme();
   const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
-  const [book, setBook] = useState<BibleBook | null>(null);
+  const [book, setBook] = useState<VersionBibleBook | null>(null);
   const [currentChapter, setCurrentChapter] = useState<BibleChapter | null>(null);
   const [chapterNumber, setChapterNumber] = useState(initialChapterNum);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,31 @@ export default function BibleReaderWebScreen() {
     try {
       setLoading(true);
       setError(null);
-      const bookData = await bibleService.getBookByCode(bookCodeStr);
+      let bookData: VersionBibleBook;
+      
+      if (currentVersion === 'douay-rheims') {
+        // Use original BibleService for Douay-Rheims
+        const originalBook = await bibleService.getBookByCode(bookCodeStr);
+        bookData = {
+          code: originalBook.code,
+          title: originalBook.title,
+          shortTitle: originalBook.shortTitle,
+          abbreviation: originalBook.abbreviation,
+          category: originalBook.category,
+          order: originalBook.order,
+          versionId: 'douay-rheims',
+          available: true
+        };
+      } else {
+        // Use MultiVersionBibleService for other versions
+        const availableBooks = await multiVersionBibleService.getAvailableBooks();
+        const foundBook = availableBooks.find(b => b.code === bookCodeStr);
+        if (!foundBook) {
+          throw new Error(`Book ${bookCodeStr} not found in ${currentVersion}`);
+        }
+        bookData = foundBook;
+      }
+      
       setBook(bookData);
     } catch (err) {
       console.error('Error loading book:', err);
@@ -62,7 +88,16 @@ export default function BibleReaderWebScreen() {
     try {
       setLoading(true);
       setError(null);
-      const chapterData = await bibleService.getChapter(bookCodeStr, chapterNum);
+      let chapterData: BibleChapter | null;
+      
+      if (currentVersion === 'douay-rheims') {
+        // Use original BibleService for Douay-Rheims
+        chapterData = await bibleService.getChapter(bookCodeStr, chapterNum);
+      } else {
+        // Use MultiVersionBibleService for other versions
+        chapterData = await multiVersionBibleService.getChapter(bookCodeStr, chapterNum, currentVersion);
+      }
+      
       if (chapterData) {
         setCurrentChapter(chapterData);
       } else {
