@@ -41,8 +41,8 @@ export function getCelebrationsForDate(date: Date): Celebration[] {
       date: celebration.date,
       isDominican: celebration.type === "dominican" || celebration.type === "both",
       description: Array.isArray(celebration.description) 
-        ? celebration.description.join(' ') 
-        : celebration.description || celebration.short_desc || ""
+        ? celebration.description 
+        : celebration.short_desc || ""
     }));
 
     // Combine all celebrations

@@ -509,9 +509,24 @@ export default function FeastBanner({
                       <Text style={[styles.infoLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                         Description
                       </Text>
-                      <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
-                        {primaryFeast.description}
-                      </Text>
+                      {Array.isArray(primaryFeast.description) ? (
+                        primaryFeast.description.map((paragraph, index) => (
+                          <Text 
+                            key={index} 
+                            style={[
+                              styles.infoValue, 
+                              { color: Colors[colorScheme ?? 'light'].text },
+                              index > 0 && styles.biographyParagraph
+                            ]}
+                          >
+                            {paragraph}
+                          </Text>
+                        ))
+                      ) : (
+                        <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
+                          {primaryFeast.description}
+                        </Text>
+                      )}
                     </View>
                   )}
 
