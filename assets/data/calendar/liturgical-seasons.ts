@@ -249,7 +249,7 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
       const daysSincePentecost = Math.floor((date.getTime() - pentecost.getTime()) / (1000 * 60 * 60 * 24))
       const weeksSincePentecost = Math.floor(daysSincePentecost / 7) + 1
 
-      return `Week ${weeksSincePentecost + 8} in Ordinary Time` // Approximate
+      return `Week ${weeksSincePentecost + 9} in Ordinary Time` // Approximate - This should be adding the calculated weeks after epiphany, but that is not working yet.
     }
   }
 
