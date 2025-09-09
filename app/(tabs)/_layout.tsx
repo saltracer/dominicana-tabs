@@ -2,7 +2,7 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/Colors';
@@ -75,6 +75,15 @@ export default function TabLayout() {
               color={color} 
             />
           ),
+          headerLeft: () => (
+            <View style={styles.headerLogoContainer}>
+              <Image 
+                source={require('../../assets/images/dominicana_logo.png')} 
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            </View>
+          ),
           headerRight: () => (
             <Link href="/profile" asChild>
               <Pressable>
@@ -100,6 +109,15 @@ export default function TabLayout() {
               name={focused ? "library" : "library-outline"} 
               color={color} 
             />
+          ),
+          headerLeft: () => (
+            <View style={styles.headerLogoContainer}>
+              <Image 
+                source={require('../../assets/images/dominicana_logo.png')} 
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            </View>
           ),
           headerRight: () => (
             <Link href="/profile" asChild>
@@ -127,6 +145,16 @@ export default function TabLayout() {
               color={color} 
             />
           ),
+          headerLeft: () => (
+            <View style={styles.headerLogoContainer}>
+              <Image 
+                source={require('../../assets/images/dominicana_logo.png')} 
+                style={styles.headerLogo}
+                resizeMode="contain"
+                fadeDuration={0}
+              />
+            </View>
+          ),
           headerRight: () => (
             <Link href="/profile" asChild>
               <Pressable>
@@ -152,6 +180,15 @@ export default function TabLayout() {
               name={focused ? "chatbubble" : "chatbubble-outline"} 
               color={color} 
             />
+          ),
+          headerLeft: () => (
+            <View style={styles.headerLogoContainer}>
+              <Image 
+                source={require('../../assets/images/dominicana_logo.png')} 
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            </View>
           ),
           headerRight: () => (
             <Link href="/profile" asChild>
@@ -191,5 +228,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 999, // Lower than tab bar
+  },
+  headerLogoContainer: {
+    marginLeft: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  headerLogo: {
+    width: 24,
+    height: 24,
+    backgroundColor: 'transparent',
   },
 });
