@@ -8,16 +8,22 @@ import { useTheme } from '@/components/ThemeProvider';
 export default function Footer() {
   const { colorScheme } = useTheme();
 
-  const quickLinks = [
+  const quickLinks1 = [
     { name: 'Prayer', href: '/(tabs)/prayer' },
     { name: 'Study', href: '/(tabs)/study' },
+  ];
+
+  const quickLinks2 = [
     { name: 'Community', href: '/(tabs)/community' },
     { name: 'Preaching', href: '/(tabs)/preaching' },
   ];
 
-  const resources = [
+  const resources1 = [
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
+  ];
+
+  const resources2 = [
     { name: 'Privacy Policy', href: '/privacy' },
     { name: 'Terms of Service', href: '/terms' },
   ];
@@ -50,36 +56,72 @@ export default function Footer() {
           </Text>
         </View>
 
-        {/* Middle Column */}
-        <View style={styles.footerColumn}>
-          <Text style={[styles.footerSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Quick Links
-          </Text>
-          {quickLinks.map((link, index) => (
-            <Link key={index} href={link.href} asChild>
-              <TouchableOpacity style={styles.footerLink}>
-                <Text style={[styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  {link.name}
-                </Text>
-              </TouchableOpacity>
-            </Link>
-          ))}
+        {/* Quick Links Column 1 */}
+        <View style={styles.footerColumnGroup}>
+          <View style={styles.footerColumn}>
+            <Text style={[styles.footerSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Quick Links
+            </Text>
+            {quickLinks1.map((link, index) => (
+              <Link key={index} href={link.href as any} asChild>
+                <TouchableOpacity style={styles.footerLink}>
+                  <Text style={[styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {link.name}
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
+
+          {/* Quick Links Column 2 */}
+          <View style={styles.footerColumn}>
+            <Text style={[styles.footerSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              &nbsp;
+            </Text>
+            {quickLinks2.map((link, index) => (
+              <Link key={index} href={link.href as any} asChild>
+                <TouchableOpacity style={styles.footerLink}>
+                  <Text style={[styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {link.name}
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
         </View>
 
-        {/* Right Column */}
-        <View style={styles.footerColumn}>
-          <Text style={[styles.footerSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Resources
-          </Text>
-          {resources.map((link, index) => (
-            <Link key={index} href={link.href} asChild>
-              <TouchableOpacity style={styles.footerLink}>
-                <Text style={[styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  {link.name}
-                </Text>
-              </TouchableOpacity>
-            </Link>
-          ))}
+        {/* Resources Column 1 */}
+        <View style={styles.footerColumnGroup}>
+          <View style={styles.footerColumn}>
+            <Text style={[styles.footerSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Resources
+            </Text>
+            {resources1.map((link, index) => (
+              <Link key={index} href={link.href as any} asChild>
+                <TouchableOpacity style={styles.footerLink}>
+                  <Text style={[styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {link.name}
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
+
+          {/* Resources Column 2 */}
+          <View style={styles.footerColumn}>
+            <Text style={[styles.footerSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              &nbsp;
+            </Text>
+            {resources2.map((link, index) => (
+              <Link key={index} href={link.href as any} asChild>
+                <TouchableOpacity style={styles.footerLink}>
+                  <Text style={[styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {link.name}
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            ))}
+          </View>
         </View>
       </View>
 
@@ -108,24 +150,29 @@ const styles = StyleSheet.create({
   footer: {
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
-    paddingVertical: 48,
+    paddingVertical: 32,
     paddingHorizontal: 24,
   },
   footerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    marginBottom: 20,
     maxWidth: 1200,
     alignSelf: 'center',
   },
+  footerColumnGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    marginHorizontal: 8,
+  },
   footerColumn: {
     flex: 1,
-    marginHorizontal: 16,
+    marginHorizontal: 4,
   },
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   logoIcon: {
     width: 24,
@@ -146,7 +193,7 @@ const styles = StyleSheet.create({
   },
   footerDescription: {
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   footerSectionTitle: {
     fontSize: 16,
