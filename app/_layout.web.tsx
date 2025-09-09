@@ -3,7 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack, Link } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -167,8 +167,12 @@ function RootLayoutNav() {
           <View style={styles.topNav}>
             <Link href="/" asChild>
               <TouchableOpacity style={styles.logoSection}>
-                <View style={[styles.logoIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-                  <Text style={[styles.logoIconText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>✝</Text>
+                <View style={styles.logoIcon}>
+                  <Image 
+                    source={require('../assets/images/dominicana_logo.png')} 
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
                 </View>
                 <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
                   Dominicana
@@ -546,10 +550,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
   },
-  logoIconText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  logoImage: {
+    width: 28,
+    height: 28,
   },
   logoText: {
     fontSize: 24,
