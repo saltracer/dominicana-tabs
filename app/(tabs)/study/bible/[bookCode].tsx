@@ -15,16 +15,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
-import { bibleService, BibleBook } from '../../../../services/BibleService';
+import { useBible } from '../../../../contexts/BibleContext';
+import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
+import { bibleService } from '../../../../services/BibleService';
 import { BibleChapter, BibleVerse } from '../../../../types';
+import { VersionBibleBook } from '../../../../types/bible-version-types';
 import { testBibleLoading } from '../../../../services/BibleTest';
 
 export default function BibleReaderScreen() {
-  const { bookCode, chapter } = useLocalSearchParams();
+  const { bookCode, chapter, version } = useLocalSearchParams();
   const bookCodeStr = bookCode as string;
+  const versionStr = version as string;
   const initialChapterNum = chapter ? parseInt(chapter as string, 10) : 1;
   const { colorScheme } = useTheme();
-  const [book, setBook] = useState<BibleBook | null>(null);
+  const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
+  const [book, setBook] = useState<VersionBibleBook | null>(null);
   const [chapterData, setChapterData] = useState<BibleChapter | null>(null);
   const [currentChapter, setCurrentChapter] = useState(initialChapterNum);
   const [loading, setLoading] = useState(true);
@@ -37,23 +42,47 @@ export default function BibleReaderScreen() {
 
   useEffect(() => {
     if (bookCodeStr) {
+      // Set version from URL params if provided
+      if (versionStr && versionStr !== currentVersion) {
+        setCurrentVersion(versionStr);
+      }
       loadBook();
     }
-  }, [bookCodeStr]);
+  }, [bookCodeStr, versionStr]);
 
   useEffect(() => {
     if (book && bookCodeStr) {
       loadChapter(currentChapter);
     }
-  }, [book, currentChapter, bookCodeStr]);
+  }, [book, currentChapter, bookCodeStr, currentVersion]);
 
   const loadBook = async () => {
     try {
       setLoading(true);
       setError(null);
-      const bibleBook = bibleService.getBookByCode(bookCodeStr);
+      let availableBooks: VersionBibleBook[];
+      
+      if (currentVersion === 'douay-rheims') {
+        // Use original BibleService for Douay-Rheims
+        const originalBooks = bibleService.getBibleBooks();
+        availableBooks = originalBooks.map(book => ({
+          code: book.code,
+          title: book.title,
+          shortTitle: book.shortTitle,
+          abbreviation: book.abbreviation,
+          category: book.category,
+          order: book.order,
+          versionId: 'douay-rheims',
+          available: true
+        }));
+      } else {
+        // Use MultiVersionBibleService for other versions
+        availableBooks = await multiVersionBibleService.getAvailableBooks();
+      }
+      
+      const bibleBook = availableBooks.find(b => b.code === bookCodeStr);
       if (!bibleBook) {
-        setError(`Book "${bookCodeStr}" not found`);
+        setError(`Book "${bookCodeStr}" not found in ${currentVersion}`);
         return;
       }
       setBook(bibleBook);
@@ -69,7 +98,16 @@ export default function BibleReaderScreen() {
     try {
       setLoading(true);
       setError(null);
-      const chapterData = await bibleService.getChapter(bookCodeStr, chapterNumber);
+      let chapterData: BibleChapter | null;
+      
+      if (currentVersion === 'douay-rheims') {
+        // Use original BibleService for Douay-Rheims
+        chapterData = await bibleService.getChapter(bookCodeStr, chapterNumber);
+      } else {
+        // Use MultiVersionBibleService for other versions
+        chapterData = await multiVersionBibleService.getChapter(bookCodeStr, chapterNumber, currentVersion);
+      }
+      
       if (!chapterData) {
         setError(`Chapter ${chapterNumber} not found in ${bookCodeStr}`);
         return;
@@ -103,7 +141,7 @@ export default function BibleReaderScreen() {
     if (!searchQuery.trim()) return;
     
     try {
-      const results = await bibleService.search(searchQuery, bookCodeStr);
+      const results = await multiVersionBibleService.search(searchQuery, bookCodeStr);
       if (results.length > 0) {
         const firstResult = results[0];
         setCurrentChapter(firstResult.chapter);
@@ -215,6 +253,9 @@ export default function BibleReaderScreen() {
           <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             {book?.title}
           </Text>
+          <Text style={[styles.versionText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            {getCurrentVersionInfo()?.shortName || currentVersion}
+          </Text>
           <TouchableOpacity
             onPress={() => setShowChapterSelector(true)}
             style={styles.chapterSelector}
@@ -229,7 +270,7 @@ export default function BibleReaderScreen() {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.headerButton}
-            onPress={() => router.push(`/(tabs)/study/bible/search?bookCode=${bookCodeStr}`)}
+            onPress={() => router.push(`/(tabs)/study/bible/search?bookCode=${bookCodeStr}&version=${currentVersion}`)}
           >
             <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].primary} />
           </TouchableOpacity>
@@ -392,6 +433,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Georgia',
     marginBottom: 2,
+  },
+  versionText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    marginBottom: 4,
   },
   chapterSelector: {
     flexDirection: 'row',

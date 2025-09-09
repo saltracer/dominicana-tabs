@@ -14,20 +14,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
+import { useBible } from '../../../../contexts/BibleContext';
+import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import { bibleService, BibleBook } from '../../../../services/BibleService';
-import { BibleBook as BibleBookType } from '../../../../types';
+import BibleVersionSelector from '../../../../components/BibleVersionSelector';
+import { VersionBibleBook } from '../../../../types/bible-version-types';
 
 export default function BibleScreen() {
   const { colorScheme } = useTheme();
-  const [books, setBooks] = useState<BibleBook[]>([]);
-  const [filteredBooks, setFilteredBooks] = useState<BibleBook[]>([]);
+  const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
+  const [books, setBooks] = useState<VersionBibleBook[]>([]);
+  const [filteredBooks, setFilteredBooks] = useState<VersionBibleBook[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'old-testament' | 'new-testament' | 'deuterocanonical'>('all');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadBibleBooks();
-  }, []);
+  }, [currentVersion]);
 
   useEffect(() => {
     filterBooks();
@@ -36,7 +40,26 @@ export default function BibleScreen() {
   const loadBibleBooks = async () => {
     try {
       setLoading(true);
-      const bibleBooks = bibleService.getBibleBooks();
+      let bibleBooks: VersionBibleBook[];
+      
+      if (currentVersion === 'douay-rheims') {
+        // Use original BibleService for Douay-Rheims (has all 73 books)
+        const originalBooks = bibleService.getBibleBooks();
+        bibleBooks = originalBooks.map(book => ({
+          code: book.code,
+          title: book.title,
+          shortTitle: book.shortTitle,
+          abbreviation: book.abbreviation,
+          category: book.category,
+          order: book.order,
+          versionId: 'douay-rheims',
+          available: true
+        }));
+      } else {
+        // Use MultiVersionBibleService for other versions (like Vulgate)
+        bibleBooks = await multiVersionBibleService.getAvailableBooks();
+      }
+      
       setBooks(bibleBooks);
     } catch (error) {
       console.error('Error loading Bible books:', error);
@@ -67,8 +90,8 @@ export default function BibleScreen() {
     setFilteredBooks(filtered);
   };
 
-  const handleBookPress = (book: BibleBook) => {
-    router.push(`/(tabs)/study/bible/${book.code}`);
+  const handleBookPress = (book: VersionBibleBook) => {
+    router.push(`/(tabs)/study/bible/${book.code}?version=${currentVersion}`);
   };
 
   const categories = [
@@ -101,11 +124,19 @@ export default function BibleScreen() {
             Holy Bible
           </Text>
           <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            Douay-Rheims Version
+            {getCurrentVersionInfo()?.name || 'Select Version'}
           </Text>
+          
+          {/* Version Selector */}
+          <BibleVersionSelector
+            currentVersion={currentVersion}
+            onVersionChange={setCurrentVersion}
+            style={styles.versionSelector}
+          />
+          
           <TouchableOpacity
             style={[styles.searchButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-            onPress={() => router.push('/(tabs)/study/bible/search')}
+            onPress={() => router.push(`/(tabs)/study/bible/search?version=${currentVersion}`)}
           >
             <Ionicons name="search" size={16} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
             <Text style={[styles.searchButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
@@ -433,5 +464,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Georgia',
+  },
+  versionSelector: {
+    marginVertical: 12,
   },
 });

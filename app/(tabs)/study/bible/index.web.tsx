@@ -12,10 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
+import { useBible } from '../../../../contexts/BibleContext';
 import { bibleService, BibleBook } from '../../../../services/BibleService.web';
+import BibleVersionSelector from '../../../../components/BibleVersionSelector';
 
 export default function BibleIndexWebScreen() {
   const { colorScheme } = useTheme();
+  const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
   const [books, setBooks] = useState<BibleBook[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<BibleBook[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -23,7 +26,7 @@ export default function BibleIndexWebScreen() {
 
   useEffect(() => {
     loadBooks();
-  }, []);
+  }, [currentVersion]);
 
   useEffect(() => {
     if (searchText.trim() === '') {
@@ -131,6 +134,13 @@ export default function BibleIndexWebScreen() {
           />
         </TouchableOpacity>
       </View>
+
+      {/* Version Selector */}
+      <BibleVersionSelector
+        currentVersion={currentVersion}
+        onVersionChange={setCurrentVersion}
+        style={styles.versionSelector}
+      />
 
       <View style={styles.searchContainer}>
         <TextInput
@@ -276,5 +286,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
     marginTop: 16,
+  },
+  versionSelector: {
+    marginVertical: 12,
   },
 });

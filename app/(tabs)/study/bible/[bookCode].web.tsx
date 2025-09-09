@@ -12,15 +12,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
+import { useBible } from '../../../../contexts/BibleContext';
 import { bibleService, BibleBook } from '../../../../services/BibleService.web';
 import { BibleChapter, BibleVerse } from '../../../../types';
 
 export default function BibleReaderWebScreen() {
-  const { bookCode, chapter } = useLocalSearchParams();
+  const { bookCode, chapter, version } = useLocalSearchParams();
   const bookCodeStr = bookCode as string;
+  const versionStr = version as string;
   const initialChapterNum = chapter ? parseInt(chapter as string, 10) : 1;
 
   const { colorScheme } = useTheme();
+  const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
   const [book, setBook] = useState<BibleBook | null>(null);
   const [currentChapter, setCurrentChapter] = useState<BibleChapter | null>(null);
   const [chapterNumber, setChapterNumber] = useState(initialChapterNum);
@@ -28,14 +31,18 @@ export default function BibleReaderWebScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Set version from URL params if provided
+    if (versionStr && versionStr !== currentVersion) {
+      setCurrentVersion(versionStr);
+    }
     loadBook();
-  }, [bookCodeStr]);
+  }, [bookCodeStr, versionStr]);
 
   useEffect(() => {
     if (book) {
       loadChapter(chapterNumber);
     }
-  }, [book, chapterNumber]);
+  }, [book, chapterNumber, currentVersion]);
 
   const loadBook = async () => {
     try {

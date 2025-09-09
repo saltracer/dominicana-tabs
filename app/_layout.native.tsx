@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/CalendarContext';
+import { BibleProvider } from '@/contexts/BibleContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -59,7 +60,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <CalendarProvider>
-        <RootLayoutNav />
+        <BibleProvider>
+          <RootLayoutNav />
+        </BibleProvider>
       </CalendarProvider>
     </ThemeProvider>
   );

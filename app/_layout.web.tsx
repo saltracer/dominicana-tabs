@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider, useCalendar } from '@/components/CalendarContext';
+import { BibleProvider } from '@/contexts/BibleContext';
 import { Colors } from '@/constants/Colors';
 import Footer from '@/components/Footer.web';
 import FeastBanner from '@/components/FeastBanner.web';
@@ -56,7 +57,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <CalendarProvider>
-        <RootLayoutNav />
+        <BibleProvider>
+          <RootLayoutNav />
+        </BibleProvider>
       </CalendarProvider>
     </ThemeProvider>
   );

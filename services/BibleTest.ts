@@ -7,6 +7,8 @@
 import { Asset } from "expo-asset";
 import { readAsStringAsync } from "expo-file-system";
 import { USXParser } from './USXParser';
+import { testUSFXParser } from './USFXTest';
+import { testMultiVersionBibleService } from './MultiVersionBibleTest';
 
 export async function testBibleLoading() {
   try {
@@ -52,7 +54,27 @@ export async function testBibleLoading() {
       console.log('No local URI available');
     }
     
-    console.log('=== Test Complete ===');
+    console.log('=== USX Test Complete ===');
+    
+    // Test USFX Parser
+    console.log('\n=== Testing USFX Parser ===');
+    try {
+      await testUSFXParser();
+      console.log('USFX Parser test completed successfully!');
+    } catch (error) {
+      console.error('USFX Parser test failed:', error);
+    }
+    
+    // Test Multi-Version Bible Service
+    console.log('\n=== Testing Multi-Version Bible Service ===');
+    try {
+      await testMultiVersionBibleService();
+      console.log('Multi-Version Bible Service test completed successfully!');
+    } catch (error) {
+      console.error('Multi-Version Bible Service test failed:', error);
+    }
+    
+    console.log('=== All Tests Complete ===');
     return true;
   } catch (error) {
     console.error('Test failed:', error);
