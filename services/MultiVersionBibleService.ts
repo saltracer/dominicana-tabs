@@ -280,17 +280,41 @@ export class MultiVersionBibleService {
     
     try {
       if (bookCode) {
-        // Search in specific book
-        const book = await this.loadBook(bookCode);
-        const searchResults = parser.searchInBook(book, searchText, caseSensitive);
-        
-        results.push(...searchResults.map(verse => ({
-          book: bookCode,
-          chapter: this.getChapterNumberFromReference(verse.reference),
-          verse: verse.number,
-          text: verse.text,
-          reference: verse.reference
-        })));
+        // Check if bookCode is a category (old-testament, new-testament, deuterocanonical)
+        if (bookCode === 'old-testament' || bookCode === 'new-testament' || bookCode === 'deuterocanonical') {
+          // Search in all books of the specified category
+          const availableBooks = await this.getAvailableBooks();
+          const booksToSearch = availableBooks.filter(book => book.category === bookCode);
+          
+          for (const bibleBook of booksToSearch) {
+            try {
+              const book = await this.loadBook(bibleBook.code);
+              const searchResults = parser.searchInBook(book, searchText, caseSensitive);
+              
+              results.push(...searchResults.map(verse => ({
+                book: bibleBook.code,
+                chapter: this.getChapterNumberFromReference(verse.reference),
+                verse: verse.number,
+                text: verse.text,
+                reference: verse.reference
+              })));
+            } catch (error) {
+              console.warn(`Failed to search in ${bibleBook.code}:`, error);
+            }
+          }
+        } else {
+          // Search in specific book
+          const book = await this.loadBook(bookCode);
+          const searchResults = parser.searchInBook(book, searchText, caseSensitive);
+          
+          results.push(...searchResults.map(verse => ({
+            book: bookCode,
+            chapter: this.getChapterNumberFromReference(verse.reference),
+            verse: verse.number,
+            text: verse.text,
+            reference: verse.reference
+          })));
+        }
       } else {
         // Search in all available books (limit for performance)
         const availableBooks = await this.getAvailableBooks();

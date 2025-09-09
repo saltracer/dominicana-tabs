@@ -347,21 +347,52 @@ export class BibleService {
     
     try {
       if (bookCode) {
-        // Search in specific book
-        const book = await this.loadBook(bookCode);
-        for (const chapter of book.chapters) {
-          for (const verse of chapter.verses) {
-            const text = caseSensitive ? verse.text : verse.text.toLowerCase();
-            const search = caseSensitive ? searchText : searchText.toLowerCase();
-            
-            if (text.includes(search)) {
-              results.push({
-                book: bookCode,
-                chapter: chapter.number,
-                verse: verse.number,
-                text: verse.text,
-                reference: verse.reference
-              });
+        // Check if bookCode is a category (old-testament, new-testament, deuterocanonical)
+        if (bookCode === 'old-testament' || bookCode === 'new-testament' || bookCode === 'deuterocanonical') {
+          // Search in all books of the specified category
+          const allBooks = await this.getAvailableBooks();
+          const booksToSearch = allBooks.filter(book => book.category === bookCode);
+          
+          for (const book of booksToSearch) {
+            try {
+              const parsedBook = await this.loadBook(book.code);
+              for (const chapter of parsedBook.chapters) {
+                for (const verse of chapter.verses) {
+                  const text = caseSensitive ? verse.text : verse.text.toLowerCase();
+                  const search = caseSensitive ? searchText : searchText.toLowerCase();
+                  
+                  if (text.includes(search)) {
+                    results.push({
+                      book: book.code,
+                      chapter: chapter.number,
+                      verse: verse.number,
+                      text: verse.text,
+                      reference: verse.reference
+                    });
+                  }
+                }
+              }
+            } catch (error) {
+              console.warn(`Failed to search in ${book.code}:`, error);
+            }
+          }
+        } else {
+          // Search in specific book
+          const book = await this.loadBook(bookCode);
+          for (const chapter of book.chapters) {
+            for (const verse of chapter.verses) {
+              const text = caseSensitive ? verse.text : verse.text.toLowerCase();
+              const search = caseSensitive ? searchText : searchText.toLowerCase();
+              
+              if (text.includes(search)) {
+                results.push({
+                  book: bookCode,
+                  chapter: chapter.number,
+                  verse: verse.number,
+                  text: verse.text,
+                  reference: verse.reference
+                });
+              }
             }
           }
         }

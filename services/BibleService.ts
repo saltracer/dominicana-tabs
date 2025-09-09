@@ -7,8 +7,8 @@
 
 import { Asset } from "expo-asset";
 import { readAsStringAsync } from "expo-file-system";
-import { USXParser, ParsedBook } from './USXParser';
-import { BookMetadata } from '../types/usx-types';
+import { USXParser } from './USXParser';
+import { BookMetadata, ParsedBook } from '../types/usx-types';
 
 export interface BibleBook {
   code: string;
@@ -343,15 +343,15 @@ export class BibleService {
     try {
       console.log(`Getting chapter ${chapterNumber} from book ${bookCode}`);
       const book = await this.loadBook(bookCode);
-      console.log(`Book ${bookCode} loaded, available chapters:`, book.chapters.map(c => c.number));
+      console.log(`Book ${bookCode} loaded, available chapters:`, book.chapters.map((c: any) => c.number));
       
-      const chapter = book.chapters.find(c => c.number === chapterNumber);
+      const chapter = book.chapters.find((c: any) => c.number === chapterNumber);
       
       if (chapter) {
         console.log(`Chapter ${chapterNumber} found in ${bookCode}, verses:`, chapter.verses.length);
         return {
           number: chapter.number,
-          verses: chapter.verses.map(verse => ({
+          verses: chapter.verses.map((verse: any) => ({
             number: verse.number,
             text: verse.text,
             reference: verse.reference
@@ -375,17 +375,40 @@ export class BibleService {
     
     try {
       if (bookCode) {
-        // Search in specific book
-        const book = await this.loadBook(bookCode);
-        const searchResults = this.parser.searchInBook(book, searchText, caseSensitive);
-        
-        results.push(...searchResults.map(verse => ({
-          book: bookCode,
-          chapter: this.getChapterNumberFromReference(verse.reference),
-          verse: verse.number,
-          text: verse.text,
-          reference: verse.reference
-        })));
+        // Check if bookCode is a category (old-testament, new-testament, deuterocanonical)
+        if (bookCode === 'old-testament' || bookCode === 'new-testament' || bookCode === 'deuterocanonical') {
+          // Search in all books of the specified category
+          const booksToSearch = this.getBooksByCategory(bookCode as 'old-testament' | 'new-testament' | 'deuterocanonical');
+          
+          for (const bibleBook of booksToSearch) {
+            try {
+              const book = await this.loadBook(bibleBook.code);
+              const searchResults = this.parser.searchInBook(book, searchText, caseSensitive);
+              
+              results.push(...searchResults.map(verse => ({
+                book: bibleBook.code,
+                chapter: this.getChapterNumberFromReference(verse.reference),
+                verse: verse.number,
+                text: verse.text,
+                reference: verse.reference
+              })));
+            } catch (error) {
+              console.warn(`Failed to search in ${bibleBook.code}:`, error);
+            }
+          }
+        } else {
+          // Search in specific book
+          const book = await this.loadBook(bookCode);
+          const searchResults = this.parser.searchInBook(book, searchText, caseSensitive);
+          
+          results.push(...searchResults.map(verse => ({
+            book: bookCode,
+            chapter: this.getChapterNumberFromReference(verse.reference),
+            verse: verse.number,
+            text: verse.text,
+            reference: verse.reference
+          })));
+        }
       } else {
         // Search in all books (this could be expensive, so we might want to limit it)
         const booksToSearch = this.bibleBooks.slice(0, 10); // Limit to first 10 books for performance
