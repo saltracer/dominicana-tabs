@@ -2,7 +2,7 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
-import { Pressable, View, StyleSheet, Image } from 'react-native';
+import { Pressable, View, StyleSheet, Image, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/Colors';
@@ -151,7 +151,6 @@ export default function TabLayout() {
                 source={require('../../assets/images/dominicana_logo.png')} 
                 style={styles.headerLogo}
                 resizeMode="contain"
-                fadeDuration={0}
               />
             </View>
           ),
