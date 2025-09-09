@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Dimensions,
   Pressable,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
@@ -13,6 +14,7 @@ import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
+import FeastDetailPanel from '../../../components/FeastDetailPanel';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
@@ -166,6 +168,10 @@ export default function CalendarScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay, selectedDate, updateCalendarSelection } = useCalendar();
   const [markedDates, setMarkedDates] = useState<any>({});
+  const [showFeastDetail, setShowFeastDetail] = useState(false);
+  const [feastDetailAnimation] = useState(new Animated.Value(0));
+  const scrollViewRef = useRef<ScrollView>(null);
+  const feastDetailRef = useRef<View>(null);
 
 
 
@@ -175,7 +181,17 @@ export default function CalendarScreen() {
     calendarService.preloadCurrentMonth();
     
     generateMarkedDates();
-  }, [colorScheme, liturgicalDay]);
+    
+    // Show feast details for the initial liturgical day
+    if (liturgicalDay && !showFeastDetail) {
+      setShowFeastDetail(true);
+      Animated.timing(feastDetailAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [colorScheme, liturgicalDay, showFeastDetail, feastDetailAnimation]);
 
   const generateMarkedDates = useCallback(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -255,9 +271,36 @@ export default function CalendarScreen() {
     };
     
     setMarkedDates(newMarkedDates);
-  }, [markedDates, colorScheme, updateCalendarSelection]);
+    
+    // Show feast detail panel with animation and scroll to it
+    setShowFeastDetail(true);
+    Animated.timing(feastDetailAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      // Scroll to the feast detail section after animation
+      setTimeout(() => {
+        feastDetailRef.current?.measureLayout(
+          scrollViewRef.current as any,
+          (x, y) => {
+            scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
+          },
+          () => {}
+        );
+      }, 100);
+    });
+  }, [markedDates, colorScheme, updateCalendarSelection, feastDetailAnimation]);
 
-
+  const closeFeastDetail = useCallback(() => {
+    Animated.timing(feastDetailAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowFeastDetail(false);
+    });
+  }, [feastDetailAnimation]);
 
   if (!liturgicalDay) {
     return (
@@ -274,7 +317,12 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         <CommunityNavigation activeTab="calendar" />
         
         {/* Liturgical Calendar */}
@@ -368,54 +416,34 @@ export default function CalendarScreen() {
             </View>
           </View>
 
-          {/* Selected Date Info */}
-          <View style={[styles.selectedDateInfo, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-            <Text style={[styles.selectedDateLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              Selected Date
-            </Text>
-            <Text style={[styles.selectedDateText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
-            </Text>
-            
-            {/* Liturgical Season */}
-            <View style={[styles.seasonInfo, { backgroundColor: liturgicalDay.color }]}>
-              <Text style={[styles.seasonName, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                {liturgicalDay.season.name}
-              </Text>
-              <Text style={[styles.seasonWeek, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                Week {liturgicalDay.week}
-              </Text>
-            </View>
-
-            {/* Feasts for Selected Date */}
-            {liturgicalDay.feasts.length > 0 && (
-              <View style={styles.selectedFeasts}>
-                <Text style={[styles.feastsLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Feasts
-                </Text>
-                {liturgicalDay.feasts.map((feast, index) => (
-                  <View key={index} style={styles.selectedFeast}>
-                    <View style={[styles.feastRank, { backgroundColor: feast.color }]}>
-                      <Text style={[styles.feastRankText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                        {feast.rank.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      {feast.name}
-                    </Text>
-                    {feast.isDominican && (
-                      <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                        OP{/* ⚫ */}
-                      </Text>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
+          {/* Inline Feast Detail Panel */}
+        {liturgicalDay && (
+          <Animated.View 
+            ref={feastDetailRef}
+            style={[
+              styles.inlineFeastContainer,
+              {
+                opacity: feastDetailAnimation,
+                transform: [{
+                  translateY: feastDetailAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [50, 0],
+                  })
+                }]
+              }
+            ]}
+          >
+            <FeastDetailPanel
+              liturgicalDay={liturgicalDay}
+              isVisible={true}
+              onClose={closeFeastDetail}
+            />
+          </Animated.View>
+        )}
         </View>
-      </ScrollView>
 
+        
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -643,5 +671,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
     paddingHorizontal: 2,
+  },
+  inlineFeastContainer: {
+    marginTop: 20,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
 });

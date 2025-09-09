@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Dimensions,
   Pressable,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
@@ -13,6 +14,7 @@ import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
+import FeastDetailPanel from '../../../components/FeastDetailPanel';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
@@ -168,12 +170,26 @@ export default function CalendarScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay, selectedDate, updateCalendarSelection } = useCalendar();
   const [markedDates, setMarkedDates] = useState<any>({});
+  const [showFeastDetail, setShowFeastDetail] = useState(false);
+  const [feastDetailAnimation] = useState(new Animated.Value(0));
+  const scrollViewRef = useRef<ScrollView>(null);
+  const feastDetailRef = useRef<View>(null);
 
 
 
   useEffect(() => {
     generateMarkedDates();
-  }, [colorScheme, liturgicalDay]);
+    
+    // Show feast details for the initial liturgical day
+    if (liturgicalDay && !showFeastDetail) {
+      setShowFeastDetail(true);
+      Animated.timing(feastDetailAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [colorScheme, liturgicalDay, showFeastDetail, feastDetailAnimation]);
 
   const generateMarkedDates = () => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -225,7 +241,7 @@ export default function CalendarScreen() {
     setMarkedDates(marked);
   };
 
-  const handleDayPress = (day: any) => {
+  const handleDayPress = useCallback((day: any) => {
     // Use date-fns parseISO for clean date parsing
     const selectedDate = parseISO(day.dateString);
     updateCalendarSelection(selectedDate);
@@ -249,9 +265,25 @@ export default function CalendarScreen() {
     };
     
     setMarkedDates(newMarkedDates);
-  };
+    
+    // Show feast detail panel with animation
+    setShowFeastDetail(true);
+    Animated.timing(feastDetailAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [markedDates, colorScheme, updateCalendarSelection, feastDetailAnimation]);
 
-
+  const closeFeastDetail = useCallback(() => {
+    Animated.timing(feastDetailAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowFeastDetail(false);
+    });
+  }, [feastDetailAnimation]);
 
   if (!liturgicalDay) {
     return (
@@ -268,166 +300,145 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         {/* <CommunityNavigation activeTab="calendar" /> */}
         
-        {/* Liturgical Calendar */}
-        <View style={[styles.calendarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-          <Text style={[styles.calendarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Liturgical Calendar
-          </Text>
-          
-          {/* Enhanced Calendar Component */}
-          <Calendar
-            current={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
-            onDayPress={handleDayPress}
-            markedDates={markedDates}
-            dayComponent={CustomDayComponent}
-            theme={{
-              backgroundColor: Colors[colorScheme ?? 'light'].card,
-              calendarBackground: Colors[colorScheme ?? 'light'].card,
-              textSectionTitleColor: Colors[colorScheme ?? 'light'].text,
-              selectedDayBackgroundColor: Colors[colorScheme ?? 'light'].primary,
-              selectedDayTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
-              todayTextColor: Colors[colorScheme ?? 'light'].primary,
-              dayTextColor: Colors[colorScheme ?? 'light'].text,
-              textDisabledColor: Colors[colorScheme ?? 'light'].textMuted,
-              dotColor: Colors[colorScheme ?? 'light'].primary,
-              selectedDotColor: Colors[colorScheme ?? 'light'].dominicanWhite,
-              arrowColor: Colors[colorScheme ?? 'light'].primary,
-              monthTextColor: Colors[colorScheme ?? 'light'].text,
-              indicatorColor: Colors[colorScheme ?? 'light'].primary,
-              textDayFontFamily: 'Georgia',
-              textMonthFontFamily: 'Georgia',
-              textDayHeaderFontFamily: 'Georgia',
-              textDayFontSize: 16,
-              textMonthFontSize: 18,
-              textDayHeaderFontSize: 14,
-              'stylesheet.calendar.main': {
-                dayContainer: {
-                  borderColor: Colors[colorScheme ?? 'light'].border,
-                  borderWidth: 1,
-                  flex:1,
-                  padding:10
-                },
-                emptyDayContainer: {
-                  borderColor: Colors[colorScheme ?? 'light'].border,
-                  borderWidth: 1,
-                  flex:1,
-                  padding:10
-                },
-                week: {
-                  marginTop: 0,
-                  marginBottom: 0,
-                  flexDirection: 'row',
-                  justifyContent: 'space-around'
-                },
-              }
-            }}
-            minDate={format(subDays(new Date(), 365), 'yyyy-MM-dd')}
-            maxDate={format(addDays(new Date(), 365), 'yyyy-MM-dd')}
-            key={colorScheme}
-          />
-
-          {/* Calendar Legend */}
-          <View style={[styles.calendarLegend, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-            <Text style={[styles.legendTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Calendar Legend
-            </Text>
-            <View style={styles.legendItems}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Solemnity
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4B0082' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Feast
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#DAA520' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Memorial
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#2E7D32' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Ferial Day
-                </Text>
-              </View>
-            </View>
-            
-            {/* Enhanced Dominican Indicator */}
-            <View style={styles.dominicanLegend}>
-              <Text style={[styles.legendSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Dominican Celebrations
+        {/* Main Content Container - Side by Side Layout */}
+        <View style={styles.mainContentContainer}>
+          {/* Left Side - Calendar */}
+          <View style={styles.calendarSection}>
+            <View style={[styles.calendarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <Text style={[styles.calendarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Liturgical Calendar
               </Text>
-              <View style={styles.legendItem}>
-                <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  ⚫
+              
+              {/* Enhanced Calendar Component */}
+              <Calendar
+                current={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
+                onDayPress={handleDayPress}
+                markedDates={markedDates}
+                dayComponent={CustomDayComponent}
+                theme={{
+                  backgroundColor: Colors[colorScheme ?? 'light'].card,
+                  calendarBackground: Colors[colorScheme ?? 'light'].card,
+                  textSectionTitleColor: Colors[colorScheme ?? 'light'].text,
+                  selectedDayBackgroundColor: Colors[colorScheme ?? 'light'].primary,
+                  selectedDayTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+                  todayTextColor: Colors[colorScheme ?? 'light'].primary,
+                  dayTextColor: Colors[colorScheme ?? 'light'].text,
+                  textDisabledColor: Colors[colorScheme ?? 'light'].textMuted,
+                  dotColor: Colors[colorScheme ?? 'light'].primary,
+                  selectedDotColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+                  arrowColor: Colors[colorScheme ?? 'light'].primary,
+                  monthTextColor: Colors[colorScheme ?? 'light'].text,
+                  indicatorColor: Colors[colorScheme ?? 'light'].primary,
+                  textDayFontFamily: 'Georgia',
+                  textMonthFontFamily: 'Georgia',
+                  textDayHeaderFontFamily: 'Georgia',
+                  textDayFontSize: 16,
+                  textMonthFontSize: 18,
+                  textDayHeaderFontSize: 14,
+                }}
+                minDate={format(subDays(new Date(), 365), 'yyyy-MM-dd')}
+                maxDate={format(addDays(new Date(), 365), 'yyyy-MM-dd')}
+                key={colorScheme}
+              />
+
+              {/* Calendar Legend */}
+              <View style={[styles.calendarLegend, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                <Text style={[styles.legendTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Calendar Legend
                 </Text>
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Dominican Saint/Feast
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  +N = Additional feasts
-                </Text>
+                <View style={styles.legendItems}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Solemnity
+                    </Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#4B0082' }]} />
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Feast
+                    </Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#DAA520' }]} />
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Memorial
+                    </Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#2E7D32' }]} />
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Ferial Day
+                    </Text>
+                  </View>
+                </View>
+                
+                {/* Enhanced Dominican Indicator */}
+                <View style={styles.dominicanLegend}>
+                  <Text style={[styles.legendSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Dominican Celebrations
+                  </Text>
+                  <View style={styles.legendItem}>
+                    <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      ⚫
+                    </Text>
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Dominican Saint/Feast
+                    </Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      +N = Additional feasts
+                    </Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
 
-          {/* Selected Date Info */}
-          <View style={[styles.selectedDateInfo, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-            <Text style={[styles.selectedDateLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              Selected Date
-            </Text>
-            <Text style={[styles.selectedDateText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
-            </Text>
-            
-            {/* Liturgical Season */}
-            <View style={[styles.seasonInfo, { backgroundColor: liturgicalDay.color }]}>
-              <Text style={[styles.seasonName, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                {liturgicalDay.season.name}
-              </Text>
-              <Text style={[styles.seasonWeek, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                Week {liturgicalDay.week}
-              </Text>
-            </View>
-
-            {/* Feasts for Selected Date */}
-            {liturgicalDay.feasts.length > 0 && (
-              <View style={styles.selectedFeasts}>
-                <Text style={[styles.feastsLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Feasts
+          {/* Right Side - Feast Detail Panel */}
+          <View style={styles.feastSection}>
+            {liturgicalDay ? (
+              <Animated.View 
+                ref={feastDetailRef}
+                style={[
+                  styles.sideFeastContainer,
+                  {
+                    opacity: feastDetailAnimation,
+                    transform: [{
+                      translateX: feastDetailAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [100, 0],
+                      })
+                    }]
+                  }
+                ]}
+              >
+                <FeastDetailPanel
+                  liturgicalDay={liturgicalDay}
+                  isVisible={true}
+                  onClose={closeFeastDetail}
+                />
+              </Animated.View>
+            ) : (
+              <View style={[styles.placeholderPanel, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                <Text style={[styles.placeholderText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                  Loading liturgical information...
                 </Text>
-                {liturgicalDay.feasts.map((feast, index) => (
-                  <View key={index} style={styles.selectedFeast}>
-                    <View style={[styles.feastRank, { backgroundColor: feast.color }]}>
-                      <Text style={[styles.feastRankText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                        {feast.rank.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <Text style={[styles.feastName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      {feast.name}
-                    </Text>
-                    {feast.isDominican && (
-                      <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                        ⚫
-                      </Text>
-                    )}
-                  </View>
-                ))}
               </View>
             )}
           </View>
         </View>
+
+        
       </ScrollView>
     </SafeAreaView>
   );
@@ -449,11 +460,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
   },
+  mainContentContainer: {
+    flexDirection: 'row',
+    gap: 20,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  calendarSection: {
+    flex: 1,
+    minWidth: 400,
+  },
+  feastSection: {
+    flex: 1,
+    minWidth: 400,
+    maxWidth: 500,
+  },
   calendarContainer: {
     padding: 16,
     borderRadius: 12,
-    marginBottom: 16,
-    marginHorizontal: 16,
     elevation: 2,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
   },
@@ -655,5 +679,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
     paddingHorizontal: 2,
+  },
+  inlineFeastContainer: {
+    marginTop: 20,
+    marginHorizontal: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  sideFeastContainer: {
+    height: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  placeholderPanel: {
+    height: 400,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    elevation: 2,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+  },
+  placeholderText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
