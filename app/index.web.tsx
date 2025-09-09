@@ -75,7 +75,7 @@ export default function Index() {
         
         <View style={styles.pillarsGrid}>
           {fourPillars.map((pillar, index) => (
-            <View key={index} style={[styles.pillarCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+            <TouchableOpacity key={index} style={[styles.pillarCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
               <Ionicons 
                 name={pillar.icon as any} 
                 size={32} 
@@ -88,18 +88,16 @@ export default function Index() {
               <Text style={[styles.pillarDescription, { color: Colors[colorScheme ?? 'light'].text }]}>
                 {pillar.description}
               </Text>
-              <Link href={pillar.link} style={styles.pillarLink}>
+              <Link href={pillar.link as any} style={styles.pillarLink}>
                 <Text style={[styles.pillarLinkText, { color: Colors[colorScheme ?? 'light'].primary }]}>
                   {pillar.linkText}
                 </Text>
               </Link>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       </View>
       
-      {/* Footer */}
-      <Footer />
     </ScrollView>
   );
 }
@@ -148,6 +146,7 @@ const styles = StyleSheet.create({
     paddingVertical: 80,
     paddingHorizontal: 24,
     alignItems: 'center',
+    backgroundColor: '#FAFAFA',
   },
   pillarsTitle: {
     fontSize: 36,
@@ -170,6 +169,17 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
     margin: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   pillarIcon: {
     marginBottom: 16,
