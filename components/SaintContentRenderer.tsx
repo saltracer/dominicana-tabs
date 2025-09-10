@@ -185,16 +185,18 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
             )}
           </View>
         </View>
-        
         {/* Expand/Collapse Icon */}
+        { saint.feast_day && (
         <Ionicons 
           name={isExpanded ? "chevron-up" : "chevron-down"} 
           size={24} 
           color={colors.textSecondary} 
         />
+        )}
       </TouchableOpacity>
 
       {/* Expandable Content */}
+      { saint.feast_day && (
       <Animated.View 
         style={[
           styles.expandableContent,
@@ -342,6 +344,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
           </View>
         </View>
       </Animated.View>
+      )}
     </>
   );
 };
