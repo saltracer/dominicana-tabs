@@ -34,7 +34,7 @@ export const convertFeastToSaint = (feast: Celebration): Saint => ({
   death_year: feast.deathYear,
   prayers: feast.prayers,
   is_dominican: feast.isDominican,
-  is_doctor: feast.rank === CelebrationRank.SOLEMNITY, // You can adjust this logic
+  is_doctor: feast.isDoctor || false,
   color: feast.color as any,
   books: feast.books || [],
   // Default values for missing fields
@@ -153,14 +153,14 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
                 styles.colorBadge, 
                 { 
                   backgroundColor: getLiturgicalColor(saint.color),
-                  borderWidth: saint.color === 'White' ? 1 : 0,
-                  borderColor: saint.color === 'White' ? '#666666' : 'transparent',
+                  borderWidth: saint.color.toLowerCase() === 'white' ? 1 : 0,
+                  borderColor: saint.color.toLowerCase() === 'white' ? '#666666' : 'transparent',
                 }
               ]}>
                 <Text style={[
                   styles.badgeText, 
                   { 
-                    color: saint.color === 'White' 
+                    color: saint.color.toLowerCase() === 'white' 
                       ? '#000000' 
                       : colors.dominicanWhite 
                   }

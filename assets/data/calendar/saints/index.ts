@@ -69,6 +69,7 @@ export function getSaintsForDate(date: Date): Celebration[] {
       color: saint.color?.toLowerCase() || "white",
       date: formattedDate,
       isDominican: saint.is_dominican,
+      isDoctor: saint.is_doctor || false,
       description: saint.short_bio || saint.biography?.join(" "),
       // Add more detailed information
       birthYear: saint.birth_year || undefined,

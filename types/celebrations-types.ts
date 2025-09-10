@@ -31,6 +31,7 @@ export interface Celebration {
   rank: CelebrationRank
   color: string
   isDominican: boolean
+  isDoctor?: boolean
   description?: string[]
   // Add these new fields
   birthYear?: number
