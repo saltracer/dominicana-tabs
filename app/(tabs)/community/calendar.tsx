@@ -471,6 +471,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     elevation: 2,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    // Ensure consistent width for matching with feast panel
+    alignSelf: 'stretch',
   },
   calendarTitle: {
     fontSize: 24,
@@ -674,8 +676,10 @@ const styles = StyleSheet.create({
   },
   inlineFeastContainer: {
     marginTop: 20,
-    marginHorizontal: 16,
+    //marginHorizontal: 16,
     borderRadius: 16,
     overflow: 'hidden',
+    // Match the calendar container width
+    alignSelf: 'stretch',
   },
 });

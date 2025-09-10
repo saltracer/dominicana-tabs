@@ -70,12 +70,28 @@ const FeastCard: React.FC<FeastCardProps> = ({
               </Text>
               {feast.isDominican && (
                 <View style={styles.dominicanBadge}>
+                  <Ionicons name="star" size={12} color={colors.primary} />
                   <Text style={[styles.dominicanText, { color: colors.primary }]}>
                     Dominican
                   </Text>
                 </View>
               )}
+              {/* Show if it's a Doctor of the Church */}
+              {feast.name.includes('Doctor') && (
+                <View style={[styles.doctorBadge, { backgroundColor: colors.primary }]}>
+                  <Ionicons name="school" size={12} color={colors.dominicanWhite} />
+                  <Text style={[styles.doctorText, { color: colors.dominicanWhite }]}>
+                    Doctor
+                  </Text>
+                </View>
+              )}
             </View>
+            {/* Short description preview */}
+            {feast.description && (
+              <Text style={[styles.feastPreview, { color: colors.textSecondary }]} numberOfLines={2}>
+                {Array.isArray(feast.description) ? feast.description[0] : feast.description}
+              </Text>
+            )}
           </View>
           
           {/* Expand/Collapse Icon */}
@@ -90,36 +106,47 @@ const FeastCard: React.FC<FeastCardProps> = ({
       {/* Expanded Content */}
       {isExpanded && (
         <Animated.View style={styles.expandedContent}>
-          {/* Date Range */}
+          {/* Date Range with Enhanced Information */}
           {(feast.birthYear || feast.deathYear) && (
             <View style={styles.dateRangeSection}>
-              <Text style={[styles.dateRangeText, { color: colors.textSecondary }]}>
-                {feast.birthYear && feast.deathYear 
-                  ? `${feast.birthYear} - ${feast.deathYear}`
-                  : feast.deathYear ? `d. ${feast.deathYear}` : `b. ${feast.birthYear}`
-                }
-              </Text>
+              <View style={styles.dateInfoRow}>
+                <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.dateRangeText, { color: colors.textSecondary }]}>
+                  {feast.birthYear && feast.deathYear 
+                    ? `${feast.birthYear} - ${feast.deathYear}`
+                    : feast.deathYear ? `d. ${feast.deathYear}` : `b. ${feast.birthYear}`
+                  }
+                </Text>
+              </View>
             </View>
           )}
           
           {/* Patronage */}
           {feast.patronage && (
             <View style={styles.detailSection}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                Patronage
-              </Text>
-              <Text style={[styles.detailValue, { color: colors.text }]}>
-                {feast.patronage}
-              </Text>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                  Patronage
+                </Text>
+              </View>
+              <View style={styles.patronageContainer}>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {feast.patronage}
+                </Text>
+              </View>
             </View>
           )}
           
           {/* Biography */}
           {feast.biography && (
             <View style={styles.detailSection}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                Biography
-              </Text>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="book-outline" size={18} color={colors.primary} />
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                  Biography
+                </Text>
+              </View>
               {Array.isArray(feast.biography) ? (
                 feast.biography.map((paragraph, idx) => (
                   <Text 
@@ -144,21 +171,55 @@ const FeastCard: React.FC<FeastCardProps> = ({
           {/* Prayers */}
           {feast.prayers && (
             <View style={styles.detailSection}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                Prayers
-              </Text>
-              <Text style={[styles.prayerText, { color: colors.text }]}>
-                {feast.prayers}
-              </Text>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="heart-outline" size={18} color={colors.primary} />
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                  Prayers
+                </Text>
+              </View>
+              <View style={styles.prayerContainer}>
+                <Text style={[styles.prayerText, { color: colors.text }]}>
+                  {feast.prayers}
+                </Text>
+              </View>
+            </View>
+          )}
+          
+          {/* Books/Resources */}
+          {feast.books && feast.books.length > 0 && (
+            <View style={styles.detailSection}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="library-outline" size={18} color={colors.primary} />
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                  Recommended Reading
+                </Text>
+              </View>
+              <View style={styles.booksContainer}>
+                {feast.books.map((book, idx) => (
+                  <View key={idx} style={[styles.bookItem, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.bookTitle, { color: colors.text }]}>
+                      {typeof book === 'string' ? book : book.title || book.name}
+                    </Text>
+                    {typeof book === 'object' && book.author && (
+                      <Text style={[styles.bookAuthor, { color: colors.textSecondary }]}>
+                        by {book.author}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
             </View>
           )}
           
           {/* Description (fallback) */}
           {!feast.patronage && !feast.biography && !feast.prayers && feast.description && (
             <View style={styles.detailSection}>
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                Description
-              </Text>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                  Description
+                </Text>
+              </View>
               {Array.isArray(feast.description) ? (
                 feast.description.map((paragraph, idx) => (
                   <Text 
@@ -222,7 +283,7 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
             </Text>
           </View>
           
-          {onClose && (
+          {/* {onClose && (
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={onClose}
@@ -230,7 +291,7 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
             >
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
-          )}
+          )} */}
         </View>
         
         {/* Liturgical Season */}
@@ -238,12 +299,24 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
           styles.seasonInfo, 
           { backgroundColor: getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark') }
         ]}>
-          <Text style={[styles.seasonName, { color: '#FFFFFF' }]}>
-            {liturgicalDay.season.name}
-          </Text>
+          <View style={styles.seasonHeader}>
+            <Ionicons name="leaf-outline" size={20} color="#FFFFFF" />
+            <Text style={[styles.seasonName, { color: '#FFFFFF' }]}>
+              {liturgicalDay.season.name}
+            </Text>
+          </View>
           <Text style={[styles.seasonWeek, { color: '#FFFFFF' }]}>
             Week {liturgicalDay.week}
           </Text>
+          {/* Show total number of feasts */}
+          {liturgicalDay.feasts.length > 0 && (
+            <View style={styles.feastCountContainer}>
+              <Ionicons name="star-outline" size={16} color="#FFFFFF" />
+              <Text style={[styles.feastCount, { color: '#FFFFFF' }]}>
+                {liturgicalDay.feasts.length} {liturgicalDay.feasts.length === 1 ? 'Feast' : 'Feasts'}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
       
@@ -302,10 +375,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+    //borderWidth: 1,
   },
   headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    //justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
   },
@@ -335,6 +409,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
+  seasonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   seasonName: {
     fontSize: 18,
     fontWeight: '700',
@@ -343,13 +423,24 @@ const styles = StyleSheet.create({
   seasonWeek: {
     fontSize: 14,
     fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  feastCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginTop: 4,
+  },
+  feastCount: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    //paddingHorizontal: 20,
     paddingBottom: 20,
   },
   feastsContainer: {
@@ -372,6 +463,7 @@ const styles = StyleSheet.create({
   },
   feastHeader: {
     padding: 16,
+    //borderWidth: 1,
   },
   feastHeaderContent: {
     flexDirection: 'row',
@@ -414,14 +506,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   dominicanText: {
     fontSize: 12,
     fontWeight: '600',
     fontFamily: 'Georgia',
   },
+  doctorBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  doctorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  feastPreview: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginTop: 4,
+    lineHeight: 18,
+  },
   expandedContent: {
-    paddingHorizontal: 16,
+    //paddingHorizontal: 16,
     paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
@@ -431,8 +545,53 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingTop: 16,
   },
+  dateInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   dateRangeText: {
     fontSize: 16,
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  patronageContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4CAF50',
+  },
+  prayerContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#E91E63',
+  },
+  booksContainer: {
+    gap: 8,
+  },
+  bookItem: {
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF9800',
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  bookAuthor: {
+    fontSize: 14,
     fontFamily: 'Georgia',
     fontStyle: 'italic',
   },
