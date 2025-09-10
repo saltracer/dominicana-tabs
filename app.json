@@ -4,12 +4,12 @@
     "slug": "dominicana",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/dominicana_logo.png",
+    "icon": "./assets/images/dominicana_logo-white.png",
     "scheme": "dominicana",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/dominicana_logo.png",
+      "image": "./assets/images/dominicana_logo-white.png",
       "resizeMode": "contain",
       "backgroundColor": "#8B0000"
     },
@@ -26,7 +26,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/dominicana_logo.png",
+        "foregroundImage": "./assets/images/dominicana_logo-white.png",
         "backgroundColor": "#8B0000"
       },
       "edgeToEdgeEnabled": true,
@@ -46,7 +46,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/dominicana_logo.png"
+      "favicon": "./assets/images/dominicana_logo-white.png"
     },
     "plugins": [
       "expo-router",
