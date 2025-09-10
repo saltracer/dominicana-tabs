@@ -23,8 +23,12 @@ export const convertFeastToSaint = (feast: Celebration): Saint => ({
   id: feast.id,
   name: feast.name,
   feast_day: feast.date,
-  short_bio: feast.description?.[0] || feast.biography?.[0], // First paragraph as short bio
-  biography: feast.biography || feast.description || [], // Ensure it's always an array
+  short_bio: Array.isArray(feast.description) 
+    ? feast.description[0] 
+    : feast.description || feast.biography?.[0], // Handle both string and array descriptions
+  biography: feast.biography || (Array.isArray(feast.description) 
+    ? feast.description 
+    : feast.description ? [feast.description] : []), // Convert string to array if needed
   patronage: feast.patronage,
   birth_year: feast.birthYear,
   death_year: feast.deathYear,
