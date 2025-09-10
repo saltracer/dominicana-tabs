@@ -56,7 +56,8 @@ export default function TabLayout() {
         headerStyle: {
           backgroundColor: Colors[colorScheme ?? 'light'].primary,
         },
-        headerTintColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+        headerTintColor: Colors[colorScheme ?? 'light'].textOnRed,
+        //headerTintColor: 'white',
         headerTitleStyle: {
           fontFamily: 'System',
           fontWeight: '700',

@@ -17,6 +17,7 @@ export const Colors = {
     text: '#2F2F2F', // Charcoal
     textSecondary: '#666666',
     textMuted: '#999999',
+    textOnRed: '#FFFFFF',
     
     // Status colors
     success: '#2E7D32',
@@ -64,6 +65,7 @@ export const Colors = {
     text: '#FFFFFF',
     textSecondary: '#B0B0B0',
     textMuted: '#AAAAAA',
+    textOnRed: '#FFFFFF',
     
     // Status colors
     success: '#4CAF50',
@@ -87,7 +89,7 @@ export const Colors = {
     
     // Dominican-specific colors
     dominicanBlack: '#FFFFFF', // Inverted for dark mode
-    dominicanWhite: '#DDDDDD',
+    dominicanWhite: '#000000',
     dominicanGold: '#FFD700',
     dominicanRed: '#B42025',
 

@@ -150,7 +150,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
           <View style={styles.badgesContainer}>
             {saint.is_dominican && (
               <View style={[styles.dominicanBadge, { backgroundColor: colors.primary }]}>
-                <Text style={[styles.badgeText, { color: colors.dominicanWhite }]}>
+                <Text style={[styles.badgeText, { color: 'white' }]}>
                   Dominican
                 </Text>
               </View>
@@ -175,8 +175,8 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
                   styles.badgeText, 
                   { 
                     color: saint.color.toLowerCase() === 'white' 
-                      ? '#000000' 
-                      : colors.dominicanWhite 
+                      ? 'black' 
+                      : 'white' 
                   }
                 ]}>
                   {saint.color.charAt(0).toUpperCase() + saint.color.slice(1)}
