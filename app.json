@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/dominicana_logo-white.png",
+      "image": "./assets/images/dominicana_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#8B0000"
     },
@@ -21,8 +21,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby Dominican provinces and communities."
-      }
+        "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby Dominican provinces and communities.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.dominicana.dev"
     },
     "android": {
       "adaptiveIcon": {
@@ -35,7 +37,16 @@
         "ACCESS_COARSE_LOCATION",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "INTERNET"
+        "INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "config": {
         "googleMaps": {
@@ -56,10 +67,11 @@
       "expo-av",
       "expo-calendar",
       "expo-location",
-      ["expo-font",
-      {
-        "android": {
-          "fonts": [
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
               {
                 "fontFamily": "Neuton",
                 "fontDefinitions": [
@@ -91,6 +103,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b2b1f4ad-ab34-459e-b8ed-36e7201450dd"
+      }
+    },
+    "owner": "pswagerty"
   }
 }
