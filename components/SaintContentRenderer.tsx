@@ -399,13 +399,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Georgia',
     marginBottom: 8,
   },
   sectionContent: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Georgia',
     lineHeight: 20,
   },

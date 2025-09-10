@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
   },
   panelTitle: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '600',
     fontFamily: 'Georgia',
     flex: 1,
