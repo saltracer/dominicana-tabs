@@ -13,7 +13,7 @@ import { Colors, getLiturgicalColorHex } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { LiturgicalDay, Celebration } from '../types';
 import { parseISO, format } from 'date-fns';
-import SaintContentRenderer, { convertFeastToSaint } from './SaintContentRenderer';
+import SaintContentRenderer, { convertFeastToSaint, formatLiturgicalDay } from './SaintContentRenderer';
 
 interface FeastDetailPanelProps {
   liturgicalDay: LiturgicalDay;
@@ -98,6 +98,7 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
                 saint={convertFeastToSaint(feast)} 
                 colorScheme={colorScheme}
                 defaultExpanded={false}
+                liturgicalDay={liturgicalDay}
               />
             </View>
           ))

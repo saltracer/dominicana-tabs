@@ -70,7 +70,7 @@ export function getSaintsForDate(date: Date): Celebration[] {
       date: formattedDate,
       isDominican: saint.is_dominican,
       isDoctor: saint.is_doctor || false,
-      description: saint.short_bio || saint.biography?.join(" "),
+      description: saint.short_bio ? [saint.short_bio] : saint.biography || [],
       // Add more detailed information
       birthYear: saint.birth_year || undefined,
       deathYear: saint.death_year || undefined,

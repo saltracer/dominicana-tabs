@@ -11,11 +11,13 @@ import { Colors } from '../constants/Colors';
 import { Saint } from '../types/saint-types';
 import { Celebration } from '../types/celebrations-types';
 import { CelebrationRank } from '../types/celebrations-types';
+import { LiturgicalDay } from '../types';
 
 interface SaintContentRendererProps {
   saint: Saint;
   colorScheme: 'light' | 'dark' | null;
   defaultExpanded?: boolean;
+  liturgicalDay?: LiturgicalDay;
 }
 
 // Helper function to convert feast data to saint format
@@ -45,8 +47,17 @@ export const convertFeastToSaint = (feast: Celebration): Saint => ({
   quotes: undefined,
 });
 
-const formatFeastDay = (feastDay: string) => {
+export const formatLiturgicalDay = (liturgicalDay: LiturgicalDay) => {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayName = dayNames[liturgicalDay.dayOfWeek];
+  
+  return `${dayName} of week ${liturgicalDay.week} in ${liturgicalDay.season.name}`;
+};
+
+const formatFeastDay = (feastDay: string | undefined) => {
+  if (!feastDay) return 'Unknown Date';
   const [month, day] = feastDay.split('-');
+  if (!month || !day) return 'Invalid Date';
   const monthNames = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -89,7 +100,8 @@ const getLiturgicalColor = (color?: string) => {
 export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({ 
   saint, 
   colorScheme,
-  defaultExpanded = false
+  defaultExpanded = false,
+  liturgicalDay
 }) => {
   const colors = Colors[colorScheme ?? 'light'];
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
@@ -124,7 +136,9 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
             {saint.name}
           </Text>
           <Text style={[styles.saintDetailFeast, { color: colors.textSecondary }]}>
-            Feast Day: {formatFeastDay(saint.feast_day)}
+            {saint.feast_day ? `Feast Day: ${formatFeastDay(saint.feast_day)}` : 
+             liturgicalDay ? formatLiturgicalDay(liturgicalDay) : 
+             'Feast Day: Unknown'}
           </Text>
           {saint.birth_year && saint.death_year && (
             <Text style={[styles.saintDetailYears, { color: colors.textMuted }]}>

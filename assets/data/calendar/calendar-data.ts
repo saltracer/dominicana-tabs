@@ -59,7 +59,7 @@ export function getCelebrationsForDate(date: Date): Celebration[] {
           name: `${season.name} Weekday`,
           rank: CelebrationRank.FERIAL,
           color: season.color.toLowerCase(),
-          date: currentIsoDate,
+          date: "",//currentIsoDate,
           isDominican: false,
           description: `Ferial day in ${season.name}, ${weekInfo}`,
         },
