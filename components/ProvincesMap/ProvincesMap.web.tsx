@@ -48,9 +48,15 @@ interface ProvincesMapProps {
 // Component to handle map view updates
 function MapUpdater({ selectedRegion, filteredProvinces }: { selectedRegion: string | null, filteredProvinces: Province[] }) {
   const map = useMap();
+  const prevRegionRef = useRef<string | null>(null);
+  const prevCountRef = useRef<number>(0);
   
   useEffect(() => {
-    if (filteredProvinces.length > 0) {
+    // Only update bounds if region changed or province count changed significantly
+    const regionChanged = prevRegionRef.current !== selectedRegion;
+    const countChanged = Math.abs(prevCountRef.current - filteredProvinces.length) > 5;
+    
+    if ((regionChanged || countChanged) && filteredProvinces.length > 0) {
       const coordinates = filteredProvinces
         .filter(province => province.coordinates && province.coordinates.length === 2)
         .map(province => [province.coordinates[0], province.coordinates[1]] as [number, number]);
@@ -59,6 +65,9 @@ function MapUpdater({ selectedRegion, filteredProvinces }: { selectedRegion: str
         const bounds = L.latLngBounds(coordinates);
         map.fitBounds(bounds, { padding: [20, 20] });
       }
+      
+      prevRegionRef.current = selectedRegion;
+      prevCountRef.current = filteredProvinces.length;
     }
   }, [selectedRegion, filteredProvinces, map]);
   
@@ -159,16 +168,16 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
     setFilteredProvinces(filtered);
   }, [selectedRegion, searchQuery]);
 
-  const handleMarkerPress = (province: Province) => {
+  const handleMarkerPress = useMemo(() => (province: Province) => {
     setSelectedProvince(province);
     onProvinceSelect?.(province);
-  };
+  }, [onProvinceSelect]);
 
-  const handleCalloutPress = (province: Province) => {
+  const handleCalloutPress = useMemo(() => (province: Province) => {
     setSelectedProvince(province);
     setShowModal(true);
     onProvinceSelect?.(province);
-  };
+  }, [onProvinceSelect]);
 
   const closeModal = () => {
     setShowModal(false);
@@ -192,7 +201,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   };
 
   // Render province boundaries as polygons
-  const renderPolygons = () => {
+  const renderPolygons = useMemo(() => {
     return filteredProvinces.map((province) => {
       try {
         if (!province.boundaries?.coordinates) {
@@ -266,7 +275,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
         return null;
       }
     });
-  };
+  }, [filteredProvinces, selectedProvince]);
 
   // Custom marker icon
   const createCustomIcon = (color: string) => {
@@ -300,7 +309,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
       </View>
 
       {/* Region Filter */}
-       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.regionFilter}>
+       <View style={styles.regionFilter}>
         <TouchableOpacity
           style={[
             styles.regionButton,
@@ -334,7 +343,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
             </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView> 
+      </View> 
 
 
 
@@ -358,10 +367,10 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
           />
           
           {/* Render province boundaries */}
-          {renderPolygons()}
+          {renderPolygons}
           
           {/* Render province markers */}
-          {filteredProvinces.map((province) => {
+          {useMemo(() => filteredProvinces.map((province) => {
             try {
               if (!province.coordinates || 
                   typeof province.coordinates[0] !== 'number' || 
@@ -396,7 +405,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
               console.warn(`Error rendering marker for province ${province.id}:`, error);
               return null;
             }
-          })}
+          }), [filteredProvinces, selectedProvince])}
           
           <MapUpdater selectedRegion={selectedRegion} filteredProvinces={filteredProvinces} />
         </MapContainer>
@@ -480,8 +489,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     borderRadius: 16,
-    padding: 20,
-    minHeight: '80vh',
+    padding: 12,
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
@@ -506,39 +514,45 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   searchContainer: {
-    marginBottom: 20,
+    marginBottom: 8,
     borderRadius: 12,
     paddingHorizontal: 16,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3,
   },
   searchInput: {
-    height: 48,
+    height: 36,
     fontSize: 16,
     fontFamily: 'Georgia',
-    paddingVertical: 12,
+    paddingVertical: 6,
   },
   regionFilter: {
-    marginBottom: 20,
+    marginBottom: 8,
     paddingHorizontal: 4,
+    height: 36,
+    flexShrink: 0,
+    flexDirection: 'row',
+    overflowX: 'auto',
+    alignItems: 'center',
   },
   regionButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     borderRadius: 15,
-    marginRight: 12,
+    marginRight: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
     boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
     elevation: 1,
-    maxHeight: 50,
+    maxHeight: 36,
+    flexShrink: 0,
   },
   regionButtonActive: {
-    //backgroundColor: '#8B0000', //'#007AFF',
+    backgroundColor: '#8B0000', //'#007AFF',
     borderColor: '#8B0000', //'#007AFF',
   },
   regionButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: 'Georgia',
     fontWeight: '500',
   },
@@ -583,12 +597,11 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
     elevation: 5,
-    minHeight: '50vh',
-    maxHeight: '70vh',
   },
   map: {
     width: '100%',
     height: '100%',
+    minHeight: 400,
   },
   provincesList: {
     flex: 1,
