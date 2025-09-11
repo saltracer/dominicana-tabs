@@ -97,8 +97,8 @@ export default function DevotionsScreen() {
               { backgroundColor: Colors[colorScheme ?? 'light'].primary }
             ]}
           >
-            <Ionicons name="heart" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            <Ionicons name="heart" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
               Daily Devotion
             </Text>
           </TouchableOpacity>
@@ -109,8 +109,8 @@ export default function DevotionsScreen() {
               { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
             ]}
           >
-            <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
               Favorites
             </Text>
           </TouchableOpacity>
@@ -169,7 +169,7 @@ export default function DevotionsScreen() {
 
         {/* Coming Soon Section */}
         <View style={styles.section}>
-          <View style={styles.comingSoonCard}>
+          <View style={[styles.comingSoonCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Ionicons 
               name="construct-outline" 
               size={48} 

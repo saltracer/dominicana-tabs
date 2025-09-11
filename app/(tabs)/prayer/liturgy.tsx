@@ -71,8 +71,8 @@ export default function LiturgyOfTheHoursScreen() {
               { backgroundColor: Colors[colorScheme ?? 'light'].primary }
             ]}
           >
-            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
               Start Current Hour
             </Text>
           </TouchableOpacity>
@@ -83,8 +83,8 @@ export default function LiturgyOfTheHoursScreen() {
               { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
             ]}
           >
-            <Ionicons name="calendar" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            <Ionicons name="calendar" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
               Today's Readings
             </Text>
           </TouchableOpacity>

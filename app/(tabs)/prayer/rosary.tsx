@@ -371,8 +371,8 @@ export default function RosaryScreen() {
             ]}
             onPress={startPrayer}
           >
-            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
               Start Rosary
             </Text>
           </TouchableOpacity>
@@ -384,8 +384,8 @@ export default function RosaryScreen() {
             ]}
             onPress={startTodaysMystery}
           >
-            <Ionicons name="rose" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            <Ionicons name="rose" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
               Today's Mystery
             </Text>
           </TouchableOpacity>
@@ -658,7 +658,7 @@ export default function RosaryScreen() {
                   onPress={() => startSpecificMystery(mystery.name)}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="play" size={16} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+                  <Ionicons name="play" size={16} color={Colors[colorScheme ?? 'light'].textOnRed} />
                 </TouchableOpacity>
               </View>
             ))}
