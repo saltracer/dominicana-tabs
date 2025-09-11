@@ -13,6 +13,7 @@ import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
 import { Province } from '../../types';
 import { allProvinces } from '../../assets/data/provinces';
+import ProvinceDetailsPanel from '../ProvinceDetailsPanel';
 
 // Import react-native-maps for native platforms
 let Maps: any;
@@ -439,112 +440,13 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
         onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={[
-            styles.modalContent,
-            { backgroundColor: Colors[colorScheme ?? 'light'].card }
-          ]}>
-            <View style={styles.modalHeader}>
-              <Text style={[
-                styles.modalTitle,
-                { color: Colors[colorScheme ?? 'light'].text }
-              ]}>
-                {selectedProvince?.name}
-              </Text>
-              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Text style={[
-                  styles.closeButtonText,
-                  { color: Colors[colorScheme ?? 'light'].text }
-                ]}>
-                  ✕
-                </Text>
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              {selectedProvince && (
-                <>
-                  <View style={styles.provinceInfo}>
-                    <Text style={[
-                      styles.provinceRegion,
-                      { color: Colors[colorScheme ?? 'light'].textSecondary }
-                    ]}>
-                      {getMainRegion(selectedProvince.region)} • {selectedProvince.region}
-                    </Text>
-                    
-                    <Text style={[
-                      styles.provinceDescription,
-                      { color: Colors[colorScheme ?? 'light'].text }
-                    ]}>
-                      {selectedProvince.description}
-                    </Text>
-                    
-                    <View style={styles.provinceDetails}>
-                      <Text style={[
-                        styles.detailLabel,
-                        { color: Colors[colorScheme ?? 'light'].textSecondary }
-                      ]}>
-                        Countries:
-                      </Text>
-                      <Text style={[
-                        styles.detailValue,
-                        { color: Colors[colorScheme ?? 'light'].text }
-                      ]}>
-                        {selectedProvince.countries.join(', ')}
-                      </Text>
-                      
-                      <Text style={[
-                        styles.detailLabel,
-                        { color: Colors[colorScheme ?? 'light'].textSecondary }
-                      ]}>
-                        Formation Date:
-                      </Text>
-                      <Text style={[
-                        styles.detailValue,
-                        { color: Colors[colorScheme ?? 'light'].text }
-                      ]}>
-                        {selectedProvince.formation_date}
-                      </Text>
-                      
-                      {selectedProvince.patronSaint && (
-                        <>
-                          <Text style={[
-                            styles.detailLabel,
-                            { color: Colors[colorScheme ?? 'light'].textSecondary }
-                          ]}>
-                            Patron Saint:
-                          </Text>
-                          <Text style={[
-                            styles.detailValue,
-                            { color: Colors[colorScheme ?? 'light'].text }
-                          ]}>
-                            {selectedProvince.patronSaint}
-                          </Text>
-                        </>
-                      )}
-                    </View>
-                    
-                    <TouchableOpacity
-                      style={[
-                        styles.websiteButton,
-                        { backgroundColor: Colors[colorScheme ?? 'light'].primary }
-                      ]}
-                      onPress={() => {
-                        // Handle website navigation
-                        closeModal();
-                      }}
-                    >
-                      <Text style={[
-                        styles.websiteButtonText,
-                        { color: Colors[colorScheme ?? 'light'].dominicanWhite }
-                      ]}>
-                        Visit Website
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              )}
-            </ScrollView>
-          </View>
+          {selectedProvince && (
+            <ProvinceDetailsPanel 
+              province={selectedProvince} 
+              onClose={closeModal}
+              variant="modal"
+            />
+          )}
         </View>
       </Modal>
     </View>
@@ -564,77 +466,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
-  },
-  modalContent: {
-    maxHeight: '80%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Platform.OS === 'ios' ? '#E0E0E0' : '#CCCCCC',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    flex: 1,
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  modalBody: {
-    padding: 20,
-  },
-  provinceInfo: {
-    gap: 16,
-  },
-  provinceRegion: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  provinceDescription: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
-  },
-  provinceDetails: {
-    gap: 8,
-  },
-  detailLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  detailValue: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginBottom: 12,
-  },
-  websiteButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  websiteButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
   },
   errorContainer: {
     justifyContent: 'center',

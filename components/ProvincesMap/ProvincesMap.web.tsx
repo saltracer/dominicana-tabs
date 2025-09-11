@@ -9,11 +9,13 @@ import {
   TextInput,
   FlatList,
   Platform,
+  Animated,
 } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
 import { Province } from '../../types';
 import { allProvinces } from '../../assets/data/provinces';
+import ProvinceDetailsPanel from '../ProvinceDetailsPanel';
 
 // Import Leaflet for web - only on client side
 let MapContainer: any, TileLayer: any, Marker: any, Popup: any, Polygon: any, useMap: any;
@@ -78,9 +80,11 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   const { colorScheme } = useTheme();
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredProvinces, setFilteredProvinces] = useState<Province[]>(allProvinces);
+  const panelAnimation = useRef(new Animated.Value(0)).current;
 
   // Map all region names to the 5 main regions
   const getMainRegion = (region: string): string => {
@@ -170,14 +174,41 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
 
   const handleMarkerPress = useMemo(() => (province: Province) => {
     setSelectedProvince(province);
+    setShowPanel(true);
     onProvinceSelect?.(province);
-  }, [onProvinceSelect]);
+    
+    // Animate panel slide in
+    Animated.timing(panelAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [onProvinceSelect, panelAnimation]);
 
   const handleCalloutPress = useMemo(() => (province: Province) => {
     setSelectedProvince(province);
-    setShowModal(true);
+    setShowPanel(true);
     onProvinceSelect?.(province);
-  }, [onProvinceSelect]);
+    
+    // Animate panel slide in
+    Animated.timing(panelAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [onProvinceSelect, panelAnimation]);
+
+  const closePanel = () => {
+    // Animate panel slide out
+    Animated.timing(panelAnimation, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start(() => {
+      setShowPanel(false);
+      setSelectedProvince(null);
+    });
+  };
 
   const closeModal = () => {
     setShowModal(false);
@@ -296,20 +327,21 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
 
   return (
     <View style={styles.container}>
+      {/* Main Content Area */}
+      <View style={[styles.mainContent, { flex: showPanel ? 0.6 : 1 }]}>
+        {/* Search Bar */}
+        <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+          <TextInput
+            style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+            placeholder="Search provinces, countries, or regions..."
+            placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
 
-      {/* Search Bar */}
-      <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-        <TextInput
-          style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
-          placeholder="Search provinces, countries, or regions..."
-          placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
-      {/* Region Filter */}
-       <View style={styles.regionFilter}>
+        {/* Region Filter */}
+         <View style={styles.regionFilter}>
         <TouchableOpacity
           style={[
             styles.regionButton,
@@ -410,8 +442,30 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
           <MapUpdater selectedRegion={selectedRegion} filteredProvinces={filteredProvinces} />
         </MapContainer>
       </View>
+      </View>
 
-
+      {/* Sliding Panel */}
+      {showPanel && selectedProvince && (
+        <Animated.View 
+          style={[
+            styles.slidingPanel,
+            {
+              transform: [{
+                translateX: panelAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [400, 0],
+                })
+              }]
+            }
+          ]}
+        >
+          <ProvinceDetailsPanel 
+            province={selectedProvince} 
+            onClose={closePanel}
+            variant="panel"
+          />
+        </Animated.View>
+      )}
 
       {/* Province Detail Modal */}
       <Modal
@@ -491,9 +545,27 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
     position: 'relative',
     zIndex: 1,
+  },
+  mainContent: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  slidingPanel: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 400,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: -4, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   header: {
     marginTop: 20,
