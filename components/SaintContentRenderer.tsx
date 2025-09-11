@@ -336,7 +336,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
                 <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
                   Rank
                 </Text>
-                <Text style={[styles.infoValue, { color: getRankColor(saint.rank) }]}>
+                <Text style={[styles.infoValue, { color: colors.textSecondary }]}>
                   {saint.rank.replace('_', ' ').toUpperCase()}
                 </Text>
               </View>
