@@ -41,48 +41,49 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <View style={styles.headerContent}>
           <View style={styles.dateSection}>
-            <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>
-              Selected Date
-            </Text>
             <Text style={[styles.dateText, { color: colors.text }]}>
               {format(parseISO(liturgicalDay.date), 'EEEE, MMMM d, yyyy')}
             </Text>
           </View>
-          
-          {/* {onClose && (
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )} */}
         </View>
         
         {/* Liturgical Season */}
         <View style={[
           styles.seasonInfo, 
-          { backgroundColor: getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark') }
+          { 
+            backgroundColor: getLiturgicalColorHex(liturgicalDay.season.color, colorScheme === 'dark'),
+            borderWidth: liturgicalDay.season.color.toLowerCase() === 'white' ? 1 : 0,
+            borderColor: liturgicalDay.season.color.toLowerCase() === 'white' ? '#666666' : 'transparent',
+            // shadowColor: '#000',
+            // shadowOffset: {
+            //   width: 0,
+            //   height: 2,
+            // },
+            // shadowOpacity: 0.25,
+            // shadowRadius: 3.84,
+            // elevation: 1,
+          }
         ]}>
           <View style={styles.seasonHeader}>
-            <Ionicons name="leaf-outline" size={20} color="#FFFFFF" />
-            <Text style={[styles.seasonName, { color: '#FFFFFF' }]}>
+            <Text style={[styles.seasonName, { 
+              color: liturgicalDay.season.color.toLowerCase() === 'white' ? '#000000' : '#FFFFFF' 
+            }]}>
               {liturgicalDay.season.name}
             </Text>
           </View>
-          <Text style={[styles.seasonWeek, { color: '#FFFFFF' }]}>
+          <Text style={[styles.seasonWeek, { 
+            color: liturgicalDay.season.color.toLowerCase() === 'white' ? '#000000' : '#FFFFFF' 
+          }]}>
             Week {liturgicalDay.week}
           </Text>
           {/* Show total number of feasts */}
-          {liturgicalDay.feasts.length > 0 && (
+          {/* {liturgicalDay.feasts.length > 0 && (
             <View style={styles.feastCountContainer}>
-              <Ionicons name="star-outline" size={16} color="#FFFFFF" />
               <Text style={[styles.feastCount, { color: '#FFFFFF' }]}>
                 {liturgicalDay.feasts.length} {liturgicalDay.feasts.length === 1 ? 'Feast' : 'Feasts'}
               </Text>
             </View>
-          )}
+          )} */}
         </View>
       </View>
       
