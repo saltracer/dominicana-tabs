@@ -328,7 +328,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   return (
     <View style={styles.container}>
       {/* Main Content Area */}
-      <View style={[styles.mainContent, { flex: showPanel ? 0.6 : 1 }]}>
+      <View style={[styles.mainContent, { /*flex: showPanel ? 1 : 1 */ }]}>
         {/* Search Bar */}
         <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
           <TextInput
@@ -425,10 +425,10 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
                     <div>
                       <h3>{province.name}</h3>
                       <p>{province.short_description}</p>
-                      <p>{province.countries.join(', ')}</p>
-                      <button onClick={() => handleCalloutPress(province)}>
+                      {/* <p>{province.countries.join(', ')}</p> }
+                      { <button onClick={() => handleCalloutPress(province)}>
                         View Details
-                      </button>
+                      </button> */}
                     </div>
                   </Popup>
                 </Marker>
