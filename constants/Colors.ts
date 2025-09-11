@@ -4,7 +4,8 @@ const tintColorDark = '#DAA520';
 export const Colors = {
   light: {
     // Primary liturgical colors
-    primary: '#8B0000', // Liturgical red
+    // primary: '#8B0000', // Liturgical red
+    primary: '#8C1515', // Liturgical red from the lovable Dominicana
     secondary: '#4B0082', // Royal purple
     accent: '#DAA520', // Liturgical gold
     
@@ -52,14 +53,16 @@ export const Colors = {
   },
   dark: {
     // Primary liturgical colors
-    primary: '#8B1111', // Liturgical red for dark mode
+    // primary: '#9C0000', // Liturgical red for dark mode
+    primary: '#B85450', // Liturgical red from the lovable Dominicana
     secondary: '#9C27B0', // Lighter purple
     accent: '#FFD700', // Bright gold
     
     // Background and surface colors
-    background: '#121212',
+    background: '#000000',
     surface: '#2E2E2E',
-    card: '#3D3D3D',
+    card: '#151515',
+    // card: '#000000',
     
     // Text colors
     text: '#FFFFFF',
