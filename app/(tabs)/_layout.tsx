@@ -57,7 +57,6 @@ export default function TabLayout() {
           backgroundColor: Colors[colorScheme ?? 'light'].primary,
         },
         headerTintColor: Colors[colorScheme ?? 'light'].textOnRed,
-        //headerTintColor: 'white',
         headerTitleStyle: {
           fontFamily: 'System',
           fontWeight: '700',
@@ -92,7 +91,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].dominicanWhite}
+                    color={Colors[colorScheme ?? 'light'].textOnRed}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
@@ -127,7 +126,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].dominicanWhite}
+                    color={Colors[colorScheme ?? 'light'].textOnRed}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
@@ -162,7 +161,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].dominicanWhite}
+                    color={Colors[colorScheme ?? 'light'].textOnRed}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
@@ -197,7 +196,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].dominicanWhite}
+                    color={Colors[colorScheme ?? 'light'].textOnRed}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}

@@ -31,7 +31,7 @@ export default function DevotionsScreen() {
     },
     { 
       name: 'Stations of the Cross', 
-      icon: 'cross',
+      icon: 'add',
       description: 'Meditation on Christ\'s passion and death',
       duration: '~20 minutes'
     },

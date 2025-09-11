@@ -35,7 +35,7 @@ export default function CommunityNavigation({ activeTab }: CommunityNavigationPr
           styles.segmentText,
           {
             color: activeTab === 'calendar'
-              ? Colors[colorScheme ?? 'light'].dominicanWhite
+              ? Colors[colorScheme ?? 'light'].textOnRed
               : Colors[colorScheme ?? 'light'].text,
           }
         ]}>
@@ -59,7 +59,7 @@ export default function CommunityNavigation({ activeTab }: CommunityNavigationPr
           styles.segmentText,
           {
             color: activeTab === 'saints'
-              ? Colors[colorScheme ?? 'light'].dominicanWhite
+              ? Colors[colorScheme ?? 'light'].textOnRed
               : Colors[colorScheme ?? 'light'].text,
           }
         ]}>
@@ -84,7 +84,7 @@ export default function CommunityNavigation({ activeTab }: CommunityNavigationPr
           styles.segmentText,
           {
             color: activeTab === 'provinces'
-              ? Colors[colorScheme ?? 'light'].dominicanWhite
+              ? Colors[colorScheme ?? 'light'].textOnRed
               : Colors[colorScheme ?? 'light'].text,
           }
         ]}>

@@ -212,7 +212,7 @@ export default function PreachingScreen() {
               name="bookmark" 
               size={20} 
               color={activeTab === 'reflections' 
-                ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                ? Colors[colorScheme ?? 'light'].textOnRed 
                 : Colors[colorScheme ?? 'light'].textSecondary
               } 
             />
@@ -220,7 +220,7 @@ export default function PreachingScreen() {
               styles.tabText,
               { 
                 color: activeTab === 'reflections' 
-                  ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                  ? Colors[colorScheme ?? 'light'].textOnRed 
                   : Colors[colorScheme ?? 'light'].text
               }
             ]}>
@@ -243,7 +243,7 @@ export default function PreachingScreen() {
               name="document-text" 
               size={20} 
               color={activeTab === 'blog' 
-                ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                ? Colors[colorScheme ?? 'light'].textOnRed 
                 : Colors[colorScheme ?? 'light'].textSecondary
               } 
             />
@@ -251,7 +251,7 @@ export default function PreachingScreen() {
               styles.tabText,
               { 
                 color: activeTab === 'blog' 
-                  ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                  ? Colors[colorScheme ?? 'light'].textOnRed 
                   : Colors[colorScheme ?? 'light'].text
               }
             ]}>
@@ -274,7 +274,7 @@ export default function PreachingScreen() {
               name="headset" 
               size={20} 
               color={activeTab === 'audio' 
-                ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                ? Colors[colorScheme ?? 'light'].textOnRed 
                 : Colors[colorScheme ?? 'light'].textSecondary
               } 
             />
@@ -282,7 +282,7 @@ export default function PreachingScreen() {
               styles.tabText,
               { 
                 color: activeTab === 'audio' 
-                  ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                  ? Colors[colorScheme ?? 'light'].textOnRed 
                   : Colors[colorScheme ?? 'light'].text
               }
             ]}>

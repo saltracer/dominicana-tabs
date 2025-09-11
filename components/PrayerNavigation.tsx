@@ -35,7 +35,7 @@ export default function PrayerNavigation({ activeTab }: PrayerNavigationProps) {
           styles.segmentText,
           {
             color: activeTab === 'liturgy'
-              ? Colors[colorScheme ?? 'light'].dominicanWhite
+              ? Colors[colorScheme ?? 'light'].textOnRed
               : Colors[colorScheme ?? 'light'].text,
           }
         ]}>
@@ -59,7 +59,7 @@ export default function PrayerNavigation({ activeTab }: PrayerNavigationProps) {
           styles.segmentText,
           {
             color: activeTab === 'rosary'
-              ? Colors[colorScheme ?? 'light'].dominicanWhite
+              ? Colors[colorScheme ?? 'light'].textOnRed
               : Colors[colorScheme ?? 'light'].text,
           }
         ]}>
@@ -84,7 +84,7 @@ export default function PrayerNavigation({ activeTab }: PrayerNavigationProps) {
           styles.segmentText,
           {
             color: activeTab === 'devotions'
-              ? Colors[colorScheme ?? 'light'].dominicanWhite
+              ? Colors[colorScheme ?? 'light'].textOnRed
               : Colors[colorScheme ?? 'light'].text,
           }
         ]}>
