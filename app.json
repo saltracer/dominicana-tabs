@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/dominicana_logo-icon-black.png",
+      "image": "./assets/images/dominicana_logo-icon-red.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000",
+      "backgroundColor": "#6b1b2b",
       "dark": {
         "image": "./assets/images/dominicana_logo-icon-black.png",
         "backgroundColor": "#000000"
