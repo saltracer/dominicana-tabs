@@ -14,6 +14,7 @@ import { useTheme } from '../ThemeProvider';
 import { Province } from '../../types';
 import { allProvinces } from '../../assets/data/provinces';
 import ProvinceDetailsPanel from '../ProvinceDetailsPanel';
+import { processAllProvinceBoundaries, ProcessedPolygon } from '../../utils/provinceBoundaryProcessor';
 
 // Import react-native-maps for native platforms
 let Maps: any;
@@ -190,90 +191,29 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
     );
   };
 
+  // Process province boundaries using shared utility
+  const processedPolygons = processAllProvinceBoundaries(filteredProvinces, getProvinceColor, selectedProvince?.id);
+
   const renderPolygons = () => {
     if (!Polygon) return null;
     
-    return filteredProvinces.map((province) => {
-      try {
-        // Check if boundaries exist
-        if (!province.boundaries) {
-          return null;
-        }
+    return processedPolygons.map((polygonData: ProcessedPolygon) => {
+      // Convert coordinates to react-native-maps format {latitude, longitude}
+      const nativeCoordinates = polygonData.coordinates.map((coord: number[]) => ({
+        latitude: coord[1],  // GeoJSON format is [longitude, latitude]
+        longitude: coord[0], // So we keep this as is for boundaries
+      }));
 
-        const boundaries = province.boundaries;
-        const regionColor = getProvinceColor(province);
-
-        // Helper function to process coordinates and create polygon
-        const createPolygon = (coordinates: any, key: string) => {
-          if (!Array.isArray(coordinates) || coordinates.length < 3) {
-            return null;
-          }
-
-          const polygonCoordinates = coordinates.map((coord: number[]) => ({
-            latitude: coord[1],  // GeoJSON format is [longitude, latitude]
-            longitude: coord[0], // So we keep this as is for boundaries
-          }));
-
-          return (
-            <Polygon
-              key={key}
-              coordinates={polygonCoordinates}
-              fillColor={selectedProvince?.id === province.id ? `${regionColor}95` : `${regionColor}40`}
-              strokeColor={regionColor}
-              strokeWidth={selectedProvince?.id === province.id ? 4 : 1}
-              onPress={() => handleMarkerPress(province)}
-            />
-          );
-        };
-
-        // Handle GeoJSON Feature format (e.g., Switzerland)
-        if (boundaries.type === 'Feature' && boundaries.geometry) {
-          const geometry = boundaries.geometry;
-          const geometryType = geometry.type;
-          const coordinates = geometry.coordinates;
-
-          // Handle MultiPolygon within Feature
-          if (geometryType === 'MultiPolygon' && Array.isArray(coordinates)) {
-            return coordinates.map((polygon: any, polygonIndex: number) => {
-              if (!Array.isArray(polygon) || polygon.length === 0) {
-                return null;
-              }
-
-              const ring = polygon[0];
-              return createPolygon(ring, `polygon-${province.id}-${polygonIndex}`);
-            });
-          }
-
-          // Handle single Polygon within Feature
-          if (geometryType === 'Polygon' && Array.isArray(coordinates)) {
-            const ring = coordinates[0];
-            return createPolygon(ring, `polygon-${province.id}`);
-          }
-        }
-
-        // Handle direct MultiPolygon structure (backward compatibility)
-        if (boundaries.type === 'MultiPolygon' && Array.isArray(boundaries.coordinates)) {
-          return boundaries.coordinates.map((polygon: any, polygonIndex: number) => {
-            if (!Array.isArray(polygon) || polygon.length === 0) {
-              return null;
-            }
-
-            const ring = polygon[0];
-            return createPolygon(ring, `polygon-${province.id}-${polygonIndex}`);
-          });
-        }
-
-        // Handle direct single Polygon structure (backward compatibility)
-        if (boundaries.type === 'Polygon' && Array.isArray(boundaries.coordinates)) {
-          const ring = boundaries.coordinates[0];
-          return createPolygon(ring, `polygon-${province.id}`);
-        }
-
-        return null;
-      } catch (error) {
-        console.warn(`Error rendering polygon for province ${province.id}:`, error);
-        return null;
-      }
+      return (
+        <Polygon
+          key={polygonData.id}
+          coordinates={nativeCoordinates}
+          fillColor={polygonData.isSelected ? `${polygonData.regionColor}95` : `${polygonData.regionColor}40`}
+          strokeColor={polygonData.regionColor}
+          strokeWidth={polygonData.isSelected ? 4 : 1}
+          onPress={() => handleMarkerPress(polygonData.province)}
+        />
+      );
     });
   };
 
@@ -526,6 +466,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Georgia',
     marginBottom: 4,
+  },
+  provinceRegion: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
   },
   provinceCount: {
     fontSize: 14,
