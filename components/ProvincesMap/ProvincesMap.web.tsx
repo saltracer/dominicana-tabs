@@ -235,58 +235,25 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   const renderPolygons = useMemo(() => {
     return filteredProvinces.map((province) => {
       try {
-        if (!province.boundaries?.coordinates) {
+        if (!province.boundaries) {
           return null;
         }
 
         const boundaries = province.boundaries;
         const regionColor = getProvinceColor(province);
 
-        // Handle MultiPolygon structure
-        if (boundaries.type === 'MultiPolygon' && Array.isArray(boundaries.coordinates)) {
-          return boundaries.coordinates.map((polygon: any, polygonIndex: number) => {
-            if (!Array.isArray(polygon) || polygon.length === 0) {
-              return null;
-            }
-
-            const ring = polygon[0];
-            if (!Array.isArray(ring) || ring.length < 3) {
-              return null;
-            }
-
-            const coordinates = ring.map((coord: number[]) => [coord[1], coord[0]] as [number, number]); // [lat, lng]
-
-            return (
-              <Polygon
-                key={`polygon-${province.id}-${polygonIndex}`}
-                positions={coordinates as [number, number][]}
-                pathOptions={{
-                  fillColor: regionColor,
-                  fillOpacity: selectedProvince?.id === province.id ? 0.5 : 0.2,
-                  color: regionColor,
-                  weight: selectedProvince?.id === province.id ? 4 : 1,
-                }}
-                eventHandlers={{
-                  click: () => handleMarkerPress(province),
-                }}
-              />
-            );
-          });
-        }
-
-        // Handle single Polygon structure
-        if (boundaries.type === 'Polygon' && Array.isArray(boundaries.coordinates)) {
-          const ring = boundaries.coordinates[0];
-          if (!Array.isArray(ring) || ring.length < 3) {
+        // Helper function to process coordinates and create polygon
+        const createPolygon = (coordinates: any, key: string) => {
+          if (!Array.isArray(coordinates) || coordinates.length < 3) {
             return null;
           }
 
-          const coordinates = ring.map((coord: number[]) => [coord[1], coord[0]] as [number, number]); // [lat, lng]
+          const polygonCoordinates = coordinates.map((coord: number[]) => [coord[1], coord[0]] as [number, number]); // [lat, lng]
 
           return (
             <Polygon
-              key={`polygon-${province.id}`}
-              positions={coordinates as [number, number][]}
+              key={key}
+              positions={polygonCoordinates as [number, number][]}
               pathOptions={{
                 fillColor: regionColor,
                 fillOpacity: selectedProvince?.id === province.id ? 0.5 : 0.2,
@@ -298,6 +265,49 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
               }}
             />
           );
+        };
+
+        // Handle GeoJSON Feature format (e.g., Switzerland)
+        if (boundaries.type === 'Feature' && boundaries.geometry) {
+          const geometry = boundaries.geometry;
+          const geometryType = geometry.type;
+          const coordinates = geometry.coordinates;
+
+          // Handle MultiPolygon within Feature
+          if (geometryType === 'MultiPolygon' && Array.isArray(coordinates)) {
+            return coordinates.map((polygon: any, polygonIndex: number) => {
+              if (!Array.isArray(polygon) || polygon.length === 0) {
+                return null;
+              }
+
+              const ring = polygon[0];
+              return createPolygon(ring, `polygon-${province.id}-${polygonIndex}`);
+            });
+          }
+
+          // Handle single Polygon within Feature
+          if (geometryType === 'Polygon' && Array.isArray(coordinates)) {
+            const ring = coordinates[0];
+            return createPolygon(ring, `polygon-${province.id}`);
+          }
+        }
+
+        // Handle direct MultiPolygon structure (backward compatibility)
+        if (boundaries.type === 'MultiPolygon' && Array.isArray(boundaries.coordinates)) {
+          return boundaries.coordinates.map((polygon: any, polygonIndex: number) => {
+            if (!Array.isArray(polygon) || polygon.length === 0) {
+              return null;
+            }
+
+            const ring = polygon[0];
+            return createPolygon(ring, `polygon-${province.id}-${polygonIndex}`);
+          });
+        }
+
+        // Handle direct single Polygon structure (backward compatibility)
+        if (boundaries.type === 'Polygon' && Array.isArray(boundaries.coordinates)) {
+          const ring = boundaries.coordinates[0];
+          return createPolygon(ring, `polygon-${province.id}`);
         }
 
         return null;
