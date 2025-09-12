@@ -344,8 +344,8 @@ export default function CalendarScreen() {
                   textMonthFontSize: 18,
                   textDayHeaderFontSize: 14,
                 }}
-                minDate={format(subDays(new Date(), 365), 'yyyy-MM-dd')}
-                maxDate={format(addDays(new Date(), 365), 'yyyy-MM-dd')}
+                minDate={format(subDays(new Date(), 1000), 'yyyy-MM-dd')}
+                maxDate={format(addDays(new Date(), 1000), 'yyyy-MM-dd')}
                 key={colorScheme}
               />
 

@@ -59,14 +59,8 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
     // Calculate Epiphany (Sunday closest to January 6)
     const epiphany = getEpiphanySunday(date.getFullYear())
 
-    // Calculate Baptism of the Lord (Sunday after Epiphany)
-    const baptismOfLord = new Date(epiphany)
-    // If Epiphany is Sunday, Baptism of the Lord is the same day
-    // Otherwise, find the next Sunday after Epiphany
-    if (epiphany.getDay() !== 0) {
-      const daysToNextSunday = 7 - epiphany.getDay()
-      baptismOfLord.setDate(epiphany.getDate() + daysToNextSunday)
-    }
+    // Calculate Baptism of the Lord using the proper rules
+    const baptismOfLord = getBaptismOfLordSunday(date.getFullYear())
 
     // Calculate for previous year (for dates in January)
     // Instead of recursive calls, we'll calculate directly
@@ -164,9 +158,10 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
       return season
     }
 
-    // Calculate start of first Ordinary Time period (Monday after Baptism of the Lord)
+    // Calculate start of first Ordinary Time period
+    // Always start the Day after Baptism of the Lord
     const firstOrdinaryTimeStart = new Date(baptismOfLord)
-    firstOrdinaryTimeStart.setDate(baptismOfLord.getDate() + 1) // Monday after Baptism of the Lord
+    firstOrdinaryTimeStart.setDate(baptismOfLord.getDate() + 1) // Day after Baptism of the Lord
 
     // Ordinary Time (after Epiphany)
     if (date >= firstOrdinaryTimeStart && date < ashWednesday) {
@@ -271,11 +266,7 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
   if (season.name === "Ordinary Time") {
     // Calculate Epiphany and Baptism of the Lord for proper week numbering
     const epiphany = getEpiphanySunday(year)
-    const baptismOfLord = new Date(epiphany)
-    if (epiphany.getDay() !== 0) {
-      const daysToNextSunday = 7 - epiphany.getDay()
-      baptismOfLord.setDate(epiphany.getDate() + daysToNextSunday)
-    }
+    const baptismOfLord = getBaptismOfLordSunday(year)
 
     // Calculate start of first Ordinary Time period (Monday after Baptism of the Lord)
     const firstOrdinaryTimeStart = new Date(baptismOfLord)
@@ -289,9 +280,34 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
 
     if (date < ashWednesday) {
       // First period of Ordinary Time (after Epiphany)
-      const daysSinceStart = Math.floor((date.getTime() - firstOrdinaryTimeStart.getTime()) / (1000 * 60 * 60 * 24))
-      const weekNumber = Math.floor(daysSinceStart / 7) + 1
-      return `Week ${weekNumber} in Ordinary Time`
+      // Calculate which liturgical week this date falls into
+      // Week 1: Monday after Baptism through the following Sunday
+      // Week 2: Next Monday through the following Sunday, etc.
+      
+      // Find the Monday of the week that contains this date
+      const mondayOfWeek = new Date(date)
+      const daysToMonday = date.getDay() === 0 ? 6 : date.getDay() - 1 // Sunday = 6 days back, others = day-1
+      mondayOfWeek.setDate(date.getDate() - daysToMonday)
+      
+      // Calculate which week this Monday represents
+      // If Baptism of the Lord is on a Monday, we need to adjust the calculation
+      let referenceMonday = firstOrdinaryTimeStart
+      if (baptismOfLord.getDay() === 1) { // Baptism is on Monday
+        // The first liturgical week starts from the Monday of the week containing firstOrdinaryTimeStart
+        const daysToRefMonday = firstOrdinaryTimeStart.getDay() === 0 ? 6 : firstOrdinaryTimeStart.getDay() - 1
+        referenceMonday = new Date(firstOrdinaryTimeStart)
+        referenceMonday.setDate(firstOrdinaryTimeStart.getDate() - daysToRefMonday)
+      }
+      
+      const daysSinceFirstMonday = Math.floor((mondayOfWeek.getTime() - referenceMonday.getTime()) / (1000 * 60 * 60 * 24))
+      const weekNumber = Math.floor(daysSinceFirstMonday / 7) + 1
+      
+      // For Sundays, adjust the numbering because Baptism of the Lord takes the place of the first Sunday
+      if (date.getDay() === 0) { // Sunday
+        return `Week ${weekNumber + 1} in Ordinary Time`
+      } else {
+        return `Week ${weekNumber} in Ordinary Time`
+      }
     } else {
       // Second period of Ordinary Time (after Pentecost)
       const daysSinceStart = Math.floor((date.getTime() - secondOrdinaryTimeStart.getTime()) / (1000 * 60 * 60 * 24))
@@ -660,26 +676,62 @@ export function getChristTheKingSunday(year: number): Date {
 }
 
 export function getEpiphanySunday(year: number): Date {
-  // Epiphany is celebrated on the Sunday closest to January 6
-  // If January 6 falls on Sunday, it's celebrated on January 6
-  // Otherwise, it's celebrated on the Sunday between January 2 and January 8
+  // Epiphany calculation rules:
+  // If January 6 is a Sunday, the Epiphany is celebrated on that day.
+  // If January 6 falls on a weekday, the feast is moved to the nearest Sunday within the January 2–8 range.
   const jan6 = new Date(year, 0, 6) // January 6
   const dayOfWeek = jan6.getDay() // 0 = Sunday, 1 = Monday, etc.
   
   if (dayOfWeek === 0) {
     // January 6 is Sunday, celebrate on January 6
     return jan6
-  } else if (dayOfWeek <= 3) {
-    // January 6 is Monday, Tuesday, or Wednesday
-    // Go back to the previous Sunday
-    const epiphany = new Date(jan6)
-    epiphany.setDate(jan6.getDate() - dayOfWeek)
-    return epiphany
   } else {
-    // January 6 is Thursday, Friday, or Saturday
-    // Go forward to the next Sunday
-    const epiphany = new Date(jan6)
-    epiphany.setDate(jan6.getDate() + (7 - dayOfWeek))
-    return epiphany
+    // January 6 is a weekday, find the nearest Sunday within January 2-8 range
+    // Calculate the distance to the previous and next Sunday
+    const daysToPreviousSunday = dayOfWeek
+    const daysToNextSunday = 7 - dayOfWeek
+    
+    const previousSunday = new Date(jan6)
+    previousSunday.setDate(jan6.getDate() - daysToPreviousSunday)
+    
+    const nextSunday = new Date(jan6)
+    nextSunday.setDate(jan6.getDate() + daysToNextSunday)
+    
+    // Check if previous Sunday is within January 2-8 range
+    if (previousSunday.getDate() >= 2 && previousSunday.getMonth() === 0) {
+      return previousSunday
+    } else {
+      // Previous Sunday is before January 2, use next Sunday
+      return nextSunday
+    }
+  }
+}
+
+export function getBaptismOfLordSunday(year: number): Date {
+  // Baptism of the Lord calculation rules:
+  // 1. Normally, celebrated on the Sunday after Epiphany
+  // 2. Exception: If Epiphany falls on January 7 or 8, then celebrated the following Monday
+  const epiphany = getEpiphanySunday(year)
+  const epiphanyMonth = epiphany.getMonth() + 1 // JavaScript months are 0-indexed
+  const epiphanyDay = epiphany.getDate()
+  
+  // Check if Epiphany falls on January 7 or 8
+  if (epiphanyMonth === 1 && (epiphanyDay === 7 || epiphanyDay === 8)) {
+    // Exception: Baptism of the Lord is the following Monday
+    const baptismOfLord = new Date(epiphany)
+    baptismOfLord.setDate(epiphany.getDate() + 1) // Monday after Epiphany
+    return baptismOfLord
+  } else {
+    // Normal case: Sunday after Epiphany
+    const baptismOfLord = new Date(epiphany)
+    if (epiphany.getDay() !== 0) {
+      // If Epiphany is not Sunday, find the next Sunday
+      const daysToNextSunday = 7 - epiphany.getDay()
+      baptismOfLord.setDate(epiphany.getDate() + daysToNextSunday)
+    } else {
+      // If Epiphany is Sunday, Baptism of the Lord is the next Sunday
+      baptismOfLord.setDate(epiphany.getDate() + 7)
+    }
+    return baptismOfLord
   }
 }

@@ -18,7 +18,8 @@ import {
   getCorpusChristiThursday,
   getSacredHeartFriday,
   getChristTheKingSunday,
-  getEpiphanySunday
+  getEpiphanySunday,
+  getBaptismOfLordSunday
 } from "@/assets/data/calendar/liturgical-seasons"
 import { FixedCelebration, CelebrationRank } from "@/types/celebrations-types"
 
@@ -36,6 +37,12 @@ export function moveableGeneralCelebrations(year: number): FixedCelebration[] {
   const epiphanyMonth = epiphanyDate.getMonth() + 1
   const epiphanyDay = epiphanyDate.getDate()
   const epiphanyString = `${epiphanyMonth.toString().padStart(2, "0")}-${epiphanyDay.toString().padStart(2, "0")}`
+
+  // Get Baptism of the Lord (Sunday after Epiphany, or Monday if Epiphany is Jan 7 or 8)
+  const baptismOfLordDate = getBaptismOfLordSunday(year)
+  const baptismOfLordMonth = baptismOfLordDate.getMonth() + 1
+  const baptismOfLordDay = baptismOfLordDate.getDate()
+  const baptismOfLordString = `${baptismOfLordMonth.toString().padStart(2, "0")}-${baptismOfLordDay.toString().padStart(2, "0")}`
 
   // Get Ash Wednesday
   const ashWednesdayDate = getAshWednesday(year)
@@ -226,6 +233,24 @@ export function moveableGeneralCelebrations(year: number): FixedCelebration[] {
         "In many cultures, Epiphany (also called 'Three Kings Day') is celebrated with special foods, blessings of homes, and the exchange of gifts, recalling the gifts of the Magi. Some traditions include marking doorways with blessed chalk inscribed with the year and the letters C+M+B, standing for the traditional names of the Magi (Caspar, Melchior, and Balthasar) or for 'Christus Mansionem Benedicat' (May Christ bless this house).",
         "The timing of Epiphany near the winter solstice (when light begins to increase) connects symbolically with Christ as the Light of the World coming to dispel darkness. The star that guided the Magi represents divine guidance leading humanity to Christ.",
         "Liturgically, the Epiphany is one of the oldest Christian feasts, dating back to the 3rd century, even before Christmas was widely celebrated. In the Eastern Churches, it remains one of the most important feasts, often focusing on Christ's baptism rather than the visit of the Magi.",
+      ],
+    },
+    {
+      id: "baptism-of-lord",
+      name: "The Baptism of the Lord",
+      date: baptismOfLordString,
+      rank: CelebrationRank.FEAST,
+      color: LiturgicalColor.WHITE,
+      proper: "Proper of Time",
+      type: "universal",
+      short_desc: "Commemorates the baptism of Jesus in the Jordan River by John the Baptist.",
+      description: [
+        "The Feast of the Baptism of the Lord commemorates the baptism of Jesus in the Jordan River by John the Baptist, as recounted in the Gospels of Matthew, Mark, and Luke.",
+        "This event marks the beginning of Jesus' public ministry and reveals the Trinity: the Father's voice from heaven declaring Jesus as his beloved Son, the Holy Spirit descending like a dove, and Jesus himself in the water.",
+        "The baptism of Jesus, though he was sinless, demonstrates his solidarity with humanity and his willingness to take upon himself the burden of our sins. It also serves as the model for Christian baptism, through which we are incorporated into Christ's death and resurrection.",
+        "This feast concludes the Christmas season and transitions into Ordinary Time, symbolizing the end of Christ's hidden life and the beginning of his public mission of salvation.",
+        "The baptism of Jesus also reveals his identity as the Messiah and the Son of God, as the voice from heaven confirms: 'This is my beloved Son, with whom I am well pleased.'",
+        "In the Eastern Churches, this feast is often called 'Theophany' (manifestation of God) and is celebrated with great solemnity, including the blessing of water in commemoration of Christ's baptism.",
       ],
     },
     {

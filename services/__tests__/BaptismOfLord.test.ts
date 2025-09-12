@@ -49,9 +49,9 @@ const BAPTISM_OF_LORD_TEST_DATA = [
   { year: 2019, expectedDate: new Date(2019, 0, 13), description: '2019 - Epiphany on Jan 6, Baptism on Jan 13 (Sunday)' },
   { year: 2020, expectedDate: new Date(2020, 0, 12), description: '2020 - Epiphany on Jan 5, Baptism on Jan 12 (Sunday)' },
   { year: 2021, expectedDate: new Date(2021, 0, 10), description: '2021 - Epiphany on Jan 3, Baptism on Jan 10 (Sunday)' },
-  { year: 2022, expectedDate: new Date(2022, 0, 16), description: '2022 - Epiphany on Jan 9, Baptism on Jan 16 (Sunday)' },
+  { year: 2022, expectedDate: new Date(2022, 0, 9), description: '2022 - Epiphany on Jan 2, Baptism on Jan 9 (Sunday)' },
   { year: 2023, expectedDate: new Date(2023, 0, 9), description: '2023 - Epiphany on Jan 8, Baptism on Jan 9 (Monday)' },
-  { year: 2028, expectedDate: new Date(2028, 0, 16), description: '2028 - Epiphany on Jan 9, Baptism on Jan 16 (Sunday)' },
+  { year: 2028, expectedDate: new Date(2028, 0, 9), description: '2028 - Epiphany on Jan 2, Baptism on Jan 9 (Sunday)' },
   { year: 2029, expectedDate: new Date(2029, 0, 8), description: '2029 - Epiphany on Jan 7, Baptism on Jan 8 (Monday)' },
   { year: 2030, expectedDate: new Date(2030, 0, 13), description: '2030 - Epiphany on Jan 6, Baptism on Jan 13 (Sunday)' },
 ]
@@ -117,14 +117,14 @@ describe('Epiphany Date Calculations', () => {
       }
     })
 
-    test('should return the Sunday closest to January 6', () => {
+    test('should return the Sunday between January 2 and January 8', () => {
       for (let year = 2010; year <= 2030; year++) {
         const epiphanyDate = getEpiphanySunday(year)
-        const jan6 = new Date(year, 0, 6)
-        const dayDifference = Math.abs(epiphanyDate.getDate() - jan6.getDate())
+        const epiphanyDay = epiphanyDate.getDate()
         
-        // The difference should be at most 3 days (since we're looking for the closest Sunday)
-        expect(dayDifference).toBeLessThanOrEqual(3)
+        // Epiphany should be between January 2 and January 8 (inclusive)
+        expect(epiphanyDay).toBeGreaterThanOrEqual(2)
+        expect(epiphanyDay).toBeLessThanOrEqual(8)
       }
     })
   })
@@ -165,7 +165,9 @@ describe('Epiphany Date Calculations', () => {
       // Verify all calculations are correct
       results.forEach(result => {
         expect(result.epiphanyDay).toBe(0) // Always Sunday
-        expect(result.dayDifference).toBeLessThanOrEqual(3) // Within 3 days of Jan 6
+        const epiphanyDate = getEpiphanySunday(result.year)
+        expect(epiphanyDate.getDate()).toBeGreaterThanOrEqual(2) // Between Jan 2-8
+        expect(epiphanyDate.getDate()).toBeLessThanOrEqual(8) // Between Jan 2-8
       })
     })
   })
@@ -223,11 +225,11 @@ describe('Baptism of the Lord Date Calculations', () => {
       { year: 2019, epiphanyDate: new Date(2019, 0, 6), baptismDate: new Date(2019, 0, 13) },
       { year: 2020, epiphanyDate: new Date(2020, 0, 5), baptismDate: new Date(2020, 0, 12) },
       { year: 2021, epiphanyDate: new Date(2021, 0, 3), baptismDate: new Date(2021, 0, 10) },
-      { year: 2022, epiphanyDate: new Date(2022, 0, 9), baptismDate: new Date(2022, 0, 16) },
+      { year: 2022, epiphanyDate: new Date(2022, 0, 2), baptismDate: new Date(2022, 0, 9) },
       { year: 2025, epiphanyDate: new Date(2025, 0, 5), baptismDate: new Date(2025, 0, 12) },
       { year: 2026, epiphanyDate: new Date(2026, 0, 4), baptismDate: new Date(2026, 0, 11) },
       { year: 2027, epiphanyDate: new Date(2027, 0, 3), baptismDate: new Date(2027, 0, 10) },
-      { year: 2028, epiphanyDate: new Date(2028, 0, 9), baptismDate: new Date(2028, 0, 16) },
+      { year: 2028, epiphanyDate: new Date(2028, 0, 2), baptismDate: new Date(2028, 0, 9) },
       { year: 2030, epiphanyDate: new Date(2030, 0, 6), baptismDate: new Date(2030, 0, 13) },
     ]
 
