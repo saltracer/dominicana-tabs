@@ -61,9 +61,12 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
 
     // Calculate Baptism of the Lord (Sunday after Epiphany)
     const baptismOfLord = new Date(epiphany)
-    let daysToNextSunday = (7 - epiphany.getDay()) % 7
-    if (daysToNextSunday === 0) daysToNextSunday = 7 // If Epiphany is Sunday, next Sunday is 7 days later
-    baptismOfLord.setDate(epiphany.getDate() + daysToNextSunday)
+    // If Epiphany is Sunday, Baptism of the Lord is the same day
+    // Otherwise, find the next Sunday after Epiphany
+    if (epiphany.getDay() !== 0) {
+      const daysToNextSunday = 7 - epiphany.getDay()
+      baptismOfLord.setDate(epiphany.getDate() + daysToNextSunday)
+    }
 
     // Calculate for previous year (for dates in January)
     // Instead of recursive calls, we'll calculate directly
@@ -92,11 +95,11 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
       return season
     }
 
-    // Christmas
-    if (
-      (date >= christmas && date.getFullYear() === date.getFullYear()) ||
-      (date < baptismOfLord && date.getFullYear() === date.getFullYear())
-    ) {
+    // Christmas season (from Christmas Day until the day before Epiphany)
+    const christmasSeasonEnd = new Date(epiphany)
+    christmasSeasonEnd.setDate(epiphany.getDate() - 1) // Day before Epiphany
+
+    if (date >= christmas && date <= christmasSeasonEnd) {
       season = {
         name: "Christmas",
         color: "White",
@@ -106,13 +109,35 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
       return season
     }
 
-    // Check if we're still in Christmas from previous year
-    if (prevYearChristmas && date < baptismOfLord) {
+    // Check if we're still in Christmas from previous year (for January dates)
+    if (date.getMonth() === 0 && date < epiphany) {
       season = {
         name: "Christmas",
         color: "White",
         description: "The celebration of the birth of Jesus Christ",
         rank: "Season",
+      }
+      return season
+    }
+
+    // Epiphany (January 6 or the Sunday closest to it)
+    if (date.getTime() === epiphany.getTime()) {
+      season = {
+        name: "Epiphany",
+        color: "White",
+        description: "The manifestation of Christ to the Gentiles",
+        rank: "Solemnity",
+      }
+      return season
+    }
+
+    // Baptism of the Lord (Sunday after Epiphany)
+    if (date.getTime() === baptismOfLord.getTime()) {
+      season = {
+        name: "Baptism of the Lord",
+        color: "White",
+        description: "The baptism of Jesus in the Jordan River",
+        rank: "Feast",
       }
       return season
     }
@@ -139,8 +164,12 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
       return season
     }
 
+    // Calculate start of first Ordinary Time period (Monday after Baptism of the Lord)
+    const firstOrdinaryTimeStart = new Date(baptismOfLord)
+    firstOrdinaryTimeStart.setDate(baptismOfLord.getDate() + 1) // Monday after Baptism of the Lord
+
     // Ordinary Time (after Epiphany)
-    if (date >= baptismOfLord && date < ashWednesday) {
+    if (date >= firstOrdinaryTimeStart && date < ashWednesday) {
       season = {
         name: "Ordinary Time",
         color: "Green",
@@ -150,8 +179,16 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
       return season
     }
 
+    // Calculate start of second Ordinary Time period (Monday after Pentecost)
+    const secondOrdinaryTimeStart = new Date(pentecost)
+    secondOrdinaryTimeStart.setDate(pentecost.getDate() + 1) // Monday after Pentecost
+
+    // Calculate end of second Ordinary Time period (Saturday before Advent)
+    const secondOrdinaryTimeEnd = new Date(firstAdventSunday)
+    secondOrdinaryTimeEnd.setDate(firstAdventSunday.getDate() - 1) // Saturday before Advent
+
     // Ordinary Time (after Pentecost)
-    if (date >= trinitySunday && date < firstAdventSunday) {
+    if (date >= secondOrdinaryTimeStart && date <= secondOrdinaryTimeEnd) {
       season = {
         name: "Ordinary Time",
         color: "Green",
@@ -232,23 +269,39 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
   }
 
   if (season.name === "Ordinary Time") {
-    // This is a simplified calculation
-    const startOfYear = new Date(year, 0, 1)
-    const dayOfYear = Math.floor((date.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24))
-    const weekOfYear = Math.floor(dayOfYear / 7) + 1
+    // Calculate Epiphany and Baptism of the Lord for proper week numbering
+    const epiphany = getEpiphanySunday(year)
+    const baptismOfLord = new Date(epiphany)
+    if (epiphany.getDay() !== 0) {
+      const daysToNextSunday = 7 - epiphany.getDay()
+      baptismOfLord.setDate(epiphany.getDate() + daysToNextSunday)
+    }
 
-    // Adjust for liturgical calendar
+    // Calculate start of first Ordinary Time period (Monday after Baptism of the Lord)
+    const firstOrdinaryTimeStart = new Date(baptismOfLord)
+    firstOrdinaryTimeStart.setDate(baptismOfLord.getDate() + 1)
+
+    // Calculate start of second Ordinary Time period (Monday after Pentecost)
+    const pentecost = new Date(easter)
+    pentecost.setDate(easter.getDate() + 49)
+    const secondOrdinaryTimeStart = new Date(pentecost)
+    secondOrdinaryTimeStart.setDate(pentecost.getDate() + 1)
+
     if (date < ashWednesday) {
-      return `Week ${weekOfYear} in Ordinary Time`
+      // First period of Ordinary Time (after Epiphany)
+      const daysSinceStart = Math.floor((date.getTime() - firstOrdinaryTimeStart.getTime()) / (1000 * 60 * 60 * 24))
+      const weekNumber = Math.floor(daysSinceStart / 7) + 1
+      return `Week ${weekNumber} in Ordinary Time`
     } else {
-      // After Easter, the week number is different
-      const pentecost = new Date(easter)
-      pentecost.setDate(easter.getDate() + 49)
-
-      const daysSincePentecost = Math.floor((date.getTime() - pentecost.getTime()) / (1000 * 60 * 60 * 24))
-      const weeksSincePentecost = Math.floor(daysSincePentecost / 7) + 1
-
-      return `Week ${weeksSincePentecost + 9} in Ordinary Time` // Approximate - This should be adding the calculated weeks after epiphany, but that is not working yet.
+      // Second period of Ordinary Time (after Pentecost)
+      const daysSinceStart = Math.floor((date.getTime() - secondOrdinaryTimeStart.getTime()) / (1000 * 60 * 60 * 24))
+      const weekNumber = Math.floor(daysSinceStart / 7) + 1
+      
+      // Calculate total weeks in first period to continue numbering
+      const daysInFirstPeriod = Math.floor((ashWednesday.getTime() - firstOrdinaryTimeStart.getTime()) / (1000 * 60 * 60 * 24))
+      const weeksInFirstPeriod = Math.floor(daysInFirstPeriod / 7)
+      
+      return `Week ${weeksInFirstPeriod + weekNumber} in Ordinary Time`
     }
   }
 
