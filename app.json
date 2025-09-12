@@ -4,7 +4,7 @@
     "slug": "dominicana",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/dominicana_logo-white.png",
+    "icon": "./assets/images/dominicana_logo-white-med.png",
     "scheme": "dominicana",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

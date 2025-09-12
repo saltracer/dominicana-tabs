@@ -56,15 +56,14 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
     const daysToSubtract = christmasDay + 21 // 3 weeks + days until Sunday
     const firstAdventSunday = calculateFirstAdventSunday(date)
 
-    // Calculate Epiphany (January 6)
-    const epiphany = new Date(date.getFullYear(), 0, 6)
+    // Calculate Epiphany (Sunday closest to January 6)
+    const epiphany = getEpiphanySunday(date.getFullYear())
 
     // Calculate Baptism of the Lord (Sunday after Epiphany)
     const baptismOfLord = new Date(epiphany)
-    baptismOfLord.setDate(epiphany.getDate() + (7 - epiphany.getDay()))
-    if (baptismOfLord.getDay() === 0) {
-      baptismOfLord.setDate(baptismOfLord.getDate() + 7)
-    }
+    let daysToNextSunday = (7 - epiphany.getDay()) % 7
+    if (daysToNextSunday === 0) daysToNextSunday = 7 // If Epiphany is Sunday, next Sunday is 7 days later
+    baptismOfLord.setDate(epiphany.getDate() + daysToNextSunday)
 
     // Calculate for previous year (for dates in January)
     // Instead of recursive calls, we'll calculate directly
@@ -605,4 +604,29 @@ export function getChristTheKingSunday(year: number): Date {
   const christTheKing = new Date(firstAdvent)
   christTheKing.setDate(firstAdvent.getDate() - 7) // Sunday before Advent
   return christTheKing
+}
+
+export function getEpiphanySunday(year: number): Date {
+  // Epiphany is celebrated on the Sunday closest to January 6
+  // If January 6 falls on Sunday, it's celebrated on January 6
+  // Otherwise, it's celebrated on the Sunday between January 2 and January 8
+  const jan6 = new Date(year, 0, 6) // January 6
+  const dayOfWeek = jan6.getDay() // 0 = Sunday, 1 = Monday, etc.
+  
+  if (dayOfWeek === 0) {
+    // January 6 is Sunday, celebrate on January 6
+    return jan6
+  } else if (dayOfWeek <= 3) {
+    // January 6 is Monday, Tuesday, or Wednesday
+    // Go back to the previous Sunday
+    const epiphany = new Date(jan6)
+    epiphany.setDate(jan6.getDate() - dayOfWeek)
+    return epiphany
+  } else {
+    // January 6 is Thursday, Friday, or Saturday
+    // Go forward to the next Sunday
+    const epiphany = new Date(jan6)
+    epiphany.setDate(jan6.getDate() + (7 - dayOfWeek))
+    return epiphany
+  }
 }

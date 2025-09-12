@@ -24,25 +24,6 @@ export function fixedGeneralCelebrations(): FixedCelebration[] {
       ],
     },
     {
-      id: "epiphany",
-      name: "The Epiphany of the Lord",
-      date: "01-06", // Note: In some countries, Epiphany is celebrated on the Sunday between January 2 and January 8
-      rank: CelebrationRank.SOLEMNITY,
-      color: LiturgicalColor.WHITE,
-      proper: "Proper of Solemnities",
-      type: "universal",
-      short_desc: "Commemorates the manifestation of Christ to the Gentiles, represented by the Magi.",
-      description: [
-        "The Epiphany celebrates the revelation of Christ to the world, particularly to the Gentiles as represented by the Magi who followed the star to Bethlehem. This event, described in Matthew's Gospel, signifies that Jesus came not only for the Jewish people but for all nations.",
-        "The word 'epiphany' means 'manifestation' or 'revelation.' It captures the moment when the divine nature of the Christ Child was revealed to these wise men from the East, who responded with gifts of gold, frankincense, and myrrh.",
-        "This feast also traditionally commemorates the baptism of Jesus in the Jordan River and the wedding feast at Cana, where Christ performed his first miracle. These three events are seen as key 'manifestations' of Christ's divinity and mission.",
-        "The Magi's gifts have been interpreted symbolically: gold representing Christ's kingship, frankincense His divinity, and myrrh His humanity and future suffering. Their journey from distant lands prefigures the universal call of the Gospel.",
-        "In many cultures, Epiphany (also called 'Three Kings Day') is celebrated with special foods, blessings of homes, and the exchange of gifts, recalling the gifts of the Magi. Some traditions include marking doorways with blessed chalk inscribed with the year and the letters C+M+B, standing for the traditional names of the Magi (Caspar, Melchior, and Balthasar) or for 'Christus Mansionem Benedicat' (May Christ bless this house).",
-        "The timing of Epiphany near the winter solstice (when light begins to increase) connects symbolically with Christ as the Light of the World coming to dispel darkness. The star that guided the Magi represents divine guidance leading humanity to Christ.",
-        "Liturgically, the Epiphany is one of the oldest Christian feasts, dating back to the 3rd century, even before Christmas was widely celebrated. In the Eastern Churches, it remains one of the most important feasts, often focusing on Christ's baptism rather than the visit of the Magi.",
-      ],
-    },
-    {
       id: "presentation-of-the-lord",
       name: "The Presentation of the Lord",
       date: "02-02",
