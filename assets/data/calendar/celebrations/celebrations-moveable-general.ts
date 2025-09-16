@@ -203,14 +203,8 @@ export function moveableGeneralCelebrations(year: number): FixedCelebration[] {
   const holyFamilyDay = holyFamilyDate.getDate()
   const holyFamilyString = `${holyFamilyMonth.toString().padStart(2, "0")}-${holyFamilyDay.toString().padStart(2, "0")}`
 
-  // Calculate Christ the King Sunday (last Sunday of the liturgical year, which is the Sunday before the First Sunday of Advent)
-  // First Sunday of Advent is the Sunday closest to November 30
-  const nov30 = new Date(year, 10, 30) // November 30
-  const firstAdventSunday = calculateFirstAdventSunday(nov30)
-
-  // Christ the King is the Sunday before the First Sunday of Advent
-  const christTheKingDate = new Date(firstAdventSunday)
-  christTheKingDate.setDate(firstAdventSunday.getDate() - 7)
+  // Use the consolidated Christ the King calculation
+  const christTheKingDate = getChristTheKingSunday(year)
   const christTheKingMonth = christTheKingDate.getMonth() + 1
   const christTheKingDay = christTheKingDate.getDate()
   const christTheKingString = `${christTheKingMonth.toString().padStart(2, "0")}-${christTheKingDay.toString().padStart(2, "0")}`
