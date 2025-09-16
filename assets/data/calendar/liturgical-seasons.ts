@@ -388,8 +388,27 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
     return `Week ${weekCount} in Ordinary Time`
   }
 
-  if (season.name === "Christmas" || season.name === "Octave of Christmas") {
+  if (season.name === "Octave of Christmas") {
     return season.name
+  }
+
+  if (season.name === "Christmas") {
+    // Check if this is before Baptism of the Lord - use "after Epiphany" format
+    const baptismOfLord = getBaptismOfLordSunday(date.getFullYear())
+    const baptismYday = getDayOfYear(baptismOfLord)
+    
+    if (yday < baptismYday) {
+      // Before Baptism of the Lord - use "after Epiphany" format
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      const dayName = dayNames[date.getDay()]
+      return `The ${dayName} after Epiphany`
+    } else if (yday === baptismYday) {
+      // Baptism of the Lord day itself
+      return "Christmas"
+    } else {
+      // After Baptism of the Lord (shouldn't happen in Christmas season, but fallback)
+      return "Christmas Fallback"
+    }
   }
 
   return `Week in ${season.name}`

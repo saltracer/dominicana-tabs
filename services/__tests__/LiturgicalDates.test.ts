@@ -119,7 +119,7 @@ const LITURGICAL_DATE_TESTS: LiturgicalDateTest[] = [
   {
     date: new Date(2025, 0, 10), // January 10, 2025
     expectedSeason: "Christmas",
-    expectedWeek: "Christmas",
+    expectedWeek: "The Friday after Epiphany",
     description: "January 10, 2025 - Friday after Epiphany (Christmas season)"
   },
   {
