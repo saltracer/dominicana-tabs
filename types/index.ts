@@ -301,19 +301,6 @@ export interface AudioContent {
 
 export type AudioType = 'prayer' | 'meditation' | 'homily' | 'lecture' | 'music' | 'chant';
 
-// Database Types
-export interface DatabaseSchema {
-  users: User[];
-  saints: Saint[];
-  feasts: Feast[];
-  provinces: Province[];
-  books: Book[];
-  reflections: Reflection[];
-  blogPosts: BlogPost[];
-  audioContent: AudioContent[];
-  userBookmarks: Bookmark[];
-  readingProgress: ReadingProgress[];
-}
 
 // API Response Types
 export interface ApiResponse<T> {
