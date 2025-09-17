@@ -44,7 +44,6 @@ config.resolver.assetExts = [
 config.watchFolders = [__dirname];
 
 // Add additional configuration for better bundling
-config.maxWorkers = 2; // Limit workers to prevent memory issues
-config.resetCache = false; // Keep cache for faster builds
+config.maxWorkers = 2;
 
 module.exports = config;
