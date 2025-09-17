@@ -7,7 +7,7 @@ module.exports = function (api) {
   
   const plugins = [
     // Add reanimated plugin only for non-web platforms
-    ...(!isWeb ? ['react-native-reanimated/plugin'] : []),
+    ...(!isWeb ? ['react-native-worklets/plugin'] : []),
   ];
 
   return {

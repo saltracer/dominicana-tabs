@@ -2,7 +2,7 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Tabs } from 'expo-router';
-import { Pressable, View, StyleSheet, Image, Text } from 'react-native';
+import { Pressable, View, StyleSheet, Image, Text, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/Colors';
@@ -47,6 +47,10 @@ export default function TabLayout() {
           paddingHorizontal: 10,
           //marginBottom: liturgicalDay ? 60 : 0, // Add space for FeastBanner
           zIndex: 1001, // Ensure tab bar is above FeastBanner
+          // iOS 26 specific fix: ensure tab bar stays within safe bounds
+          ...(Platform.OS === 'ios' && {
+           marginBottom: -1, // Add margin to position tab bar correctly
+          }),
         },
         tabBarLabelStyle: {
           fontFamily: 'System',
