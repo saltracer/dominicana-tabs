@@ -6,6 +6,7 @@ export interface LiturgicalDay {
   date: string;
   season: LiturgicalSeason;
   week: number;
+  weekString?: string; // Full liturgical week text (e.g., "The Monday after Epiphany")
   dayOfWeek: number;
   feasts: Celebration[];
   color: string;

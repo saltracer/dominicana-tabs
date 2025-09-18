@@ -48,6 +48,12 @@ export const convertFeastToSaint = (feast: Celebration): Saint => ({
 });
 
 export const formatLiturgicalDay = (liturgicalDay: LiturgicalDay) => {
+  // Use the full week string if available (from getLiturgicalWeek)
+  if (liturgicalDay.weekString) {
+    return liturgicalDay.weekString;
+  }
+  
+  // Fallback to constructed format for backward compatibility
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const dayName = dayNames[liturgicalDay.dayOfWeek];
   

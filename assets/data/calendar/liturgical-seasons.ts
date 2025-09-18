@@ -118,7 +118,7 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
       // Pentecost Sunday (line 357 in Perl)
       season = {
         name: "Easter",
-        color: "Red",
+        color: "White",
         description: "The descent of the Holy Spirit upon the Apostles",
         rank: "Solemnity",
       }
@@ -218,7 +218,7 @@ export function getLiturgicalSeason(date: Date): LiturgicalSeason {
           description: "The eight days from Easter Sunday to the Second Sunday of Easter",
           rank: "Season",
         }
-      } else if (yday < pentYday) {
+      } else if (yday <= pentYday) {
         season = {
           name: "Easter",
           color: "White",
@@ -311,19 +311,26 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
     // Calculate which week of Lent (lines 255-256 in Perl)
     // The -4 offset aligns with the first Sunday of Lent, but tests expect
     // week numbering to start from Ash Wednesday itself
-    let weekOfLent = Math.floor((yday - ashWedYday - 4) / 7) + 1
+    let weekOfLent = Math.floor((yday - ashWedYday - 3) / 7) + 1
     
     // If the result is 0 or negative, it means we're in the first week
     // (Ash Wednesday through Saturday before first Sunday)
     if (weekOfLent <= 0) {
-      weekOfLent = 1
+      // Before Monday after Baptism of the Lord - use "after Epiphany" format (matches Perl line 410)
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      const dayName = dayNames[date.getDay()]
+      return `${dayName} after Ash Wednesday`
     }
     
     return `Week ${weekOfLent} of Lent`
   }
 
   if (season.name === "Holy Week") {
-    return `Holy Week`
+    // Before Monday after Baptism of the Lord - use "after Epiphany" format (matches Perl line 410)
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const dayName = dayNames[date.getDay()]
+    return `${dayName} of Holy Week`
+    //return `Holy Week`
   }
 
   if (season.name === "Octave of Easter") {
@@ -347,7 +354,7 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
       // Before Monday after Baptism of the Lord - use "after Epiphany" format (matches Perl line 410)
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
       const dayName = dayNames[date.getDay()]
-      return `The ${dayName} after Epiphany`
+      return `${dayName} after Epiphany`
     } else if (yday >= baptismYday + 1 && yday < ashWedYday) {
       // First period: Calculate weeks from Monday after Baptism of the Lord
       // In liturgical calendars, Sunday begins the new week
@@ -393,15 +400,27 @@ export function getLiturgicalWeek(date: Date, season?: LiturgicalSeason): string
   }
 
   if (season.name === "Christmas") {
-    // Check if this is before Baptism of the Lord - use "after Epiphany" format
+    // Check if this is before Baptism of the Lord - need to distinguish Epiphany boundary
     const baptismOfLord = getBaptismOfLordSunday(date.getFullYear())
     const baptismYday = getDayOfYear(baptismOfLord)
+    const epiphanyYday = getDayOfYear(getEpiphanySunday(date.getFullYear())) // January 6
+
     
     if (yday < baptismYday) {
-      // Before Baptism of the Lord - use "after Epiphany" format
+      // Before Baptism of the Lord - need to check Epiphany boundary
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
       const dayName = dayNames[date.getDay()]
-      return `The ${dayName} after Epiphany`
+      
+      if (yday < epiphanyYday) {
+        // Before Epiphany - use "Day of Christmas" format
+        return `${dayName} of Christmas`
+      } else if (yday === epiphanyYday) {
+        // Epiphany Day itself
+        return "Epiphany"
+      } else {
+        // After Epiphany but before Baptism - use "after Epiphany" format
+        return `${dayName} after Epiphany`
+      }
     } else if (yday === baptismYday) {
       // Baptism of the Lord day itself
       return "Christmas"

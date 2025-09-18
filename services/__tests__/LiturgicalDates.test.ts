@@ -52,7 +52,24 @@ const LITURGICAL_DATE_TESTS: LiturgicalDateTest[] = [
     expectedWeek: "Week 1 of Lent",
     description: "March 9, 2025 - First Sunday of Lent"
   },
-  
+  {
+    date: new Date(2025, 2, 16), // March 16, 2025
+    expectedSeason: "Lent",
+    expectedWeek: "Week 2 of Lent",
+    description: "March 16, 2025 - Second Sunday of Lent"
+  },
+  {
+    date: new Date(2025, 2, 23), // March 16, 2025
+    expectedSeason: "Lent",
+    expectedWeek: "Week 3 of Lent",
+    description: "March 23, 2025 - Third Sunday of Lent"
+  },
+  {
+    date: new Date(2025, 0, 10), // January 10, 2025
+    expectedSeason: "Christmas",
+    expectedWeek: "Friday after Epiphany",
+    description: "January 10, 2025 - Friday after Epiphany (Christmas season)"
+  },
   // Additional test cases for different seasons
   {
     date: new Date(2025, 0, 12), // January 12, 2025
@@ -65,6 +82,18 @@ const LITURGICAL_DATE_TESTS: LiturgicalDateTest[] = [
     expectedSeason: "Ordinary Time",
     expectedWeek: "Week 1 in Ordinary Time",
     description: "January 13, 2025 - Monday, Week 1 of Ordinary Time"
+  },
+  {
+    date: new Date(2025, 2, 6), // March 6, 2025
+    expectedSeason: "Lent",
+    expectedWeek: "Thursday after Ash Wednesday",
+    description: "March 6, 2025 - Thursday after Ash Wednesday"
+  },
+  {
+    date: new Date(2025, 3, 14), // April 14, 2025
+    expectedSeason: "Holy Week",
+    expectedWeek: "Monday of Holy Week",
+    description: "April 14, 2025 - Monday of Holy Week"
   },
   {
     date: new Date(2025, 3, 20), // April 20, 2025
@@ -117,10 +146,16 @@ const LITURGICAL_DATE_TESTS: LiturgicalDateTest[] = [
     description: "January 14, 2024 - Sunday, Week 2 of Ordinary Time"
   },
   {
-    date: new Date(2025, 0, 10), // January 10, 2025
+    date: new Date(2025, 0, 3), // January 3, 2025
     expectedSeason: "Christmas",
-    expectedWeek: "The Friday after Epiphany",
-    description: "January 10, 2025 - Friday after Epiphany (Christmas season)"
+    expectedWeek: "Friday of Christmas",
+    description: "January 2, 2025 - Friday of Christmas"
+  },
+  {
+    date: new Date(2026, 0, 3), // January 3, 2026
+    expectedSeason: "Christmas",
+    expectedWeek: "Saturday of Christmas",
+    description: "January 2, 2026 - Saturday of Christmas"
   },
   {
     date: new Date(2024, 2, 31), // March 31, 2024
@@ -133,14 +168,14 @@ const LITURGICAL_DATE_TESTS: LiturgicalDateTest[] = [
   {
     date: new Date(2025, 2, 5), // March 5, 2025
     expectedSeason: "Lent",
-    expectedWeek: "Week 1 of Lent",
+    expectedWeek: "Wednesday after Ash Wednesday",
     description: "March 5, 2025 - Ash Wednesday"
   },
   {
     date: new Date(2025, 3, 17), // April 17, 2025
     expectedSeason: "Holy Week",
-    expectedWeek: "Holy Week",
-    description: "April 17, 2025 - Thursday of Easter Week 4"
+    expectedWeek: "Thursday of Holy Week",
+    description: "April 17, 2025 - Thursday of Holy Week"
   }
 ];
 

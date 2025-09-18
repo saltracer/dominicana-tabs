@@ -179,10 +179,10 @@ export class LiturgicalCalendarService {
     
     // Use new calendar functions
     const season = getLiturgicalSeason(date);
-    const week = getLiturgicalWeek(date, season);
+    const weekString = getLiturgicalWeek(date, season);
     
     // Extract week number from week string (e.g., "Week 3 of Advent" -> 3)
-    const weekMatch = week.match(/\d+/);
+    const weekMatch = weekString.match(/\d+/);
     const weekNumber = weekMatch ? parseInt(weekMatch[0]) : 1;
 
     // Get feasts for this date
@@ -198,6 +198,7 @@ export class LiturgicalCalendarService {
         description: season.description
       },
       week: weekNumber,
+      weekString: weekString, // Store the full week string
       dayOfWeek: date.getDay(),
       feasts: feasts,
       color: season.color

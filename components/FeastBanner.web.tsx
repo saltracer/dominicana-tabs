@@ -488,7 +488,7 @@ export default function FeastBanner({
                       Liturgical Week
                     </Text>
                     <Text style={[styles.infoValue, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      Week {liturgicalDay.week}
+                      {liturgicalDay.weekString || `Week ${liturgicalDay.week}`}
                     </Text>
                   </View>
                 </>

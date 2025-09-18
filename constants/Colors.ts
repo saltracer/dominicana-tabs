@@ -35,6 +35,8 @@ export const Colors = {
     christmas: '#FFFFFF', // White
     ordinary: '#2E7D32', // Green
     lent: '#6A1B9A', // Violet
+    holyWeek: '#6A1B9A', // Violet
+    octaveOfEaster: '#FFFFFF', // White
     easter: '#FFFFFF', // White
     pentecost: '#FF6F00', // Orange/Red
 
@@ -85,6 +87,8 @@ export const Colors = {
     christmas: '#FFFFFF', // White
     ordinary: '#4CAF50', // Green
     lent: '#BA68C8', // Lighter violet
+    holyWeek: '#BA68C8', // Lighter Violet
+    octaveOfEaster: '#FFFFFF', // White
     easter: '#FFFFFF', // White
     pentecost: '#FF9800', // Orange
 
@@ -114,8 +118,14 @@ export const getLiturgicalColor = (season: string, isDark: boolean = false) => {
       return theme.christmas;
     case 'ordinary':
       return theme.ordinary;
+    case 'ordinary time':
+      return theme.ordinary;
     case 'lent':
       return theme.lent;
+    case 'holy week':
+      return theme.holyWeek;
+    case 'octave of easter':
+      return theme.octaveOfEaster;
     case 'easter':
       return theme.easter;
     case 'pentecost':
@@ -163,6 +173,7 @@ export const getLiturgicalColorHex = (liturgicalColor: string, isDark: boolean =
       return theme.dominicanGold || '#DAA520'; // Use theme gold or fallback
   }
   
+  console.log('getLiturgicalColorHex', liturgicalColor);
   // If not a liturgical color, try to handle as season name
   switch (liturgicalColor.toLowerCase()) {
     case 'advent':
@@ -171,13 +182,22 @@ export const getLiturgicalColorHex = (liturgicalColor: string, isDark: boolean =
       return theme.christmas;
     case 'ordinary':
       return theme.ordinary;
+    case 'ordinary time':
+      return theme.ordinary;
     case 'lent':
       return theme.lent;
+    case 'holy week':
+        return theme.holyWeek;
+    case 'octave of easter':
+        return theme.octaveOfEaster;
     case 'easter':
-      return theme.easter;
+      console.log('default color', liturgicalColor);
+        return theme.easter;
     case 'pentecost':
-      return theme.pentecost;
+      console.log('default color', liturgicalColor);
+        return theme.pentecost;
     default:
-      return theme.primary; // Fallback to primary color
+      console.log('default color', liturgicalColor);
+        return theme.primary;
   }
 };

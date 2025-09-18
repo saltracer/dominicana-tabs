@@ -51,7 +51,7 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
         <View style={[
           styles.seasonInfo, 
           { 
-            backgroundColor: getLiturgicalColorHex(liturgicalDay.season.color, colorScheme === 'dark'),
+            backgroundColor: getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark'),
             borderWidth: liturgicalDay.season.color.toLowerCase() === 'white' ? 1 : 0,
             borderColor: liturgicalDay.season.color.toLowerCase() === 'white' ? '#666666' : 'transparent',
             // shadowColor: '#000',
@@ -74,7 +74,7 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
           <Text style={[styles.seasonWeek, { 
             color: liturgicalDay.season.color.toLowerCase() === 'white' ? '#000000' : '#FFFFFF' 
           }]}>
-            Week {liturgicalDay.week}
+            {liturgicalDay.weekString || `Week ${liturgicalDay.week}`}
           </Text>
           {/* Show total number of feasts */}
           {/* {liturgicalDay.feasts.length > 0 && (
