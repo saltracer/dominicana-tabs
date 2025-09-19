@@ -6,7 +6,7 @@
  */
 
 import { Asset } from "expo-asset";
-import { readAsStringAsync } from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import { Platform } from "react-native";
 import { USXParser } from './USXParser';
 import { USFXParser } from './USFXParser';
@@ -459,8 +459,9 @@ class DouayRheimsAssetLoader implements BibleAssetLoader {
         }
         return await response.text();
       } else {
-        // Use readAsStringAsync for native
-        return await readAsStringAsync(assetObj.localUri);
+        // Use new File API for native
+        const file = new File(assetObj.localUri);
+        return await file.text();
       }
     } else {
       throw new Error(`Local URI not available for ${bookCode}.usx`);
@@ -493,8 +494,9 @@ class VulgateAssetLoader implements BibleAssetLoader {
         }
         content = await response.text();
       } else {
-        // Use readAsStringAsync for native
-        content = await readAsStringAsync(asset.localUri);
+        // Use new File API for native
+        const file = new File(asset.localUri);
+        content = await file.text();
       }
       return this.extractBookFromVulgate(content, bookCode);
     } else {

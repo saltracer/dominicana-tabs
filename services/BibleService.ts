@@ -6,7 +6,7 @@
  */
 
 import { Asset } from "expo-asset";
-import { readAsStringAsync } from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import { USXParser } from './USXParser';
 import { BookMetadata, ParsedBook } from '../types/usx-types';
 
@@ -257,8 +257,9 @@ export class BibleService {
 
       // Check if a local URI is available
       if (asset.localUri) {
-        // Read the content of the file as a string
-        const fileContents = await readAsStringAsync(asset.localUri);
+        // Read the content of the file as a string using new File API
+        const file = new File(asset.localUri);
+        const fileContents = await file.text();
         console.log(`File contents loaded for ${bookCode}, length:`, fileContents.length);
         return fileContents;
       } else {

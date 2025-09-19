@@ -6,7 +6,7 @@
  */
 
 import { Asset } from "expo-asset";
-import { readAsStringAsync } from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import { USFXParser } from './USFXParser';
 
 export class USFXTestService {
@@ -136,7 +136,8 @@ export class USFXTestService {
       await asset.downloadAsync();
       
       if (asset.localUri) {
-        const fileContents = await readAsStringAsync(asset.localUri);
+        const file = new File(asset.localUri);
+        const fileContents = await file.text();
         console.log(`Vulgate file loaded, length:`, fileContents.length);
         
         // Extract the specific book from the large file

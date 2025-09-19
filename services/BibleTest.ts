@@ -5,7 +5,7 @@
  */
 
 import { Asset } from "expo-asset";
-import { readAsStringAsync } from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import { USXParser } from './USXParser';
 import { testUSFXParser } from './USFXTest';
 import { testMultiVersionBibleService } from './MultiVersionBibleTest';
@@ -27,7 +27,8 @@ export async function testBibleLoading() {
     // Test 3: Read the file content
     if (asset.localUri) {
       console.log('Test 3: Reading file content...');
-      const content = await readAsStringAsync(asset.localUri);
+      const file = new File(asset.localUri);
+      const content = await file.text();
       console.log('File content length:', content.length);
       console.log('First 200 characters:', content.substring(0, 200));
       
