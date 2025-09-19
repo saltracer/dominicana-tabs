@@ -6,7 +6,7 @@
  */
 
 import { Asset } from "expo-asset";
-import { readAsStringAsync } from "expo-file-system";
+import { readAsStringAsync } from "expo-file-system/legacy";
 import { Platform } from "react-native";
 import { USXParser } from './USXParser';
 import { USFXParser } from './USFXParser';

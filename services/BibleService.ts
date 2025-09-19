@@ -6,7 +6,7 @@
  */
 
 import { Asset } from "expo-asset";
-import { readAsStringAsync } from "expo-file-system";
+import { readAsStringAsync } from "expo-file-system/legacy";
 import { USXParser } from './USXParser';
 import { BookMetadata, ParsedBook } from '../types/usx-types';
 

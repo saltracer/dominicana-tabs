@@ -5,7 +5,7 @@
  */
 
 import { Asset } from "expo-asset";
-import { readAsStringAsync } from "expo-file-system";
+import { readAsStringAsync } from "expo-file-system/legacy";
 import { USXParser } from './USXParser';
 import { testUSFXParser } from './USFXTest';
 import { testMultiVersionBibleService } from './MultiVersionBibleTest';
