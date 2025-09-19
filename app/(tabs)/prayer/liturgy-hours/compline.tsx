@@ -17,6 +17,7 @@ import { LiturgicalDay, HourType } from '../../../../types';
 import { useCompline } from '../../../../hooks/useCompline';
 import { LanguageCode } from '../../../../types/compline-types';
 import ErrorBoundary from '../../../../components/ErrorBoundary';
+import { PrayerStyles } from '../../../../styles';
 
 function ComplineScreenContent() {
   const { colorScheme } = useTheme();
@@ -306,67 +307,10 @@ function ComplineScreenContent() {
   );
 }
 
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  backButton: {
-    marginRight: 16,
-    padding: 8,
-  },
-  headerContent: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  subtitle: {
-    fontSize: 14,
-    marginTop: 4,
-    fontFamily: 'Georgia',
-  },
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  contentCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
+  ...PrayerStyles,
+  // Add unique local styles for liturgy hours
   contentTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -376,12 +320,6 @@ const styles = StyleSheet.create({
   contentText: {
     fontSize: 14,
     fontStyle: 'italic',
-    marginBottom: 12,
-    fontFamily: 'Georgia',
-  },
-  contentBody: {
-    fontSize: 16,
-    lineHeight: 24,
     marginBottom: 12,
     fontFamily: 'Georgia',
   },
@@ -403,6 +341,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: 'italic',
     marginBottom: 12,
+    fontFamily: 'Georgia',
+  },
+  // Override header for liturgy hours layout
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  backButton: {
+    marginRight: 16,
+    padding: 8,
+  },
+  // Override title for liturgy hours
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  subtitle: {
+    fontSize: 14,
+    marginTop: 4,
+    fontFamily: 'Georgia',
+  },
+  // Override section title for liturgy hours
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 8,
     fontFamily: 'Georgia',
   },
 });

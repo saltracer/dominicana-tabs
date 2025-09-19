@@ -15,6 +15,7 @@ import { useCalendar } from '../../../../components/CalendarContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import { LiturgicalDay, HourType } from '../../../../types';
+import { PrayerStyles } from '../../../../styles';
 
 export default function LaudsScreen() {
   const { colorScheme } = useTheme();
@@ -266,21 +267,8 @@ export default function LaudsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
+  ...PrayerStyles,
+  // Override header for liturgy hours layout
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -291,9 +279,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
     padding: 8,
   },
-  headerContent: {
-    flex: 1,
-  },
+  // Override title for liturgy hours
   title: {
     fontSize: 18,
     fontWeight: '700',
@@ -304,38 +290,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: 'Georgia',
   },
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  // Override section title for liturgy hours
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     marginLeft: 8,
     fontFamily: 'Georgia',
   },
-  contentCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
+  // Add unique styles for liturgy hours
   contentTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
-    fontFamily: 'Georgia',
-  },
-  contentBody: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 12,
     fontFamily: 'Georgia',
   },
   antiphon: {

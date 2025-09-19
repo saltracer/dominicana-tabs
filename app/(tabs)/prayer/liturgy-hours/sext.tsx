@@ -15,6 +15,7 @@ import { useCalendar } from '../../../../components/CalendarContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import { LiturgicalDay, HourType } from '../../../../types';
+import { PrayerStyles } from '../../../../styles';
 
 export default function SextScreen() {
   const { colorScheme } = useTheme();

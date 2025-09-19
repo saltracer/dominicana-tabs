@@ -14,6 +14,7 @@ import { useTheme } from '../../../components/ThemeProvider';
 import FeastBanner from '../../../components/FeastBanner';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay, HourType } from '../../../types';
+import { PrayerStyles } from '../../../styles';
 
 export default function LiturgyOfTheHoursWebScreen() {
   const { colorScheme } = useTheme();
@@ -155,108 +156,8 @@ export default function LiturgyOfTheHoursWebScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  header: {
-    paddingHorizontal: 16,
-    //paddingVertical: 24,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: 8,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-  },
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 16,
-  },
-  quickActionCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  prayerHoursGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  prayerHourCard: {
-    width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    marginBottom: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  prayerHourName: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
-    fontFamily: 'Georgia',
-  },
-  prayerHourTime: {
-    fontSize: 12,
-    marginTop: 4,
-    fontFamily: 'Georgia',
-  },
-  chevron: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    marginTop: -8,
-  },
+  ...PrayerStyles,
+  // No unique local styles needed for web version
 });

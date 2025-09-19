@@ -14,6 +14,7 @@ import { useTheme } from '../../../components/ThemeProvider';
 import FeastBanner from '../../../components/FeastBanner';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
+import { PrayerStyles } from '../../../styles';
 
 export default function RosaryWebScreen() {
   const { colorScheme } = useTheme();

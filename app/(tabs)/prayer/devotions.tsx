@@ -15,6 +15,7 @@ import FeastBanner from '../../../components/FeastBanner';
 import PrayerNavigation from '../../../components/PrayerNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
+import { PrayerStyles } from '../../../styles';
 
 export default function DevotionsScreen() {
   const { colorScheme } = useTheme();
@@ -191,129 +192,6 @@ export default function DevotionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 24,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: 8,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-  },
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 16,
-  },
-  quickActionCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  devotionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  devotionCard: {
-    width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  devotionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  devotionName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-    fontFamily: 'Georgia',
-  },
-  devotionDescription: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontFamily: 'Georgia',
-  },
-  duration: {
-    fontSize: 10,
-    fontFamily: 'Georgia',
-  },
-  comingSoonCard: {
-    alignItems: 'center',
-    padding: 32,
-    backgroundColor: Colors.light.card,
-    borderRadius: 16,
-    marginTop: 16,
-  },
-  comingSoonTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-  },
-  comingSoonText: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    fontFamily: 'Georgia',
-  },
+  ...PrayerStyles,
+  // No unique local styles needed for this component
 });
