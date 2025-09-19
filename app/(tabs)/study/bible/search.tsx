@@ -8,6 +8,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,10 +16,13 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { bibleService, BibleSearchResult } from '../../../../services/BibleService';
+import { StudyStyles, getStudyPlatformStyles } from '../../../../styles';
 
 export default function BibleSearchScreen() {
   const { bookCode } = useLocalSearchParams();
   const { colorScheme } = useTheme();
+  const isWeb = Platform.OS === 'web';
+  const platformStyles = getStudyPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<BibleSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -234,164 +238,8 @@ export default function BibleSearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-  },
-  backButton: {
-    marginRight: 16,
-  },
-  headerContent: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    gap: 12,
-  },
-  searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  searchButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    fontFamily: 'Georgia',
-  },
-  count: {
-    fontSize: 16,
-    fontWeight: '400',
-  },
-  categoriesScroll: {
-    marginBottom: 8,
-  },
-  categoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  categoryText: {
-    marginLeft: 4,
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  resultsList: {
-    gap: 8,
-  },
-  resultCard: {
-    padding: 16,
-    borderRadius: 12,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  resultReference: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  resultText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'Georgia',
-  },
-  noResultsContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 32,
-  },
-  noResultsText: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  noResultsSubtext: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-  },
-  tipsCard: {
-    padding: 16,
-    borderRadius: 12,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  tipItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  tipText: {
-    marginLeft: 12,
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    flex: 1,
-  },
+  // Include all shared styles
+  ...StudyStyles,
+  
+  // No unique local styles needed for this component
 });

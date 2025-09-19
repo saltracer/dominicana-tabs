@@ -17,10 +17,13 @@ import { bibleService } from '../../../../services/BibleService.web';
 import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import BibleVersionSelector from '../../../../components/BibleVersionSelector';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
+import { StudyStyles, getStudyPlatformStyles } from '../../../../styles';
 
 export default function BibleIndexWebScreen() {
   const { colorScheme } = useTheme();
   const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
+  const isWeb = true;
+  const platformStyles = getStudyPlatformStyles(isWeb);
   const [books, setBooks] = useState<VersionBibleBook[]>([]);
   const [filteredBooks, setFilteredBooks] = useState<VersionBibleBook[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -207,109 +210,12 @@ export default function BibleIndexWebScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  searchButton: {
-    padding: 8,
-  },
-  searchContainer: {
-    position: 'relative',
-    marginHorizontal: 20,
-    marginVertical: 16,
-  },
-  searchInput: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingRight: 40,
-    borderRadius: 8,
-    borderWidth: 1,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  searchIcon: {
-    position: 'absolute',
-    right: 12,
-    top: 12,
-  },
+  // Include all shared styles
+  ...StudyStyles,
+  
+  // Add/override with unique local styles
   scrollView: {
     flex: 1,
     paddingHorizontal: 20,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 12,
-  },
-  booksGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: 12,
-  },
-  bookCard: {
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  bookTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  bookSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginBottom: 8,
-  },
-  chapterCount: {
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily: 'Georgia',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginTop: 16,
-  },
-  versionSelector: {
-    marginVertical: 12,
   },
 });

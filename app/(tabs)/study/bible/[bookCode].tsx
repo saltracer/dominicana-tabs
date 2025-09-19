@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import { bibleService } from '../../../../services/BibleService';
 import { BibleChapter, BibleVerse } from '../../../../types';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
 import { testBibleLoading } from '../../../../services/BibleTest';
+import { StudyStyles, getStudyPlatformStyles } from '../../../../styles';
 
 export default function BibleReaderScreen() {
   const { bookCode, chapter, version } = useLocalSearchParams();
@@ -28,6 +30,8 @@ export default function BibleReaderScreen() {
   const versionStr = version as string;
   const initialChapterNum = chapter ? parseInt(chapter as string, 10) : 1;
   const { colorScheme } = useTheme();
+  const isWeb = Platform.OS === 'web';
+  const platformStyles = getStudyPlatformStyles(isWeb);
   const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
   const [book, setBook] = useState<VersionBibleBook | null>(null);
   const [chapterData, setChapterData] = useState<BibleChapter | null>(null);
@@ -397,6 +401,10 @@ export default function BibleReaderScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Include all shared styles
+  ...StudyStyles,
+  
+  // Add/override with unique local styles for Bible reader
   container: {
     flex: 1,
   },

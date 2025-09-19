@@ -17,6 +17,7 @@ import { bibleService } from '../../../../services/BibleService.web';
 import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import { BibleChapter, BibleVerse } from '../../../../types';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
+import { StudyStyles, getStudyPlatformStyles } from '../../../../styles';
 
 export default function BibleReaderWebScreen() {
   const { bookCode, chapter, version } = useLocalSearchParams();
@@ -25,6 +26,8 @@ export default function BibleReaderWebScreen() {
   const initialChapterNum = chapter ? parseInt(chapter as string, 10) : 1;
 
   const { colorScheme } = useTheme();
+  const isWeb = true;
+  const platformStyles = getStudyPlatformStyles(isWeb);
   const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
   const [book, setBook] = useState<VersionBibleBook | null>(null);
   const [currentChapter, setCurrentChapter] = useState<BibleChapter | null>(null);
@@ -298,6 +301,10 @@ export default function BibleReaderWebScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Include all shared styles
+  ...StudyStyles,
+  
+  // Add/override with unique local styles for Bible reader web
   container: {
     flex: 1,
   },

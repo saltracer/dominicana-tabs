@@ -15,12 +15,15 @@ import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { bibleService } from '../../../../services/BibleService.web';
 import { BibleSearchResult } from '../../../../types';
+import { StudyStyles, getStudyPlatformStyles } from '../../../../styles';
 
 export default function BibleSearchWebScreen() {
   const { bookCode } = useLocalSearchParams();
   const bookCodeStr = bookCode as string;
 
   const { colorScheme } = useTheme();
+  const isWeb = true;
+  const platformStyles = getStudyPlatformStyles(isWeb);
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<BibleSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -199,138 +202,12 @@ export default function BibleSearchWebScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    gap: 12,
-  },
-  searchInputContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  searchInput: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingRight: 40,
-    borderRadius: 8,
-    borderWidth: 1,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  clearButton: {
-    position: 'absolute',
-    right: 12,
-    top: 12,
-    padding: 4,
-  },
-  searchButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 48,
-    alignItems: 'center',
-  },
+  // Include all shared styles
+  ...StudyStyles,
+  
+  // Add/override with unique local styles
   resultsContainer: {
     flex: 1,
     paddingHorizontal: 20,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginTop: 16,
-  },
-  resultsList: {
-    paddingBottom: 20,
-  },
-  resultsCount: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginBottom: 16,
-  },
-  resultCard: {
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    marginBottom: 12,
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  resultHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  resultReference: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  resultText: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontFamily: 'Georgia',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyMessage: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-  },
-  placeholderState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  placeholderTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  placeholderMessage: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    textAlign: 'center',
   },
 });

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,10 +18,13 @@ import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay, Book, BookCategory } from '../../../types';
+import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
 
 export default function StudyScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const isWeb = Platform.OS === 'web';
+  const platformStyles = getStudyPlatformStyles(isWeb);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
@@ -304,7 +308,7 @@ export default function StudyScreen() {
               <TouchableOpacity
                 key={book.id}
                 style={[
-                  styles.bookCard,
+                  styles.bookCardGrid,
                   { backgroundColor: Colors[colorScheme ?? 'light'].card }
                 ]}
                 onPress={() => handleBookPress(book)}
@@ -358,21 +362,10 @@ export default function StudyScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
+  // Include all shared styles
+  ...StudyStyles,
+  
+  // Add/override with unique local styles
   loginBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -383,151 +376,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 8,
   },
-  loginText: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 14,
-    fontFamily: 'Georgia',
-  },
-  loginButton: {
-    backgroundColor: Colors.light.surface,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  loginButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.light.surface,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    fontFamily: 'Georgia',
-  },
-  categoriesScroll: {
-    marginBottom: 8,
-  },
-  categoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  categoryText: {
-    marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  booksGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  bookCard: {
-    width: '48%',
-    marginBottom: 16,
-    borderRadius: 12,
-    padding: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  bookCover: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 80,
-    marginBottom: 8,
-    position: 'relative',
-  },
-  dominicanBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: Colors.light.primary,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  dominicanBadgeText: {
-    color: Colors.light.dominicanWhite,
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  bookInfo: {
-    flex: 1,
-  },
-  bookTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 4,
-    fontFamily: 'Georgia',
-  },
-  bookAuthor: {
-    fontSize: 12,
-    marginBottom: 4,
-    fontFamily: 'Georgia',
-  },
-  bookDescription: {
-    fontSize: 11,
-    fontFamily: 'Georgia',
-    lineHeight: 14,
-  },
-  progressCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  progressText: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 14,
-    fontFamily: 'Georgia',
-  },
-  bibleCard: {
-    borderRadius: 12,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  bibleCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   bibleIcon: {
     width: 60,
     height: 60,
@@ -536,24 +384,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-  },
-  bibleInfo: {
-    flex: 1,
-  },
-  bibleTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  bibleSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  bibleDescription: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    lineHeight: 16,
   },
 });
