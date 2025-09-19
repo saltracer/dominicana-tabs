@@ -10,9 +10,10 @@ export const Colors = {
     accent: '#DAA520', // Liturgical gold
     
     // Background and surface colors
-    background: '#F8F9FA', // Soft grey
+    background: '#F7F6F2', // Soft grey 247, 246, 242
     surface: '#FFFFFF',
-    card: '#FAFAFA',
+    card: '#FFFFFF',
+    offWhiteCard: '#E5E3DD',
     
     // Text colors
     text: '#2F2F2F', // Charcoal
@@ -62,8 +63,9 @@ export const Colors = {
     
     // Background and surface colors
     background: '#000000',
-    surface: '#2E2E2E',
+    surface: '#201D1D',
     card: '#151515',
+    offWhiteCard: '#151515',
     // card: '#000000',
     
     // Text colors

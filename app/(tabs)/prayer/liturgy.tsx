@@ -70,11 +70,13 @@ export default function LiturgyOfTheHoursScreen() {
         <TouchableOpacity
             style={[
               styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+              { backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderWidth: 1,
+                borderColor: Colors[colorScheme ?? 'light'].primary }
             ]}
           >
-            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
+            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].primary }]}>
               Current Hour
             </Text>
           </TouchableOpacity>
@@ -82,11 +84,13 @@ export default function LiturgyOfTheHoursScreen() {
           <TouchableOpacity
             style={[
               styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
+              { backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderWidth: 1,
+                borderColor: Colors[colorScheme ?? 'light'].secondary }
             ]}
           >
-            <Ionicons name="calendar" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
+            <Ionicons name="calendar" size={24} color={Colors[colorScheme ?? 'light'].secondary} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].secondary }]}>
               Today's Readings
             </Text>
           </TouchableOpacity>

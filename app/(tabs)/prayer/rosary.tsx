@@ -368,12 +368,14 @@ export default function RosaryScreen() {
           <TouchableOpacity
             style={[
               styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+              { backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderWidth: 1,
+                borderColor: Colors[colorScheme ?? 'light'].primary }
             ]}
             onPress={startPrayer}
           >
-            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
+            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].primary }]}>
               Start Rosary
             </Text>
           </TouchableOpacity>
@@ -381,12 +383,14 @@ export default function RosaryScreen() {
           <TouchableOpacity
             style={[
               styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
+              { backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderWidth: 1,
+                borderColor: Colors[colorScheme ?? 'light'].secondary }
             ]}
             onPress={startTodaysMystery}
           >
-            <Ionicons name="rose" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
+            <Ionicons name="rose" size={24} color={Colors[colorScheme ?? 'light'].secondary} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].secondary }]}>
               Today's Mystery
             </Text>
           </TouchableOpacity>

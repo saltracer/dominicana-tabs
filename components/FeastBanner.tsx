@@ -161,7 +161,7 @@ export default function FeastBanner({
                         { 
                           color: (primaryFeast.color?.toLowerCase() === 'white') 
                             ? '#000000' 
-                            : Colors[colorScheme ?? 'light'].dominicanWhite 
+                            : '#FFFFFF' //Colors[colorScheme ?? 'light'].dominicanWhite 
                         }
                       ]}>
                         {primaryFeast.rank}

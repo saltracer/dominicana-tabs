@@ -95,11 +95,13 @@ export default function DevotionsScreen() {
           <TouchableOpacity
             style={[
               styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+              { backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderWidth: 1,
+                borderColor: Colors[colorScheme ?? 'light'].primary }
             ]}
           >
-            <Ionicons name="heart" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
+            <Ionicons name="heart" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].primary }]}>
               Daily Devotion
             </Text>
           </TouchableOpacity>
@@ -107,11 +109,13 @@ export default function DevotionsScreen() {
           <TouchableOpacity
             style={[
               styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
+              { backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderWidth: 1,
+                borderColor: Colors[colorScheme ?? 'light'].secondary }
             ]}
           >
-            <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].textOnRed} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].textOnRed }]}>
+            <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].secondary} />
+            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].secondary }]}>
               Favorites
             </Text>
           </TouchableOpacity>
