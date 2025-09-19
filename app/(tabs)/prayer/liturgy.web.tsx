@@ -35,12 +35,12 @@ export default function LiturgyOfTheHoursWebScreen() {
   };
 
   const prayerHours: { type: HourType; name: string; time: string; icon: string; route: string }[] = [
-    { type: 'office_of_readings', name: 'Office of Readings', time: 'Any time', icon: 'book-outline', route: 'office-of-readings' },
-    { type: 'lauds', name: 'Lauds (Morning Prayer)', time: '6:00 AM', icon: 'sunny-outline', route: 'lauds' },
-    { type: 'terce', name: 'Terce (Mid-Morning)', time: '9:00 AM', icon: 'time-outline', route: 'terce' },
+    { type: 'office_of_readings', name: 'Office of Readings', time: 'Any time', icon: 'book', route: 'office-of-readings' },
+    { type: 'lauds', name: 'Lauds (Morning Prayer)', time: '6:00 AM', icon: 'sunny', route: 'lauds' },
+    { type: 'terce', name: 'Terce (Mid-Morning)', time: '9:00 AM', icon: 'time', route: 'terce' },
     { type: 'sext', name: 'Sext (Midday)', time: '12:00 PM', icon: 'sunny', route: 'sext' },
     { type: 'none', name: 'None (Mid-Afternoon)', time: '3:00 PM', icon: 'time', route: 'none' },
-    { type: 'vespers', name: 'Vespers (Evening Prayer)', time: '6:00 PM', icon: 'moon-outline', route: 'vespers' },
+    { type: 'vespers', name: 'Vespers (Evening Prayer)', time: '6:00 PM', icon: 'moon', route: 'vespers' },
     { type: 'compline', name: 'Compline (Night Prayer)', time: '9:00 PM', icon: 'moon', route: 'compline' },
   ];
 
@@ -100,7 +100,7 @@ export default function LiturgyOfTheHoursWebScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons 
-              name="time-outline" 
+              name="time" 
               size={24} 
               color={Colors[colorScheme ?? 'light'].primary} 
             />

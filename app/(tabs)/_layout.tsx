@@ -58,9 +58,9 @@ export default function TabLayout() {
           fontWeight: '600',
         },
         headerStyle: {
-          backgroundColor: Colors[colorScheme ?? 'light'].primary,
+          backgroundColor: Colors[colorScheme ?? 'light'].surface,
         },
-        headerTintColor: Colors[colorScheme ?? 'light'].textOnRed,
+        headerTintColor: Colors[colorScheme ?? 'light'].text,
         headerTitleStyle: {
           fontFamily: 'System',
           fontWeight: '700',
@@ -95,7 +95,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].textOnRed}
+                    color={Colors[colorScheme ?? 'light'].text}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
@@ -130,7 +130,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].textOnRed}
+                    color={Colors[colorScheme ?? 'light'].text}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
@@ -165,7 +165,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].textOnRed}
+                    color={Colors[colorScheme ?? 'light'].text}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
@@ -200,7 +200,7 @@ export default function TabLayout() {
                   <Ionicons
                     name="person-circle"
                     size={28}
-                    color={Colors[colorScheme ?? 'light'].textOnRed}
+                    color={Colors[colorScheme ?? 'light'].text}
                     style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
                   />
                 )}
