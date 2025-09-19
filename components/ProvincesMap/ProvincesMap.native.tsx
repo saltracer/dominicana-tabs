@@ -45,7 +45,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
 
   // Debug: Log the provinces being loaded
   useEffect(() => {
-    console.log('ProvincesMap: Loading provinces:', allProvinces.length);
+    // console.log('ProvincesMap: Loading provinces:', allProvinces.length);
     //console.log('ProvincesMap: Regions found:', [...new Set(allProvinces.map(p => p.region))]);
     //allProvinces.forEach(province => {
       //console.log(`Province: ${province.name} - Region: ${province.region} - Coordinates: [${province.coordinates[0]}, ${province.coordinates[1]}]`);
@@ -159,7 +159,7 @@ export default function ProvincesMap({ onProvinceSelect }: ProvincesMapProps) {
   };
 
   const handleMapReady = () => {
-    console.log('Map is ready');
+    // console.log('Map is ready');
     setMapReady(true);
     
     // Zoom to fit all provinces after a short delay

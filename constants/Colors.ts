@@ -173,7 +173,6 @@ export const getLiturgicalColorHex = (liturgicalColor: string, isDark: boolean =
       return theme.dominicanGold || '#DAA520'; // Use theme gold or fallback
   }
   
-  console.log('getLiturgicalColorHex', liturgicalColor);
   // If not a liturgical color, try to handle as season name
   switch (liturgicalColor.toLowerCase()) {
     case 'advent':
@@ -191,13 +190,10 @@ export const getLiturgicalColorHex = (liturgicalColor: string, isDark: boolean =
     case 'octave of easter':
         return theme.octaveOfEaster;
     case 'easter':
-      console.log('default color', liturgicalColor);
         return theme.easter;
     case 'pentecost':
-      console.log('default color', liturgicalColor);
         return theme.pentecost;
     default:
-      console.log('default color', liturgicalColor);
         return theme.primary;
   }
 };
