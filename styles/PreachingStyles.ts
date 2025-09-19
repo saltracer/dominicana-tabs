@@ -1,34 +1,15 @@
 import { StyleSheet } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { GlobalStyles } from './GlobalStyles';
 
 export const PreachingStyles = StyleSheet.create({
-  // CONTAINERS
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabContent: {
-    paddingHorizontal: 16,
-  },
-
-  // LOADING STATES
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
+  // Include all GlobalStyles first
+  ...GlobalStyles,
+  // Preaching-specific containers (overrides)
 
   // SUBSCRIPTION BANNER
   subscriptionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    ...GlobalStyles.rowSpaceBetween,
     backgroundColor: Colors.light.info,
     padding: 12,
     marginHorizontal: 16,
@@ -38,8 +19,7 @@ export const PreachingStyles = StyleSheet.create({
   subscriptionText: {
     flex: 1,
     marginLeft: 8,
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
   },
   subscribeButton: {
     backgroundColor: Colors.light.surface,
@@ -48,9 +28,8 @@ export const PreachingStyles = StyleSheet.create({
     borderRadius: 6,
   },
   subscribeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
   },
 
   // TAB NAVIGATION
@@ -63,8 +42,7 @@ export const PreachingStyles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 8,
@@ -72,54 +50,23 @@ export const PreachingStyles = StyleSheet.create({
   },
   tabText: {
     marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
   },
 
-  // SEARCH COMPONENTS
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
+  // Preaching-specific search (uses globals)
 
-  // TYPOGRAPHY
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    fontFamily: 'Georgia',
-  },
+  // Preaching-specific typography (uses globals)
 
   // REFLECTIONS SECTION
   reflectionsList: {
     marginTop: 8,
   },
   reflectionCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...GlobalStyles.card,
   },
   reflectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    ...GlobalStyles.rowSpaceBetween,
     alignItems: 'flex-start',
     marginBottom: 12,
   },
@@ -127,29 +74,23 @@ export const PreachingStyles = StyleSheet.create({
     flex: 1,
   },
   reflectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textBold,
     marginBottom: 4,
-    fontFamily: 'Georgia',
   },
   reflectionAuthor: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
   },
   reflectionExcerpt: {
-    fontSize: 14,
+    ...GlobalStyles.textBody,
     lineHeight: 20,
     marginBottom: 12,
-    fontFamily: 'Georgia',
   },
   reflectionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...GlobalStyles.rowSpaceBetween,
   },
   reflectionDate: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
   },
 
   // BLOG SECTION
@@ -157,18 +98,10 @@ export const PreachingStyles = StyleSheet.create({
     marginTop: 8,
   },
   blogCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...GlobalStyles.card,
   },
   blogHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    ...GlobalStyles.rowSpaceBetween,
     alignItems: 'flex-start',
     marginBottom: 12,
   },
@@ -176,75 +109,61 @@ export const PreachingStyles = StyleSheet.create({
     flex: 1,
   },
   blogTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textBold,
     marginBottom: 4,
-    fontFamily: 'Georgia',
   },
   blogAuthor: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
   },
   blogExcerpt: {
-    fontSize: 14,
+    ...GlobalStyles.textBody,
     lineHeight: 20,
     marginBottom: 12,
-    fontFamily: 'Georgia',
   },
   blogFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...GlobalStyles.rowSpaceBetween,
   },
   blogDate: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
   },
   blogCategory: {
+    ...GlobalStyles.badge,
     backgroundColor: Colors.light.primary + '20',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
     borderRadius: 6,
   },
   blogCategoryText: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
+    ...GlobalStyles.textSemiBold,
   },
 
   // DOMINICAN BADGES
   dominicanBadge: {
+    ...GlobalStyles.badgeSmall,
     backgroundColor: Colors.light.primary,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
     borderRadius: 6,
   },
   dominicanBadgeText: {
     color: Colors.light.dominicanWhite,
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textXSmall,
+    ...GlobalStyles.textBold,
   },
 
   // SUBSCRIPTION REQUIRED SECTION
   subscriptionRequired: {
-    alignItems: 'center',
+    ...GlobalStyles.centerContent,
     paddingVertical: 40,
   },
   subscriptionRequiredTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...GlobalStyles.sectionTitle,
     marginTop: 16,
     marginBottom: 8,
-    fontFamily: 'Georgia',
   },
   subscriptionRequiredText: {
-    fontSize: 16,
+    ...GlobalStyles.textMedium,
     textAlign: 'center',
     marginBottom: 24,
     paddingHorizontal: 32,
-    fontFamily: 'Georgia',
-    lineHeight: 24,
   },
   subscribeButtonLarge: {
     paddingHorizontal: 32,
@@ -252,19 +171,17 @@ export const PreachingStyles = StyleSheet.create({
     borderRadius: 12,
   },
   subscribeButtonLargeText: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textBold,
   },
 
   // AUDIO CONTENT SECTION
   audioContent: {
-    alignItems: 'center',
+    ...GlobalStyles.centerContent,
     paddingVertical: 40,
   },
   audioContentText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
   },
 });
 

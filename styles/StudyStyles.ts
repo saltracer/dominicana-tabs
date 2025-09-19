@@ -1,22 +1,12 @@
 import { StyleSheet, Dimensions } from 'react-native';
+import { GlobalStyles } from './GlobalStyles';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export const StudyStyles = StyleSheet.create({
-  // CONTAINERS
-  container: {
-    flex: 1,
-  },
-  
-  scrollView: {
-    flex: 1,
-  },
-  
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  // Include all GlobalStyles first
+  ...GlobalStyles,
+  // Study-specific containers (overrides)
 
   // HEADERS
   header: {
@@ -58,55 +48,29 @@ export const StudyStyles = StyleSheet.create({
     marginRight: 16,
   },
 
-  // TYPOGRAPHY
+  // Study-specific typography
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textHuge,
+    ...GlobalStyles.textBold,
     marginBottom: 4,
   },
 
   subtitle: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 16,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
   },
 
   sectionTitleWeb: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 12,
   },
 
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginTop: 16,
-  },
-
   count: {
-    fontSize: 16,
+    ...GlobalStyles.textMedium,
     fontWeight: '400',
   },
 
-  // SEARCH COMPONENTS
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-
+  // Study-specific search components
   searchContainerWeb: {
     position: 'relative',
     marginHorizontal: 20,
@@ -120,14 +84,6 @@ export const StudyStyles = StyleSheet.create({
     gap: 12,
   },
 
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-
   searchInputWeb: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -139,12 +95,7 @@ export const StudyStyles = StyleSheet.create({
   },
 
   searchInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    ...GlobalStyles.searchContainer,
   },
 
   searchInputContainerWeb: {
@@ -197,12 +148,7 @@ export const StudyStyles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
 
-  // SECTIONS & LAYOUT
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-
+  // Study-specific sections
   sectionWeb: {
     marginBottom: 24,
   },
@@ -213,8 +159,7 @@ export const StudyStyles = StyleSheet.create({
   },
 
   categoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -227,8 +172,7 @@ export const StudyStyles = StyleSheet.create({
   },
 
   categoryCardCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -241,42 +185,28 @@ export const StudyStyles = StyleSheet.create({
   },
 
   categoryText: {
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
     marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
   },
 
   categoryTextCompact: {
+    ...GlobalStyles.textSmall,
+    ...GlobalStyles.textSemiBold,
     marginLeft: 4,
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
   },
 
   // BOOK CARDS
   bookCard: {
+    ...GlobalStyles.card,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
 
   bookCardGrid: {
+    ...GlobalStyles.card,
     width: '48%',
-    marginBottom: 16,
-    borderRadius: 12,
     padding: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
 
   bookCardWeb: {
@@ -285,7 +215,6 @@ export const StudyStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
   },
 
   bookInfo: {
@@ -293,46 +222,39 @@ export const StudyStyles = StyleSheet.create({
   },
 
   bookHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     marginBottom: 4,
   },
 
   bookTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
+    ...GlobalStyles.textSemiBold,
     flex: 1,
   },
 
   bookTitleGrid: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textBold,
     marginBottom: 4,
-    fontFamily: 'Georgia',
   },
 
   bookSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
     marginBottom: 8,
   },
 
   bookAbbreviation: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
     marginLeft: 8,
   },
 
   bookAuthor: {
-    fontSize: 12,
+    ...GlobalStyles.textSmall,
     marginBottom: 4,
-    fontFamily: 'Georgia',
   },
 
   bookCategory: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
   },
 
   bookDescription: {
@@ -342,9 +264,8 @@ export const StudyStyles = StyleSheet.create({
   },
 
   chapterCount: {
-    fontSize: 12,
+    ...GlobalStyles.textSmall,
     fontWeight: '500',
-    fontFamily: 'Georgia',
   },
 
   // GRIDS & LISTS
@@ -355,9 +276,9 @@ export const StudyStyles = StyleSheet.create({
   },
 
   booksGridWeb: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
 
   booksList: {
@@ -392,18 +313,11 @@ export const StudyStyles = StyleSheet.create({
 
   // SPECIAL CARDS
   bibleCard: {
-    borderRadius: 12,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...GlobalStyles.card,
   },
 
   bibleCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
   },
 
   bibleIcon: {
@@ -420,21 +334,18 @@ export const StudyStyles = StyleSheet.create({
   },
 
   bibleTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textBold,
     marginBottom: 4,
   },
 
   bibleSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
     marginBottom: 4,
   },
 
   bibleDescription: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
     lineHeight: 16,
   },
 
@@ -464,22 +375,15 @@ export const StudyStyles = StyleSheet.create({
 
   // PROGRESS & STATUS
   progressCard: {
+    ...GlobalStyles.card,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
 
   progressText: {
     flex: 1,
     marginLeft: 12,
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
   },
 
   // LOGIN BANNER
@@ -522,13 +426,8 @@ export const StudyStyles = StyleSheet.create({
   },
 
   resultCard: {
+    ...GlobalStyles.cardSmall,
     padding: 16,
-    borderRadius: 12,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
 
   resultCardWeb: {
@@ -538,68 +437,53 @@ export const StudyStyles = StyleSheet.create({
     borderColor: '#e0e0e0',
     marginBottom: 12,
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
   },
 
   resultHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...GlobalStyles.rowSpaceBetween,
     marginBottom: 8,
   },
 
   resultReference: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
   },
 
   resultText: {
-    fontSize: 14,
+    ...GlobalStyles.textBody,
     lineHeight: 20,
-    fontFamily: 'Georgia',
   },
 
   resultTextWeb: {
-    fontSize: 16,
+    ...GlobalStyles.textMedium,
     lineHeight: 22,
-    fontFamily: 'Georgia',
   },
 
   resultsCount: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
     marginBottom: 16,
   },
 
-  // EMPTY STATES
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-
+  // Study-specific empty states
   emptyStateWeb: {
     alignItems: 'center',
     paddingVertical: 60,
   },
 
   emptyText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
     marginTop: 16,
   },
 
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textSemiBold,
     marginTop: 16,
     marginBottom: 8,
   },
 
   emptyMessage: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
     textAlign: 'center',
   },
 
@@ -829,29 +713,7 @@ export const StudyStyles = StyleSheet.create({
     marginHorizontal: 8,
   },
 
-  // MODAL STYLES
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  modalContent: {
-    width: '80%',
-    maxHeight: '70%',
-    borderRadius: 16,
-    padding: 20,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-
+  // Study-specific modal styles
   modalScrollView: {
     maxHeight: 300,
   },
@@ -864,8 +726,7 @@ export const StudyStyles = StyleSheet.create({
   },
 
   modalItemText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
     textAlign: 'center',
   },
 
@@ -878,9 +739,8 @@ export const StudyStyles = StyleSheet.create({
   },
 
   modalCloseButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
+    ...GlobalStyles.textSemiBold,
   },
 });
 

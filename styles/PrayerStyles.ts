@@ -1,30 +1,13 @@
 import { StyleSheet } from 'react-native';
 import { Colors } from '../constants/Colors';
+import { GlobalStyles } from './GlobalStyles';
 
 export const PrayerStyles = StyleSheet.create({
-  // CONTAINERS
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabContent: {
-    paddingHorizontal: 16,
-  },
+  // Include all GlobalStyles first
+  ...GlobalStyles,
+  // Prayer-specific containers (overrides)
 
-  // LOADING STATES
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-
-  // HEADERS
+  // Prayer-specific headers
   header: {
     paddingHorizontal: 16,
     paddingVertical: 24,
@@ -35,15 +18,13 @@ export const PrayerStyles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textHuge,
+    ...GlobalStyles.textBold,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    ...GlobalStyles.textMedium,
     marginTop: 8,
-    fontFamily: 'Georgia',
     textAlign: 'center',
   },
   backButton: {
@@ -54,21 +35,10 @@ export const PrayerStyles = StyleSheet.create({
     zIndex: 1,
   },
 
-  // SECTIONS & LAYOUT
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
+  // Prayer-specific sections
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
   },
 
   // QUICK ACTIONS
@@ -79,24 +49,17 @@ export const PrayerStyles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   quickActionCard: {
+    ...GlobalStyles.card,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
     marginHorizontal: 4,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   quickActionText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
     marginLeft: 8,
-    fontFamily: 'Georgia',
   },
 
   // PRAYER HOURS GRID
@@ -106,29 +69,21 @@ export const PrayerStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   prayerHourCard: {
+    ...GlobalStyles.card,
     width: '48%',
-    padding: 16,
-    borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
     marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   prayerHourName: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
     textAlign: 'center',
     marginTop: 8,
-    fontFamily: 'Georgia',
   },
   prayerHourTime: {
-    fontSize: 12,
+    ...GlobalStyles.textSmall,
     marginTop: 4,
-    fontFamily: 'Georgia',
   },
   chevron: {
     position: 'absolute',
@@ -144,14 +99,8 @@ export const PrayerStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   rosaryCard: {
+    ...GlobalStyles.card,
     width: '48%',
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     position: 'relative',
   },
   mysteryCardContent: {
@@ -160,17 +109,15 @@ export const PrayerStyles = StyleSheet.create({
     paddingBottom: 50, // Space for play button
   },
   rosaryMysteryName: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
     textAlign: 'center',
     marginTop: 8,
-    fontFamily: 'Georgia',
   },
   rosaryMysteryDay: {
-    fontSize: 12,
+    ...GlobalStyles.textSmall,
     marginTop: 4,
     textAlign: 'center',
-    fontFamily: 'Georgia',
   },
   mysteriesList: {
     marginTop: 12,
@@ -284,31 +231,22 @@ export const PrayerStyles = StyleSheet.create({
     marginBottom: 24,
   },
   prayerCard: {
-    borderRadius: 16,
-    padding: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    ...GlobalStyles.cardLarge,
   },
   prayerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    ...GlobalStyles.rowSpaceBetween,
     marginBottom: 16,
   },
   exitButton: {
-    padding: 8,
+    ...GlobalStyles.iconButton,
   },
   prayerTitleContainer: {
     flex: 1,
     alignItems: 'center',
   },
   prayerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textBold,
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -317,21 +255,18 @@ export const PrayerStyles = StyleSheet.create({
     marginTop: 4,
   },
   mysterySetName: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
     textAlign: 'center',
   },
   currentMystery: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
     textAlign: 'center',
     marginTop: 2,
     fontStyle: 'italic',
   },
   decadeProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     marginTop: 4,
   },
   decadeText: {
@@ -350,8 +285,7 @@ export const PrayerStyles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   progressText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
   },
   progressBar: {
     height: 4,
@@ -373,18 +307,14 @@ export const PrayerStyles = StyleSheet.create({
     gap: 12,
   },
   controlButton: {
+    ...GlobalStyles.card,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginBottom: 0,
   },
   prevButton: {
     flexDirection: 'row',
@@ -393,9 +323,8 @@ export const PrayerStyles = StyleSheet.create({
     flexDirection: 'row',
   },
   controlButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
+    ...GlobalStyles.textSemiBold,
     marginHorizontal: 8,
   },
 
@@ -406,36 +335,24 @@ export const PrayerStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   devotionCard: {
+    ...GlobalStyles.card,
     width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   devotionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...GlobalStyles.rowSpaceBetween,
     marginBottom: 8,
   },
   devotionName: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 4,
-    fontFamily: 'Georgia',
   },
   devotionDescription: {
-    fontSize: 12,
+    ...GlobalStyles.textSmall,
     lineHeight: 16,
-    fontFamily: 'Georgia',
   },
   duration: {
-    fontSize: 10,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textXSmall,
   },
   comingSoonCard: {
     alignItems: 'center',
@@ -460,161 +377,116 @@ export const PrayerStyles = StyleSheet.create({
 
   // LITURGY CONTENT CARDS
   contentCard: {
+    ...GlobalStyles.card,
     padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   contentBody: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
     marginBottom: 12,
   },
   contentBodyLast: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
   },
 
   // PSALM COMPONENTS
   psalmHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...GlobalStyles.rowSpaceBetween,
     marginBottom: 16,
   },
   psalmTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textSemiBold,
   },
   psalmNumber: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
   },
   psalmVerse: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
     marginBottom: 8,
     textAlign: 'left',
   },
   psalmAntiphon: {
-    fontSize: 16,
+    ...GlobalStyles.bodyText,
     fontStyle: 'italic',
-    lineHeight: 24,
-    fontFamily: 'Georgia',
     marginBottom: 16,
     textAlign: 'center',
   },
 
   // CANTICLE COMPONENTS
   canticleTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 12,
-    fontFamily: 'Georgia',
     textAlign: 'center',
   },
   canticleVerse: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
     marginBottom: 8,
     textAlign: 'left',
   },
 
   // READING COMPONENTS
   readingTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 12,
-    fontFamily: 'Georgia',
     textAlign: 'center',
   },
   readingText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
     marginBottom: 12,
     textAlign: 'left',
   },
   readingResponse: {
-    fontSize: 16,
-    fontWeight: '600',
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
+    ...GlobalStyles.textSemiBold,
     textAlign: 'center',
     marginTop: 8,
   },
 
   // PRAYER COMPONENTS
-  prayerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  prayerTitleComponent: {
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 12,
-    fontFamily: 'Georgia',
     textAlign: 'center',
   },
   prayerBodyText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
     marginBottom: 12,
     textAlign: 'left',
   },
 
   // LANGUAGE SELECTOR
   languageSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     justifyContent: 'center',
     marginBottom: 16,
     gap: 12,
   },
   languageButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    ...GlobalStyles.primaryButton,
   },
   languageButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textSemiBold,
   },
 
   // INTERACTIVE ELEMENTS
   interactiveCard: {
+    ...GlobalStyles.card,
     padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...GlobalStyles.rowSpaceBetween,
     marginBottom: 12,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textLarge,
+    ...GlobalStyles.textSemiBold,
   },
   cardContent: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.bodyText,
   },
 
   // PRAYER FLOW INTERFACE

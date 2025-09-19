@@ -1,205 +1,64 @@
 import { StyleSheet, Dimensions } from 'react-native';
+import { GlobalStyles } from './GlobalStyles';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export const CommunityStyles = StyleSheet.create({
-  // CONTAINERS
-  container: {
-    flex: 1,
-  },
+  // Include all GlobalStyles first
+  ...GlobalStyles,
   
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  tabContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  
+  // Override or add community-specific styles
   tabContentWeb: {
     flex: 1,
     paddingHorizontal: 24,
   },
 
-  scrollView: {
-    flex: 1,
-  },
-
-  // CARDS & SURFACES
-  card: {
-    borderRadius: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    padding: 16,
-    marginBottom: 16,
-  },
-  
-  cardSmall: {
-    borderRadius: 8,
-    elevation: 1,
-    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
-    padding: 12,
-  },
-  
-  cardLarge: {
-    borderRadius: 16,
-    elevation: 4,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    padding: 20,
-  },
-
+  // Community-specific containers
   calendarContainer: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    ...GlobalStyles.card,
     marginHorizontal: 16,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     alignSelf: 'stretch',
   },
 
-  // TYPOGRAPHY
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    fontFamily: 'Georgia',
-  },
-  
+  // Community-specific typography (only unique styles)
   calendarTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    fontFamily: 'Georgia',
-  },
-  
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 12,
+    ...GlobalStyles.pageTitle,
   },
   
   subsectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 8,
   },
   
   label: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
+    ...GlobalStyles.textSemiBold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  
-  bodyText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    lineHeight: 24,
-  },
-  
-  smallText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-  },
 
   resultsCount: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
     marginBottom: 16,
     textAlign: 'center',
   },
 
-  // INTERACTIVE ELEMENTS
-  primaryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  
-  secondaryButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  
-  iconButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'transparent',
-  },
-  
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-
-  // BADGES
-  badge: {
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
-  },
-  
-  badgeSmall: {
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginRight: 4,
-  },
-  
-  badgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-
+  // Community-specific badges
   dominicanBadge: {
+    ...GlobalStyles.badge,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
   },
 
   doctorBadge: {
+    ...GlobalStyles.badge,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
   },
 
   colorBadge: {
+    ...GlobalStyles.badge,
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
   },
   
   // POSITIONING
@@ -224,50 +83,15 @@ export const CommunityStyles = StyleSheet.create({
     marginBottom: 8,
   },
 
-  // MODALS
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  
-  modalContent: {
-    borderRadius: 16,
-    padding: 20,
-    width: '90%',
-    maxWidth: 400,
-  },
-  
+  // Community-specific modal variations
   modalContentLarge: {
-    borderRadius: 16,
+    ...GlobalStyles.modalContent,
     width: '85%',
     maxHeight: '80%',
-  },
-  
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
   },
 
   modalContainer: {
     flex: 1,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    flex: 1,
-    textAlign: 'center',
-  },
-
-  closeButton: {
-    padding: 8,
   },
 
   placeholder: {
@@ -276,21 +100,13 @@ export const CommunityStyles = StyleSheet.create({
 
   // SAINT CARDS
   saintCard: {
+    ...GlobalStyles.card,
     width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
   },
 
   saintCardWeb: {
+    ...GlobalStyles.card,
     width: '23%', // 4 columns for web
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     cursor: 'pointer',
   },
 
@@ -301,18 +117,16 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   saintName: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...GlobalStyles.textMedium,
+    ...GlobalStyles.textBold,
     textAlign: 'center',
     marginBottom: 4,
-    fontFamily: 'Georgia',
   },
 
   saintFeastDay: {
-    fontSize: 12,
+    ...GlobalStyles.textSmall,
     textAlign: 'center',
     marginBottom: 4,
-    fontFamily: 'Georgia',
   },
 
   saintPatronage: {
@@ -324,95 +138,35 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   saintYears: {
-    fontSize: 10,
+    ...GlobalStyles.textXSmall,
     textAlign: 'center',
-    fontFamily: 'Georgia',
   },
 
-  // LAYOUT HELPERS
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  
-  rowSpaceBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
+  // Community-specific layout
   gridRow: {
     justifyContent: 'space-between',
-  },
-
-  // SPACING
-  marginBottomSmall: {
-    marginBottom: 8,
-  },
-  
-  marginBottomMedium: {
-    marginBottom: 16,
-  },
-  
-  marginBottomLarge: {
-    marginBottom: 24,
-  },
-
-  // GRID & LISTS
-  gridContainer: {
-    paddingBottom: 20,
-  },
-  
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-
-  emptyStateText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-
-  // WEB-SPECIFIC STYLES
-  webCursor: {
-    cursor: 'pointer',
   },
   
   // PAGINATION
   pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     justifyContent: 'center',
     paddingVertical: 16,
   },
   
   paginationButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    ...GlobalStyles.primaryButton,
     marginHorizontal: 8,
   },
 
   paginationButtonWeb: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
+    ...GlobalStyles.primaryButton,
     marginHorizontal: 8,
     cursor: 'pointer',
   },
   
   paginationText: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
     marginHorizontal: 16,
   },
 
@@ -430,9 +184,8 @@ export const CommunityStyles = StyleSheet.create({
   },
   
   filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 8,
   },
 
@@ -445,8 +198,7 @@ export const CommunityStyles = StyleSheet.create({
   },
   
   filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -455,14 +207,12 @@ export const CommunityStyles = StyleSheet.create({
   },
   
   filterButtonText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
     marginLeft: 4,
   },
 
   sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -471,23 +221,20 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   sortButtonText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
     marginLeft: 4,
   },
 
   // CALENDAR SPECIFIC
   calendarLegend: {
-    padding: 16,
-    borderRadius: 12,
+    ...GlobalStyles.card,
     marginTop: 16,
   },
 
   legendTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...GlobalStyles.textBody,
+    ...GlobalStyles.textBold,
     marginBottom: 12,
-    fontFamily: 'Georgia',
   },
 
   legendItems: {
@@ -498,8 +245,7 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...GlobalStyles.row,
     marginBottom: 8,
     minWidth: '45%',
   },
@@ -512,23 +258,20 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   legendText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textSmall,
   },
 
   legendSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...GlobalStyles.textSmall,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 8,
-    fontFamily: 'Georgia',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
 
   dominicanSymbol: {
-    fontSize: 14,
+    ...GlobalStyles.textBody,
     marginRight: 8,
-    fontFamily: 'Georgia',
   },
 
   // CUSTOM DAY COMPONENTS
@@ -553,9 +296,8 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   dayNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
+    ...GlobalStyles.textSemiBold,
     marginBottom: 2,
   },
 
@@ -636,8 +378,7 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   feastNamePreviewWeb: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textBody,
     textAlign: 'center',
     marginTop: 2,
     paddingHorizontal: 2,
@@ -686,8 +427,7 @@ export const CommunityStyles = StyleSheet.create({
   },
 
   placeholderText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
+    ...GlobalStyles.textMedium,
     textAlign: 'center',
     fontStyle: 'italic',
   },

@@ -2,3 +2,4 @@ export { default as CommunityStyles, getPlatformStyles, getCombinedStyles } from
 export { default as StudyStyles, getStudyPlatformStyles } from './StudyStyles';
 export { default as PreachingStyles } from './PreachingStyles';
 export { default as PrayerStyles } from './PrayerStyles';
+export { default as GlobalStyles, combineTextStyles, createCardStyle, createButtonStyle } from './GlobalStyles';
