@@ -21,6 +21,7 @@ import SaintDetailPanel from '../../../components/SaintDetailPanel.web';
 import { allSaints } from '../../../assets/data/calendar/saints';
 import { Saint } from '../../../types/saint-types';
 import { CelebrationRank } from '../../../types/celebrations-types';
+import { CommunityStyles, getPlatformStyles } from '../../../styles';
 
 type SortOption = 'name' | 'feast_day' | 'birth_year' | 'death_year';
 type FilterOption = 'all' | 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
@@ -28,6 +29,8 @@ type FilterOption = 'all' | 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'foun
 export default function SaintsScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const isWeb = true;
+  const platformStyles = getPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
@@ -326,7 +329,7 @@ export default function SaintsScreen() {
       {/* <CommunityNavigation activeTab="saints" /> */}
       <Animated.View 
         style={[
-          styles.tabContent,
+          styles.tabContentWeb,
           {
             width: slideAnimation.interpolate({
               inputRange: [0, 1],
@@ -335,7 +338,7 @@ export default function SaintsScreen() {
           }
         ]}
       >
-      <Text style={[styles.communityPageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+      <Text style={[styles.pageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Saints & Blesseds
           </Text>
         {/* Search Bar */}
@@ -363,12 +366,12 @@ export default function SaintsScreen() {
         </Text>
 
         {/* Filters and Sort - Always visible on web */}
-        <View style={styles.filtersContainer}>
-          <View style={styles.filterSection}>
-            <Text style={[styles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+        <View style={CommunityStyles.filtersContainer}>
+          <View style={CommunityStyles.filterSection}>
+            <Text style={[CommunityStyles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Filter by Category
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={CommunityStyles.filterScroll}>
               {renderFilterButton('all', 'All', 'list')}
               {renderFilterButton('dominican', 'Dominican', 'book')}
               {renderFilterButton('doctor', 'Doctors', 'school')}
@@ -378,11 +381,11 @@ export default function SaintsScreen() {
             </ScrollView>
           </View>
 
-          <View style={styles.sortSection}>
-            <Text style={[styles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+          <View style={CommunityStyles.sortSection}>
+            <Text style={[CommunityStyles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Sort by
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortScroll}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={CommunityStyles.sortScroll}>
               {renderSortButton('name', 'Name', 'text')}
               {renderSortButton('feast_day', 'Feast Day', 'calendar')}
               {renderSortButton('birth_year', 'Birth Year', 'person')}
@@ -484,209 +487,13 @@ export default function SaintsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  // Include all shared styles
+  ...CommunityStyles,
+  
+  // Add/override with unique local styles
+  tabContentWeb: {
     flex: 1,
-    // maxWidth: 1400,
-    // alignSelf: 'center',
-    // width: '100%',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  tabContent: {
-    flex: 1,
-    paddingHorizontal: 24, // More padding for web
-    alignSelf: 'flex-start', // Changed from center to flex-start
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  resultsCount: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  filtersContainer: {
-    marginBottom: 16,
-  },
-  filterSection: {
-    marginBottom: 16,
-  },
-  sortSection: {
-    marginBottom: 16,
-  },
-  filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 8,
-  },
-  filterScroll: {
-    flexDirection: 'row',
-  },
-  sortScroll: {
-    flexDirection: 'row',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 8,
-  },
-  filterButtonText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    marginLeft: 4,
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 8,
-  },
-  sortButtonText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    marginLeft: 4,
-  },
-  saintsGrid: {
-    paddingBottom: 20,
-  },
-  row: {
-    justifyContent: 'space-between',
-  },
-  saintCard: {
-    width: '23%', // 4 columns for web
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    cursor: 'pointer', // Web cursor
-  },
-  saintHeader: {
-    alignItems: 'center',
-    marginBottom: 12,
-    position: 'relative',
-  },
-  badgesContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    flexDirection: 'row',
-  },
-  dominicanBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 4,
-  },
-  doctorBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 4,
-  },
-  badgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  topLeftBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 1,
-  },
-  topRightBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  saintName: {
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 4,
-    fontFamily: 'Georgia',
-  },
-  saintFeastDay: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 4,
-    fontFamily: 'Georgia',
-  },
-  saintPatronage: {
-    fontSize: 11,
-    textAlign: 'center',
-    fontFamily: 'Georgia',
-    lineHeight: 14,
-    marginBottom: 4,
-  },
-  saintYears: {
-    fontSize: 10,
-    textAlign: 'center',
-    fontFamily: 'Georgia',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  paginationButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginHorizontal: 8,
-    cursor: 'pointer', // Web cursor
-  },
-  paginationText: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginHorizontal: 16,
-  },
-  communityPageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    fontFamily: 'Georgia',
+    paddingHorizontal: 24,
+    alignSelf: 'flex-start',
   },
 });

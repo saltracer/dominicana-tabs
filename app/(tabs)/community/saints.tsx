@@ -9,6 +9,7 @@ import {
   Modal,
   FlatList,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ import CommunityNavigation from '../../../components/CommunityNavigation';
 import { allSaints } from '../../../assets/data/calendar/saints';
 import { Saint } from '../../../types/saint-types';
 import { CelebrationRank } from '../../../types/celebrations-types';
+import { CommunityStyles, getPlatformStyles } from '../../../styles';
 
 type SortOption = 'name' | 'feast_day' | 'birth_year' | 'death_year';
 type FilterOption = 'all' | 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
@@ -27,6 +29,8 @@ type FilterOption = 'all' | 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'foun
 export default function SaintsScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const isWeb = Platform.OS === 'web';
+  const platformStyles = getPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
@@ -147,7 +151,7 @@ export default function SaintsScreen() {
 
   const renderSaintCard = ({ item: saint }: { item: Saint }) => (
     <TouchableOpacity
-      style={[styles.saintCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+      style={[platformStyles.saintCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
       onPress={() => handleSaintPress(saint)}
     >
       <View style={styles.saintHeader}>
@@ -268,7 +272,7 @@ export default function SaintsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <CommunityNavigation activeTab="saints" />
       
-      <View style={styles.tabContent}>
+      <View style={platformStyles.tabContent}>
         {/* Search Bar */}
         <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
           <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
@@ -330,9 +334,9 @@ export default function SaintsScreen() {
           renderItem={renderSaintCard}
           keyExtractor={(item) => item.id}
           numColumns={2}
-          columnWrapperStyle={styles.row}
+          columnWrapperStyle={styles.gridRow}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.saintsGrid}
+          contentContainerStyle={styles.gridContainer}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="search" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
@@ -348,7 +352,7 @@ export default function SaintsScreen() {
           <View style={styles.pagination}>
             <TouchableOpacity
               style={[
-                styles.paginationButton,
+                platformStyles.paginationButton,
                 { 
                   backgroundColor: currentPage === 1 
                     ? Colors[colorScheme ?? 'light'].border 
@@ -375,7 +379,7 @@ export default function SaintsScreen() {
             
             <TouchableOpacity
               style={[
-                styles.paginationButton,
+                platformStyles.paginationButton,
                 { 
                   backgroundColor: currentPage === totalPages 
                     ? Colors[colorScheme ?? 'light'].border 
@@ -616,236 +620,10 @@ export default function SaintsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  tabContent: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  resultsCount: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  filtersContainer: {
-    marginBottom: 16,
-  },
-  filterSection: {
-    marginBottom: 16,
-  },
-  sortSection: {
-    marginBottom: 16,
-  },
-  filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 8,
-  },
-  filterScroll: {
-    flexDirection: 'row',
-  },
-  sortScroll: {
-    flexDirection: 'row',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 8,
-  },
-  filterButtonText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    marginLeft: 4,
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginRight: 8,
-  },
-  sortButtonText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    marginLeft: 4,
-  },
-  saintsGrid: {
-    paddingBottom: 20,
-  },
-  row: {
-    justifyContent: 'space-between',
-  },
-  saintCard: {
-    width: '48%',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  saintHeader: {
-    alignItems: 'center',
-    marginBottom: 12,
-    position: 'relative',
-  },
-  badgesContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    flexDirection: 'row',
-  },
-  colorBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
-  },
-  dominicanBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
-  },
-  doctorBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 6,
-  },
-  badgeText: {
-    fontSize: 8,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  dateBadgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 4,
-    marginBottom: 8,
-  },
-  topLeftBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 1,
-  },
-  topRightBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    zIndex: 1,
-  },
-  saintName: {
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 4,
-    fontFamily: 'Georgia',
-  },
-  saintFeastDay: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 4,
-    fontFamily: 'Georgia',
-  },
-  saintPatronage: {
-    fontSize: 11,
-    textAlign: 'center',
-    fontFamily: 'Georgia',
-    lineHeight: 14,
-    marginBottom: 4,
-  },
-  saintYears: {
-    fontSize: 10,
-    textAlign: 'center',
-    fontFamily: 'Georgia',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-  },
-  paginationButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginHorizontal: 8,
-  },
-  paginationText: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginHorizontal: 16,
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    padding: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    flex: 1,
-    textAlign: 'center',
-  },
-  placeholder: {
-    width: 40,
-  },
+  // Include all shared styles
+  ...CommunityStyles,
+  
+  // Add/override with unique local styles for modal content
   modalContent: {
     flex: 1,
     paddingHorizontal: 16,
@@ -881,12 +659,6 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 12,
-  },
   sectionContent: {
     fontSize: 16,
     fontFamily: 'Georgia',
@@ -916,17 +688,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Georgia',
     marginBottom: 4,
-  },
-  bookDescription: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  bookYear: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    fontStyle: 'italic',
   },
   infoGrid: {
     flexDirection: 'row',

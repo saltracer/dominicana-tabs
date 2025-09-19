@@ -14,6 +14,7 @@ import FeastBanner from '../../../components/FeastBanner';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay, Province } from '../../../types';
+import { CommunityStyles } from '../../../styles';
 
 // Import ProvincesMap - Metro will automatically choose the right platform-specific file
 import ProvincesMap from '../../../components/ProvincesMap';
@@ -59,7 +60,7 @@ export default function ProvincesScreen() {
       
       {/* Map takes full remaining space */}
       <View style={styles.mapContainer}>
-      <Text style={[styles.communityPageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+      <Text style={[styles.pageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Dominican Provinces
           </Text>
         <ProvincesMap onProvinceSelect={handleProvinceSelect} />
@@ -70,30 +71,8 @@ export default function ProvincesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
-  mapContainer: {
-    flex: 1,
-    marginHorizontal: 8,
-    marginTop: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-
-  communityPageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-    fontFamily: 'Georgia',
-  },
+  // Include all shared styles
+  ...CommunityStyles,
+  
+  // No unique local styles needed for this component
 });
