@@ -123,16 +123,6 @@ export default function DevotionsScreen() {
         
         {/* Popular Devotions Grid */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="heart-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Popular Devotions
-            </Text>
-          </View>
           
           <View style={styles.devotionsGrid}>
             {popularDevotions.map((devotion, index) => (

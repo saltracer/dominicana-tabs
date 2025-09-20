@@ -596,16 +596,6 @@ export default function RosaryWebScreen() {
         
         {/* Rosary Mysteries Grid */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="rose-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Rosary Mysteries
-            </Text>
-          </View>
           
           <View style={styles.rosaryGrid}>
             {rosaryMysteries.map((mystery, index) => (
