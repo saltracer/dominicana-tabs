@@ -13,7 +13,7 @@ export const Colors = {
     background: '#F7F6F2', // Soft grey 247, 246, 242
     surface: '#FFFFFF',
     card: '#FFFFFF',
-    offWhiteCard: '#E5E3DD',
+    offWhiteCard: '#F8F7F3',
     
     // Text colors
     text: '#2F2F2F', // Charcoal
@@ -65,7 +65,7 @@ export const Colors = {
     background: '#000000',
     surface: '#201D1D',
     card: '#151515',
-    offWhiteCard: '#151515',
+    offWhiteCard: '#393939',
     // card: '#000000',
     
     // Text colors

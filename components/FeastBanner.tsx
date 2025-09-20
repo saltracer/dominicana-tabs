@@ -127,7 +127,7 @@ export default function FeastBanner({
     : getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark');
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }]}>
       <View style={styles.bannerContent}>
                 {/* Carousel Container */}
         <View style={styles.carouselContainer}>
@@ -218,7 +218,6 @@ export default function FeastBanner({
             
             {/* Date Section - SECOND */}
             <View style={styles.carouselItem}>
-              {/* <View style={styles.carouselSection}> */}
                 <View style={styles.leftSection}>
                   <TouchableOpacity
                     style={styles.navButton}
@@ -261,7 +260,6 @@ export default function FeastBanner({
                     <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
                   </TouchableOpacity>
                 </View>
-              {/* </View> */}
             </View>
           </ScrollView>
           
@@ -587,6 +585,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     // borderBottomWidth: 1,
     borderColor: '#DDDDDD',
+    marginBottom: -1,
   },
   topRow: {
     flexDirection: 'row',
