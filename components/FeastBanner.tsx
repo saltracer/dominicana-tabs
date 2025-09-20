@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 16,
     fontWeight: '700',
-    fontFamily: 'Georgia',
+    fontFamily: 'System',
     textAlign: 'center',
   },
            dominicanIndicator: {

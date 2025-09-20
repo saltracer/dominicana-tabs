@@ -98,17 +98,7 @@ export default function LiturgyOfTheHoursWebScreen() {
         
         {/* Prayer Hours Grid */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="time" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Prayer Hours
-            </Text>
-          </View>
-          
+                    
           <View style={styles.prayerHoursGrid}>
             {prayerHours.map((hour) => (
               <TouchableOpacity

@@ -7,18 +7,21 @@ import { StyleSheet } from 'react-native';
  * to reduce duplication and ensure consistency.
  */
 
-const fontFamilies = StyleSheet.create({
+export const fontFamilies = StyleSheet.create({
   fontFamilySerif: {
     fontFamily: 'Georgia',
   },
   fontFamilySansSerif: {
     fontFamily: 'sans-serif',
   },
+  fontFamilySystem: {
+    fontFamily: 'System',
+  },
 });
 
-const textStyles = StyleSheet.create({
+export const textStyles = StyleSheet.create({
   textBase: {
-    ...fontFamilies.fontFamilySerif,
+    ...fontFamilies.fontFamilySystem,
   },
 });
 

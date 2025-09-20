@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { Colors } from '../constants/Colors';
-import { GlobalStyles } from './GlobalStyles';
+import { GlobalStyles, fontFamilies } from './GlobalStyles';
 
 export const PrayerStyles = StyleSheet.create({
   // Include all GlobalStyles first
@@ -20,6 +20,7 @@ export const PrayerStyles = StyleSheet.create({
   title: {
     ...GlobalStyles.textHuge,
     ...GlobalStyles.textBold,
+    ...fontFamilies.fontFamilySerif,
     textAlign: 'center',
   },
   subtitle: {
@@ -59,6 +60,7 @@ export const PrayerStyles = StyleSheet.create({
   quickActionText: {
     ...GlobalStyles.textBody,
     ...GlobalStyles.textSemiBold,
+    ...GlobalStyles.fontFamilySystem,
     marginLeft: 8,
   },
 
