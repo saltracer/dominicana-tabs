@@ -229,7 +229,9 @@ export default function FeastBanner({
                   </TouchableOpacity>
                   
                   <TouchableOpacity
-                    style={styles.dateButton}
+                    style={[styles.dateButton, { 
+                      borderColor: Colors[colorScheme ?? 'light'].textMuted
+                    }]}
                     onPress={showDatePickerModal}
                     activeOpacity={0.8}
                   >
@@ -241,7 +243,9 @@ export default function FeastBanner({
                   {/* Reset to Today Button - Only show if not on today's date */}
                   {format(parseISO(liturgicalDay.date), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
                     <TouchableOpacity
-                      style={styles.resetButton}
+                      style={[styles.resetButton, { 
+                        borderColor: Colors[colorScheme ?? 'light'].textMuted
+                      }]}
                       onPress={() => setSelectedDate(new Date())}
                       activeOpacity={0.7}
                     >
