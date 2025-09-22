@@ -16,9 +16,9 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
-import PrayerHoursNavigation from '../../../../components/PrayerHoursNavigation';
 import PrayerNavButtons from '../../../../components/PrayerNavButtons';
 import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
+import PrayerHourPickerModal from '../../../../components/PrayerHourPickerModal';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { PrayerStyles } from '../../../../styles';
 
@@ -69,8 +69,6 @@ export default function TerceScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Prayer Hours Navigation */}
-        <PrayerHoursNavigation currentHour="terce" />
 
         {/* Opening */}
         <View style={styles.section}>
@@ -242,49 +240,12 @@ export default function TerceScreen() {
         <PrayerNavButtons currentHour="terce" />
       </ScrollView>
       
-      {/* Quick picker modal */}
-      <Modal
+      {/* Prayer Hour Picker Modal */}
+      <PrayerHourPickerModal
         visible={showQuickPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowQuickPicker(false)}
-      >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowQuickPicker(false)}
-        >
-          <View style={[styles.quickPickerModal, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Choose Prayer Hour
-            </Text>
-            {[
-              { route: 'office-of-readings', name: 'Office of Readings', icon: 'book' },
-              { route: 'lauds', name: 'Lauds', icon: 'sunny' },
-              { route: 'terce', name: 'Terce', icon: 'time' },
-              { route: 'sext', name: 'Sext', icon: 'sunny' },
-              { route: 'none', name: 'None', icon: 'time' },
-              { route: 'vespers', name: 'Vespers', icon: 'moon' },
-              { route: 'compline', name: 'Compline', icon: 'moon' },
-            ].map((hour) => (
-              <TouchableOpacity
-                key={hour.route}
-                style={[styles.modalHourItem, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}
-                onPress={() => {
-                  setShowQuickPicker(false);
-                  router.push(`/(tabs)/prayer/liturgy-hours/${hour.route}` as any);
-                }}
-              >
-                <View style={styles.modalHourContent}>
-                  <Ionicons name={hour.icon as any} size={20} color={Colors[colorScheme ?? 'light'].primary} />
-                  <Text style={[styles.modalHourName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {hour.name}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
+        onClose={() => setShowQuickPicker(false)}
+        currentHour="terce"
+      />
       
       </SafeAreaView>
     </SwipeNavigationWrapper>
