@@ -1,153 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { Colors } from '../../../constants/Colors';
-import { useTheme } from '../../../components/ThemeProvider';
-import FeastBanner from '../../../components/FeastBanner';
-import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
-import { LiturgicalDay, HourType } from '../../../types';
-import { PrayerStyles } from '../../../styles';
+import { Redirect } from 'expo-router';
+
+// Smart hour selection based on current time
+const getCurrentHour = (): string => {
+  const now = new Date();
+  const hour = now.getHours();
+  
+  if (hour >= 6 && hour < 12) {
+    return 'lauds'; // 6:00 AM - 11:59 AM
+  } else if (hour >= 12 && hour < 15) {
+    return 'sext'; // 12:00 PM - 2:59 PM
+  } else if (hour >= 15 && hour < 18) {
+    return 'none'; // 3:00 PM - 5:59 PM
+  } else if (hour >= 18 && hour < 21) {
+    return 'vespers'; // 6:00 PM - 8:59 PM
+  } else {
+    return 'compline'; // 9:00 PM - 5:59 AM
+  }
+};
 
 export default function LiturgyOfTheHoursWebScreen() {
-  const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
-  const [selectedHour, setSelectedHour] = useState<HourType>('lauds');
-
-  useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
-  }, []);
-
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
-
-  const prayerHours: { type: HourType; name: string; time: string; icon: string; route: string }[] = [
-    { type: 'office_of_readings', name: 'Office of Readings', time: 'Any time', icon: 'book', route: 'office-of-readings' },
-    { type: 'lauds', name: 'Lauds (Morning Prayer)', time: '6:00 AM', icon: 'sunny', route: 'lauds' },
-    { type: 'terce', name: 'Terce (Mid-Morning)', time: '9:00 AM', icon: 'time', route: 'terce' },
-    { type: 'sext', name: 'Sext (Midday)', time: '12:00 PM', icon: 'sunny', route: 'sext' },
-    { type: 'none', name: 'None (Mid-Afternoon)', time: '3:00 PM', icon: 'time', route: 'none' },
-    { type: 'vespers', name: 'Vespers (Evening Prayer)', time: '6:00 PM', icon: 'moon', route: 'vespers' },
-    { type: 'compline', name: 'Compline (Night Prayer)', time: '9:00 PM', icon: 'moon', route: 'compline' },
-  ];
-
-  if (!liturgicalDay) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading liturgical information...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Liturgy of the Hours
-          </Text>
-          <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            The official prayer of the Church
-          </Text>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={[
-              styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].primary }
-            ]}
-          >
-            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              Start Current Hour
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
-            ]}
-          >
-            <Ionicons name="calendar" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              Today's Readings
-            </Text>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Prayer Hours Grid */}
-        <View style={styles.section}>
-                    
-          <View style={styles.prayerHoursGrid}>
-            {prayerHours.map((hour) => (
-              <TouchableOpacity
-                key={hour.type}
-                style={[
-                  styles.prayerHourCard,
-                  { 
-                    backgroundColor: Colors[colorScheme ?? 'light'].card,
-                    borderColor: Colors[colorScheme ?? 'light'].border,
-                  }
-                ]}
-                onPress={() => router.push(`/(tabs)/prayer/liturgy-hours/${hour.route}` as any)}
-                activeOpacity={0.7}
-              >
-                <Ionicons 
-                  name={hour.icon as any} 
-                  size={24} 
-                  color={Colors[colorScheme ?? 'light'].primary}
-                />
-                <Text style={[
-                  styles.prayerHourName,
-                  { color: Colors[colorScheme ?? 'light'].text }
-                ]}>
-                  {hour.name}
-                </Text>
-                <Text style={[
-                  styles.prayerHourTime,
-                  { color: Colors[colorScheme ?? 'light'].textSecondary }
-                ]}>
-                  {hour.time}
-                </Text>
-                <Ionicons 
-                  name="chevron-forward" 
-                  size={16} 
-                  color={Colors[colorScheme ?? 'light'].textSecondary}
-                  style={styles.chevron}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-      
-    </SafeAreaView>
-  );
+  const currentHour = getCurrentHour();
+  return <Redirect href={`/(tabs)/prayer/liturgy-hours/${currentHour}` as any} />;
 }
-
-
-const styles = StyleSheet.create({
-  ...PrayerStyles,
-  // No unique local styles needed for web version
-});

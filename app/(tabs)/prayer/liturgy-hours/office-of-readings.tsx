@@ -14,6 +14,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
+import PrayerHoursNavigation from '../../../../components/PrayerHoursNavigation';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { PrayerStyles } from '../../../../styles';
 
@@ -43,7 +44,7 @@ export default function OfficeOfReadingsScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push('/(tabs)/prayer/liturgy')}
+            onPress={() => router.push('/(tabs)/prayer')}
             activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -57,6 +58,9 @@ export default function OfficeOfReadingsScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Prayer Hours Navigation */}
+        <PrayerHoursNavigation currentHour="office_of_readings" />
 
         {/* Liturgical Information */}
         <View style={styles.section}>

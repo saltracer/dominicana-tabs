@@ -13,6 +13,7 @@ import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
+import PrayerHoursNavigation from '../../../../components/PrayerHoursNavigation';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { useCompline } from '../../../../hooks/useCompline';
 import { LanguageCode } from '../../../../types/compline-types';
@@ -78,7 +79,7 @@ function ComplineScreenContent() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push('/(tabs)/prayer/liturgy')}
+            onPress={() => router.push('/(tabs)/prayer')}
             activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -92,6 +93,9 @@ function ComplineScreenContent() {
             </Text>
           </View>
         </View>
+
+        {/* Prayer Hours Navigation */}
+        <PrayerHoursNavigation currentHour="compline" />
 
         {/* Opening */}
         <View style={styles.section}>
