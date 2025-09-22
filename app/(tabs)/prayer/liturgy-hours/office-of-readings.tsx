@@ -5,6 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +25,7 @@ import { PrayerStyles } from '../../../../styles';
 export default function OfficeOfReadingsScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const [showQuickPicker, setShowQuickPicker] = useState(false);
 
   if (!liturgicalDay) {
     return (
@@ -40,11 +43,8 @@ export default function OfficeOfReadingsScreen() {
     <SwipeNavigationWrapper currentHour="office_of_readings">
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Prayer Navigation */}
-        {/* <PrayerNavigation activeTab="liturgy" /> */}
-
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Clean Header */}
+        <View style={styles.cleanHeader}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.push('/(tabs)/prayer')}
@@ -57,9 +57,16 @@ export default function OfficeOfReadingsScreen() {
               Office of Readings
             </Text>
             <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {liturgicalDay.season.name}
+              Any Time • {liturgicalDay.season.name}
             </Text>
           </View>
+          <TouchableOpacity 
+            style={[styles.quickPickerButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+            onPress={() => setShowQuickPicker(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="list" size={16} color={Colors[colorScheme ?? 'light'].primary} />
+          </TouchableOpacity>
         </View>
 
         {/* Prayer Hours Navigation */}
@@ -154,6 +161,50 @@ export default function OfficeOfReadingsScreen() {
         {/* Prayer Navigation Buttons */}
         <PrayerNavButtons currentHour="office_of_readings" />
       </ScrollView>
+      
+      {/* Quick picker modal */}
+      <Modal
+        visible={showQuickPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowQuickPicker(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowQuickPicker(false)}
+        >
+          <View style={[styles.quickPickerModal, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+            <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Choose Prayer Hour
+            </Text>
+            {[
+              { route: 'office-of-readings', name: 'Office of Readings', icon: 'book' },
+              { route: 'lauds', name: 'Lauds', icon: 'sunny' },
+              { route: 'terce', name: 'Terce', icon: 'time' },
+              { route: 'sext', name: 'Sext', icon: 'sunny' },
+              { route: 'none', name: 'None', icon: 'time' },
+              { route: 'vespers', name: 'Vespers', icon: 'moon' },
+              { route: 'compline', name: 'Compline', icon: 'moon' },
+            ].map((hour) => (
+              <TouchableOpacity
+                key={hour.route}
+                style={[styles.modalHourItem, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}
+                onPress={() => {
+                  setShowQuickPicker(false);
+                  router.push(`/(tabs)/prayer/liturgy-hours/${hour.route}` as any);
+                }}
+              >
+                <View style={styles.modalHourContent}>
+                  <Ionicons name={hour.icon as any} size={20} color={Colors[colorScheme ?? 'light'].primary} />
+                  <Text style={[styles.modalHourName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {hour.name}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
 
       </SafeAreaView>
     </SwipeNavigationWrapper>
@@ -176,28 +227,82 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
   },
-  header: {
+  cleanHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   backButton: {
-    marginRight: 16,
+    marginRight: 12,
     padding: 8,
+    borderRadius: 20,
   },
   headerContent: {
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     fontFamily: 'Georgia',
   },
   subtitle: {
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: 13,
+    marginTop: 2,
     fontFamily: 'Georgia',
+    opacity: 0.8,
+  },
+  quickPickerButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickPickerModal: {
+    width: '80%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  modalHourItem: {
+    borderBottomWidth: 1,
+    paddingVertical: 12,
+  },
+  modalHourContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalHourName: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginLeft: 12,
   },
   section: {
     marginVertical: 16,

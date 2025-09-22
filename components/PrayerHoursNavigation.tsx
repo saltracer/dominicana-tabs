@@ -1,12 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  Modal,
-  Pressable,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -54,7 +51,6 @@ const mockProgress = {
 
 export default function PrayerHoursNavigation({ currentHour }: PrayerHoursNavigationProps) {
   const { colorScheme } = useTheme();
-  const [showQuickPicker, setShowQuickPicker] = useState(false);
   const currentCanonicalHour = getCurrentCanonicalHour();
 
   // No auto-scroll - let the user manually scroll if needed
@@ -151,68 +147,7 @@ export default function PrayerHoursNavigation({ currentHour }: PrayerHoursNaviga
         })}
       </View>
 
-      {/* Quick picker button */}
-      <TouchableOpacity 
-        style={[styles.quickPickerButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-        onPress={() => setShowQuickPicker(true)}
-      >
-        <Ionicons name="list" size={16} color={Colors[colorScheme ?? 'light'].primary} />
-      </TouchableOpacity>
 
-      {/* Quick picker modal */}
-      <Modal
-        visible={showQuickPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowQuickPicker(false)}
-      >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowQuickPicker(false)}
-        >
-          <View style={[styles.quickPickerModal, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Choose Prayer Hour
-            </Text>
-            {prayerHours.map((hour) => {
-              const { isActive, isCompleted, isCurrent } = getHourStatus(hour.type);
-              return (
-                <TouchableOpacity
-                  key={hour.route}
-                  style={[styles.modalHourItem, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}
-                  onPress={() => {
-                    setShowQuickPicker(false);
-                    router.push(`/(tabs)/prayer/liturgy-hours/${hour.route}` as any);
-                  }}
-                >
-                  <View style={styles.modalHourContent}>
-                    <Ionicons name={hour.icon as any} size={20} color={Colors[colorScheme ?? 'light'].primary} />
-                    <View style={styles.modalHourText}>
-                      <Text style={[styles.modalHourName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                        {hour.fullName}
-                      </Text>
-                      <Text style={[styles.modalHourTime, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        {hour.time}
-                      </Text>
-                    </View>
-                    <View style={styles.modalHourBadges}>
-                      {isCompleted && (
-                        <Ionicons name="checkmark-circle" size={16} color={Colors[colorScheme ?? 'light'].success || '#4CAF50'} />
-                      )}
-                      {isCurrent && (
-                        <Text style={[styles.modalCurrentBadge, { color: Colors[colorScheme ?? 'light'].secondary }]}>Now</Text>
-                      )}
-                      {isActive && (
-                        <Text style={[styles.modalActiveBadge, { color: Colors[colorScheme ?? 'light'].primary }]}>Active</Text>
-                      )}
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -276,82 +211,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 8,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  quickPickerButton: {
-    position: 'absolute',
-    right: 16,
-    top: 12,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickPickerModal: {
-    width: '80%',
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  modalHourItem: {
-    borderBottomWidth: 1,
-    paddingVertical: 12,
-  },
-  modalHourContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  modalHourText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  modalHourName: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  modalHourTime: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    marginTop: 2,
-  },
-  modalHourBadges: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalCurrentBadge: {
-    fontSize: 10,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  modalActiveBadge: {
-    fontSize: 10,
     fontWeight: '700',
     fontFamily: 'Georgia',
   },
