@@ -15,6 +15,8 @@ import { useCalendar } from '../../../../components/CalendarContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerHoursNavigation from '../../../../components/PrayerHoursNavigation';
+import PrayerNavButtons from '../../../../components/PrayerNavButtons';
+import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { PrayerStyles } from '../../../../styles';
 
@@ -35,8 +37,9 @@ export default function LaudsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+    <SwipeNavigationWrapper currentHour="lauds">
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right', 'bottom']}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Prayer Navigation */}
         {/* <PrayerNavigation activeTab="liturgy" /> */}
 
@@ -44,7 +47,10 @@ export default function LaudsScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.push('/(tabs)/prayer')}
+            onPress={() => {
+              // Smart back behavior - go to prayer index
+              router.push('/(tabs)/prayer');
+            }}
             activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -263,10 +269,13 @@ export default function LaudsScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Prayer Navigation Buttons */}
+        <PrayerNavButtons currentHour="lauds" />
       </ScrollView>
       
-      
-    </SafeAreaView>
+      </SafeAreaView>
+    </SwipeNavigationWrapper>
   );
 }
 

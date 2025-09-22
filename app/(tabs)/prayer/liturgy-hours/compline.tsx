@@ -14,6 +14,8 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerHoursNavigation from '../../../../components/PrayerHoursNavigation';
+import PrayerNavButtons from '../../../../components/PrayerNavButtons';
+import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { useCompline } from '../../../../hooks/useCompline';
 import { LanguageCode } from '../../../../types/compline-types';
@@ -70,7 +72,8 @@ function ComplineScreenContent() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+    <SwipeNavigationWrapper currentHour="compline">
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Prayer Navigation */}
         {/* <PrayerNavigation activeTab="liturgy" /> */}
@@ -306,8 +309,12 @@ function ComplineScreenContent() {
             </Text>
           </View>
         </View>
+        {/* Prayer Navigation Buttons */}
+        <PrayerNavButtons currentHour="compline" />
       </ScrollView>
-    </SafeAreaView>
+      
+      </SafeAreaView>
+    </SwipeNavigationWrapper>
   );
 }
 

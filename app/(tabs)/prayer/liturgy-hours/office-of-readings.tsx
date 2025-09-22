@@ -15,6 +15,8 @@ import { useCalendar } from '../../../../components/CalendarContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerHoursNavigation from '../../../../components/PrayerHoursNavigation';
+import PrayerNavButtons from '../../../../components/PrayerNavButtons';
+import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { PrayerStyles } from '../../../../styles';
 
@@ -35,7 +37,8 @@ export default function OfficeOfReadingsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+    <SwipeNavigationWrapper currentHour="office_of_readings">
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Prayer Navigation */}
         {/* <PrayerNavigation activeTab="liturgy" /> */}
@@ -147,9 +150,13 @@ export default function OfficeOfReadingsScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Prayer Navigation Buttons */}
+        <PrayerNavButtons currentHour="office_of_readings" />
       </ScrollView>
-      
-    </SafeAreaView>
+
+      </SafeAreaView>
+    </SwipeNavigationWrapper>
   );
 }
 

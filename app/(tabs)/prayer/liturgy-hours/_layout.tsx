@@ -9,7 +9,9 @@ export default function LiturgyHoursLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background }
+        contentStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background },
+        animation: 'none', // Disable slide transitions
+        gestureEnabled: true, // Disable swipe gestures
       }}
     >
       <Stack.Screen name="office-of-readings" />
