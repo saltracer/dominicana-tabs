@@ -59,7 +59,7 @@ export default function SextScreen() {
             </Text>
           </View>
           <TouchableOpacity 
-            style={[styles.quickPickerButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+            style={[styles.quickPickerButton, { /* backgroundColor: Colors[colorScheme ?? 'light'].card */ }]}
             onPress={() => setShowQuickPicker(true)}
             activeOpacity={0.7}
           >

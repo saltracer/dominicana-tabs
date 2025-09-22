@@ -79,9 +79,9 @@ export default function PrayerHourPickerModal({ visible, onClose, currentHour }:
         onPress={onClose}
       >
         <View style={[styles.quickPickerModal, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-          <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+          {/* <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Choose Prayer Hour
-          </Text>
+          </Text> */}
           {prayerHours.map((hour) => {
             const { isActive, isCompleted, isCurrent, isPast } = getHourStatus(hour.type);
             return (
