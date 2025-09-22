@@ -58,47 +58,35 @@ export default function PrayerNavButtons({ currentHour }: PrayerNavButtonsProps)
       }
     ]}>
       <View style={styles.buttonRow}>
-        {/* Previous Hour Button */}
-        <TouchableOpacity
-        style={[
-          styles.navButton,
-          styles.previousButton,
-          { 
-            backgroundColor: previousHour 
-              ? Colors[colorScheme ?? 'light'].card 
-              : Colors[colorScheme ?? 'light'].border,
-            borderColor: Colors[colorScheme ?? 'light'].border,
-          }
-        ]}
-        onPress={() => previousHour && router.push(`/(tabs)/prayer/liturgy-hours/${previousHour.route}` as any)}
-        disabled={!previousHour}
-        activeOpacity={0.7}
-      >
-        <Ionicons 
-          name="chevron-back" 
-          size={20} 
-          color={previousHour 
-            ? Colors[colorScheme ?? 'light'].text 
-            : Colors[colorScheme ?? 'light'].textSecondary
-          } 
-        />
-        <View style={styles.buttonTextContainer}>
-          <Text style={[
-            styles.buttonLabel,
-            { color: previousHour 
-              ? Colors[colorScheme ?? 'light'].textSecondary 
-              : Colors[colorScheme ?? 'light'].border
-            }
-          ]}>
-            Previous
-          </Text>
-          {previousHour && (
-            <Text style={[styles.buttonHour, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {previousHour.name}
-            </Text>
-          )}
-        </View>
-      </TouchableOpacity>
+        {/* Previous Hour Button - Show button or placeholder */}
+        {previousHour ? (
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              styles.previousButton,
+              { 
+                backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderColor: Colors[colorScheme ?? 'light'].border,
+                borderWidth: 1,
+              }
+            ]}
+            onPress={() => router.push(`/(tabs)/prayer/liturgy-hours/${previousHour.route}` as any)}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name="chevron-back" 
+              size={20} 
+              color={Colors[colorScheme ?? 'light'].text}
+            />
+            <View style={styles.buttonTextContainer}>
+              <Text style={[styles.buttonHour, { color: Colors[colorScheme ?? 'light'].text }]}>
+                {previousHour.name}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.navButton, styles.previousButton]} />
+        )}
 
       {/* Complete Prayer Button */}
       <TouchableOpacity
@@ -115,47 +103,35 @@ export default function PrayerNavButtons({ currentHour }: PrayerNavButtonsProps)
         </Text>
       </TouchableOpacity>
 
-      {/* Next Hour Button */}
-      <TouchableOpacity
-        style={[
-          styles.navButton,
-          styles.nextButton,
-          { 
-            backgroundColor: nextHour 
-              ? Colors[colorScheme ?? 'light'].card 
-              : Colors[colorScheme ?? 'light'].border,
-            borderColor: Colors[colorScheme ?? 'light'].border,
-          }
-        ]}
-        onPress={() => nextHour && router.push(`/(tabs)/prayer/liturgy-hours/${nextHour.route}` as any)}
-        disabled={!nextHour}
-        activeOpacity={0.7}
-      >
-        <View style={styles.buttonTextContainer}>
-          <Text style={[
-            styles.buttonLabel,
-            { color: nextHour 
-              ? Colors[colorScheme ?? 'light'].textSecondary 
-              : Colors[colorScheme ?? 'light'].border
-            }
-          ]}>
-            Next
-          </Text>
-          {nextHour && (
-            <Text style={[styles.buttonHour, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {nextHour.name}
-            </Text>
-          )}
-        </View>
-        <Ionicons 
-          name="chevron-forward" 
-          size={20} 
-          color={nextHour 
-            ? Colors[colorScheme ?? 'light'].text 
-            : Colors[colorScheme ?? 'light'].textSecondary
-          } 
-        />
-      </TouchableOpacity>
+        {/* Next Hour Button - Show button or placeholder */}
+        {nextHour ? (
+          <TouchableOpacity
+            style={[
+              styles.navButton,
+              styles.nextButton,
+              { 
+                backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderColor: Colors[colorScheme ?? 'light'].border,
+                borderWidth: 1,
+              }
+            ]}
+            onPress={() => router.push(`/(tabs)/prayer/liturgy-hours/${nextHour.route}` as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.buttonTextContainer}>
+              <Text style={[styles.buttonHour, { color: Colors[colorScheme ?? 'light'].text }]}>
+                {nextHour.name}
+              </Text>
+            </View>
+            <Ionicons 
+              name="chevron-forward" 
+              size={20} 
+              color={Colors[colorScheme ?? 'light'].text}
+            />
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.navButton, styles.nextButton]} />
+        )}
       </View>
 
       {/* Smart suggestion for current canonical hour */}
@@ -185,8 +161,8 @@ export default function PrayerNavButtons({ currentHour }: PrayerNavButtonsProps)
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     borderTopWidth: 1,
   },
   buttonRow: {
@@ -197,65 +173,65 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    minHeight: 56,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    //borderWidth: 1,
+    minHeight: 40,
   },
   previousButton: {
-    marginRight: 8,
+    marginRight: 6,
   },
   nextButton: {
-    marginLeft: 8,
+    marginLeft: 6,
   },
   buttonTextContainer: {
     flex: 1,
     alignItems: 'center',
   },
   buttonLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
     fontFamily: 'Georgia',
   },
   buttonHour: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginTop: 2,
+    marginTop: 1,
   },
   completeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginHorizontal: 8,
-    minWidth: 100,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginHorizontal: 6,
+    minWidth: 80,
   },
   completeText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginLeft: 8,
+    marginLeft: 6,
   },
   suggestionContainer: {
-    marginTop: 12,
+    marginTop: 8,
     alignItems: 'center',
   },
   suggestionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
     borderWidth: 1,
   },
   suggestionText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginLeft: 6,
+    marginLeft: 4,
   },
 });
