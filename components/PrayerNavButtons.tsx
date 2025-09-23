@@ -92,13 +92,16 @@ export default function PrayerNavButtons({ currentHour }: PrayerNavButtonsProps)
       <TouchableOpacity
         style={[
           styles.completeButton,
-          { backgroundColor: Colors[colorScheme ?? 'light'].primary }
+          { backgroundColor: Colors[colorScheme ?? 'light'].background,
+            borderColor: Colors[colorScheme ?? 'light'].primary,
+            borderWidth: 1,
+           }
         ]}
         onPress={() => router.push('/(tabs)/prayer')}
         activeOpacity={0.7}
       >
-        <Ionicons name="checkmark" size={20} color={Colors[colorScheme ?? 'light'].background} />
-        <Text style={[styles.completeText, { color: Colors[colorScheme ?? 'light'].background }]}>
+        <Ionicons name="checkmark" size={20} color={Colors[colorScheme ?? 'light'].primary} />
+        <Text style={[styles.completeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
           Complete
         </Text>
       </TouchableOpacity>

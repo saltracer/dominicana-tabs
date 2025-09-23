@@ -17,10 +17,10 @@ import PrayerNavButtons from '../../../../components/PrayerNavButtons';
 import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
 import PrayerHourPickerModal from '../../../../components/PrayerHourPickerModal';
 import { LiturgicalDay, HourType } from '../../../../types';
+import { PrayerStyles, LiturgyStyles } from '../../../../styles';
 import { useCompline } from '../../../../hooks/useCompline';
 import { LanguageCode } from '../../../../types/compline-types';
 import ErrorBoundary from '../../../../components/ErrorBoundary';
-import { PrayerStyles } from '../../../../styles';
 
 function ComplineScreenContent() {
   const { colorScheme } = useTheme();
@@ -331,123 +331,19 @@ function ComplineScreenContent() {
 
 const styles = StyleSheet.create({
   ...PrayerStyles,
-  // Add unique local styles for liturgy hours
-  contentTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    fontFamily: 'Georgia',
-  },
-  contentText: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginBottom: 12,
-    fontFamily: 'Georgia',
-  },
-  antiphon: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontStyle: 'italic',
-    marginBottom: 12,
-    fontFamily: 'Georgia',
-  },
-  amen: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
-    fontFamily: 'Georgia',
-  },
+  ...LiturgyStyles,
+  // Unique styles for Compline
   rubric: {
     fontSize: 14,
     fontStyle: 'italic',
     marginBottom: 12,
     fontFamily: 'Georgia',
   },
-  // Override header for liturgy hours layout
-  cleanHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 8,
-    borderRadius: 20,
-  },
-  headerContent: {
+  container: {
     flex: 1,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  subtitle: {
-    fontSize: 13,
-    marginTop: 2,
-    fontFamily: 'Georgia',
-    opacity: 0.8,
-  },
-  quickPickerButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  modalOverlay: {
+  scrollView: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickPickerModal: {
-    width: '80%',
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 20,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  modalHourItem: {
-    borderBottomWidth: 1,
-    paddingVertical: 12,
-  },
-  modalHourContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  modalHourName: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginLeft: 12,
-  },
-  // Override section title for liturgy hours
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
   },
 });
 

@@ -18,7 +18,7 @@ import PrayerNavButtons from '../../../../components/PrayerNavButtons';
 import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
 import PrayerHourPickerModal from '../../../../components/PrayerHourPickerModal';
 import { LiturgicalDay, HourType } from '../../../../types';
-import { PrayerStyles } from '../../../../styles';
+import { PrayerStyles, LiturgyStyles } from '../../../../styles';
 
 export default function LaudsScreen() {
   const { colorScheme } = useTheme();
@@ -288,72 +288,11 @@ export default function LaudsScreen() {
 
 const styles = StyleSheet.create({
   ...PrayerStyles,
-  // Clean header for liturgy hours
-  cleanHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 8,
-    borderRadius: 20,
-  },
-  headerContent: {
+  ...LiturgyStyles,
+  container: {
     flex: 1,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-  },
-  subtitle: {
-    fontSize: 13,
-    marginTop: 2,
-    fontFamily: 'Georgia',
-    opacity: 0.8,
-  },
-  quickPickerButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  // Override section title for liturgy hours
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  // Add unique styles for liturgy hours
-  contentTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    fontFamily: 'Georgia',
-  },
-  antiphon: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontStyle: 'italic',
-    marginBottom: 12,
-    fontFamily: 'Georgia',
-  },
-  amen: {
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
-    fontFamily: 'Georgia',
+  scrollView: {
+    flex: 1,
   },
 });
