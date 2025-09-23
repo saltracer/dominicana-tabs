@@ -10,7 +10,8 @@
     "test": "jest --watchAll"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"]
   },
   "dependencies": {
     "@expo/cli": "^54.0.6",
