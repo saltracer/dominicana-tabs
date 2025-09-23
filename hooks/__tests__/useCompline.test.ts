@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react-native';
 import { useCompline } from '../useCompline';
 import { useComplineServices } from '../useComplineServices';
 import { useComplineCache } from '../useComplineCache';

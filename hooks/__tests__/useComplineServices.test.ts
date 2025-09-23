@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook } from '@testing-library/react-native';
 import { useComplineServices } from '../useComplineServices';
 import { ComplineService } from '../../services/ComplineService';
 import { OfflineManager } from '../../services/OfflineManager';

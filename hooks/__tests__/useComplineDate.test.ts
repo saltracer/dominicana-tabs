@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { renderHook } from '@testing-library/react-native';
 import { useComplineDate } from '../useComplineDate';
 
 describe('useComplineDate', () => {
