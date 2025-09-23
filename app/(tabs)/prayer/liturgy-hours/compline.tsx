@@ -190,13 +190,13 @@ function ComplineScreenContent() {
               Psalm {complineData.components.psalmody.psalmNumber}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: {complineData.components.psalmody.antiphon[language]?.text}
+              {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.psalmody.verses[language]?.text}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: {complineData.components.psalmody.antiphon[language]?.text}
+              {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
           </View>
         </View>
@@ -259,13 +259,13 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: {complineData.components.canticle.antiphon[language]?.text}
+              {complineData.components.canticle.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.canticle.content[language]?.text}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Antiphon: {complineData.components.canticle.antiphon[language]?.text}
+              {complineData.components.canticle.antiphon[language]?.text}
             </Text>
           </View>
         </View>

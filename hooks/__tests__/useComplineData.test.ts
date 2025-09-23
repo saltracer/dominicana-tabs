@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import { useComplineData } from '../useComplineData';
 import { ComplineService } from '../../services/ComplineService';
 import { ComplineData } from '../../types/compline-types';

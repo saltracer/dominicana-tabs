@@ -124,7 +124,7 @@ export const LiturgyStyles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 12,
     fontFamily: 'Georgia',
-    textAlign: 'center',
+    // textAlign: 'center',
   },
   
   // Responses and refrains

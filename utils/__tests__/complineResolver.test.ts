@@ -74,19 +74,19 @@ describe('complineResolver', () => {
         type: 'day-of-week-variations',
         default: mondayHymn,
         variations: {
-          [DayOfWeek.Sunday]: sundayHymn
+          sunday: sundayHymn
         }
       };
       
       mockData.components.hymn = hymnVariations;
       
       // Test Sunday (should get Sunday hymn)
-      const sundayDate = new Date('2024-01-14'); // Sunday
+      const sundayDate = new Date(2024, 0, 14); // Sunday (getDay() = 0)
       const sundayResult = resolveComplineComponents(mockData, sundayDate);
       expect(sundayResult.components.hymn.title.en.text).toBe('Sunday Hymn');
       
       // Test Monday (should get default hymn)
-      const mondayDate = new Date('2024-01-15'); // Monday
+      const mondayDate = new Date(2024, 0, 15); // Monday
       const mondayResult = resolveComplineComponents(mockData, mondayDate);
       expect(mondayResult.components.hymn.title.en.text).toBe('Monday Hymn');
     });
@@ -99,7 +99,7 @@ describe('complineResolver', () => {
         type: 'day-of-week-variations',
         default: mockData.components.hymn,
         variations: {
-          [DayOfWeek.Sunday]: createMockHymnComponent('Sunday Hymn')
+          sunday: createMockHymnComponent('Sunday Hymn')
         }
       };
       
@@ -107,7 +107,7 @@ describe('complineResolver', () => {
         type: 'day-of-week-variations',
         default: mockData.components.psalmody,
         variations: {
-          [DayOfWeek.Sunday]: {
+          sunday: {
             psalmNumber: '23',
             antiphon: { en: { text: 'Sunday antiphon' } },
             verses: { en: { text: 'Sunday verses' } }
@@ -118,7 +118,7 @@ describe('complineResolver', () => {
       mockData.components.hymn = hymnVariations;
       mockData.components.psalmody = psalmodyVariations;
       
-      const sundayDate = new Date('2024-01-14'); // Sunday
+      const sundayDate = new Date(2024, 0, 14); // Sunday
       const result = resolveComplineComponents(mockData, sundayDate);
       
       expect(result.components.hymn.title.en.text).toBe('Sunday Hymn');
@@ -158,17 +158,17 @@ describe('complineResolver', () => {
         type: 'day-of-week-variations',
         default: defaultComponent,
         variations: {
-          [DayOfWeek.Sunday]: sundayComponent
+          sunday: sundayComponent
         }
       };
       
       // Test Sunday
-      const sundayDate = new Date('2024-01-14'); // Sunday
+      const sundayDate = new Date(2024, 0, 14); // Sunday
       const sundayResult = resolveComponent(variations, sundayDate);
       expect(sundayResult.title.en.text).toBe('Sunday Hymn');
       
       // Test Monday (should get default)
-      const mondayDate = new Date('2024-01-15'); // Monday
+      const mondayDate = new Date(2024, 0, 15); // Monday
       const mondayResult = resolveComponent(variations, mondayDate);
       expect(mondayResult.title.en.text).toBe('Default Hymn');
     });
@@ -180,12 +180,12 @@ describe('complineResolver', () => {
         type: 'day-of-week-variations',
         default: defaultComponent,
         variations: {
-          [DayOfWeek.Sunday]: createMockHymnComponent('Sunday Hymn')
+          sunday: createMockHymnComponent('Sunday Hymn')
           // No variation for Monday
         }
       };
       
-      const mondayDate = new Date('2024-01-15'); // Monday
+      const mondayDate = new Date(2024, 0, 15); // Monday
       const result = resolveComponent(variations, mondayDate);
       
       expect(result.title.en.text).toBe('Default Hymn');
