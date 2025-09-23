@@ -3,10 +3,40 @@ import { Platform } from 'react-native';
 import { 
   ComplineData, 
   LanguageCode, 
-  ComplinePreferences 
+  ComplinePreferences,
+  getComponentForDay,
+  isDayOfWeekVariations,
+  getDayOfWeekFromDate,
+  HymnComponent,
+  PsalmodyComponent,
+  ReadingComponent,
+  ResponsoryComponent,
+  CanticleComponent,
+  PrayerComponent,
+  OpeningComponent,
+  ExaminationComponent,
+  BlessingComponent
 } from '../types/compline-types';
 import { ComplineService } from '../services/ComplineService';
 import { OfflineManager } from '../services/OfflineManager';
+
+// Type for resolved components (no DayOfWeekVariations)
+interface ResolvedComplineComponents {
+  examinationOfConscience: ExaminationComponent;
+  opening: OpeningComponent;
+  hymn: HymnComponent;
+  psalmody: PsalmodyComponent;
+  reading: ReadingComponent;
+  responsory: ResponsoryComponent;
+  canticle: CanticleComponent;
+  concludingPrayer: PrayerComponent;
+  finalBlessing: BlessingComponent;
+}
+
+// Type for resolved ComplineData
+interface ResolvedComplineData extends Omit<ComplineData, 'components'> {
+  components: ResolvedComplineComponents;
+}
 
 interface UseComplineOptions {
   language?: LanguageCode;
@@ -15,7 +45,7 @@ interface UseComplineOptions {
 }
 
 interface UseComplineReturn {
-  complineData: ComplineData | null;
+  complineData: ResolvedComplineData | null;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -28,6 +58,44 @@ interface UseComplineReturn {
   } | null;
 }
 
+// Helper function to resolve DayOfWeekVariations to actual components
+function resolveComplineComponents(data: ComplineData, targetDate: Date): ResolvedComplineData {
+  const dayOfWeek = getDayOfWeekFromDate(targetDate);
+  
+  return {
+    ...data,
+    components: {
+      opening: isDayOfWeekVariations(data.components.opening) 
+        ? getComponentForDay(data.components.opening, dayOfWeek)
+        : data.components.opening,
+      examinationOfConscience: isDayOfWeekVariations(data.components.examinationOfConscience)
+        ? getComponentForDay(data.components.examinationOfConscience, dayOfWeek)
+        : data.components.examinationOfConscience,
+      hymn: isDayOfWeekVariations(data.components.hymn)
+        ? getComponentForDay(data.components.hymn, dayOfWeek)
+        : data.components.hymn,
+      psalmody: isDayOfWeekVariations(data.components.psalmody)
+        ? getComponentForDay(data.components.psalmody, dayOfWeek)
+        : data.components.psalmody,
+      reading: isDayOfWeekVariations(data.components.reading)
+        ? getComponentForDay(data.components.reading, dayOfWeek)
+        : data.components.reading,
+      responsory: isDayOfWeekVariations(data.components.responsory)
+        ? getComponentForDay(data.components.responsory, dayOfWeek)
+        : data.components.responsory,
+      canticle: isDayOfWeekVariations(data.components.canticle)
+        ? getComponentForDay(data.components.canticle, dayOfWeek)
+        : data.components.canticle,
+      concludingPrayer: isDayOfWeekVariations(data.components.concludingPrayer)
+        ? getComponentForDay(data.components.concludingPrayer, dayOfWeek)
+        : data.components.concludingPrayer,
+      finalBlessing: isDayOfWeekVariations(data.components.finalBlessing)
+        ? getComponentForDay(data.components.finalBlessing, dayOfWeek)
+        : data.components.finalBlessing,
+    }
+  };
+}
+
 export function useCompline(
   date: Date,
   options: UseComplineOptions = {}
@@ -38,7 +106,7 @@ export function useCompline(
     autoPreload = false
   } = options;
 
-  const [complineData, setComplineData] = useState<ComplineData | null>(null);
+  const [complineData, setComplineData] = useState<ResolvedComplineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cacheInfo, setCacheInfo] = useState<UseComplineReturn['cacheInfo']>(null);
@@ -78,8 +146,10 @@ export function useCompline(
       
       // Use provided date or memoized current date
       const targetDate = date || currentDate;
-      const data = await complineService.getComplineForDate(targetDate, language);
-      setComplineData(data);
+      const rawData = await complineService.getComplineForDate(targetDate, language);
+      // Resolve all DayOfWeekVariations to actual components
+      const resolvedData = resolveComplineComponents(rawData, targetDate);
+      setComplineData(resolvedData);
       
       // Load cache info (non-blocking, only on mobile)
       if (offlineManager && Platform.OS !== 'web') {
