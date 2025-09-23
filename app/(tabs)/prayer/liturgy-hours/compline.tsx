@@ -187,7 +187,7 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Psalm {complineData.components.psalmody.psalmNumber}: Answer me when I call
+              Psalm {complineData.components.psalmody.psalmNumber}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
               Antiphon: {complineData.components.psalmody.antiphon[language]?.text}
