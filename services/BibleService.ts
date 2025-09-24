@@ -10,7 +10,7 @@ import { File } from "expo-file-system";
 import { USXParser } from './USXParser';
 import { BookMetadata, ParsedBook } from '../types/usx-types';
 import { BiblePassage } from '../types';
-import { parseBibleReference, formatNormalizedReference } from '../utils/bibleReference';
+import { parseBibleReference, formatNormalizedReference, normalizeRangeOrder } from '../utils/bibleReference';
 
 export interface BibleBook {
   code: string;
@@ -377,9 +377,10 @@ export class BibleService {
     const parsed = parseBibleReference(reference);
     if (!parsed) return null;
 
-    const book = await this.loadBook(parsed.bookCode);
-    const startRef = `${parsed.bookCode} ${parsed.startChapter}:${parsed.startVerse}`;
-    const endRef = `${parsed.bookCode} ${parsed.endChapter}:${parsed.endVerse}`;
+    const normalized = normalizeRangeOrder(parsed);
+    const book = await this.loadBook(normalized.bookCode);
+    const startRef = `${normalized.bookCode} ${normalized.startChapter}:${normalized.startVerse}`;
+    const endRef = `${normalized.bookCode} ${normalized.endChapter}:${normalized.endVerse}`;
 
     const hasRange = typeof (this.parser as any).getVerseRange === 'function';
     const verses = hasRange
@@ -387,13 +388,13 @@ export class BibleService {
       : this.fallbackCollectRange(book, parsed.startChapter, parsed.startVerse, parsed.endChapter, parsed.endVerse);
 
     return {
-      bookCode: parsed.bookCode,
-      startChapter: parsed.startChapter,
-      startVerse: parsed.startVerse,
-      endChapter: parsed.endChapter,
-      endVerse: parsed.endVerse,
+      bookCode: normalized.bookCode,
+      startChapter: normalized.startChapter,
+      startVerse: normalized.startVerse,
+      endChapter: normalized.endChapter,
+      endVerse: normalized.endVerse,
       verses: verses.map((v: any) => ({ number: v.number, text: v.text, reference: v.reference })),
-      reference: formatNormalizedReference(parsed)
+      reference: formatNormalizedReference(normalized)
     };
   }
 

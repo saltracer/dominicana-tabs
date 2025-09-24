@@ -20,7 +20,7 @@ import {
 } from '../types/bible-version-types';
 import { BibleBook, BibleChapter, BibleVerse, BibleSearchResult, BiblePassage } from '../types';
 import { ParsedBook } from '../types/usx-types';
-import { parseBibleReference, formatNormalizedReference } from '../utils/bibleReference';
+import { parseBibleReference, formatNormalizedReference, normalizeRangeOrder } from '../utils/bibleReference';
 
 export class MultiVersionBibleService {
   private config: BibleServiceConfig;
@@ -275,6 +275,7 @@ export class MultiVersionBibleService {
   async getPassageByReference(reference: string, versionId?: string): Promise<BiblePassage | null> {
     const parsed = parseBibleReference(reference);
     if (!parsed) return null;
+    const normalized = normalizeRangeOrder(parsed);
 
     const version = versionId || this.currentVersion;
     const versionInfo = this.config.availableVersions.find(v => v.id === version);
@@ -283,10 +284,10 @@ export class MultiVersionBibleService {
     const parser = this.parsers.get(versionInfo.format);
     if (!parser) return null;
 
-    const book = await this.loadBook(parsed.bookCode, version);
+    const book = await this.loadBook(normalized.bookCode, version);
 
-    const startRef = `${parsed.bookCode} ${parsed.startChapter}:${parsed.startVerse}`;
-    const endRef = `${parsed.bookCode} ${parsed.endChapter}:${parsed.endVerse}`;
+    const startRef = `${normalized.bookCode} ${normalized.startChapter}:${normalized.startVerse}`;
+    const endRef = `${normalized.bookCode} ${normalized.endChapter}:${normalized.endVerse}`;
 
     // Prefer dedicated range method if available
     const hasRange = typeof (parser as any).getVerseRange === 'function';
@@ -295,13 +296,13 @@ export class MultiVersionBibleService {
       : this.fallbackCollectRange(book, parsed.startChapter, parsed.startVerse, parsed.endChapter, parsed.endVerse);
 
     return {
-      bookCode: parsed.bookCode,
-      startChapter: parsed.startChapter,
-      startVerse: parsed.startVerse,
-      endChapter: parsed.endChapter,
-      endVerse: parsed.endVerse,
+      bookCode: normalized.bookCode,
+      startChapter: normalized.startChapter,
+      startVerse: normalized.startVerse,
+      endChapter: normalized.endChapter,
+      endVerse: normalized.endVerse,
       verses: verses.map((v: any) => ({ number: v.number, text: v.text, reference: v.reference })),
-      reference: formatNormalizedReference(parsed)
+      reference: formatNormalizedReference(normalized)
     };
   }
 
