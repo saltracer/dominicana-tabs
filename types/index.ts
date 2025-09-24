@@ -373,6 +373,16 @@ export interface BibleChapter {
   verses: BibleVerse[];
 }
 
+export interface BiblePassage {
+  bookCode: string;
+  startChapter: number;
+  startVerse: number;
+  endChapter: number;
+  endVerse: number;
+  verses: BibleVerse[];
+  reference: string;
+}
+
 export interface BibleSearchResult {
   book: string;
   chapter: number;
