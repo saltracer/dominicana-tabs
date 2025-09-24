@@ -168,37 +168,36 @@ export interface Province {
   apostolates?: string[]
 }
 
-// Study/Library Types
+// Study/Library Types - Updated to match your actual database schema
 export interface Book {
-  id: string;
+  id: number;
   title: string;
   author: string;
-  year?: string;
-  category: BookCategory;
-  language: string;
-  filePath: string;
-  coverImage?: string;
+  year?: string | null;
+  category: string; // Your categories: Philosophy, Theology, Mysticism, Science, Natural History, Spiritual
+  coverImage?: string | null;
   description: string;
-  isDominican: boolean;
-  epubPath?: string;
-  epubSamplePath?: string;
-  tags: string[];
-  bookmarks: Bookmark[];
-  readingProgress: ReadingProgress;
+  epubPath?: string | null;
+  epubSamplePath?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // App-specific fields (not in database)
+  bookmarks?: Bookmark[];
+  readingProgress?: ReadingProgress;
 }
 
-export type BookCategory = 'theology' | 'philosophy' | 'spirituality' | 'history' | 'liturgy' | 'dominican' | 'patristic' | 'medieval';
+export type BookCategory = 'Philosophy' | 'Theology' | 'Mysticism' | 'Science' | 'Natural History' | 'Spiritual';
 
 export interface Bookmark {
   id: string;
-  bookId: string;
+  bookId: number; // Updated to match your database (number instead of string)
   position: number;
   note?: string;
   createdAt: string;
 }
 
 export interface ReadingProgress {
-  bookId: string;
+  bookId: number; // Updated to match your database (number instead of string)
   currentPosition: number;
   totalPages: number;
   lastRead: string;

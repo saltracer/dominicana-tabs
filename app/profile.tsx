@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,34 +13,223 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../components/ThemeProvider';
+import { useAuth } from '../contexts/AuthContext';
+import AuthGuard from '../components/AuthGuard';
 
-export default function ProfileScreen() {
+function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user, profile, signOut, updateProfile, loading, clearAllAuthData } = useAuth();
+  
+  const handleLogin = () => {
+    router.push('/auth');
+  };
+
+  const handleThemeChange = (mode: 'light' | 'dark' | 'system') => {
+    setThemeMode(mode);
+  };
+  
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Loading profile...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // If no user, show login prompt with theme settings
+  if (!user) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Profile Header for logged out users */}
+          <View style={[styles.profileHeader, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <View style={[styles.avatarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+              <Ionicons name="person-outline" size={40} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Guest User
+              </Text>
+              <Text style={[styles.profileStatus, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                Not signed in
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.loginButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+              onPress={handleLogin}
+            >
+              <Text style={[styles.loginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                Sign In
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Appearance Settings - Available for all users */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Appearance
+            </Text>
+            
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Theme Mode
+              </Text>
+              <View style={styles.radioOptions}>
+                {([
+                  { mode: 'light', icon: 'sunny', label: 'Light' },
+                  { mode: 'dark', icon: 'moon', label: 'Dark' },
+                  { mode: 'system', icon: 'settings', label: 'System' }
+                ] as const).map(({ mode, icon, label }) => (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[
+                      styles.radioOption,
+                      { 
+                        backgroundColor: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].primary + '20' // 20% opacity
+                          : 'transparent',
+                        borderColor: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].primary 
+                          : Colors[colorScheme ?? 'light'].border,
+                      }
+                    ]}
+                    onPress={() => handleThemeChange(mode)}
+                  >
+                    <View style={[
+                      styles.radioButton,
+                      { 
+                        borderColor: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].primary 
+                          : Colors[colorScheme ?? 'light'].border,
+                        backgroundColor: themeMode === mode 
+                        ? Colors[colorScheme ?? 'light'].primary 
+                        : Colors[colorScheme ?? 'light'].border,
+                      }
+                    ]}>
+                      {themeMode === mode && (
+                        <Ionicons 
+                          name="checkmark" 
+                          size={12} 
+                          color={Colors[colorScheme ?? 'light'].dominicanWhite} 
+                        />
+                      )}
+                    </View>
+                    <Ionicons 
+                      name={icon as any} 
+                      size={18} 
+                      color={themeMode === mode 
+                        ? Colors[colorScheme ?? 'light'].primary 
+                        : Colors[colorScheme ?? 'light'].textSecondary
+                      } 
+                      style={styles.radioIcon}
+                    />
+                    <Text style={[
+                      styles.radioOptionText, 
+                      { 
+                        color: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].text 
+                          : Colors[colorScheme ?? 'light'].text 
+                      }
+                    ]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* About Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              About
+            </Text>
+            
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <TouchableOpacity style={styles.aboutRow}>
+                <Ionicons name="information-circle" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.aboutText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  App Version 1.0.0
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <TouchableOpacity style={styles.aboutRow}>
+                <Ionicons name="help-circle" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.aboutText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Help & Support
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <TouchableOpacity style={styles.aboutRow}>
+                <Ionicons name="shield-checkmark" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.aboutText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Privacy Policy
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Sign In Prompt */}
+          <View style={styles.section}>
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+              <View style={styles.signInPrompt}>
+                <Ionicons name="log-in" size={32} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.signInTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Sign in for more features
+                </Text>
+                <Text style={[styles.signInDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Access your personalized prayer settings, reading progress, and more
+                </Text>
+                <TouchableOpacity
+                  style={[styles.primaryLoginButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+                  onPress={handleLogin}
+                >
+                  <Text style={[styles.primaryLoginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                    Sign In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+  // Use profile data or fallback to user data
+  const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  const displayEmail = profile?.email || user?.email || '';
+  const displayRole = profile?.role || 'user';
+
   const [notifications, setNotifications] = useState(true);
   const [prayerReminders, setPrayerReminders] = useState(true);
   const [feastDayAlerts, setFeastDayAlerts] = useState(true);
   const [showDominicanFeasts, setShowDominicanFeasts] = useState(true);
   const [preferredRite, setPreferredRite] = useState<'roman' | 'dominican'>('dominican');
 
-  const handleLogin = () => {
-    Alert.alert(
-      'Login',
-      'Would you like to log in to sync your preferences across devices?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Login', 
-          onPress: () => {
-            setIsLoggedIn(true);
-            Alert.alert('Success', 'You are now logged in.');
-          }
-        }
-      ]
-    );
-  };
+  // Update local state when profile changes
+  useEffect(() => {
+    if (profile && profile.preferences) {
+      setNotifications(profile.preferences.notifications?.enabled ?? true);
+      setPrayerReminders(profile.preferences.notifications?.prayerReminders ?? true);
+      setFeastDayAlerts(profile.preferences.notifications?.feastDayAlerts ?? true);
+      setShowDominicanFeasts(profile.preferences.liturgicalCalendar?.showDominicanFeasts ?? true);
+      setPreferredRite(profile.preferences.liturgicalCalendar?.preferredRite ?? 'dominican');
+    }
+  }, [profile]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to log out?',
@@ -48,21 +237,85 @@ export default function ProfileScreen() {
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Logout', 
-          onPress: () => {
-            setIsLoggedIn(false);
-            Alert.alert('Logged Out', 'You have been logged out successfully.');
+          onPress: async () => {
+            try {
+              await signOut();
+              // Show success message
+              Alert.alert('Success', 'You have been logged out successfully.');
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to log out. Please try again.');
+            }
           }
         }
       ]
     );
   };
 
-  const handleThemeChange = (mode: 'light' | 'dark' | 'system') => {
-    setThemeMode(mode);
+  const handleClearAllAuthData = async () => {
+    Alert.alert(
+      'Clear All Auth Data',
+      'This will completely clear all authentication data. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear All', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearAllAuthData();
+              Alert.alert('Success', 'All authentication data has been cleared.');
+            } catch (error) {
+              console.error('Clear auth data error:', error);
+              Alert.alert('Error', 'Failed to clear auth data.');
+            }
+          }
+        }
+      ]
+    );
   };
 
-  const handleRiteChange = (rite: 'roman' | 'dominican') => {
+  const handleRiteChange = async (rite: 'roman' | 'dominican') => {
     setPreferredRite(rite);
+    if (profile && profile.preferences) {
+      await updateProfile({
+        preferences: {
+          ...profile.preferences,
+          liturgicalCalendar: {
+            ...profile.preferences.liturgicalCalendar,
+            preferredRite: rite,
+          },
+        },
+      });
+    }
+  };
+
+  const handleNotificationChange = async (key: string, value: boolean) => {
+    if (profile && profile.preferences) {
+      await updateProfile({
+        preferences: {
+          ...profile.preferences,
+          notifications: {
+            ...profile.preferences.notifications,
+            [key]: value,
+          },
+        },
+      });
+    }
+  };
+
+  const handleCalendarPreferenceChange = async (key: string, value: boolean) => {
+    if (profile && profile.preferences) {
+      await updateProfile({
+        preferences: {
+          ...profile.preferences,
+          liturgicalCalendar: {
+            ...profile.preferences.liturgicalCalendar,
+            [key]: value,
+          },
+        },
+      });
+    }
   };
 
   return (
@@ -75,18 +328,18 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {isLoggedIn ? 'John Doe' : 'Guest User'}
+              {displayName}
             </Text>
             <Text style={[styles.profileStatus, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {isLoggedIn ? 'Dominican Friar' : 'Anonymous Access'}
+              {displayRole.charAt(0).toUpperCase() + displayRole.slice(1)} Account
             </Text>
           </View>
           <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: isLoggedIn ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].primary }]}
-            onPress={isLoggedIn ? handleLogout : handleLogin}
+            style={[styles.loginButton, { backgroundColor: user ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].primary }]}
+            onPress={user ? handleLogout : handleLogin}
           >
             <Text style={[styles.loginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              {isLoggedIn ? 'Logout' : 'Login'}
+              {user ? 'Logout' : 'Login'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -183,7 +436,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={showDominicanFeasts}
-                onValueChange={setShowDominicanFeasts}
+                onValueChange={(value) => {
+                  setShowDominicanFeasts(value);
+                  handleCalendarPreferenceChange('showDominicanFeasts', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -242,7 +498,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={notifications}
-                onValueChange={setNotifications}
+                onValueChange={(value) => {
+                  setNotifications(value);
+                  handleNotificationChange('enabled', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -261,7 +520,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={prayerReminders}
-                onValueChange={setPrayerReminders}
+                onValueChange={(value) => {
+                  setPrayerReminders(value);
+                  handleNotificationChange('prayerReminders', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -280,7 +542,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={feastDayAlerts}
-                onValueChange={setFeastDayAlerts}
+                onValueChange={(value) => {
+                  setFeastDayAlerts(value);
+                  handleNotificationChange('feastDayAlerts', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -323,6 +588,29 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Debug Section - Remove in production */}
+        {__DEV__ && (
+          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Debug Tools
+            </Text>
+            <TouchableOpacity
+              style={[styles.settingRow, { paddingVertical: 12 }]}
+              onPress={handleClearAllAuthData}
+            >
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Clear All Auth Data
+                </Text>
+                <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Completely clear all authentication data
+                </Text>
+              </View>
+              <Ionicons name="trash" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -335,6 +623,15 @@ const styles = StyleSheet.create({
 
   scrollView: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
   },
   profileHeader: {
     flexDirection: 'row',
@@ -475,4 +772,39 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontFamily: 'Georgia',
   },
+  signInPrompt: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  signInTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginTop: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  signInDescription: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  primaryLoginButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  primaryLoginButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
 });
+
+export default function ProfileScreen() {
+  return <ProfileScreenContent />;
+}

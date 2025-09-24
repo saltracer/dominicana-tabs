@@ -1,0 +1,281 @@
+-- Supabase Database Schema for Dominicana App
+-- This file contains the SQL commands to set up the database structure
+-- Updated based on complete database analysis of all 8 tables
+
+-- Enable Row Level Security
+ALTER TABLE IF EXISTS blog_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS daily_offices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS liturgy_components ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS liturgy_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS user_liturgy_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Create blog_posts table (ACTUAL STRUCTURE)
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id UUID PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  content TEXT NOT NULL,
+  excerpt TEXT NOT NULL,
+  author_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  author_name TEXT NOT NULL,
+  featured_image TEXT,
+  status TEXT NOT NULL,
+  tags TEXT NOT NULL,
+  published_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  content_type TEXT NOT NULL,
+  media_attachments TEXT,
+  word_count INTEGER NOT NULL,
+  reading_time_minutes INTEGER NOT NULL
+);
+
+-- Create books table (ACTUAL STRUCTURE)
+CREATE TABLE IF NOT EXISTS books (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  author TEXT NOT NULL,
+  year TEXT,
+  category TEXT NOT NULL,
+  cover_image TEXT,
+  description TEXT NOT NULL,
+  epub_path TEXT,
+  epub_sample_path TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create daily_offices table (ACTUAL STRUCTURE - Empty table)
+CREATE TABLE IF NOT EXISTS daily_offices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create liturgy_components table (ACTUAL STRUCTURE)
+CREATE TABLE IF NOT EXISTS liturgy_components (
+  id UUID PRIMARY KEY,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  rubrics TEXT NOT NULL,
+  liturgical_use TEXT NOT NULL,
+  language TEXT NOT NULL,
+  rank INTEGER NOT NULL,
+  psalm_number INTEGER,
+  antiphon TEXT NOT NULL,
+  has_gloria BOOLEAN NOT NULL,
+  citation TEXT NOT NULL,
+  meter TEXT NOT NULL,
+  author TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create liturgy_templates table (ACTUAL STRUCTURE)
+CREATE TABLE IF NOT EXISTS liturgy_templates (
+  id UUID PRIMARY KEY,
+  name TEXT NOT NULL,
+  hour TEXT NOT NULL,
+  rank TEXT NOT NULL,
+  components JSONB NOT NULL,
+  season_overrides JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create profiles table (ACTUAL STRUCTURE)
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  username TEXT NOT NULL,
+  full_name TEXT NOT NULL DEFAULT '',
+  avatar_url TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create user_liturgy_preferences table (ACTUAL STRUCTURE)
+CREATE TABLE IF NOT EXISTS user_liturgy_preferences (
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  language TEXT NOT NULL DEFAULT 'en',
+  display_options JSONB NOT NULL DEFAULT '{}',
+  memorial_preference TEXT NOT NULL DEFAULT 'both',
+  calendar_type TEXT NOT NULL DEFAULT 'general',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  primary_language TEXT NOT NULL DEFAULT 'en',
+  secondary_language TEXT NOT NULL DEFAULT 'la',
+  display_mode TEXT NOT NULL DEFAULT 'bilingual',
+  bible_translation TEXT NOT NULL DEFAULT 'NRSV',
+  audio_enabled BOOLEAN NOT NULL DEFAULT true,
+  audio_types TEXT[] NOT NULL DEFAULT '{}',
+  chant_notation TEXT NOT NULL DEFAULT 'gregorian',
+  font_size TEXT NOT NULL DEFAULT 'medium',
+  show_rubrics BOOLEAN NOT NULL DEFAULT true,
+  theme_preference TEXT NOT NULL DEFAULT 'light',
+  chant_notation_enabled BOOLEAN NOT NULL DEFAULT true,
+  tts_enabled BOOLEAN NOT NULL DEFAULT true,
+  tts_voice_id TEXT NOT NULL DEFAULT '',
+  tts_speed INTEGER NOT NULL DEFAULT 2
+);
+
+-- Create user_roles table (ACTUAL STRUCTURE)
+CREATE TABLE IF NOT EXISTS user_roles (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  role TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_blog_posts_author_id ON blog_posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON blog_posts(published_at);
+CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
+CREATE INDEX IF NOT EXISTS idx_books_title ON books(title);
+CREATE INDEX IF NOT EXISTS idx_books_author ON books(author);
+CREATE INDEX IF NOT EXISTS idx_liturgy_components_type ON liturgy_components(type);
+CREATE INDEX IF NOT EXISTS idx_liturgy_components_liturgical_use ON liturgy_components(liturgical_use);
+CREATE INDEX IF NOT EXISTS idx_liturgy_components_language ON liturgy_components(language);
+CREATE INDEX IF NOT EXISTS idx_liturgy_templates_hour ON liturgy_templates(hour);
+CREATE INDEX IF NOT EXISTS idx_liturgy_templates_rank ON liturgy_templates(rank);
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON profiles(username);
+CREATE INDEX IF NOT EXISTS idx_user_liturgy_preferences_user_id ON user_liturgy_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user_id ON user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON user_roles(role);
+
+-- Row Level Security Policies
+
+-- Blog Posts: Authors can manage their own posts, everyone can read published posts
+CREATE POLICY "Anyone can view published blog posts" ON blog_posts
+  FOR SELECT USING (status = 'published');
+
+CREATE POLICY "Authors can view their own blog posts" ON blog_posts
+  FOR SELECT USING (auth.uid() = author_id);
+
+CREATE POLICY "Authors can insert their own blog posts" ON blog_posts
+  FOR INSERT WITH CHECK (auth.uid() = author_id);
+
+CREATE POLICY "Authors can update their own blog posts" ON blog_posts
+  FOR UPDATE USING (auth.uid() = author_id);
+
+CREATE POLICY "Authors can delete their own blog posts" ON blog_posts
+  FOR DELETE USING (auth.uid() = author_id);
+
+-- Books: Everyone can read books (no authentication required for basic access)
+CREATE POLICY "Anyone can view books" ON books
+  FOR SELECT USING (true);
+
+-- Daily Offices: Everyone can read daily offices
+CREATE POLICY "Anyone can view daily offices" ON daily_offices
+  FOR SELECT USING (true);
+
+-- Liturgy Components: Everyone can read liturgy components
+CREATE POLICY "Anyone can view liturgy components" ON liturgy_components
+  FOR SELECT USING (true);
+
+-- Liturgy Templates: Everyone can read liturgy templates
+CREATE POLICY "Anyone can view liturgy templates" ON liturgy_templates
+  FOR SELECT USING (true);
+
+-- Profiles: Users can only access their own profile
+CREATE POLICY "Users can view their own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert their own profile" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- User Liturgy Preferences: Users can only access their own preferences
+CREATE POLICY "Users can view their own liturgy preferences" ON user_liturgy_preferences
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own liturgy preferences" ON user_liturgy_preferences
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own liturgy preferences" ON user_liturgy_preferences
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own liturgy preferences" ON user_liturgy_preferences
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- User Roles: Users can view their own roles, admins can manage all roles
+CREATE POLICY "Users can view their own roles" ON user_roles
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can manage all user roles" ON user_roles
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM user_roles 
+      WHERE user_id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- Functions and Triggers
+
+-- Function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Triggers to automatically update updated_at
+CREATE TRIGGER update_blog_posts_updated_at BEFORE UPDATE ON blog_posts
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_books_updated_at BEFORE UPDATE ON books
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_daily_offices_updated_at BEFORE UPDATE ON daily_offices
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_liturgy_components_updated_at BEFORE UPDATE ON liturgy_components
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_liturgy_templates_updated_at BEFORE UPDATE ON liturgy_templates
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_liturgy_preferences_updated_at BEFORE UPDATE ON user_liturgy_preferences
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_roles_updated_at BEFORE UPDATE ON user_roles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to handle new user registration (UPDATED FOR ACTUAL STRUCTURE)
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO profiles (id, username, full_name, avatar_url)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'name', NEW.email),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', '')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to automatically create profile when user signs up
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Sample data for books (based on actual data)
+INSERT INTO books (title, author, year, category, description) VALUES
+('On Being and Essence', 'St. Thomas Aquinas', '1252', 'Philosophy', 'A treatise on metaphysics and the nature of being.'),
+('Disputed Questions on Truth', 'St. Thomas Aquinas', '1256-1259', 'Theology', 'A series of theological discussions on various aspects of truth.'),
+('Compendium of Theology', 'St. Thomas Aquinas', '1272', 'Theology', 'A concise summary of Christian doctrine.')
+ON CONFLICT DO NOTHING;

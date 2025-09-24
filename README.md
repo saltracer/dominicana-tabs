@@ -2,6 +2,10 @@
 
 A comprehensive liturgical companion mobile application for the Order of Preachers (Dominicans) that aids in praying the Liturgy of the Hours and the Rosary, featuring a specialized Dominican calendar with saints database and interactive community features.
 
+## 📚 Documentation
+
+- See the full project documentation in `docs/`: [Documentation Index](docs/README.md)
+
 ## 🎯 Overview
 
 Dominicana serves as a complete spiritual resource for Dominican friars and the faithful, integrating the four pillars of Dominican life:
