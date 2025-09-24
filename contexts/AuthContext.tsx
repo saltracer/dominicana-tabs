@@ -58,6 +58,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AuthContext: Auth state change', { event, session: !!session, user: !!session?.user });
+      
+      // Handle signOut event specifically
+      if (event === 'SIGNED_OUT') {
+        console.log('AuthContext: SIGNED_OUT event received');
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -179,11 +191,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
+      console.log('AuthContext: Starting signOut...', { user: !!user, session: !!session, profile: !!profile });
+      
       // Sign out from Supabase first (this clears the stored session)
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Sign out error:', error);
-        throw error;
+      console.log('AuthContext: Calling supabase.auth.signOut()...');
+      console.log('AuthContext: Supabase client info:', {
+        url: supabase.supabaseUrl,
+        hasAnonKey: !!supabase.supabaseKey,
+        session: !!session,
+        clientType: typeof supabase,
+        hasAuth: !!supabase.auth
+      });
+      
+      // Add timeout to prevent hanging
+      const signOutPromise = supabase.auth.signOut();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('SignOut timeout after 3 seconds')), 3000)
+      );
+      
+      let signOutError = null;
+      let signOutCompleted = false;
+      
+      try {
+        const { error } = await Promise.race([signOutPromise, timeoutPromise]);
+        console.log('AuthContext: supabase.auth.signOut() completed', { error: !!error });
+        signOutError = error;
+        signOutCompleted = true;
+      } catch (timeoutError) {
+        console.error('AuthContext: SignOut timed out:', timeoutError);
+        // Continue with local cleanup even if Supabase signOut times out
+        console.log('AuthContext: Continuing with local cleanup despite timeout');
+        signOutCompleted = false;
+      }
+      
+      if (signOutError) {
+        console.error('Sign out error:', signOutError);
+        throw signOutError;
+      }
+      
+      if (signOutCompleted) {
+        console.log('AuthContext: Supabase signOut successful');
+      } else {
+        console.log('AuthContext: Supabase signOut timed out, but continuing with local cleanup');
       }
       
       // Explicitly clear AsyncStorage to ensure session is completely removed
@@ -191,18 +240,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Get all keys and remove any that start with 'sb-' (Supabase keys)
         const keys = await AsyncStorage.getAllKeys();
         const supabaseKeys = keys.filter(key => key.startsWith('sb-'));
+        console.log('AuthContext: Found Supabase keys to clear:', supabaseKeys);
         if (supabaseKeys.length > 0) {
           await AsyncStorage.multiRemove(supabaseKeys);
         }
+        console.log('AuthContext: AsyncStorage cleared');
       } catch (storageError) {
         console.warn('Error clearing AsyncStorage:', storageError);
       }
       
       // Then clear local state
+      console.log('AuthContext: Clearing local state...');
       setUser(null);
       setSession(null);
       setProfile(null);
       setLoading(false);
+      console.log('AuthContext: Local state cleared');
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;

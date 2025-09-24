@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import AuthGuard from '../components/AuthGuard';
 import LiturgyPreferencesDropdown from '../components/LiturgyPreferencesDropdown';
 import LiturgyPreferencesToggle from '../components/LiturgyPreferencesToggle';
+import SettingsCard from '../components/SettingsCard';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../services/UserLiturgyPreferencesService';
 
 function ProfileScreenContent() {
@@ -26,6 +27,7 @@ function ProfileScreenContent() {
   // Liturgy preferences state
   const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
   const [preferencesLoading, setPreferencesLoading] = useState(false);
+  
   
   const handleLogin = () => {
     router.push('/auth');
@@ -41,6 +43,17 @@ function ProfileScreenContent() {
       loadLiturgyPreferences();
     }
   }, [user, liturgyPreferences, preferencesLoading]);
+
+  // Debug auth state changes
+  useEffect(() => {
+    console.log('Profile: Auth state changed', { 
+      user: !!user, 
+      userId: user?.id, 
+      loading, 
+      profile: !!profile 
+    });
+  }, [user, loading, profile]);
+
 
   const loadLiturgyPreferences = async () => {
     if (!user) return;
@@ -278,9 +291,9 @@ function ProfileScreenContent() {
           text: 'Logout', 
           onPress: async () => {
             try {
+              console.log('Profile: Starting logout...', { user: !!user, loading });
               await signOut();
-              // Show success message
-              Alert.alert('Success', 'You have been logged out successfully.');
+              console.log('Profile: Logout completed');
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to log out. Please try again.');
@@ -460,153 +473,66 @@ function ProfileScreenContent() {
           </View>
         </View>
 
-        {/* Liturgical Preferences */}
+        {/* Settings Navigation */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Liturgical Preferences
+            Settings
           </Text>
           
-          {preferencesLoading ? (
-            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-              <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Loading preferences...
-              </Text>
-            </View>
-          ) : liturgyPreferences ? (
-            <>
-              {/* Language Settings */}
-              <LiturgyPreferencesDropdown
-                label="Primary Language"
-                description="Main language for liturgical content"
-                value={liturgyPreferences.primary_language}
-                options={availableOptions.languages}
-                onValueChange={(value) => updateLiturgyPreference('primary_language', value)}
-                icon="language"
-              />
+          <SettingsCard
+            title="Quick Settings"
+            description="Most-used preferences"
+            preview={liturgyPreferences ? 
+              `${availableOptions.languages.find(l => l.value === liturgyPreferences.primary_language)?.label || 'English'}, ${availableOptions.fontSizes.find(f => f.value === liturgyPreferences.font_size)?.label || 'Medium'}, ${availableOptions.displayModes.find(d => d.value === liturgyPreferences.display_mode)?.label || 'Bilingual'}` 
+              : preferencesLoading ? 'Loading...' : 'Not available'
+            }
+            icon="settings"
+            onPress={() => router.push('/settings/quick')}
+          />
 
-              <LiturgyPreferencesDropdown
-                label="Secondary Language"
-                description="Secondary language for bilingual display"
-                value={liturgyPreferences.secondary_language}
-                options={availableOptions.languages}
-                onValueChange={(value) => updateLiturgyPreference('secondary_language', value)}
-                icon="globe"
-              />
+          <SettingsCard
+            title="Language & Display"
+            description="Language and text preferences"
+            preview={liturgyPreferences ? 
+              `${availableOptions.languages.find(l => l.value === liturgyPreferences.primary_language)?.label || 'English'}, ${availableOptions.languages.find(l => l.value === liturgyPreferences.secondary_language)?.label || 'Latin'}` 
+              : preferencesLoading ? 'Loading...' : 'Not available'
+            }
+            icon="globe"
+            onPress={() => router.push('/settings/language')}
+          />
 
-              <LiturgyPreferencesDropdown
-                label="Display Mode"
-                description="How to display multiple languages"
-                value={liturgyPreferences.display_mode}
-                options={availableOptions.displayModes}
-                onValueChange={(value) => updateLiturgyPreference('display_mode', value)}
-                icon="layers"
-              />
+          <SettingsCard
+            title="Audio & Media"
+            description="TTS, audio, and chant settings"
+            preview={liturgyPreferences ? 
+              `TTS: ${liturgyPreferences.tts_enabled ? 'On' : 'Off'}, Chant: ${availableOptions.chantNotations.find(c => c.value === liturgyPreferences.chant_notation)?.label || 'Gregorian'}` 
+              : preferencesLoading ? 'Loading...' : 'Not available'
+            }
+            icon="volume-high"
+            onPress={() => router.push('/settings/audio')}
+          />
 
-              {/* Bible and Text Settings */}
-              <LiturgyPreferencesDropdown
-                label="Bible Translation"
-                description="Preferred Bible translation"
-                value={liturgyPreferences.bible_translation}
-                options={availableOptions.bibleTranslations}
-                onValueChange={(value) => updateLiturgyPreference('bible_translation', value)}
-                icon="book"
-              />
+          <SettingsCard
+            title="Calendar & Liturgy"
+            description="Memorial and calendar preferences"
+            preview={liturgyPreferences ? 
+              `Memorials: ${availableOptions.memorialPreferences.find(m => m.value === liturgyPreferences.memorial_preference)?.label || 'Both'}, Calendar: ${availableOptions.calendarTypes.find(c => c.value === liturgyPreferences.calendar_type)?.label || 'Dominican'}` 
+              : preferencesLoading ? 'Loading...' : 'Not available'
+            }
+            icon="calendar"
+            onPress={() => router.push('/settings/calendar')}
+          />
 
-              <LiturgyPreferencesDropdown
-                label="Font Size"
-                description="Text size for liturgical content"
-                value={liturgyPreferences.font_size}
-                options={availableOptions.fontSizes}
-                onValueChange={(value) => updateLiturgyPreference('font_size', value)}
-                icon="text"
-              />
-
-              <LiturgyPreferencesToggle
-                label="Show Rubrics"
-                description="Display liturgical instructions"
-                value={liturgyPreferences.show_rubrics}
-                onValueChange={(value) => updateLiturgyPreference('show_rubrics', value)}
-                icon="list"
-              />
-
-              {/* Audio Settings */}
-              <LiturgyPreferencesToggle
-                label="Audio Enabled"
-                description="Enable audio playback for prayers and readings"
-                value={liturgyPreferences.audio_enabled}
-                onValueChange={(value) => updateLiturgyPreference('audio_enabled', value)}
-                icon="volume-high"
-              />
-
-              <LiturgyPreferencesDropdown
-                label="Chant Notation"
-                description="Type of musical notation to display"
-                value={liturgyPreferences.chant_notation}
-                options={availableOptions.chantNotations}
-                onValueChange={(value) => updateLiturgyPreference('chant_notation', value)}
-                icon="musical-notes"
-              />
-
-              <LiturgyPreferencesToggle
-                label="Chant Notation Enabled"
-                description="Show musical notation for chants"
-                value={liturgyPreferences.chant_notation_enabled}
-                onValueChange={(value) => updateLiturgyPreference('chant_notation_enabled', value)}
-                icon="musical-note"
-              />
-
-              {/* TTS Settings */}
-              <LiturgyPreferencesToggle
-                label="Text-to-Speech"
-                description="Enable spoken word for prayers and readings"
-                value={liturgyPreferences.tts_enabled}
-                onValueChange={(value) => updateLiturgyPreference('tts_enabled', value)}
-                icon="mic"
-              />
-
-              <LiturgyPreferencesDropdown
-                label="TTS Speed"
-                description="Speed of text-to-speech playback"
-                value={liturgyPreferences.tts_speed}
-                options={availableOptions.ttsSpeeds}
-                onValueChange={(value) => updateLiturgyPreference('tts_speed', value)}
-                icon="speedometer"
-              />
-
-              {/* Calendar Settings */}
-              <LiturgyPreferencesDropdown
-                label="Memorial Preference"
-                description="Which memorials to display"
-                value={liturgyPreferences.memorial_preference}
-                options={availableOptions.memorialPreferences}
-                onValueChange={(value) => updateLiturgyPreference('memorial_preference', value)}
-                icon="calendar"
-              />
-
-              <LiturgyPreferencesDropdown
-                label="Calendar Type"
-                description="Type of liturgical calendar to use"
-                value={liturgyPreferences.calendar_type}
-                options={availableOptions.calendarTypes}
-                onValueChange={(value) => updateLiturgyPreference('calendar_type', value)}
-                icon="calendar-outline"
-              />
-            </>
-            ) : (
-              <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-                <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].error }]}>
-                  Failed to load preferences
-                </Text>
-                <TouchableOpacity
-                  style={[styles.retryButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-                  onPress={loadLiturgyPreferences}
-                >
-                  <Text style={[styles.retryButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                    Retry
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
+          <SettingsCard
+            title="App Settings"
+            description="Font size and display options"
+            preview={liturgyPreferences ? 
+              `Font: ${availableOptions.fontSizes.find(f => f.value === liturgyPreferences.font_size)?.label || 'Medium'}, Rubrics: ${liturgyPreferences.show_rubrics ? 'On' : 'Off'}` 
+              : preferencesLoading ? 'Loading...' : 'Not available'
+            }
+            icon="phone-portrait"
+            onPress={() => router.push('/settings/app')}
+          />
         </View>
 
         {/* About Section */}
@@ -685,10 +611,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
   },
   profileHeader: {
     flexDirection: 'row',

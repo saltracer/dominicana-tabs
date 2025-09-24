@@ -27,13 +27,8 @@ export default function AuthScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClose = () => {
-    try {
-      // Try to go back to the previous screen (profile page)
-      router.back();
-    } catch (error) {
-      // Fallback to profile page if back navigation fails
-      router.push('/profile');
-    }
+    // Go back to the previous screen (profile page)
+    router.back();
   };
 
   const handleAuth = async () => {

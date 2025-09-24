@@ -70,6 +70,11 @@ function RootLayoutNav() {
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
         <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="settings/quick" options={{ headerShown: false }} />
+        <Stack.Screen name="settings/language" options={{ headerShown: false }} />
+        <Stack.Screen name="settings/audio" options={{ headerShown: false }} />
+        <Stack.Screen name="settings/calendar" options={{ headerShown: false }} />
+        <Stack.Screen name="settings/app" options={{ headerShown: false }} />
       </Stack>
     </SafeAreaProvider>
   );
