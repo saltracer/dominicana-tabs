@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { UserLiturgyPreferences } from '../types/liturgy-types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface UserLiturgyPreferencesData {
   user_id: string;
@@ -26,11 +27,81 @@ export interface UserLiturgyPreferencesData {
 }
 
 export class UserLiturgyPreferencesService {
+  private static readonly CACHE_KEY_PREFIX = 'user_liturgy_preferences_';
+  private static readonly CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
+
   /**
-   * Get user's liturgy preferences
+   * Get cache key for a user
+   */
+  private static getCacheKey(userId: string): string {
+    return `${this.CACHE_KEY_PREFIX}${userId}`;
+  }
+
+  /**
+   * Get cached preferences
+   */
+  private static async getCachedPreferences(userId: string): Promise<UserLiturgyPreferencesData | null> {
+    try {
+      const cacheKey = this.getCacheKey(userId);
+      const cachedData = await AsyncStorage.getItem(cacheKey);
+      
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        const now = Date.now();
+        
+        // Check if cache is still valid
+        if (parsed.timestamp && (now - parsed.timestamp) < this.CACHE_EXPIRY_MS) {
+          return parsed.data;
+        }
+        
+        // Cache expired, remove it
+        await AsyncStorage.removeItem(cacheKey);
+      }
+      
+      return null;
+    } catch (error) {
+      console.warn('Error reading cached preferences:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Cache preferences
+   */
+  private static async cachePreferences(userId: string, preferences: UserLiturgyPreferencesData): Promise<void> {
+    try {
+      const cacheKey = this.getCacheKey(userId);
+      const cacheData = {
+        data: preferences,
+        timestamp: Date.now()
+      };
+      await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    } catch (error) {
+      console.warn('Error caching preferences:', error);
+    }
+  }
+
+  /**
+   * Clear cached preferences for a user
+   */
+  private static async clearCachedPreferences(userId: string): Promise<void> {
+    try {
+      const cacheKey = this.getCacheKey(userId);
+      await AsyncStorage.removeItem(cacheKey);
+    } catch (error) {
+      console.warn('Error clearing cached preferences:', error);
+    }
+  }
+
+  /**
+   * Get user's liturgy preferences with caching
    */
   static async getUserPreferences(userId: string): Promise<UserLiturgyPreferencesData | null> {
     try {
+      // First, try to get cached preferences
+      const cachedPreferences = await this.getCachedPreferences(userId);
+      
+      // Fetch fresh data from server
       const { data, error } = await supabase
         .from('user_liturgy_preferences')
         .select('*')
@@ -40,17 +111,51 @@ export class UserLiturgyPreferencesService {
       if (error) {
         if (error.code === 'PGRST116') {
           // No preferences found, create default ones
-          return await this.createDefaultPreferences(userId);
+          const defaultPreferences = await this.createDefaultPreferences(userId);
+          // Cache the default preferences
+          await this.cachePreferences(userId, defaultPreferences);
+          return defaultPreferences;
         }
         console.error('Error fetching user liturgy preferences:', error);
+        
+        // If we have cached data and server request failed, return cached data
+        if (cachedPreferences) {
+          console.log('Returning cached preferences due to server error');
+          return cachedPreferences;
+        }
+        
         return null;
       }
 
+      // Cache the fresh data
+      await this.cachePreferences(userId, data);
+      
       return data;
     } catch (error) {
       console.error('Error in getUserPreferences:', error);
+      
+      // If we have cached data and there's an error, return cached data
+      const cachedPreferences = await this.getCachedPreferences(userId);
+      if (cachedPreferences) {
+        console.log('Returning cached preferences due to error');
+        return cachedPreferences;
+      }
+      
       return null;
     }
+  }
+
+  /**
+   * Get user's liturgy preferences with immediate cache return (for UI loading)
+   */
+  static async getUserPreferencesWithCache(userId: string): Promise<{
+    cached: UserLiturgyPreferencesData | null;
+    fresh: Promise<UserLiturgyPreferencesData | null>;
+  }> {
+    const cached = await this.getCachedPreferences(userId);
+    const fresh = this.getUserPreferences(userId);
+    
+    return { cached, fresh };
   }
 
   /**
@@ -73,6 +178,9 @@ export class UserLiturgyPreferencesService {
         console.error('Error updating user liturgy preferences:', error);
         return { success: false, error: error.message };
       }
+
+      // Clear cache to force refresh on next load
+      await this.clearCachedPreferences(userId);
 
       return { success: true };
     } catch (error) {
@@ -139,10 +247,30 @@ export class UserLiturgyPreferencesService {
         return { success: false, error: error.message };
       }
 
+      // Clear cached preferences when deleting
+      await this.clearCachedPreferences(userId);
+
       return { success: true };
     } catch (error) {
       console.error('Error in deleteUserPreferences:', error);
       return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  /**
+   * Clear all cached preferences (useful for logout)
+   */
+  static async clearAllCachedPreferences(): Promise<void> {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const preferenceKeys = keys.filter(key => key.startsWith(this.CACHE_KEY_PREFIX));
+      
+      if (preferenceKeys.length > 0) {
+        await AsyncStorage.multiRemove(preferenceKeys);
+        console.log(`Cleared ${preferenceKeys.length} cached preference entries`);
+      }
+    } catch (error) {
+      console.warn('Error clearing all cached preferences:', error);
     }
   }
 

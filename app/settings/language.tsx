@@ -59,20 +59,6 @@ export default function LanguageSettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: Colors[colorScheme ?? 'light'].card, borderBottomColor: Colors[colorScheme ?? 'light'].border }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-          Language & Display
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -163,26 +149,6 @@ export default function LanguageSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 32,
   },
   scrollView: {
     flex: 1,

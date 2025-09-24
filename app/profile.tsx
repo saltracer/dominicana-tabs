@@ -60,8 +60,19 @@ function ProfileScreenContent() {
     
     setPreferencesLoading(true);
     try {
-      const preferences = await UserLiturgyPreferencesService.getUserPreferences(user.id);
-      setLiturgyPreferences(preferences);
+      // Get cached preferences immediately and fresh data in background
+      const { cached, fresh } = await UserLiturgyPreferencesService.getUserPreferencesWithCache(user.id);
+      
+      // Set cached preferences immediately if available
+      if (cached) {
+        setLiturgyPreferences(cached);
+      }
+      
+      // Wait for fresh data and update if different
+      const freshPreferences = await fresh;
+      if (freshPreferences && JSON.stringify(freshPreferences) !== JSON.stringify(cached)) {
+        setLiturgyPreferences(freshPreferences);
+      }
     } catch (error) {
       console.error('Error loading liturgy preferences:', error);
       // Set a default preferences object to prevent stuck loading
@@ -87,6 +98,7 @@ function ProfileScreenContent() {
         setLiturgyPreferences(liturgyPreferences);
         Alert.alert('Error', result.error || 'Failed to update preference');
       }
+      // Note: Cache is automatically cleared by the service when updateUserPreferences is called
     } catch (error) {
       console.error('Error updating liturgy preference:', error);
       setLiturgyPreferences(liturgyPreferences);

@@ -3,6 +3,7 @@ import { Session, User, AuthError } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { User as AppUser, UserPreferences, Subscription } from '../types';
+import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
 
 interface AuthContextType {
   user: User | null;
@@ -12,7 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<AppUser>) => Promise<{ error: AuthError | null }>;
+  updateProfile: (updates: Partial<AppUser>) => Promise<{ error: any }>;
   refreshProfile: () => Promise<void>;
   clearAllAuthData: () => Promise<void>;
 }
@@ -196,9 +197,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Sign out from Supabase first (this clears the stored session)
       console.log('AuthContext: Calling supabase.auth.signOut()...');
       console.log('AuthContext: Supabase client info:', {
-        url: supabase.supabaseUrl,
-        hasAnonKey: !!supabase.supabaseKey,
-        session: !!session,
+        hasSession: !!session,
         clientType: typeof supabase,
         hasAuth: !!supabase.auth
       });
@@ -213,9 +212,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       let signOutCompleted = false;
       
       try {
-        const { error } = await Promise.race([signOutPromise, timeoutPromise]);
-        console.log('AuthContext: supabase.auth.signOut() completed', { error: !!error });
-        signOutError = error;
+        const result = await Promise.race([signOutPromise, timeoutPromise]) as any;
+        console.log('AuthContext: supabase.auth.signOut() completed', { error: !!result?.error });
+        signOutError = result?.error;
         signOutCompleted = true;
       } catch (timeoutError) {
         console.error('AuthContext: SignOut timed out:', timeoutError);
@@ -235,6 +234,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log('AuthContext: Supabase signOut timed out, but continuing with local cleanup');
       }
       
+      // Clear cached preferences
+      try {
+        await UserLiturgyPreferencesService.clearAllCachedPreferences();
+        console.log('AuthContext: Cached preferences cleared');
+      } catch (prefError) {
+        console.warn('Error clearing cached preferences:', prefError);
+      }
+
       // Explicitly clear AsyncStorage to ensure session is completely removed
       try {
         // Get all keys and remove any that start with 'sb-' (Supabase keys)
@@ -288,6 +295,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const clearAllAuthData = async () => {
     try {
+      // Clear cached preferences first
+      await UserLiturgyPreferencesService.clearAllCachedPreferences();
+      
       // Clear all AsyncStorage keys
       await AsyncStorage.clear();
       // Clear local state
