@@ -15,10 +15,17 @@ import { Colors } from '../constants/Colors';
 import { useTheme } from '../components/ThemeProvider';
 import { useAuth } from '../contexts/AuthContext';
 import AuthGuard from '../components/AuthGuard';
+import LiturgyPreferencesDropdown from '../components/LiturgyPreferencesDropdown';
+import LiturgyPreferencesToggle from '../components/LiturgyPreferencesToggle';
+import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../services/UserLiturgyPreferencesService';
 
 function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
   const { user, profile, signOut, updateProfile, loading, clearAllAuthData } = useAuth();
+  
+  // Liturgy preferences state
+  const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
+  const [preferencesLoading, setPreferencesLoading] = useState(false);
   
   const handleLogin = () => {
     router.push('/auth');
@@ -26,6 +33,50 @@ function ProfileScreenContent() {
 
   const handleThemeChange = (mode: 'light' | 'dark' | 'system') => {
     setThemeMode(mode);
+  };
+
+  // Load liturgy preferences when user is available
+  useEffect(() => {
+    if (user && !liturgyPreferences) {
+      loadLiturgyPreferences();
+    }
+  }, [user]);
+
+  const loadLiturgyPreferences = async () => {
+    if (!user) return;
+    
+    setPreferencesLoading(true);
+    try {
+      const preferences = await UserLiturgyPreferencesService.getUserPreferences(user.id);
+      setLiturgyPreferences(preferences);
+    } catch (error) {
+      console.error('Error loading liturgy preferences:', error);
+    } finally {
+      setPreferencesLoading(false);
+    }
+  };
+
+  const updateLiturgyPreference = async (key: keyof UserLiturgyPreferencesData, value: any) => {
+    if (!user || !liturgyPreferences) return;
+
+    try {
+      const updatedPreferences = { ...liturgyPreferences, [key]: value };
+      setLiturgyPreferences(updatedPreferences);
+
+      const result = await UserLiturgyPreferencesService.updateUserPreferences(user.id, {
+        [key]: value,
+      });
+
+      if (!result.success) {
+        // Revert on error
+        setLiturgyPreferences(liturgyPreferences);
+        Alert.alert('Error', result.error || 'Failed to update preference');
+      }
+    } catch (error) {
+      console.error('Error updating liturgy preference:', error);
+      setLiturgyPreferences(liturgyPreferences);
+      Alert.alert('Error', 'Failed to update preference');
+    }
   };
   
   // Show loading state while auth is initializing
@@ -212,22 +263,8 @@ function ProfileScreenContent() {
   const displayEmail = profile?.email || user?.email || '';
   const displayRole = profile?.role || 'user';
 
-  const [notifications, setNotifications] = useState(true);
-  const [prayerReminders, setPrayerReminders] = useState(true);
-  const [feastDayAlerts, setFeastDayAlerts] = useState(true);
-  const [showDominicanFeasts, setShowDominicanFeasts] = useState(true);
-  const [preferredRite, setPreferredRite] = useState<'roman' | 'dominican'>('dominican');
-
-  // Update local state when profile changes
-  useEffect(() => {
-    if (profile && profile.preferences) {
-      setNotifications(profile.preferences.notifications?.enabled ?? true);
-      setPrayerReminders(profile.preferences.notifications?.prayerReminders ?? true);
-      setFeastDayAlerts(profile.preferences.notifications?.feastDayAlerts ?? true);
-      setShowDominicanFeasts(profile.preferences.liturgicalCalendar?.showDominicanFeasts ?? true);
-      setPreferredRite(profile.preferences.liturgicalCalendar?.preferredRite ?? 'dominican');
-    }
-  }, [profile]);
+  // Get available options for dropdowns
+  const availableOptions = UserLiturgyPreferencesService.getAvailableOptions();
 
   const handleLogout = async () => {
     Alert.alert(
@@ -276,7 +313,6 @@ function ProfileScreenContent() {
   };
 
   const handleRiteChange = async (rite: 'roman' | 'dominican') => {
-    setPreferredRite(rite);
     if (profile && profile.preferences) {
       await updateProfile({
         preferences: {
@@ -319,8 +355,8 @@ function ProfileScreenContent() {
   };
 
   return (
-          <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} testID="profile-container">
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Header */}
         <View style={[styles.profileHeader, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
           <View style={[styles.avatarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
@@ -333,18 +369,21 @@ function ProfileScreenContent() {
             <Text style={[styles.profileStatus, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
               {displayRole.charAt(0).toUpperCase() + displayRole.slice(1)} Account
             </Text>
+            <Text style={[styles.profileEmail, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+              {displayEmail}
+            </Text>
           </View>
           <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: user ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].primary }]}
-            onPress={user ? handleLogout : handleLogin}
+            style={[styles.logoutButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+            onPress={handleLogout}
           >
-            <Text style={[styles.loginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              {user ? 'Logout' : 'Login'}
+            <Text style={[styles.logoutButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Logout
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Settings Sections */}
+        {/* Appearance Settings */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Appearance
@@ -366,7 +405,7 @@ function ProfileScreenContent() {
                     styles.radioOption,
                     { 
                       backgroundColor: themeMode === mode 
-                        ? Colors[colorScheme ?? 'light'].primary + '20' // 20% opacity
+                        ? Colors[colorScheme ?? 'light'].primary + '20'
                         : 'transparent',
                       borderColor: themeMode === mode 
                         ? Colors[colorScheme ?? 'light'].primary 
@@ -419,140 +458,148 @@ function ProfileScreenContent() {
           </View>
         </View>
 
+        {/* Liturgical Preferences */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Liturgical Preferences
           </Text>
           
-          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Show Dominican Feasts
-                </Text>
-                <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Display Dominican-specific feast days
-                </Text>
-              </View>
-              <Switch
-                value={showDominicanFeasts}
-                onValueChange={(value) => {
-                  setShowDominicanFeasts(value);
-                  handleCalendarPreferenceChange('showDominicanFeasts', value);
-                }}
-                trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
-                thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
+          {preferencesLoading ? (
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                Loading preferences...
+              </Text>
+            </View>
+          ) : liturgyPreferences ? (
+            <>
+              {/* Language Settings */}
+              <LiturgyPreferencesDropdown
+                label="Primary Language"
+                description="Main language for liturgical content"
+                value={liturgyPreferences.primary_language}
+                options={availableOptions.languages}
+                onValueChange={(value) => updateLiturgyPreference('primary_language', value)}
+                icon="language"
               />
-            </View>
-          </View>
 
-          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Preferred Rite
-            </Text>
-            <View style={styles.riteOptions}>
-              {(['roman', 'dominican'] as const).map((rite) => (
-                <TouchableOpacity
-                  key={rite}
-                  style={[
-                    styles.riteOption,
-                    { 
-                      backgroundColor: preferredRite === rite 
-                        ? Colors[colorScheme ?? 'light'].primary 
-                        : Colors[colorScheme ?? 'light'].surface,
-                      borderColor: Colors[colorScheme ?? 'light'].border,
-                    }
-                  ]}
-                  onPress={() => handleRiteChange(rite)}
-                >
-                  <Text style={[
-                    styles.riteOptionText,
-                    { 
-                      color: preferredRite === rite 
-                        ? Colors[colorScheme ?? 'light'].dominicanWhite 
-                        : Colors[colorScheme ?? 'light'].dominicanBlack
-                    }
-                  ]}>
-                    {rite.charAt(0).toUpperCase() + rite.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <LiturgyPreferencesDropdown
+                label="Secondary Language"
+                description="Secondary language for bilingual display"
+                value={liturgyPreferences.secondary_language}
+                options={availableOptions.languages}
+                onValueChange={(value) => updateLiturgyPreference('secondary_language', value)}
+                icon="globe"
+              />
+
+              <LiturgyPreferencesDropdown
+                label="Display Mode"
+                description="How to display multiple languages"
+                value={liturgyPreferences.display_mode}
+                options={availableOptions.displayModes}
+                onValueChange={(value) => updateLiturgyPreference('display_mode', value)}
+                icon="layers"
+              />
+
+              {/* Bible and Text Settings */}
+              <LiturgyPreferencesDropdown
+                label="Bible Translation"
+                description="Preferred Bible translation"
+                value={liturgyPreferences.bible_translation}
+                options={availableOptions.bibleTranslations}
+                onValueChange={(value) => updateLiturgyPreference('bible_translation', value)}
+                icon="book"
+              />
+
+              <LiturgyPreferencesDropdown
+                label="Font Size"
+                description="Text size for liturgical content"
+                value={liturgyPreferences.font_size}
+                options={availableOptions.fontSizes}
+                onValueChange={(value) => updateLiturgyPreference('font_size', value)}
+                icon="text"
+              />
+
+              <LiturgyPreferencesToggle
+                label="Show Rubrics"
+                description="Display liturgical instructions"
+                value={liturgyPreferences.show_rubrics}
+                onValueChange={(value) => updateLiturgyPreference('show_rubrics', value)}
+                icon="list"
+              />
+
+              {/* Audio Settings */}
+              <LiturgyPreferencesToggle
+                label="Audio Enabled"
+                description="Enable audio playback for prayers and readings"
+                value={liturgyPreferences.audio_enabled}
+                onValueChange={(value) => updateLiturgyPreference('audio_enabled', value)}
+                icon="volume-high"
+              />
+
+              <LiturgyPreferencesDropdown
+                label="Chant Notation"
+                description="Type of musical notation to display"
+                value={liturgyPreferences.chant_notation}
+                options={availableOptions.chantNotations}
+                onValueChange={(value) => updateLiturgyPreference('chant_notation', value)}
+                icon="musical-notes"
+              />
+
+              <LiturgyPreferencesToggle
+                label="Chant Notation Enabled"
+                description="Show musical notation for chants"
+                value={liturgyPreferences.chant_notation_enabled}
+                onValueChange={(value) => updateLiturgyPreference('chant_notation_enabled', value)}
+                icon="musical-note"
+              />
+
+              {/* TTS Settings */}
+              <LiturgyPreferencesToggle
+                label="Text-to-Speech"
+                description="Enable spoken word for prayers and readings"
+                value={liturgyPreferences.tts_enabled}
+                onValueChange={(value) => updateLiturgyPreference('tts_enabled', value)}
+                icon="mic"
+              />
+
+              <LiturgyPreferencesDropdown
+                label="TTS Speed"
+                description="Speed of text-to-speech playback"
+                value={liturgyPreferences.tts_speed}
+                options={availableOptions.ttsSpeeds}
+                onValueChange={(value) => updateLiturgyPreference('tts_speed', value)}
+                icon="speedometer"
+              />
+
+              {/* Calendar Settings */}
+              <LiturgyPreferencesDropdown
+                label="Memorial Preference"
+                description="Which memorials to display"
+                value={liturgyPreferences.memorial_preference}
+                options={availableOptions.memorialPreferences}
+                onValueChange={(value) => updateLiturgyPreference('memorial_preference', value)}
+                icon="calendar"
+              />
+
+              <LiturgyPreferencesDropdown
+                label="Calendar Type"
+                description="Type of liturgical calendar to use"
+                value={liturgyPreferences.calendar_type}
+                options={availableOptions.calendarTypes}
+                onValueChange={(value) => updateLiturgyPreference('calendar_type', value)}
+                icon="calendar-outline"
+              />
+            </>
+          ) : (
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].error }]}>
+                Failed to load preferences
+              </Text>
             </View>
-          </View>
+          )}
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Notifications
-          </Text>
-          
-          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Enable Notifications
-                </Text>
-                <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Receive app notifications
-                </Text>
-              </View>
-              <Switch
-                value={notifications}
-                onValueChange={(value) => {
-                  setNotifications(value);
-                  handleNotificationChange('enabled', value);
-                }}
-                trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
-                thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Prayer Reminders
-                </Text>
-                <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Daily prayer time reminders
-                </Text>
-              </View>
-              <Switch
-                value={prayerReminders}
-                onValueChange={(value) => {
-                  setPrayerReminders(value);
-                  handleNotificationChange('prayerReminders', value);
-                }}
-                trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
-                thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Feast Day Alerts
-                </Text>
-                <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Notifications for important feast days
-                </Text>
-              </View>
-              <Switch
-                value={feastDayAlerts}
-                onValueChange={(value) => {
-                  setFeastDayAlerts(value);
-                  handleNotificationChange('feastDayAlerts', value);
-                }}
-                trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
-                thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
-              />
-            </View>
-          </View>
-        </View>
-
+        {/* About Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             About
@@ -664,12 +711,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
   },
+  profileEmail: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    marginTop: 2,
+  },
   loginButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   loginButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  logoutButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  logoutButtonText: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Georgia',
@@ -802,6 +864,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Georgia',
     textAlign: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    padding: 16,
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    padding: 16,
   },
 });
 
