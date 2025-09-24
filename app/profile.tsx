@@ -20,6 +20,13 @@ function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
   const { user, profile, signOut, updateProfile, loading, clearAllAuthData } = useAuth();
   
+  const handleLogin = () => {
+    router.push('/auth');
+  };
+
+  const handleThemeChange = (mode: 'light' | 'dark' | 'system') => {
+    setThemeMode(mode);
+  };
   
   // Show loading state while auth is initializing
   if (loading) {
@@ -34,18 +41,169 @@ function ProfileScreenContent() {
     );
   }
 
-  // If no user, show login prompt
+  // If no user, show login prompt with theme settings
   if (!user) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Please log in to view your profile
-          </Text>
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Log In</Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Profile Header for logged out users */}
+          <View style={[styles.profileHeader, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <View style={[styles.avatarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+              <Ionicons name="person-outline" size={40} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={[styles.profileName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Guest User
+              </Text>
+              <Text style={[styles.profileStatus, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                Not signed in
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.loginButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+              onPress={handleLogin}
+            >
+              <Text style={[styles.loginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                Sign In
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Appearance Settings - Available for all users */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Appearance
+            </Text>
+            
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Theme Mode
+              </Text>
+              <View style={styles.radioOptions}>
+                {([
+                  { mode: 'light', icon: 'sunny', label: 'Light' },
+                  { mode: 'dark', icon: 'moon', label: 'Dark' },
+                  { mode: 'system', icon: 'settings', label: 'System' }
+                ] as const).map(({ mode, icon, label }) => (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[
+                      styles.radioOption,
+                      { 
+                        backgroundColor: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].primary + '20' // 20% opacity
+                          : 'transparent',
+                        borderColor: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].primary 
+                          : Colors[colorScheme ?? 'light'].border,
+                      }
+                    ]}
+                    onPress={() => handleThemeChange(mode)}
+                  >
+                    <View style={[
+                      styles.radioButton,
+                      { 
+                        borderColor: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].primary 
+                          : Colors[colorScheme ?? 'light'].border,
+                        backgroundColor: themeMode === mode 
+                        ? Colors[colorScheme ?? 'light'].primary 
+                        : Colors[colorScheme ?? 'light'].border,
+                      }
+                    ]}>
+                      {themeMode === mode && (
+                        <Ionicons 
+                          name="checkmark" 
+                          size={12} 
+                          color={Colors[colorScheme ?? 'light'].dominicanWhite} 
+                        />
+                      )}
+                    </View>
+                    <Ionicons 
+                      name={icon as any} 
+                      size={18} 
+                      color={themeMode === mode 
+                        ? Colors[colorScheme ?? 'light'].primary 
+                        : Colors[colorScheme ?? 'light'].textSecondary
+                      } 
+                      style={styles.radioIcon}
+                    />
+                    <Text style={[
+                      styles.radioOptionText, 
+                      { 
+                        color: themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].text 
+                          : Colors[colorScheme ?? 'light'].text 
+                      }
+                    ]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* About Section */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              About
+            </Text>
+            
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <TouchableOpacity style={styles.aboutRow}>
+                <Ionicons name="information-circle" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.aboutText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  App Version 1.0.0
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <TouchableOpacity style={styles.aboutRow}>
+                <Ionicons name="help-circle" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.aboutText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Help & Support
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              <TouchableOpacity style={styles.aboutRow}>
+                <Ionicons name="shield-checkmark" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.aboutText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Privacy Policy
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Sign In Prompt */}
+          <View style={styles.section}>
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+              <View style={styles.signInPrompt}>
+                <Ionicons name="log-in" size={32} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.signInTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Sign in for more features
+                </Text>
+                <Text style={[styles.signInDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Access your personalized prayer settings, reading progress, and more
+                </Text>
+                <TouchableOpacity
+                  style={[styles.primaryLoginButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+                  onPress={handleLogin}
+                >
+                  <Text style={[styles.primaryLoginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                    Sign In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -54,28 +212,22 @@ function ProfileScreenContent() {
   const displayEmail = profile?.email || user?.email || '';
   const displayRole = profile?.role || 'user';
 
-  const [notifications, setNotifications] = useState(profile?.preferences?.notifications?.enabled ?? true);
-  const [prayerReminders, setPrayerReminders] = useState(profile?.preferences?.notifications?.prayerReminders ?? true);
-  const [feastDayAlerts, setFeastDayAlerts] = useState(profile?.preferences?.notifications?.feastDayAlerts ?? true);
-  const [showDominicanFeasts, setShowDominicanFeasts] = useState(profile?.preferences?.liturgicalCalendar?.showDominicanFeasts ?? true);
-  const [preferredRite, setPreferredRite] = useState<'roman' | 'dominican'>(
-    (profile?.preferences?.liturgicalCalendar?.preferredRite as 'roman' | 'dominican') ?? 'dominican'
-  );
+  const [notifications, setNotifications] = useState(true);
+  const [prayerReminders, setPrayerReminders] = useState(true);
+  const [feastDayAlerts, setFeastDayAlerts] = useState(true);
+  const [showDominicanFeasts, setShowDominicanFeasts] = useState(true);
+  const [preferredRite, setPreferredRite] = useState<'roman' | 'dominican'>('dominican');
 
   // Update local state when profile changes
   useEffect(() => {
-    if (profile) {
-      setNotifications(profile.preferences.notifications.enabled);
-      setPrayerReminders(profile.preferences.notifications.prayerReminders);
-      setFeastDayAlerts(profile.preferences.notifications.feastDayAlerts);
-      setShowDominicanFeasts(profile.preferences.liturgicalCalendar.showDominicanFeasts);
-      setPreferredRite(profile.preferences.liturgicalCalendar.preferredRite);
+    if (profile && profile.preferences) {
+      setNotifications(profile.preferences.notifications?.enabled ?? true);
+      setPrayerReminders(profile.preferences.notifications?.prayerReminders ?? true);
+      setFeastDayAlerts(profile.preferences.notifications?.feastDayAlerts ?? true);
+      setShowDominicanFeasts(profile.preferences.liturgicalCalendar?.showDominicanFeasts ?? true);
+      setPreferredRite(profile.preferences.liturgicalCalendar?.preferredRite ?? 'dominican');
     }
   }, [profile]);
-
-  const handleLogin = () => {
-    router.push('/auth');
-  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -123,13 +275,9 @@ function ProfileScreenContent() {
     );
   };
 
-  const handleThemeChange = (mode: 'light' | 'dark' | 'system') => {
-    setThemeMode(mode);
-  };
-
   const handleRiteChange = async (rite: 'roman' | 'dominican') => {
     setPreferredRite(rite);
-    if (profile) {
+    if (profile && profile.preferences) {
       await updateProfile({
         preferences: {
           ...profile.preferences,
@@ -143,7 +291,7 @@ function ProfileScreenContent() {
   };
 
   const handleNotificationChange = async (key: string, value: boolean) => {
-    if (profile) {
+    if (profile && profile.preferences) {
       await updateProfile({
         preferences: {
           ...profile.preferences,
@@ -157,7 +305,7 @@ function ProfileScreenContent() {
   };
 
   const handleCalendarPreferenceChange = async (key: string, value: boolean) => {
-    if (profile) {
+    if (profile && profile.preferences) {
       await updateProfile({
         preferences: {
           ...profile.preferences,
@@ -476,6 +624,15 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -615,25 +772,39 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontFamily: 'Georgia',
   },
-  loginButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
+  signInPrompt: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  signInTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginTop: 12,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  signInDescription: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  primaryLoginButton: {
+    paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
-    marginTop: 16,
+    minWidth: 120,
   },
-  loginButtonText: {
-    color: 'white',
+  primaryLoginButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Georgia',
     textAlign: 'center',
   },
 });
 
 export default function ProfileScreen() {
-  return (
-    <AuthGuard>
-      <ProfileScreenContent />
-    </AuthGuard>
-  );
+  return <ProfileScreenContent />;
 }
