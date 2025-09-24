@@ -415,6 +415,18 @@ export class BibleService {
   }
 
   /**
+   * Get passage text as a single string suitable for LOH content
+   */
+  async getPassageText(reference: string, options?: { includeVerseNumbers?: boolean; separator?: string }): Promise<string | null> {
+    const passage = await this.getPassageByReference(reference);
+    if (!passage) return null;
+    const includeNums = options?.includeVerseNumbers ?? false;
+    const sep = options?.separator ?? ' ';
+    const parts = passage.verses.map(v => includeNums ? `${v.number} ${v.text}` : v.text);
+    return parts.join(sep).trim();
+  }
+
+  /**
    * Search for text across all loaded books or a specific book
    */
   async search(searchText: string, bookCode?: string, caseSensitive: boolean = false): Promise<BibleSearchResult[]> {

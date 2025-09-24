@@ -51,6 +51,17 @@ describe('BibleService getPassageByReference', () => {
     expect(res!.verses[res!.verses.length - 1].reference).toBe('GEN 2:7');
   });
 
+  it('getPassageText returns concatenated text with and without verse numbers', async () => {
+    const svc = new BibleService();
+    jest.spyOn<any, any>(svc as any, 'loadUSXFile').mockResolvedValue(SAMPLE_USX);
+    const textNoNums = await svc.getPassageText('GEN 1:1-2', { includeVerseNumbers: false, separator: ' ' });
+    expect(textNoNums).toContain('In the beginning');
+    expect(textNoNums).toContain('The earth was without form');
+
+    const textWithNums = await svc.getPassageText('GEN 1:1-2', { includeVerseNumbers: true, separator: ' ' });
+    expect(textWithNums?.startsWith('1 ')).toBeTruthy();
+  });
+
   it('returns null for unknown book', async () => {
     const svc = new BibleService();
     // Should not need to mock loader; parser should reject unknown book

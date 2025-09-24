@@ -187,6 +187,25 @@ export function parseBibleReference(input: string): ParsedBibleReference | null 
 }
 
 /**
+ * Ensure start <= end by swapping if necessary, preserving book
+ */
+export function normalizeRangeOrder(parsed: ParsedBibleReference): ParsedBibleReference {
+  const { bookCode } = parsed;
+  const startBeforeEnd = parsed.startChapter < parsed.endChapter
+    || (parsed.startChapter === parsed.endChapter && parsed.startVerse <= parsed.endVerse);
+  if (startBeforeEnd) return parsed;
+
+  return {
+    bookCode,
+    startChapter: parsed.endChapter,
+    startVerse: parsed.endVerse,
+    endChapter: parsed.startChapter,
+    endVerse: parsed.startVerse,
+    original: parsed.original,
+  };
+}
+
+/**
  * Format a normalized reference string using a book code.
  */
 export function formatNormalizedReference(parsed: ParsedBibleReference): string {
@@ -198,5 +217,48 @@ export function formatNormalizedReference(parsed: ParsedBibleReference): string 
     return `${bookCode} ${startChapter}:${startVerse}-${endVerse}`;
   }
   return `${bookCode} ${startChapter}:${startVerse}-${endChapter}:${endVerse}`;
+}
+
+/**
+ * Human-facing formatting styles
+ */
+type ReferenceFormatStyle = 'code' | 'abbr' | 'full';
+
+// Minimal maps for abbr/full names used in display; extend as needed
+const CODE_TO_ABBR: Record<string, string> = {
+  GEN: 'Gen', EXO: 'Ex', LEV: 'Lev', NUM: 'Num', DEU: 'Deut',
+  PSA: 'Ps', PRO: 'Prov', ECC: 'Eccl', SNG: 'Song', WIS: 'Wis', SIR: 'Sir',
+  ISA: 'Isa', JER: 'Jer', LAM: 'Lam', EZK: 'Ezek', DAN: 'Dan',
+  MAT: 'Mt', MRK: 'Mk', LUK: 'Lk', JHN: 'Jn', ACT: 'Acts', ROM: 'Rom',
+  '1CO': '1 Cor', '2CO': '2 Cor', GAL: 'Gal', EPH: 'Eph', PHP: 'Phil', COL: 'Col',
+  '1TH': '1 Thess', '2TH': '2 Thess', '1TI': '1 Tim', '2TI': '2 Tim', TIT: 'Ti', PHM: 'Phlm',
+  HEB: 'Heb', JAS: 'Jas', '1PE': '1 Pet', '2PE': '2 Pet', '1JN': '1 Jn', '2JN': '2 Jn', '3JN': '3 Jn', JUD: 'Jude', REV: 'Rev',
+  TOB: 'Tob', JDT: 'Jdt', '1MA': '1 Macc', '2MA': '2 Macc', 'BAR_LjeInBar': 'Bar'
+};
+
+const CODE_TO_FULL: Record<string, string> = {
+  GEN: 'Genesis', EXO: 'Exodus', LEV: 'Leviticus', NUM: 'Numbers', DEU: 'Deuteronomy',
+  PSA: 'Psalms', PRO: 'Proverbs', ECC: 'Ecclesiastes', SNG: 'Song of Songs', WIS: 'Wisdom', SIR: 'Sirach',
+  ISA: 'Isaiah', JER: 'Jeremiah', LAM: 'Lamentations', EZK: 'Ezekiel', DAN: 'Daniel',
+  MAT: 'Matthew', MRK: 'Mark', LUK: 'Luke', JHN: 'John', ACT: 'Acts', ROM: 'Romans',
+  '1CO': '1 Corinthians', '2CO': '2 Corinthians', GAL: 'Galatians', EPH: 'Ephesians', PHP: 'Philippians', COL: 'Colossians',
+  '1TH': '1 Thessalonians', '2TH': '2 Thessalonians', '1TI': '1 Timothy', '2TI': '2 Timothy', TIT: 'Titus', PHM: 'Philemon',
+  HEB: 'Hebrews', JAS: 'James', '1PE': '1 Peter', '2PE': '2 Peter', '1JN': '1 John', '2JN': '2 John', '3JN': '3 John', JUD: 'Jude', REV: 'Revelation',
+  TOB: 'Tobit', JDT: 'Judith', '1MA': '1 Maccabees', '2MA': '2 Maccabees', 'BAR_LjeInBar': 'Baruch'
+};
+
+export function formatReference(parsed: ParsedBibleReference, style: ReferenceFormatStyle = 'code'): string {
+  const normalized = normalizeRangeOrder(parsed);
+  const base = style === 'full' ? (CODE_TO_FULL[normalized.bookCode] || normalized.bookCode)
+             : style === 'abbr' ? (CODE_TO_ABBR[normalized.bookCode] || normalized.bookCode)
+             : normalized.bookCode;
+
+  if (normalized.startChapter === normalized.endChapter && normalized.startVerse === normalized.endVerse) {
+    return `${base} ${normalized.startChapter}:${normalized.startVerse}`;
+  }
+  if (normalized.startChapter === normalized.endChapter) {
+    return `${base} ${normalized.startChapter}:${normalized.startVerse}-${normalized.endVerse}`;
+  }
+  return `${base} ${normalized.startChapter}:${normalized.startVerse}-${normalized.endChapter}:${normalized.endVerse}`;
 }
 

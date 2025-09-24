@@ -44,6 +44,18 @@ describe('MultiVersionBibleService getPassageByReference', () => {
     expect(res!.verses[0].reference).toBe('JHN 1:1');
   });
 
+  it('getPassageText returns concatenated text for multi-version service', async () => {
+    const svc = new MultiVersionBibleService();
+    jest.spyOn(svc as any, 'loadBook').mockImplementation(async (code: string) => {
+      if (code === 'GEN') {
+        return makeBook('GEN', [ { number: 1, verses: [ [1, 'a'], [2, 'b'] ] } ]);
+      }
+      return makeBook(code, []);
+    });
+    const text = await svc.getPassageText('Gen 1:1-2', { includeVerseNumbers: true, separator: '|' });
+    expect(text).toBe('1 a|2 b');
+  });
+
   it('returns null for invalid book reference', async () => {
     const svc = new MultiVersionBibleService();
     const res = await svc.getPassageByReference('NotABook 1:1');

@@ -1,4 +1,4 @@
-import { parseBibleReference, resolveBookCode, formatNormalizedReference } from '../../utils/bibleReference';
+import { parseBibleReference, resolveBookCode, formatNormalizedReference, normalizeRangeOrder, formatReference } from '../../utils/bibleReference';
 
 describe('bibleReference utils', () => {
   it('resolves common book names and abbreviations', () => {
@@ -70,6 +70,20 @@ describe('bibleReference utils', () => {
     expect(p!.startVerse).toBe(5);
     expect(p!.endChapter).toBe(1);
     expect(p!.endVerse).toBe(2);
+  });
+
+  it('normalizes reversed ranges', () => {
+    const p = parseBibleReference('Gen 1:5-1:2')!;
+    const norm = normalizeRangeOrder(p);
+    expect(norm.startVerse).toBe(2);
+    expect(norm.endVerse).toBe(5);
+  });
+
+  it('formats references in code, abbr, and full styles', () => {
+    const p = parseBibleReference('Genesis 1:1-2:7')!;
+    expect(formatReference(p, 'code')).toBe('GEN 1:1-2:7');
+    expect(formatReference(p, 'abbr')).toBe('Gen 1:1-2:7');
+    expect(formatReference(p, 'full')).toBe('Genesis 1:1-2:7');
   });
 });
 
