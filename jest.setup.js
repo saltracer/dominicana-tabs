@@ -26,6 +26,33 @@ jest.mock('react-native/Libraries/Utilities/Platform', () => ({
   select: jest.fn((obj) => obj.ios || obj.default),
 }));
 
+// Provide a broad mock for react-native Platform consumers
+jest.mock('react-native', () => ({
+  Platform: {
+    OS: 'ios',
+    select: jest.fn((obj) => obj.ios || obj.default),
+  },
+}));
+
+// Mock expo-asset to avoid native behavior in tests
+jest.mock('expo-asset', () => ({
+  Asset: {
+    fromModule: jest.fn(() => ({
+      downloadAsync: jest.fn(async () => {}),
+      localUri: 'file://mock.usx',
+    })),
+  },
+}));
+
+// Mock expo-file-system File API used by services
+jest.mock('expo-file-system', () => ({
+  File: class MockFile {
+    uri;
+    constructor(uri) { this.uri = uri; }
+    async text() { return ''; }
+  },
+}));
+
 // Mock the services that depend on AsyncStorage
 jest.mock('./services/ComplineService', () => ({
   ComplineService: {

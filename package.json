@@ -11,7 +11,10 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"]
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+    "moduleNameMapper": {
+      "\\.(usx|xml)$": "<rootDir>/test/__mocks__/fileMock.js"
+    }
   },
   "dependencies": {
     "@expo/cli": "^54.0.6",

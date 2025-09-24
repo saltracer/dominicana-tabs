@@ -46,6 +46,30 @@ describe('bibleReference utils', () => {
   it('returns null for invalid inputs', () => {
     expect(parseBibleReference('NotABook 1:1')).toBeNull();
     expect(parseBibleReference('Genesis')).toBeNull();
+    expect(parseBibleReference('Genesis1:1')).toBeNull();
+    expect(parseBibleReference('')).toBeNull();
+  });
+
+  it('supports common NT abbreviations', () => {
+    const jn = parseBibleReference('Jn 3:16');
+    expect(jn).not.toBeNull();
+    expect(jn!.bookCode).toBe('JHN');
+    expect(formatNormalizedReference(jn!)).toBe('JHN 3:16');
+
+    const mt = parseBibleReference('Mt 5:3-9');
+    expect(mt).not.toBeNull();
+    expect(mt!.bookCode).toBe('MAT');
+    expect(formatNormalizedReference(mt!)).toBe('MAT 5:3-9');
+  });
+
+  it('returns a parsed object even if range order is reversed (logical invalid)', () => {
+    const p = parseBibleReference('Gen 1:5-1:2');
+    expect(p).not.toBeNull();
+    expect(p!.bookCode).toBe('GEN');
+    expect(p!.startChapter).toBe(1);
+    expect(p!.startVerse).toBe(5);
+    expect(p!.endChapter).toBe(1);
+    expect(p!.endVerse).toBe(2);
   });
 });
 
