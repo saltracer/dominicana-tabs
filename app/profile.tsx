@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,34 +13,71 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../constants/Colors';
 import { useTheme } from '../components/ThemeProvider';
+import { useAuth } from '../contexts/AuthContext';
+import AuthGuard from '../components/AuthGuard';
 
-export default function ProfileScreen() {
+function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [notifications, setNotifications] = useState(true);
-  const [prayerReminders, setPrayerReminders] = useState(true);
-  const [feastDayAlerts, setFeastDayAlerts] = useState(true);
-  const [showDominicanFeasts, setShowDominicanFeasts] = useState(true);
-  const [preferredRite, setPreferredRite] = useState<'roman' | 'dominican'>('dominican');
+  const { user, profile, signOut, updateProfile, loading, clearAllAuthData } = useAuth();
+  
+  
+  // Show loading state while auth is initializing
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Loading profile...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // If no user, show login prompt
+  if (!user) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Please log in to view your profile
+          </Text>
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            <Text style={styles.loginButtonText}>Log In</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  // Use profile data or fallback to user data
+  const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
+  const displayEmail = profile?.email || user?.email || '';
+  const displayRole = profile?.role || 'user';
+
+  const [notifications, setNotifications] = useState(profile?.preferences?.notifications?.enabled ?? true);
+  const [prayerReminders, setPrayerReminders] = useState(profile?.preferences?.notifications?.prayerReminders ?? true);
+  const [feastDayAlerts, setFeastDayAlerts] = useState(profile?.preferences?.notifications?.feastDayAlerts ?? true);
+  const [showDominicanFeasts, setShowDominicanFeasts] = useState(profile?.preferences?.liturgicalCalendar?.showDominicanFeasts ?? true);
+  const [preferredRite, setPreferredRite] = useState<'roman' | 'dominican'>(
+    (profile?.preferences?.liturgicalCalendar?.preferredRite as 'roman' | 'dominican') ?? 'dominican'
+  );
+
+  // Update local state when profile changes
+  useEffect(() => {
+    if (profile) {
+      setNotifications(profile.preferences.notifications.enabled);
+      setPrayerReminders(profile.preferences.notifications.prayerReminders);
+      setFeastDayAlerts(profile.preferences.notifications.feastDayAlerts);
+      setShowDominicanFeasts(profile.preferences.liturgicalCalendar.showDominicanFeasts);
+      setPreferredRite(profile.preferences.liturgicalCalendar.preferredRite);
+    }
+  }, [profile]);
 
   const handleLogin = () => {
-    Alert.alert(
-      'Login',
-      'Would you like to log in to sync your preferences across devices?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Login', 
-          onPress: () => {
-            setIsLoggedIn(true);
-            Alert.alert('Success', 'You are now logged in.');
-          }
-        }
-      ]
-    );
+    router.push('/auth');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to log out?',
@@ -48,9 +85,38 @@ export default function ProfileScreen() {
         { text: 'Cancel', style: 'cancel' },
         { 
           text: 'Logout', 
-          onPress: () => {
-            setIsLoggedIn(false);
-            Alert.alert('Logged Out', 'You have been logged out successfully.');
+          onPress: async () => {
+            try {
+              await signOut();
+              // Show success message
+              Alert.alert('Success', 'You have been logged out successfully.');
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to log out. Please try again.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleClearAllAuthData = async () => {
+    Alert.alert(
+      'Clear All Auth Data',
+      'This will completely clear all authentication data. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear All', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearAllAuthData();
+              Alert.alert('Success', 'All authentication data has been cleared.');
+            } catch (error) {
+              console.error('Clear auth data error:', error);
+              Alert.alert('Error', 'Failed to clear auth data.');
+            }
           }
         }
       ]
@@ -61,8 +127,47 @@ export default function ProfileScreen() {
     setThemeMode(mode);
   };
 
-  const handleRiteChange = (rite: 'roman' | 'dominican') => {
+  const handleRiteChange = async (rite: 'roman' | 'dominican') => {
     setPreferredRite(rite);
+    if (profile) {
+      await updateProfile({
+        preferences: {
+          ...profile.preferences,
+          liturgicalCalendar: {
+            ...profile.preferences.liturgicalCalendar,
+            preferredRite: rite,
+          },
+        },
+      });
+    }
+  };
+
+  const handleNotificationChange = async (key: string, value: boolean) => {
+    if (profile) {
+      await updateProfile({
+        preferences: {
+          ...profile.preferences,
+          notifications: {
+            ...profile.preferences.notifications,
+            [key]: value,
+          },
+        },
+      });
+    }
+  };
+
+  const handleCalendarPreferenceChange = async (key: string, value: boolean) => {
+    if (profile) {
+      await updateProfile({
+        preferences: {
+          ...profile.preferences,
+          liturgicalCalendar: {
+            ...profile.preferences.liturgicalCalendar,
+            [key]: value,
+          },
+        },
+      });
+    }
   };
 
   return (
@@ -75,18 +180,18 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {isLoggedIn ? 'John Doe' : 'Guest User'}
+              {displayName}
             </Text>
             <Text style={[styles.profileStatus, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {isLoggedIn ? 'Dominican Friar' : 'Anonymous Access'}
+              {displayRole.charAt(0).toUpperCase() + displayRole.slice(1)} Account
             </Text>
           </View>
           <TouchableOpacity
-            style={[styles.loginButton, { backgroundColor: isLoggedIn ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].primary }]}
-            onPress={isLoggedIn ? handleLogout : handleLogin}
+            style={[styles.loginButton, { backgroundColor: user ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].primary }]}
+            onPress={user ? handleLogout : handleLogin}
           >
             <Text style={[styles.loginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              {isLoggedIn ? 'Logout' : 'Login'}
+              {user ? 'Logout' : 'Login'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -183,7 +288,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={showDominicanFeasts}
-                onValueChange={setShowDominicanFeasts}
+                onValueChange={(value) => {
+                  setShowDominicanFeasts(value);
+                  handleCalendarPreferenceChange('showDominicanFeasts', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -242,7 +350,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={notifications}
-                onValueChange={setNotifications}
+                onValueChange={(value) => {
+                  setNotifications(value);
+                  handleNotificationChange('enabled', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -261,7 +372,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={prayerReminders}
-                onValueChange={setPrayerReminders}
+                onValueChange={(value) => {
+                  setPrayerReminders(value);
+                  handleNotificationChange('prayerReminders', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -280,7 +394,10 @@ export default function ProfileScreen() {
               </View>
               <Switch
                 value={feastDayAlerts}
-                onValueChange={setFeastDayAlerts}
+                onValueChange={(value) => {
+                  setFeastDayAlerts(value);
+                  handleNotificationChange('feastDayAlerts', value);
+                }}
                 trackColor={{ false: Colors[colorScheme ?? 'light'].border, true: Colors[colorScheme ?? 'light'].primary }}
                 thumbColor={Colors[colorScheme ?? 'light'].dominicanWhite}
               />
@@ -323,6 +440,29 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Debug Section - Remove in production */}
+        {__DEV__ && (
+          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Debug Tools
+            </Text>
+            <TouchableOpacity
+              style={[styles.settingRow, { paddingVertical: 12 }]}
+              onPress={handleClearAllAuthData}
+            >
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Clear All Auth Data
+                </Text>
+                <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Completely clear all authentication data
+                </Text>
+              </View>
+              <Ionicons name="trash" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -475,4 +615,25 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontFamily: 'Georgia',
   },
+  loginButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
+
+export default function ProfileScreen() {
+  return (
+    <AuthGuard>
+      <ProfileScreenContent />
+    </AuthGuard>
+  );
+}
