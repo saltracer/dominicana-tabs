@@ -37,10 +37,10 @@ function ProfileScreenContent() {
 
   // Load liturgy preferences when user is available
   useEffect(() => {
-    if (user && !liturgyPreferences) {
+    if (user && !liturgyPreferences && !preferencesLoading) {
       loadLiturgyPreferences();
     }
-  }, [user]);
+  }, [user, liturgyPreferences, preferencesLoading]);
 
   const loadLiturgyPreferences = async () => {
     if (!user) return;
@@ -51,6 +51,8 @@ function ProfileScreenContent() {
       setLiturgyPreferences(preferences);
     } catch (error) {
       console.error('Error loading liturgy preferences:', error);
+      // Set a default preferences object to prevent stuck loading
+      setLiturgyPreferences(null);
     } finally {
       setPreferencesLoading(false);
     }
@@ -596,6 +598,14 @@ function ProfileScreenContent() {
                 <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].error }]}>
                   Failed to load preferences
                 </Text>
+                <TouchableOpacity
+                  style={[styles.retryButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+                  onPress={loadLiturgyPreferences}
+                >
+                  <Text style={[styles.retryButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                    Retry
+                  </Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -871,12 +881,24 @@ const styles = StyleSheet.create({
       textAlign: 'center',
       padding: 16,
     },
-    errorText: {
-      fontSize: 14,
-      fontFamily: 'Georgia',
-      textAlign: 'center',
-      padding: 16,
-    },
+  errorText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    padding: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
 });
 
 export default function ProfileScreen() {

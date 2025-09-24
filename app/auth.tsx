@@ -28,10 +28,11 @@ export default function AuthScreen() {
 
   const handleClose = () => {
     try {
-      router.dismiss();
-    } catch (error) {
-      // Fallback to back navigation if dismiss fails
+      // Try to go back to the previous screen (profile page)
       router.back();
+    } catch (error) {
+      // Fallback to profile page if back navigation fails
+      router.push('/profile');
     }
   };
 
@@ -56,11 +57,8 @@ export default function AuthScreen() {
       if (error) {
         Alert.alert('Error', error.message);
       } else {
-        Alert.alert(
-          'Success',
-          isLogin ? 'Welcome back!' : 'Account created successfully!',
-          [{ text: 'OK', onPress: handleClose }]
-        );
+        // Navigate back to profile page immediately on successful login/signup
+        handleClose();
       }
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
