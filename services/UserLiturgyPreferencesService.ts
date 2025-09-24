@@ -152,12 +152,12 @@ export class UserLiturgyPreferencesService {
   static getAvailableOptions() {
     return {
       languages: [
-        { code: 'en', name: 'English' },
-        { code: 'la', name: 'Latin' },
-        { code: 'fr', name: 'French' },
-        { code: 'es', name: 'Spanish' },
-        { code: 'de', name: 'German' },
-        { code: 'it', name: 'Italian' },
+        { value: 'en', label: 'English' },
+        { value: 'la', label: 'Latin' },
+        { value: 'fr', label: 'French' },
+        { value: 'es', label: 'Spanish' },
+        { value: 'de', label: 'German' },
+        { value: 'it', label: 'Italian' },
       ],
       displayModes: [
         { value: 'primary-only', label: 'Primary Language Only' },
