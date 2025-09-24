@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -59,11 +60,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <CalendarProvider>
-        <BibleProvider>
-          <RootLayoutNav />
-        </BibleProvider>
-      </CalendarProvider>
+      <AuthProvider>
+        <CalendarProvider>
+          <BibleProvider>
+            <RootLayoutNav />
+          </BibleProvider>
+        </CalendarProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
@@ -78,6 +81,7 @@ function RootLayoutNav() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
         </Stack>
       </NavigationThemeProvider>
     </SafeAreaProvider>
