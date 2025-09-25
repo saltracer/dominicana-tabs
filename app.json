@@ -117,7 +117,8 @@
             ]
           }
         }
-      ]
+      ],
+      "with-readium-native"
     ],
     "experiments": {
       "typedRoutes": true

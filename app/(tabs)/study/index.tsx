@@ -160,7 +160,7 @@ export default function StudyScreen() {
 
   const handleBookPress = (book: Book) => {
     if (!isLoggedIn) {
-      handleLogin();
+      router.push({ pathname: '/(tabs)/study/book/[bookId]', params: { bookId: book.id } });
       return;
     }
     router.push({ pathname: '/(tabs)/study/reader/[bookId]', params: { bookId: book.id } });
