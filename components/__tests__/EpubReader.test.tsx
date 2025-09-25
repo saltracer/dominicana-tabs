@@ -185,30 +185,17 @@ describe('EpubReader', () => {
 
   it('saves reading progress when closing', async () => {
     const onClose = jest.fn();
-    mockEbookService.isAuthenticated.mockResolvedValue(true);
-    mockEbookService.updateReadingProgress.mockResolvedValue({
-      id: 'progress-1',
-      user_id: 'user-1',
-      ebook_id: 'test-ebook-1',
-      current_position: 'chapter1',
-      current_chapter: 1,
-      total_chapters: 10,
-      progress_percentage: 10,
-      time_spent: 100,
-      last_read_at: '2024-01-01T00:00:00Z',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    });
+    mockBookService.isUserAuthenticated.mockReturnValue(true);
 
     const { getByTestId } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     const closeButton = getByTestId('close-button');
     fireEvent.press(closeButton);
 
     await waitFor(() => {
-      expect(mockEbookService.updateReadingProgress).toHaveBeenCalled();
+      expect(mockBookService.updateReadingProgress).toHaveBeenCalled();
     });
   });
 });

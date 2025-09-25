@@ -200,7 +200,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>${ebook.title}</title>
+      <title>${book.title}</title>
       <style>
         body {
           margin: 0;

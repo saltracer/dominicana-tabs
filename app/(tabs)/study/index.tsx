@@ -62,6 +62,11 @@ export default function StudyScreen() {
     }
   };
 
+  // Update books when authentication status changes
+  useEffect(() => {
+    loadBooks();
+  }, [isLoggedIn]);
+
   const loadSampleBooks = () => {
     const sampleBooks = BookService.initializeBooks();
     setBooks(sampleBooks);
@@ -97,6 +102,7 @@ export default function StudyScreen() {
           text: 'Login', 
           onPress: () => {
             // In a real app, this would navigate to login screen
+            BookService.setAuthenticationStatus(true);
             setIsLoggedIn(true);
             Alert.alert('Success', 'You are now logged in and can access the library.');
           }
