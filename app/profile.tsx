@@ -22,7 +22,7 @@ import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../se
 
 function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
-  const { user, profile, signOut, updateProfile, loading, clearAllAuthData } = useAuth();
+  const { user, profile, signOut, updateProfile, loading, profileLoading, clearAllAuthData } = useAuth();
   
   // Liturgy preferences state
   const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
@@ -50,9 +50,10 @@ function ProfileScreenContent() {
       user: !!user, 
       userId: user?.id, 
       loading, 
+      profileLoading,
       profile: !!profile 
     });
-  }, [user, loading, profile]);
+  }, [user, loading, profileLoading, profile]);
 
 
   const loadLiturgyPreferences = async () => {
@@ -106,13 +107,13 @@ function ProfileScreenContent() {
     }
   };
   
-  // Show loading state while auth is initializing
-  if (loading) {
+  // Show loading state while auth is initializing or profile is loading
+  if (loading || (user && profileLoading)) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading profile...
+            {loading ? 'Loading...' : 'Loading profile...'}
           </Text>
         </View>
       </SafeAreaView>

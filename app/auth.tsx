@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,12 +19,22 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthScreen() {
   const { colorScheme } = useTheme();
-  const { signIn, signUp, loading } = useAuth();
+  const { signIn, signUp, loading, profileLoading, profile } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authCompleted, setAuthCompleted] = useState(false);
+
+  // Handle navigation after profile is loaded
+  useEffect(() => {
+    if (authCompleted && !profileLoading && profile) {
+      console.log('Auth: Profile loaded, navigating back to profile screen');
+      setIsLoading(false);
+      handleClose();
+    }
+  }, [authCompleted, profileLoading, profile]);
 
   const handleClose = () => {
     // Go back to the previous screen (profile page)
@@ -43,6 +53,7 @@ export default function AuthScreen() {
     }
 
     setIsLoading(true);
+    setAuthCompleted(false);
 
     try {
       const { error } = isLogin
@@ -51,13 +62,16 @@ export default function AuthScreen() {
 
       if (error) {
         Alert.alert('Error', error.message);
-      } else {
-        // Navigate back to profile page immediately on successful login/signup
-        handleClose();
+        setIsLoading(false);
+        return;
       }
+
+      // Mark auth as completed and wait for profile to load
+      setAuthCompleted(true);
+      console.log('Auth: Authentication successful, waiting for profile...');
+      
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -175,7 +189,7 @@ export default function AuthScreen() {
               disabled={isLoading}
             >
               <Text style={[styles.authButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                {isLoading ? (authCompleted && profileLoading ? 'Loading profile...' : 'Please wait...') : (isLogin ? 'Sign In' : 'Create Account')}
               </Text>
             </TouchableOpacity>
 

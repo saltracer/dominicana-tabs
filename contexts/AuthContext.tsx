@@ -10,6 +10,7 @@ interface AuthContextType {
   session: Session | null;
   profile: AppUser | null;
   loading: boolean;
+  profileLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
@@ -37,6 +38,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileFetchTimeout, setProfileFetchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     // Get initial session
@@ -44,9 +47,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfileWithDebounce(session.user.id);
       } else {
         setLoading(false);
+        setProfileLoading(false);
       }
     });
 
@@ -64,21 +68,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Handle signOut event specifically
       if (event === 'SIGNED_OUT') {
         console.log('AuthContext: SIGNED_OUT event received');
+        // Clear any pending profile fetch
+        if (profileFetchTimeout) {
+          clearTimeout(profileFetchTimeout);
+          setProfileFetchTimeout(null);
+        }
         setSession(null);
         setUser(null);
         setProfile(null);
         setLoading(false);
+        setProfileLoading(false);
         return;
       }
       
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id);
+      // Handle different auth events appropriately
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Only fetch profile for SIGNED_IN events, not TOKEN_REFRESHED
+          if (event === 'SIGNED_IN') {
+            await fetchProfileWithDebounce(session.user.id);
+          }
+        } else {
+          setProfile(null);
+          setLoading(false);
+          setProfileLoading(false);
+        }
       } else {
-        setProfile(null);
-        setLoading(false);
+        // For other events, just update session/user without fetching profile
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (!session?.user) {
+          setProfile(null);
+          setLoading(false);
+          setProfileLoading(false);
+        }
       }
     });
 
@@ -88,8 +114,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfileWithDebounce = async (userId: string) => {
+    // Clear any existing timeout
+    if (profileFetchTimeout) {
+      clearTimeout(profileFetchTimeout);
+    }
+
+    // Set a timeout to debounce multiple rapid calls
+    const timeout = setTimeout(async () => {
+      await fetchProfile(userId);
+      setProfileFetchTimeout(null);
+    }, 100); // 100ms debounce
+
+    setProfileFetchTimeout(timeout);
+  };
+
+  const fetchProfile = async (userId: string, retryCount = 0) => {
+    if (profileLoading) {
+      console.log('AuthContext: Profile fetch already in progress, skipping...');
+      return;
+    }
+
+    setProfileLoading(true);
+    
     try {
+      console.log('AuthContext: Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -101,13 +150,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // If profile doesn't exist, create one
         if (error.code === 'PGRST116') {
           await createProfile(userId);
+        } else if (retryCount < 2) {
+          // Retry on other errors up to 2 times
+          console.log(`AuthContext: Retrying profile fetch (attempt ${retryCount + 1}/3)`);
+          setTimeout(() => {
+            fetchProfile(userId, retryCount + 1);
+          }, 1000 * (retryCount + 1)); // Exponential backoff
+          return;
+        } else {
+          console.error('AuthContext: Profile fetch failed after retries');
         }
       } else {
+        console.log('AuthContext: Profile fetched successfully');
         setProfile(data as AppUser);
       }
     } catch (error) {
       console.error('Error in fetchProfile:', error);
+      if (retryCount < 2) {
+        // Retry on network errors
+        console.log(`AuthContext: Retrying profile fetch due to error (attempt ${retryCount + 1}/3)`);
+        setTimeout(() => {
+          fetchProfile(userId, retryCount + 1);
+        }, 1000 * (retryCount + 1));
+        return;
+      }
     } finally {
+      setProfileLoading(false);
       setLoading(false);
     }
   };
@@ -289,7 +357,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refreshProfile = async () => {
     if (user) {
-      await fetchProfile(user.id);
+      await fetchProfileWithDebounce(user.id);
     }
   };
 
@@ -315,6 +383,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     session,
     profile,
     loading,
+    profileLoading,
     signIn,
     signUp,
     signOut,
