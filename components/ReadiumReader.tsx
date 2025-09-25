@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react';
-import { requireNativeComponent, UIManager, Platform, ViewProps } from 'react-native';
+import { requireNativeComponent, Platform, ViewProps } from 'react-native';
 
 type ReadiumReaderProps = ViewProps & {
   source: string; // signed URL or file path
@@ -17,6 +17,14 @@ const NativeReader = Platform.select<any>({
 });
 
 export default function ReadiumReader(props: ReadiumReaderProps) {
-  return <NativeReader {...props} />;
+  const { source, initialLocator, onLocationChange, ...rest } = props;
+  return (
+    <NativeReader
+      source={source}
+      initialLocator={initialLocator}
+      onLocationChange={onLocationChange}
+      {...rest}
+    />
+  );
 }
 

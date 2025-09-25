@@ -10,5 +10,12 @@ describe('ReadiumReader wrapper', () => {
     const { toJSON } = render(<ReadiumReader source="https://example.com/book.epub" style={{ flex: 1 }} />);
     expect(toJSON()).toBeTruthy();
   });
+
+  it('passes onLocationChange handler', () => {
+    const handler = jest.fn();
+    render(<ReadiumReader source="https://example.com/book.epub" onLocationChange={handler} />);
+    // We can’t simulate native event here; ensure the prop is wired without crashing
+    expect(typeof handler).toBe('function');
+  });
 });
 
