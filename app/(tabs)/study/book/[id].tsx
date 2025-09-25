@@ -3,6 +3,7 @@ import { View, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import EbookAccessGate from '../../../../components/EbookAccessGate';
 import EbookService from '../../../../services/EbookService';
+import supabase from '../../../../services/supabaseClient';
 import type { Ebook } from '../../../../types/ebook';
 
 export default function BookDetailScreen() {
@@ -26,6 +27,22 @@ export default function BookDetailScreen() {
     })();
     return () => { isMounted = false; };
   }, [params.id]);
+
+  useEffect(() => {
+    let unsub: any;
+    (async () => {
+      if (!supabase) return; // Fallback demo mode
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setIsAuthenticated(!!session);
+      });
+      unsub = subscription;
+      const { data: session } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session.session);
+    })();
+    return () => {
+      if (unsub && unsub.unsubscribe) unsub.unsubscribe();
+    };
+  }, []);
 
   const onLoginRequest = useCallback(() => {
     Alert.alert('Login', 'Implement navigation to login.');

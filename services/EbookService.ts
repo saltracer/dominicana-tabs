@@ -23,6 +23,8 @@ export class EbookService {
           // Defer URL signing until getEpubUrl
           tags: [],
           isDominican: !!data.is_dominican,
+          // Surface storage paths internally for URL signing stage
+          ...(data.epub_path ? { epubUrl: undefined, epub_path: data.epub_path } : {} as any),
         };
       }
     }
@@ -42,8 +44,9 @@ export class EbookService {
   static async getEpubUrl(ebook: Ebook): Promise<string> {
     if (ebook.epubUrl) return ebook.epubUrl;
 
-    if (supabase && (ebook as any).epub_path) {
-      const path = (ebook as any).epub_path as string;
+    const withPath = ebook as any;
+    if (supabase && withPath.epub_path) {
+      const path = withPath.epub_path as string;
       const { data, error } = await (supabase as any).storage.from('ebooks').createSignedUrl(path, 3600);
       if (!error && data?.signedUrl) return data.signedUrl as string;
     }
