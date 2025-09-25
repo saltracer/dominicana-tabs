@@ -25,6 +25,8 @@ Dominicana serves as a complete spiritual resource for Dominican friars and the 
 - **Search & Bookmarks**: Advanced library management
 - **Login Required**: Authentication for ebook features
 
+For implementation details of the EPUB reader, see `docs/readium-integration.md`.
+
 ### 👥 Community Module
 - **Liturgical Calendar**: Dynamic Dominican calendar with movable feasts
 - **Saints Directory**: Comprehensive database of Catholic and Dominican saints

@@ -205,6 +205,11 @@ export interface ReadingProgress {
   timeSpent: number;
 }
 
+export interface EbookAccess {
+  canRead: boolean;
+  reason?: 'not_authenticated' | 'no_entitlement' | 'restricted_region';
+}
+
 // User Types
 export interface User {
   id: string;

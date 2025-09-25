@@ -132,7 +132,7 @@ export default function StudyScreen() {
     { type: 'medieval', name: 'Medieval', icon: 'time' },
   ];
 
-  const filteredBooks = books.filter(book => {
+  const filteredBooks = books.filter((book: Book) => {
     const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
     const matchesSearch = searchQuery === '' || 
       book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -163,21 +163,7 @@ export default function StudyScreen() {
       handleLogin();
       return;
     }
-    
-    Alert.alert(
-      'Open Book',
-      `Would you like to open "${book.title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Open', 
-          onPress: () => {
-            // In a real app, this would open the epub reader
-            Alert.alert('Reader', 'Epub reader would open here with the selected book.');
-          }
-        }
-      ]
-    );
+    router.push({ pathname: '/(tabs)/study/reader/[bookId]', params: { bookId: book.id } });
   };
 
   if (!liturgicalDay) {
