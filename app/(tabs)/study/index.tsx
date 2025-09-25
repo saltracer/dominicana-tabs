@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +17,9 @@ import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
+import EpubReader from '../../../components/EpubReader';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
+import EbookService, { EbookMetadata } from '../../../services/EbookService';
 import { LiturgicalDay, Book, BookCategory } from '../../../types';
 import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
 
@@ -29,10 +32,40 @@ export default function StudyScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
   const [books, setBooks] = useState<Book[]>([]);
+  const [ebooks, setEbooks] = useState<EbookMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedEbook, setSelectedEbook] = useState<EbookMetadata | null>(null);
+  const [showEpubReader, setShowEpubReader] = useState(false);
 
   useEffect(() => {
     loadSampleBooks();
+    loadEbooks();
+    checkAuthentication();
   }, []);
+
+  const checkAuthentication = async () => {
+    try {
+      const authenticated = await EbookService.isAuthenticated();
+      setIsLoggedIn(authenticated);
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+    }
+  };
+
+  const loadEbooks = async () => {
+    try {
+      setLoading(true);
+      const ebooksData = isLoggedIn 
+        ? await EbookService.getAllEbooks()
+        : await EbookService.getPublicEbooks();
+      setEbooks(ebooksData);
+    } catch (error) {
+      console.error('Error loading ebooks:', error);
+      Alert.alert('Error', 'Failed to load ebooks. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSampleBooks = () => {
     const sampleBooks: Book[] = [
@@ -140,6 +173,14 @@ export default function StudyScreen() {
     return matchesCategory && matchesSearch;
   });
 
+  const filteredEbooks = ebooks.filter(ebook => {
+    const matchesCategory = selectedCategory === 'all' || ebook.category === selectedCategory;
+    const matchesSearch = searchQuery === '' || 
+      ebook.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ebook.author.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   const handleLogin = () => {
     Alert.alert(
       'Login Required',
@@ -178,6 +219,34 @@ export default function StudyScreen() {
         }
       ]
     );
+  };
+
+  const handleEbookPress = (ebook: EbookMetadata) => {
+    if (!isLoggedIn) {
+      Alert.alert(
+        'Login Required',
+        'Please log in to read this book.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Login', 
+            onPress: () => {
+              setIsLoggedIn(true);
+              Alert.alert('Success', 'You are now logged in and can access the library.');
+            }
+          }
+        ]
+      );
+      return;
+    }
+    
+    setSelectedEbook(ebook);
+    setShowEpubReader(true);
+  };
+
+  const handleCloseEpubReader = () => {
+    setShowEpubReader(false);
+    setSelectedEbook(null);
   };
 
   if (!liturgicalDay) {
@@ -297,10 +366,70 @@ export default function StudyScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Books Grid */}
+        {/* Ebooks Grid */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Catholic Classics Library
+          </Text>
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Loading ebooks...
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.booksGrid}>
+              {filteredEbooks.map((ebook) => (
+                <TouchableOpacity
+                  key={ebook.id}
+                  style={[
+                    styles.bookCardGrid,
+                    { backgroundColor: Colors[colorScheme ?? 'light'].card }
+                  ]}
+                  onPress={() => handleEbookPress(ebook)}
+                >
+                  <View style={styles.bookCover}>
+                    <Ionicons 
+                      name="book" 
+                      size={40} 
+                      color={Colors[colorScheme ?? 'light'].primary} 
+                    />
+                    {ebook.is_dominican && (
+                      <View style={styles.dominicanBadge}>
+                        <Text style={styles.dominicanBadgeText}>OP</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.bookInfo}>
+                    <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
+                      {ebook.title}
+                    </Text>
+                    <Text style={[styles.bookAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      {ebook.author}
+                    </Text>
+                    <Text style={[styles.bookDescription, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={2}>
+                      {ebook.description}
+                    </Text>
+                    {!isLoggedIn && (
+                      <View style={styles.loginPrompt}>
+                        <Ionicons name="lock-closed" size={16} color={Colors[colorScheme ?? 'light'].textMuted} />
+                        <Text style={[styles.loginPromptText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                          Login to read
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        {/* Legacy Books Grid (for backward compatibility) */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Sample Books (Legacy)
           </Text>
           
           <View style={styles.booksGrid}>
@@ -357,6 +486,20 @@ export default function StudyScreen() {
         )}
       </ScrollView>
 
+      {/* EpubReader Modal */}
+      <Modal
+        visible={showEpubReader}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleCloseEpubReader}
+      >
+        {selectedEbook && (
+          <EpubReader
+            ebook={selectedEbook}
+            onClose={handleCloseEpubReader}
+          />
+        )}
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -384,5 +527,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+  },
+  loginPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  loginPromptText: {
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    marginTop: 8,
   },
 });
