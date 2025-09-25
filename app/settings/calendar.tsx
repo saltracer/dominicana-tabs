@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropdown';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 
+
 export default function CalendarSettingsScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();

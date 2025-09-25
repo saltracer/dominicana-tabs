@@ -16,6 +16,7 @@ import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropd
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 
+
 export default function LanguageSettingsScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
