@@ -1,12 +1,12 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import EpubReader from '../EpubReader';
-import EbookService from '../../services/EbookService';
-import { EbookMetadata } from '../../services/EbookService';
+import BookService from '../../services/BookService';
+import { Book } from '../../types';
 
-// Mock the EbookService
-jest.mock('../../services/EbookService');
-const mockEbookService = EbookService as jest.Mocked<typeof EbookService>;
+// Mock the BookService
+jest.mock('../../services/BookService');
+const mockBookService = BookService as jest.Mocked<typeof BookService>;
 
 // Mock WebView
 jest.mock('react-native-webview', () => {
@@ -23,34 +23,39 @@ jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children, ...props }: any) => children,
 }));
 
-const mockEbook: EbookMetadata = {
-  id: 'test-ebook-1',
+const mockBook: Book = {
+  id: 'test-book-1',
   title: 'Test Book',
   author: 'Test Author',
   description: 'A test book for testing purposes',
-  cover_image_url: 'https://example.com/cover.jpg',
-  epub_file_url: 'https://example.com/book.epub',
   category: 'theology',
   language: 'English',
-  is_dominican: true,
+  filePath: '/books/test-book.epub',
+  coverImage: undefined,
+  isDominican: true,
+  epubPath: '/books/test-book.epub',
+  epubSamplePath: '/books/test-book-sample.epub',
   tags: ['test', 'theology'],
-  is_public: true,
-  created_at: '2024-01-01T00:00:00Z',
-  updated_at: '2024-01-01T00:00:00Z',
+  bookmarks: [],
+  readingProgress: {
+    bookId: 'test-book-1',
+    currentPosition: 0,
+    totalPages: 100,
+    lastRead: '2024-01-01T00:00:00Z',
+    timeSpent: 0
+  }
 };
 
 describe('EpubReader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockEbookService.isAuthenticated.mockResolvedValue(true);
-    mockEbookService.getUserBookmarks.mockResolvedValue([]);
-    mockEbookService.getUserReadingProgress.mockResolvedValue(null);
+    mockBookService.isUserAuthenticated.mockReturnValue(true);
   });
 
-  it('renders correctly with ebook data', () => {
+  it('renders correctly with book data', () => {
     const onClose = jest.fn();
     const { getByText, getByTestId } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     expect(getByText('Test Book')).toBeTruthy();
@@ -61,7 +66,7 @@ describe('EpubReader', () => {
   it('shows loading state initially', () => {
     const onClose = jest.fn();
     const { getByText } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     expect(getByText('Loading book...')).toBeTruthy();
@@ -70,7 +75,7 @@ describe('EpubReader', () => {
   it('calls onClose when close button is pressed', () => {
     const onClose = jest.fn();
     const { getByTestId } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     const closeButton = getByTestId('close-button');
@@ -81,7 +86,7 @@ describe('EpubReader', () => {
   it('handles WebView messages correctly', async () => {
     const onClose = jest.fn();
     const { getByTestId } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     const webView = getByTestId('webview');
@@ -104,7 +109,7 @@ describe('EpubReader', () => {
   it('handles position change messages', async () => {
     const onClose = jest.fn();
     const { getByTestId } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     const webView = getByTestId('webview');
@@ -129,30 +134,20 @@ describe('EpubReader', () => {
 
   it('shows bookmark modal when bookmark button is pressed', async () => {
     const onClose = jest.fn();
-    mockEbookService.isAuthenticated.mockResolvedValue(true);
-    mockEbookService.addBookmark.mockResolvedValue({
-      id: 'bookmark-1',
-      user_id: 'user-1',
-      ebook_id: 'test-ebook-1',
-      position: 'chapter1',
-      chapter_title: 'Chapter 1',
-      note: '',
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    });
+    mockBookService.isUserAuthenticated.mockReturnValue(true);
 
     const { getByTestId, getByText } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     const bookmarkButton = getByTestId('bookmark-button');
     fireEvent.press(bookmarkButton);
 
     await waitFor(() => {
-      expect(mockEbookService.addBookmark).toHaveBeenCalledWith('test-ebook-1', {
-        position: '',
-        chapter_title: 'Chapter 1',
-        note: '',
+      expect(mockBookService.addBookmark).toHaveBeenCalledWith('test-book-1', {
+        bookId: 'test-book-1',
+        position: 0,
+        note: 'Chapter 1',
       });
     });
   });
@@ -160,7 +155,7 @@ describe('EpubReader', () => {
   it('handles navigation controls', () => {
     const onClose = jest.fn();
     const { getByTestId } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     const prevButton = getByTestId('prev-chapter-button');
@@ -176,10 +171,10 @@ describe('EpubReader', () => {
 
   it('shows login prompt for unauthenticated users', async () => {
     const onClose = jest.fn();
-    mockEbookService.isAuthenticated.mockResolvedValue(false);
+    mockBookService.isUserAuthenticated.mockReturnValue(false);
 
     const { getByText } = render(
-      <EpubReader ebook={mockEbook} onClose={onClose} />
+      <EpubReader book={mockBook} onClose={onClose} />
     );
 
     await waitFor(() => {

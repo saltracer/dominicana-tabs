@@ -19,7 +19,7 @@ import { useCalendar } from '../../../components/CalendarContext';
 import FeastBanner from '../../../components/FeastBanner';
 import EpubReader from '../../../components/EpubReader';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
-import EbookService, { EbookMetadata } from '../../../services/EbookService';
+import BookService from '../../../services/BookService';
 import { LiturgicalDay, Book, BookCategory } from '../../../types';
 import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
 
@@ -32,124 +32,38 @@ export default function StudyScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
   const [books, setBooks] = useState<Book[]>([]);
-  const [ebooks, setEbooks] = useState<EbookMetadata[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEbook, setSelectedEbook] = useState<EbookMetadata | null>(null);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [showEpubReader, setShowEpubReader] = useState(false);
 
   useEffect(() => {
     loadSampleBooks();
-    loadEbooks();
+    loadBooks();
     checkAuthentication();
   }, []);
 
-  const checkAuthentication = async () => {
-    try {
-      const authenticated = await EbookService.isAuthenticated();
-      setIsLoggedIn(authenticated);
-    } catch (error) {
-      console.error('Error checking authentication:', error);
-    }
+  const checkAuthentication = () => {
+    const authenticated = BookService.isUserAuthenticated();
+    setIsLoggedIn(authenticated);
   };
 
-  const loadEbooks = async () => {
+  const loadBooks = () => {
     try {
       setLoading(true);
-      const ebooksData = isLoggedIn 
-        ? await EbookService.getAllEbooks()
-        : await EbookService.getPublicEbooks();
-      setEbooks(ebooksData);
+      const booksData = isLoggedIn 
+        ? BookService.getAuthenticatedBooks()
+        : BookService.getPublicBooks();
+      setBooks(booksData);
     } catch (error) {
-      console.error('Error loading ebooks:', error);
-      Alert.alert('Error', 'Failed to load ebooks. Please try again.');
+      console.error('Error loading books:', error);
+      Alert.alert('Error', 'Failed to load books. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const loadSampleBooks = () => {
-    const sampleBooks: Book[] = [
-      {
-        id: 'summa-theologica',
-        title: 'Summa Theologica',
-        author: 'St. Thomas Aquinas',
-        category: 'theology',
-        language: 'Latin/English',
-        filePath: '/books/summa-theologica.epub',
-        coverImage: undefined,
-        description: 'The masterwork of St. Thomas Aquinas, a comprehensive theological treatise.',
-        isDominican: true,
-        tags: ['theology', 'philosophy', 'scholasticism', 'dominican'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'summa-theologica',
-          currentPosition: 0,
-          totalPages: 3000,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      },
-      {
-        id: 'divine-comedy',
-        title: 'The Divine Comedy',
-        author: 'Dante Alighieri',
-        category: 'spirituality',
-        language: 'Italian/English',
-        filePath: '/books/divine-comedy.epub',
-        coverImage: undefined,
-        description: 'Dante\'s epic poem describing his journey through Hell, Purgatory, and Paradise.',
-        isDominican: false,
-        tags: ['poetry', 'medieval', 'spirituality', 'allegory'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'divine-comedy',
-          currentPosition: 0,
-          totalPages: 500,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      },
-      {
-        id: 'confessions',
-        title: 'Confessions',
-        author: 'St. Augustine',
-        category: 'spirituality',
-        language: 'Latin/English',
-        filePath: '/books/confessions.epub',
-        coverImage: undefined,
-        description: 'St. Augustine\'s autobiographical work and theological masterpiece.',
-        isDominican: false,
-        tags: ['autobiography', 'theology', 'patristic', 'conversion'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'confessions',
-          currentPosition: 0,
-          totalPages: 400,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      },
-      {
-        id: 'imitation-of-christ',
-        title: 'The Imitation of Christ',
-        author: 'Thomas à Kempis',
-        category: 'spirituality',
-        language: 'Latin/English',
-        filePath: '/books/imitation-of-christ.epub',
-        coverImage: undefined,
-        description: 'A classic devotional book on Christian spirituality.',
-        isDominican: false,
-        tags: ['devotional', 'spirituality', 'meditation', 'christian'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'imitation-of-christ',
-          currentPosition: 0,
-          totalPages: 300,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      }
-    ];
+    const sampleBooks = BookService.initializeBooks();
     setBooks(sampleBooks);
   };
 
@@ -173,14 +87,6 @@ export default function StudyScreen() {
     return matchesCategory && matchesSearch;
   });
 
-  const filteredEbooks = ebooks.filter(ebook => {
-    const matchesCategory = selectedCategory === 'all' || ebook.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || 
-      ebook.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ebook.author.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
   const handleLogin = () => {
     Alert.alert(
       'Login Required',
@@ -199,29 +105,8 @@ export default function StudyScreen() {
     );
   };
 
-  const handleBookPress = (book: Book) => {
-    if (!isLoggedIn) {
-      handleLogin();
-      return;
-    }
-    
-    Alert.alert(
-      'Open Book',
-      `Would you like to open "${book.title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Open', 
-          onPress: () => {
-            // In a real app, this would open the epub reader
-            Alert.alert('Reader', 'Epub reader would open here with the selected book.');
-          }
-        }
-      ]
-    );
-  };
 
-  const handleEbookPress = (ebook: EbookMetadata) => {
+  const handleBookPress = (book: Book) => {
     if (!isLoggedIn) {
       Alert.alert(
         'Login Required',
@@ -231,6 +116,7 @@ export default function StudyScreen() {
           { 
             text: 'Login', 
             onPress: () => {
+              BookService.setAuthenticationStatus(true);
               setIsLoggedIn(true);
               Alert.alert('Success', 'You are now logged in and can access the library.');
             }
@@ -240,13 +126,13 @@ export default function StudyScreen() {
       return;
     }
     
-    setSelectedEbook(ebook);
+    setSelectedBook(book);
     setShowEpubReader(true);
   };
 
   const handleCloseEpubReader = () => {
     setShowEpubReader(false);
-    setSelectedEbook(null);
+    setSelectedBook(null);
   };
 
   if (!liturgicalDay) {
@@ -366,7 +252,7 @@ export default function StudyScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Ebooks Grid */}
+        {/* Books Grid */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Catholic Classics Library
@@ -375,19 +261,19 @@ export default function StudyScreen() {
           {loading ? (
             <View style={styles.loadingContainer}>
               <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Loading ebooks...
+                Loading books...
               </Text>
             </View>
           ) : (
             <View style={styles.booksGrid}>
-              {filteredEbooks.map((ebook) => (
+              {filteredBooks.map((book) => (
                 <TouchableOpacity
-                  key={ebook.id}
+                  key={book.id}
                   style={[
                     styles.bookCardGrid,
                     { backgroundColor: Colors[colorScheme ?? 'light'].card }
                   ]}
-                  onPress={() => handleEbookPress(ebook)}
+                  onPress={() => handleBookPress(book)}
                 >
                   <View style={styles.bookCover}>
                     <Ionicons 
@@ -395,7 +281,7 @@ export default function StudyScreen() {
                       size={40} 
                       color={Colors[colorScheme ?? 'light'].primary} 
                     />
-                    {ebook.is_dominican && (
+                    {book.isDominican && (
                       <View style={styles.dominicanBadge}>
                         <Text style={styles.dominicanBadgeText}>OP</Text>
                       </View>
@@ -403,13 +289,13 @@ export default function StudyScreen() {
                   </View>
                   <View style={styles.bookInfo}>
                     <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
-                      {ebook.title}
+                      {book.title}
                     </Text>
                     <Text style={[styles.bookAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      {ebook.author}
+                      {book.author}
                     </Text>
                     <Text style={[styles.bookDescription, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={2}>
-                      {ebook.description}
+                      {book.description}
                     </Text>
                     {!isLoggedIn && (
                       <View style={styles.loginPrompt}>
@@ -424,50 +310,6 @@ export default function StudyScreen() {
               ))}
             </View>
           )}
-        </View>
-
-        {/* Legacy Books Grid (for backward compatibility) */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Sample Books (Legacy)
-          </Text>
-          
-          <View style={styles.booksGrid}>
-            {filteredBooks.map((book) => (
-              <TouchableOpacity
-                key={book.id}
-                style={[
-                  styles.bookCardGrid,
-                  { backgroundColor: Colors[colorScheme ?? 'light'].card }
-                ]}
-                onPress={() => handleBookPress(book)}
-              >
-                <View style={styles.bookCover}>
-                  <Ionicons 
-                    name="book" 
-                    size={40} 
-                    color={Colors[colorScheme ?? 'light'].primary} 
-                  />
-                  {book.isDominican && (
-                    <View style={styles.dominicanBadge}>
-                      <Text style={styles.dominicanBadgeText}>OP</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.bookInfo}>
-                  <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
-                    {book.title}
-                  </Text>
-                  <Text style={[styles.bookAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    {book.author}
-                  </Text>
-                  <Text style={[styles.bookDescription, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={2}>
-                    {book.description}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
         </View>
 
         {/* Reading Progress */}
@@ -493,9 +335,9 @@ export default function StudyScreen() {
         presentationStyle="fullScreen"
         onRequestClose={handleCloseEpubReader}
       >
-        {selectedEbook && (
+        {selectedBook && (
           <EpubReader
-            ebook={selectedEbook}
+            book={selectedBook}
             onClose={handleCloseEpubReader}
           />
         )}

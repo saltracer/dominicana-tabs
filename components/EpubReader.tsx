@@ -15,10 +15,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
-import EbookService, { EbookMetadata, UserReadingProgress } from '../services/EbookService';
+import BookService from '../services/BookService';
+import { Book, Bookmark, ReadingProgress } from '../types';
 
 interface EpubReaderProps {
-  ebook: EbookMetadata;
+  book: Book;
   onClose: () => void;
   initialPosition?: string;
 }
@@ -32,7 +33,7 @@ interface ReadingState {
   isReading: boolean;
 }
 
-const EpubReader: React.FC<EpubReaderProps> = ({ ebook, onClose, initialPosition }) => {
+const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition }) => {
   const { colorScheme } = useTheme();
   const webViewRef = useRef<WebView>(null);
   const [loading, setLoading] = useState(true);
@@ -63,73 +64,52 @@ const EpubReader: React.FC<EpubReaderProps> = ({ ebook, onClose, initialPosition
     }
   }, [readingState.isReading]);
 
-  const checkAuthentication = async () => {
-    try {
-      const authenticated = await EbookService.isAuthenticated();
-      setIsAuthenticated(authenticated);
-    } catch (error) {
-      console.error('Error checking authentication:', error);
-    }
+  const checkAuthentication = () => {
+    const authenticated = BookService.isUserAuthenticated();
+    setIsAuthenticated(authenticated);
   };
 
-  const loadBookmarks = async () => {
+  const loadBookmarks = () => {
     if (!isAuthenticated) return;
     
-    try {
-      const userBookmarks = await EbookService.getUserBookmarks(ebook.id);
-      setBookmarks(userBookmarks);
-    } catch (error) {
-      console.error('Error loading bookmarks:', error);
-    }
+    setBookmarks(book.bookmarks);
   };
 
-  const loadReadingProgress = async () => {
+  const loadReadingProgress = () => {
     if (!isAuthenticated) return;
     
-    try {
-      const progress = await EbookService.getUserReadingProgress(ebook.id);
-      if (progress) {
-        setReadingState(prev => ({
-          ...prev,
-          currentPosition: progress.current_position,
-          currentChapter: progress.current_chapter,
-          totalChapters: progress.total_chapters,
-          progressPercentage: progress.progress_percentage,
-          timeSpent: progress.time_spent,
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading reading progress:', error);
-    }
+    const progress = book.readingProgress;
+    setReadingState(prev => ({
+      ...prev,
+      currentPosition: progress.currentPosition.toString(),
+      currentChapter: Math.floor(progress.currentPosition / 100) + 1,
+      totalChapters: Math.ceil(progress.totalPages / 100),
+      progressPercentage: (progress.currentPosition / progress.totalPages) * 100,
+      timeSpent: progress.timeSpent,
+    }));
   };
 
-  const saveReadingProgress = async () => {
+  const saveReadingProgress = () => {
     if (!isAuthenticated) return;
     
-    try {
-      await EbookService.updateReadingProgress(ebook.id, {
-        current_position: readingState.currentPosition,
-        current_chapter: readingState.currentChapter,
-        total_chapters: readingState.totalChapters,
-        progress_percentage: readingState.progressPercentage,
-        time_spent: readingState.timeSpent,
-      });
-    } catch (error) {
-      console.error('Error saving reading progress:', error);
-    }
+    BookService.updateReadingProgress(book.id, {
+      currentPosition: parseInt(readingState.currentPosition) || 0,
+      totalPages: book.readingProgress.totalPages,
+      timeSpent: readingState.timeSpent,
+    });
   };
 
-  const addBookmark = async () => {
+  const addBookmark = () => {
     if (!isAuthenticated) {
       Alert.alert('Login Required', 'Please log in to add bookmarks.');
       return;
     }
 
     try {
-      await EbookService.addBookmark(ebook.id, {
-        position: readingState.currentPosition,
-        chapter_title: `Chapter ${readingState.currentChapter}`,
-        note: '',
+      BookService.addBookmark(book.id, {
+        bookId: book.id,
+        position: parseInt(readingState.currentPosition) || 0,
+        note: `Chapter ${readingState.currentChapter}`,
       });
       loadBookmarks();
       Alert.alert('Success', 'Bookmark added successfully!');
@@ -324,7 +304,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ ebook, onClose, initialPosition
         function initializeReadium() {
           // This would integrate with the actual Readium Web Toolkit
           // For now, we'll simulate the functionality
-          console.log('Initializing Readium for: ${ebook.title}');
+          console.log('Initializing Readium for: ${book.title}');
           
           // Simulate loading content
           setTimeout(() => {
@@ -338,7 +318,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ ebook, onClose, initialPosition
           content.innerHTML = \`
             <div class="chapter-title">Chapter \${chapter}</div>
             <div class="chapter-content">
-              <p>This is the content of Chapter \${chapter} of "${ebook.title}".</p>
+              <p>This is the content of Chapter \${chapter} of "${book.title}".</p>
               <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
               <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
               <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
@@ -439,7 +419,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ ebook, onClose, initialPosition
         
         <View style={styles.headerInfo}>
           <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
-            {ebook.title}
+            {book.title}
           </Text>
           <Text style={[styles.headerSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
             Chapter {readingState.currentChapter} of {readingState.totalChapters}
