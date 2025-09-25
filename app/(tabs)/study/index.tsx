@@ -159,25 +159,7 @@ export default function StudyScreen() {
   };
 
   const handleBookPress = (book: Book) => {
-    if (!isLoggedIn) {
-      handleLogin();
-      return;
-    }
-    
-    Alert.alert(
-      'Open Book',
-      `Would you like to open "${book.title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Open', 
-          onPress: () => {
-            // In a real app, this would open the epub reader
-            Alert.alert('Reader', 'Epub reader would open here with the selected book.');
-          }
-        }
-      ]
-    );
+    router.push({ pathname: '/(tabs)/study/book/[id]', params: { id: book.id } });
   };
 
   if (!liturgicalDay) {

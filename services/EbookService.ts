@@ -1,4 +1,5 @@
 import type { Ebook, ReaderLocator, ReadingSessionState } from '../types/ebook';
+import supabase from './supabaseClient';
 
 // Placeholder implementations to be replaced with real Supabase client calls.
 // The real app should import a configured Supabase client and use row-level
@@ -6,8 +7,26 @@ import type { Ebook, ReaderLocator, ReadingSessionState } from '../types/ebook';
 
 export class EbookService {
   static async getBookMetadata(bookId: string): Promise<Ebook> {
-    // Replace with Supabase query:
-    // const { data } = await supabase.from('ebooks').select('*').eq('id', bookId).single();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('ebooks')
+        .select('id,title,author,description,cover_image_url,epub_path,sample_epub_path,is_dominican')
+        .eq('id', bookId)
+        .single();
+      if (!error && data) {
+        return {
+          id: data.id,
+          title: data.title,
+          author: data.author,
+          description: data.description ?? undefined,
+          coverImageUrl: data.cover_image_url ?? undefined,
+          // Defer URL signing until getEpubUrl
+          tags: [],
+          isDominican: !!data.is_dominican,
+        };
+      }
+    }
+    // Fallback stub
     return {
       id: bookId,
       title: 'Sample Book',
@@ -21,21 +40,39 @@ export class EbookService {
   }
 
   static async getEpubUrl(ebook: Ebook): Promise<string> {
-    // If using Supabase Storage with private buckets, request a signed URL here.
-    // const { data } = await supabase.storage.from('ebooks').createSignedUrl(path, 3600);
     if (ebook.epubUrl) return ebook.epubUrl;
+
+    if (supabase && (ebook as any).epub_path) {
+      const path = (ebook as any).epub_path as string;
+      const { data, error } = await (supabase as any).storage.from('ebooks').createSignedUrl(path, 3600);
+      if (!error && data?.signedUrl) return data.signedUrl as string;
+    }
     throw new Error('No EPUB URL available for this ebook');
   }
 
   static async saveReadingLocator(ebookId: string, locator: ReaderLocator): Promise<void> {
-    // Persist locator via Supabase profile or a user_ebooks_progress table.
-    // await supabase.from('ebook_progress').upsert({ ebook_id: ebookId, locator })
-    return;
+    if (supabase) {
+      // Persist locator in user progress table (assuming RLS uses auth.uid())
+      await supabase.from('ebook_progress').upsert({ ebook_id: ebookId, locator });
+      return;
+    }
   }
 
   static async getReadingSession(ebookId: string): Promise<ReadingSessionState | undefined> {
-    // Fetch last locator from Supabase to resume reading
-    // const { data } = await supabase.from('ebook_progress').select('locator, updated_at').eq('ebook_id', ebookId).single();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('ebook_progress')
+        .select('locator, updated_at')
+        .eq('ebook_id', ebookId)
+        .single();
+      if (!error && data) {
+        return {
+          ebookId,
+          lastLocator: data.locator ?? undefined,
+          updatedAt: data.updated_at ?? new Date().toISOString(),
+        } as any;
+      }
+    }
     return undefined;
   }
 }

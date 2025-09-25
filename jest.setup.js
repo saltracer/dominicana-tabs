@@ -33,7 +33,7 @@ jest.mock('react-native-readium', () => {
     ReadiumView: MockComponent,
     Reader: MockComponent,
   };
-});
+}, { virtual: true });
 
 // Mock the services that depend on AsyncStorage
 jest.mock('./services/ComplineService', () => ({
