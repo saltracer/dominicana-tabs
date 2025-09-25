@@ -22,13 +22,16 @@ import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import BookService from '../../../services/BookService';
 import { LiturgicalDay, Book, BookCategory } from '../../../types';
 import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useBooks } from '../../../hooks/useBooks';
 
 export default function StudyScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const { user, loading: authLoading } = useAuth();
+  const { books, loading: booksLoading, searchBooks } = useBooks();
   const isWeb = Platform.OS === 'web';
   const platformStyles = getStudyPlatformStyles(isWeb);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
   const [books, setBooks] = useState<Book[]>([]);
@@ -74,23 +77,14 @@ export default function StudyScreen() {
 
   const categories: { type: BookCategory | 'all'; name: string; icon: string }[] = [
     { type: 'all', name: 'All Books', icon: 'library' },
-    { type: 'theology', name: 'Theology', icon: 'book' },
-    { type: 'philosophy', name: 'Philosophy', icon: 'school' },
-    { type: 'spirituality', name: 'Spirituality', icon: 'heart' },
-    { type: 'history', name: 'History', icon: 'time' },
-    { type: 'liturgy', name: 'Liturgy', icon: 'bookmark' },
-    { type: 'dominican', name: 'Dominican', icon: 'flower' },
-    { type: 'patristic', name: 'Patristic', icon: 'people' },
-    { type: 'medieval', name: 'Medieval', icon: 'time' },
+    { type: 'Philosophy', name: 'Philosophy', icon: 'school' },
+    { type: 'Theology', name: 'Theology', icon: 'book' },
+    { type: 'Mysticism', name: 'Mysticism', icon: 'heart' },
+    { type: 'Science', name: 'Science', icon: 'flask' },
+    { type: 'Natural History', name: 'Natural History', icon: 'leaf' },
+    { type: 'Spiritual', name: 'Spiritual', icon: 'flower' },
   ];
 
-  const filteredBooks = books.filter(book => {
-    const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || 
-      book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
 
   const handleLogin = () => {
     Alert.alert(
@@ -141,12 +135,12 @@ export default function StudyScreen() {
     setSelectedBook(null);
   };
 
-  if (!liturgicalDay) {
+  if (!liturgicalDay || authLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading liturgical information...
+            {!liturgicalDay ? 'Loading liturgical information...' : 'Loading...'}
           </Text>
         </View>
       </SafeAreaView>
@@ -158,7 +152,7 @@ export default function StudyScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
 
         {/* Login Status */}
-        {!isLoggedIn && (
+        {!user && (
           <View style={styles.loginBanner}>
             <Ionicons name="lock-closed" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
             <Text style={[styles.loginText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
@@ -319,7 +313,7 @@ export default function StudyScreen() {
         </View>
 
         {/* Reading Progress */}
-        {isLoggedIn && (
+        {user && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Continue Reading
