@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import BookService from '../services/BookService';
+import AudioService from '../services/AudioService';
+import OfflineStorageService from '../services/OfflineStorageService';
 import { Book, Bookmark, ReadingProgress } from '../types';
 
 interface EpubReaderProps {
@@ -49,6 +51,9 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
   const [showBookmarks, setShowBookmarks] = useState(false);
   const [bookmarks, setBookmarks] = useState<any[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [audioState, setAudioState] = useState(AudioService.getAudioState());
+  const [showAudioControls, setShowAudioControls] = useState(false);
 
   const startTimeRef = useRef<number>(Date.now());
 
@@ -56,6 +61,8 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
     checkAuthentication();
     loadBookmarks();
     loadReadingProgress();
+    checkOfflineStatus();
+    setupAudioListeners();
   }, []);
 
   useEffect(() => {
@@ -185,12 +192,60 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
     setShowControls(!showControls);
   };
 
+  const checkOfflineStatus = async () => {
+    const isBookOffline = await OfflineStorageService.isBookOffline(book.id);
+    setIsOffline(isBookOffline);
+  };
+
+  const setupAudioListeners = () => {
+    // Set up audio state listeners
+    const interval = setInterval(() => {
+      setAudioState(AudioService.getAudioState());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  };
+
+  const handleAudioToggle = async () => {
+    if (audioState.isPlaying) {
+      if (audioState.isPaused) {
+        AudioService.resumeSpeaking();
+      } else {
+        AudioService.pauseSpeaking();
+      }
+    } else {
+      // Get current chapter text and start speaking
+      const chapterText = getCurrentChapterText();
+      await AudioService.startSpeaking(chapterText);
+    }
+  };
+
+  const handleAudioStop = () => {
+    AudioService.stopSpeaking();
+  };
+
+  const getCurrentChapterText = (): string => {
+    // In a real implementation, this would extract text from the current chapter
+    return `Chapter ${readingState.currentChapter} of ${book.title}. This is the content that would be read aloud.`;
+  };
+
+  const handleDownloadForOffline = async () => {
+    try {
+      await OfflineStorageService.downloadBook(book);
+      setIsOffline(true);
+      Alert.alert('Success', 'Book downloaded for offline reading');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to download book for offline reading');
+    }
+  };
+
   const handleClose = () => {
     if (readingState.isReading) {
       const timeSpent = readingState.timeSpent + (Date.now() - startTimeRef.current) / 1000;
       setReadingState(prev => ({ ...prev, timeSpent }));
       saveReadingProgress();
     }
+    AudioService.stopSpeaking();
     onClose();
   };
 
@@ -274,6 +329,105 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
           font-size: 18px;
           color: #666;
         }
+        .toc-container {
+          position: fixed;
+          top: 0;
+          left: -300px;
+          width: 300px;
+          height: 100vh;
+          background: white;
+          border-right: 1px solid #e9ecef;
+          transition: left 0.3s ease;
+          z-index: 1000;
+          overflow-y: auto;
+        }
+        .toc-container.open {
+          left: 0;
+        }
+        .toc-item {
+          padding: 10px 15px;
+          border-bottom: 1px solid #f0f0f0;
+          cursor: pointer;
+        }
+        .toc-item:hover {
+          background: #f8f9fa;
+        }
+        .toc-item.active {
+          background: #e3f2fd;
+          color: #1976d2;
+        }
+        .search-container {
+          padding: 15px;
+          border-bottom: 1px solid #e9ecef;
+        }
+        .search-input {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+        .search-results {
+          max-height: 200px;
+          overflow-y: auto;
+        }
+        .search-result {
+          padding: 8px 15px;
+          border-bottom: 1px solid #f0f0f0;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .search-result:hover {
+          background: #f8f9fa;
+        }
+        .highlight {
+          background-color: yellow;
+          padding: 2px 4px;
+          border-radius: 2px;
+        }
+        .annotation {
+          position: relative;
+        }
+        .annotation-marker {
+          background-color: #ffeb3b;
+          cursor: pointer;
+        }
+        .annotation-popup {
+          position: absolute;
+          top: -30px;
+          left: 0;
+          background: #333;
+          color: white;
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-size: 12px;
+          white-space: nowrap;
+          z-index: 1000;
+        }
+        .theme-dark {
+          background-color: #1a1a1a;
+          color: #ffffff;
+        }
+        .theme-sepia {
+          background-color: #f4f1ea;
+          color: #5c4b37;
+        }
+        .font-size-controls {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .font-size-button {
+          width: 30px;
+          height: 30px;
+          border: 1px solid #ddd;
+          background: white;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
       </style>
     </head>
     <body>
@@ -282,6 +436,13 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
           <div class="navigation-controls">
             <button class="nav-button" id="prevChapter">Previous</button>
             <button class="nav-button" id="nextChapter">Next</button>
+            <button class="nav-button" id="tocToggle">TOC</button>
+            <button class="nav-button" id="searchToggle">Search</button>
+            <div class="font-size-controls">
+              <button class="font-size-button" id="fontDecrease">A-</button>
+              <button class="font-size-button" id="fontIncrease">A+</button>
+            </div>
+            <button class="nav-button" id="themeToggle">Theme</button>
           </div>
           <div id="chapterInfo">Chapter 1 of 10</div>
         </div>
@@ -293,39 +454,175 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
         </div>
       </div>
 
+      <!-- Table of Contents -->
+      <div class="toc-container" id="tocContainer">
+        <div class="search-container">
+          <input type="text" class="search-input" id="searchInput" placeholder="Search in book...">
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <div id="tocList">
+          <div class="toc-item active" data-chapter="1">Chapter 1: Introduction</div>
+          <div class="toc-item" data-chapter="2">Chapter 2: The First Question</div>
+          <div class="toc-item" data-chapter="3">Chapter 3: The Second Question</div>
+          <div class="toc-item" data-chapter="4">Chapter 4: The Third Question</div>
+          <div class="toc-item" data-chapter="5">Chapter 5: The Fourth Question</div>
+        </div>
+      </div>
+
       <script>
-        // Readium Web Toolkit integration
+        // Enhanced Readium Web Toolkit integration
         let currentPosition = '${initialPosition || ''}';
         let currentChapter = 1;
-        let totalChapters = 10;
+        let totalChapters = 5;
         let progressPercentage = 0;
+        let currentTheme = 'light';
+        let currentFontSize = 16;
+        let searchResults = [];
+        let annotations = [];
 
-        // Initialize Readium
+        // Initialize Readium with enhanced features
         function initializeReadium() {
-          // This would integrate with the actual Readium Web Toolkit
-          // For now, we'll simulate the functionality
-          console.log('Initializing Readium for: ${book.title}');
+          console.log('Initializing enhanced Readium for: ${book.title}');
           
-          // Simulate loading content
+          // Load initial content
           setTimeout(() => {
             loadChapterContent(currentChapter);
+            setupEventListeners();
             sendMessageToReactNative({ type: 'READIUM_READY' });
           }, 1000);
         }
 
+        function setupEventListeners() {
+          // Navigation
+          document.getElementById('prevChapter').addEventListener('click', () => {
+            if (currentChapter > 1) {
+              currentChapter--;
+              loadChapterContent(currentChapter);
+              updateTOC();
+            }
+          });
+
+          document.getElementById('nextChapter').addEventListener('click', () => {
+            if (currentChapter < totalChapters) {
+              currentChapter++;
+              loadChapterContent(currentChapter);
+              updateTOC();
+            }
+          });
+
+          // TOC
+          document.getElementById('tocToggle').addEventListener('click', () => {
+            const toc = document.getElementById('tocContainer');
+            toc.classList.toggle('open');
+          });
+
+          // Search
+          document.getElementById('searchToggle').addEventListener('click', () => {
+            const toc = document.getElementById('tocContainer');
+            toc.classList.toggle('open');
+            document.getElementById('searchInput').focus();
+          });
+
+          document.getElementById('searchInput').addEventListener('input', (e) => {
+            performSearch(e.target.value);
+          });
+
+          // Font size
+          document.getElementById('fontDecrease').addEventListener('click', () => {
+            currentFontSize = Math.max(12, currentFontSize - 2);
+            updateFontSize();
+          });
+
+          document.getElementById('fontIncrease').addEventListener('click', () => {
+            currentFontSize = Math.min(24, currentFontSize + 2);
+            updateFontSize();
+          });
+
+          // Theme
+          document.getElementById('themeToggle').addEventListener('click', () => {
+            currentTheme = currentTheme === 'light' ? 'dark' : currentTheme === 'dark' ? 'sepia' : 'light';
+            updateTheme();
+          });
+
+          // TOC items
+          document.querySelectorAll('.toc-item').forEach(item => {
+            item.addEventListener('click', () => {
+              const chapter = parseInt(item.dataset.chapter);
+              currentChapter = chapter;
+              loadChapterContent(chapter);
+              updateTOC();
+              document.getElementById('tocContainer').classList.remove('open');
+            });
+          });
+
+          // Text selection for annotations
+          document.addEventListener('mouseup', handleTextSelection);
+        }
+
         function loadChapterContent(chapter) {
           const content = document.getElementById('readerContent');
+          const chapterData = getChapterData(chapter);
+          
           content.innerHTML = \`
-            <div class="chapter-title">Chapter \${chapter}</div>
-            <div class="chapter-content">
-              <p>This is the content of Chapter \${chapter} of "${book.title}".</p>
-              <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-              <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-              <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
-            </div>
+            <div class="chapter-title">\${chapterData.title}</div>
+            <div class="chapter-content">\${chapterData.content}</div>
           \`;
           
           updateProgress();
+          applyAnnotations();
+        }
+
+        function getChapterData(chapter) {
+          const chapters = {
+            1: {
+              title: "Chapter 1: Introduction",
+              content: \`
+                <p>This is the beginning of "${book.title}" by ${book.author}.</p>
+                <p>In this first chapter, we explore the fundamental principles that will guide our understanding throughout this work.</p>
+                <p>The author presents a comprehensive overview of the subject matter, establishing the foundation for the detailed analysis that follows.</p>
+                <p>Key concepts introduced in this chapter include the nature of the inquiry, the methodology employed, and the scope of the investigation.</p>
+                <p>As we progress through this work, we will see how these initial concepts develop and interconnect with the broader themes.</p>
+              \`
+            },
+            2: {
+              title: "Chapter 2: The First Question",
+              content: \`
+                <p>In this second chapter, we address the first major question that arises from our initial investigation.</p>
+                <p>The author presents a detailed analysis of the problem, examining it from multiple perspectives and considering various approaches to its solution.</p>
+                <p>Historical context is provided to help the reader understand how this question has been addressed by previous thinkers.</p>
+                <p>The chapter concludes with a preliminary answer that will be further developed in subsequent chapters.</p>
+              \`
+            },
+            3: {
+              title: "Chapter 3: The Second Question",
+              content: \`
+                <p>Building upon the foundation established in the previous chapters, we now turn to the second major question.</p>
+                <p>This question is more complex and requires a deeper understanding of the principles established earlier.</p>
+                <p>The author employs a systematic approach to break down the question into its component parts.</p>
+                <p>Various arguments are presented and evaluated, leading to a nuanced conclusion.</p>
+              \`
+            },
+            4: {
+              title: "Chapter 4: The Third Question",
+              content: \`
+                <p>The third question represents a significant challenge that requires the integration of concepts from all previous chapters.</p>
+                <p>Here we see the author's analytical skills at their finest, as complex ideas are presented with clarity and precision.</p>
+                <p>The chapter includes detailed examples and case studies to illustrate the principles being discussed.</p>
+                <p>Critical analysis of opposing viewpoints is provided, demonstrating the author's thorough approach to the subject.</p>
+              \`
+            },
+            5: {
+              title: "Chapter 5: The Fourth Question",
+              content: \`
+                <p>In this final chapter, we address the fourth and most comprehensive question of the work.</p>
+                <p>All previous concepts are brought together to provide a complete answer to this complex question.</p>
+                <p>The author demonstrates how the various principles and methods discussed throughout the work can be applied in practice.</p>
+                <p>The chapter concludes with a summary of the main findings and their implications for future study.</p>
+              \`
+            }
+          };
+          
+          return chapters[chapter] || chapters[1];
         }
 
         function updateProgress() {
@@ -345,38 +642,109 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
           });
         }
 
+        function updateTOC() {
+          document.querySelectorAll('.toc-item').forEach(item => {
+            item.classList.remove('active');
+            if (parseInt(item.dataset.chapter) === currentChapter) {
+              item.classList.add('active');
+            }
+          });
+        }
+
+        function performSearch(query) {
+          if (query.length < 2) {
+            document.getElementById('searchResults').innerHTML = '';
+            return;
+          }
+
+          const results = [];
+          // Simulate search results
+          for (let i = 1; i <= totalChapters; i++) {
+            const chapterData = getChapterData(i);
+            if (chapterData.content.toLowerCase().includes(query.toLowerCase())) {
+              results.push({
+                chapter: i,
+                title: chapterData.title,
+                snippet: chapterData.content.substring(0, 100) + '...'
+              });
+            }
+          }
+
+          const resultsContainer = document.getElementById('searchResults');
+          resultsContainer.innerHTML = results.map(result => \`
+            <div class="search-result" onclick="goToChapter(\${result.chapter})">
+              <strong>\${result.title}</strong><br>
+              <small>\${result.snippet}</small>
+            </div>
+          \`).join('');
+        }
+
+        function goToChapter(chapter) {
+          currentChapter = chapter;
+          loadChapterContent(chapter);
+          updateTOC();
+          document.getElementById('tocContainer').classList.remove('open');
+        }
+
+        function updateFontSize() {
+          document.querySelector('.chapter-content').style.fontSize = currentFontSize + 'px';
+        }
+
+        function updateTheme() {
+          const body = document.body;
+          body.className = body.className.replace(/theme-\\w+/g, '');
+          body.classList.add('theme-' + currentTheme);
+        }
+
+        function handleTextSelection() {
+          const selection = window.getSelection();
+          if (selection.toString().length > 0) {
+            const range = selection.getRangeAt(0);
+            const selectedText = selection.toString();
+            
+            // Create annotation marker
+            const marker = document.createElement('span');
+            marker.className = 'annotation-marker';
+            marker.textContent = selectedText;
+            marker.onclick = () => showAnnotationPopup(marker);
+            
+            range.deleteContents();
+            range.insertNode(marker);
+            
+            // Store annotation
+            annotations.push({
+              id: Date.now(),
+              text: selectedText,
+              chapter: currentChapter,
+              position: range.startOffset
+            });
+            
+            selection.removeAllRanges();
+          }
+        }
+
+        function showAnnotationPopup(marker) {
+          const popup = document.createElement('div');
+          popup.className = 'annotation-popup';
+          popup.textContent = 'Annotation: ' + marker.textContent;
+          marker.appendChild(popup);
+          
+          setTimeout(() => {
+            popup.remove();
+          }, 3000);
+        }
+
+        function applyAnnotations() {
+          // Apply stored annotations to current chapter
+          const chapterAnnotations = annotations.filter(a => a.chapter === currentChapter);
+          // Implementation would apply highlights and notes
+        }
+
         function sendMessageToReactNative(message) {
           if (window.ReactNativeWebView) {
             window.ReactNativeWebView.postMessage(JSON.stringify(message));
           }
         }
-
-        // Event listeners
-        document.getElementById('prevChapter').addEventListener('click', () => {
-          if (currentChapter > 1) {
-            currentChapter--;
-            loadChapterContent(currentChapter);
-            sendMessageToReactNative({
-              type: 'READIUM_NAVIGATION',
-              chapter: currentChapter,
-              totalChapters: totalChapters,
-              progressPercentage: progressPercentage
-            });
-          }
-        });
-
-        document.getElementById('nextChapter').addEventListener('click', () => {
-          if (currentChapter < totalChapters) {
-            currentChapter++;
-            loadChapterContent(currentChapter);
-            sendMessageToReactNative({
-              type: 'READIUM_NAVIGATION',
-              chapter: currentChapter,
-              totalChapters: totalChapters,
-              progressPercentage: progressPercentage
-            });
-          }
-        });
 
         // Handle messages from React Native
         document.addEventListener('message', (event) => {
@@ -385,15 +753,16 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
             switch (data.type) {
               case 'GO_TO_POSITION':
                 currentPosition = data.position;
-                // Navigate to position
                 break;
               case 'NAVIGATE_CHAPTER':
                 if (data.direction === 'prev' && currentChapter > 1) {
                   currentChapter--;
                   loadChapterContent(currentChapter);
+                  updateTOC();
                 } else if (data.direction === 'next' && currentChapter < totalChapters) {
                   currentChapter++;
                   loadChapterContent(currentChapter);
+                  updateTOC();
                 }
                 break;
             }
@@ -434,6 +803,26 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
           <TouchableOpacity onPress={() => setShowBookmarks(!showBookmarks)} style={styles.headerButton}>
             <Ionicons name="list" size={24} color={Colors[colorScheme ?? 'light'].text} />
           </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleAudioToggle} style={styles.headerButton}>
+            <Ionicons 
+              name={audioState.isPlaying ? (audioState.isPaused ? "play" : "pause") : "volume-high"} 
+              size={24} 
+              color={Colors[colorScheme ?? 'light'].text} 
+            />
+          </TouchableOpacity>
+
+          {audioState.isPlaying && (
+            <TouchableOpacity onPress={handleAudioStop} style={styles.headerButton}>
+              <Ionicons name="stop" size={24} color={Colors[colorScheme ?? 'light'].text} />
+            </TouchableOpacity>
+          )}
+
+          {!isOffline && (
+            <TouchableOpacity onPress={handleDownloadForOffline} style={styles.headerButton}>
+              <Ionicons name="download" size={24} color={Colors[colorScheme ?? 'light'].text} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
