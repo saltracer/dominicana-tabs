@@ -1,37 +1,37 @@
 // @ts-nocheck
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import EpubReaderWeb from '@/components/EpubReader.web';
+import ReadiumReader from '@/components/ReadiumReader';
+import { useAuth } from '@/contexts/AuthContext';
+import { EbooksService } from '@/services/EbooksService';
 
 export default function ReaderScreen() {
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { isAuthenticated, login } = useAuth();
+  const [loading, setLoading] = useState(true);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
 
-  const onRequireLogin = () => {
-    Alert.alert('Login Required', 'Please login to read this book.', [
-      { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
-      { text: 'Login', onPress: () => setIsAuthenticated(true) }
-    ]);
-  };
-
-  useMemo(() => {
-    if (!isAuthenticated) return;
-    setLoading(true);
-    // TODO: Replace with Supabase signed URL retrieval
-    setTimeout(() => {
-      setSignedUrl(`/reader.html?book=${encodeURIComponent(String(bookId))}`);
+  useEffect(() => {
+    (async () => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      // In real impl, fetch book by id to get filePath then sign
+      const filePath = `${bookId}.epub`;
+      const url = await EbooksService.getSignedFileUrl(filePath);
+      setSignedUrl(url);
       setLoading(false);
-    }, 300);
+    })();
   }, [isAuthenticated, bookId]);
 
   if (!isAuthenticated) {
     return (
       <View style={styles.center}>
         <Text style={styles.text}>You must be logged in to read this book.</Text>
-        <TouchableOpacity onPress={onRequireLogin} style={styles.button}>
+        <TouchableOpacity onPress={login} style={styles.button}>
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
       </View>
@@ -48,7 +48,7 @@ export default function ReaderScreen() {
 
   return (
     <View style={styles.container}>
-      <EpubReaderWeb signedUrl={signedUrl} />
+      <ReadiumReader source={signedUrl} style={{ flex: 1 }} />
     </View>
   );
 }
