@@ -9,6 +9,8 @@ import { Asset } from "expo-asset";
 import { File } from "expo-file-system";
 import { USXParser } from './USXParser';
 import { BookMetadata, ParsedBook } from '../types/usx-types';
+import { BiblePassage } from '../types';
+import { parseBibleReference, formatNormalizedReference, normalizeRangeOrder } from '../utils/bibleReference';
 
 export interface BibleBook {
   code: string;
@@ -366,6 +368,63 @@ export class BibleService {
       console.error(`Error getting chapter ${bookCode} ${chapterNumber}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Get a passage by Bible reference string (e.g., "Genesis 1:1-2:7", "Mat 5:3-9")
+   */
+  async getPassageByReference(reference: string): Promise<BiblePassage | null> {
+    const parsed = parseBibleReference(reference);
+    if (!parsed) return null;
+
+    const normalized = normalizeRangeOrder(parsed);
+    const book = await this.loadBook(normalized.bookCode);
+    const startRef = `${normalized.bookCode} ${normalized.startChapter}:${normalized.startVerse}`;
+    const endRef = `${normalized.bookCode} ${normalized.endChapter}:${normalized.endVerse}`;
+
+    const hasRange = typeof (this.parser as any).getVerseRange === 'function';
+    const verses = hasRange
+      ? (this.parser as any).getVerseRange(book, startRef, endRef)
+      : this.fallbackCollectRange(book, parsed.startChapter, parsed.startVerse, parsed.endChapter, parsed.endVerse);
+
+    return {
+      bookCode: normalized.bookCode,
+      startChapter: normalized.startChapter,
+      startVerse: normalized.startVerse,
+      endChapter: normalized.endChapter,
+      endVerse: normalized.endVerse,
+      verses: verses.map((v: any) => ({ number: v.number, text: v.text, reference: v.reference })),
+      reference: formatNormalizedReference(normalized)
+    };
+  }
+
+  private fallbackCollectRange(book: ParsedBook, sc: number, sv: number, ec: number, ev: number) {
+    const results: any[] = [];
+    for (const chapter of book.chapters) {
+      if (chapter.number < sc || chapter.number > ec) continue;
+      if (sc === ec && chapter.number === sc) {
+        results.push(...chapter.verses.filter(v => v.number >= sv && v.number <= ev));
+      } else if (chapter.number === sc) {
+        results.push(...chapter.verses.filter(v => v.number >= sv));
+      } else if (chapter.number === ec) {
+        results.push(...chapter.verses.filter(v => v.number <= ev));
+      } else {
+        results.push(...chapter.verses);
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Get passage text as a single string suitable for LOH content
+   */
+  async getPassageText(reference: string, options?: { includeVerseNumbers?: boolean; separator?: string }): Promise<string | null> {
+    const passage = await this.getPassageByReference(reference);
+    if (!passage) return null;
+    const includeNums = options?.includeVerseNumbers ?? false;
+    const sep = options?.separator ?? ' ';
+    const parts = passage.verses.map(v => includeNums ? `${v.number} ${v.text}` : v.text);
+    return parts.join(sep).trim();
   }
 
   /**
