@@ -2,6 +2,9 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2017", "DOM"],
+    "types": ["jest", "react", "react-native", "@testing-library/jest-native"],
     "paths": {
       "@/*": [
         "./*"

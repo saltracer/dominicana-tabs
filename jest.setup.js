@@ -26,6 +26,15 @@ jest.mock('react-native/Libraries/Utilities/Platform', () => ({
   select: jest.fn((obj) => obj.ios || obj.default),
 }));
 
+// Mock Readium native module for unit tests
+jest.mock('react-native-readium', () => {
+  const MockComponent = ({ children }) => children || null;
+  return {
+    ReadiumView: MockComponent,
+    Reader: MockComponent,
+  };
+});
+
 // Mock the services that depend on AsyncStorage
 jest.mock('./services/ComplineService', () => ({
   ComplineService: {
