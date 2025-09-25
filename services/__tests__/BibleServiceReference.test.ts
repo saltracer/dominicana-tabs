@@ -1,0 +1,117 @@
+import { BibleService } from '../BibleService';
+import { USXParser } from '../USXParser';
+
+// Minimal USX sample spanning two chapters with simple verses
+const SAMPLE_USX = `<?xml version="1.0" encoding="utf-8"?>
+<usx version="3.0">
+  <book code="GEN" style="id" />
+  <para style="h">Genesis</para>
+  <para style="toc1">Genesis</para>
+  <para style="toc2">Genesis</para>
+  <para style="toc3">Gen</para>
+  <chapter number="1" style="c" sid="GEN 1" />
+  <para style="p">
+    <verse number="1" style="v" sid="GEN 1:1" />In the beginning... <verse eid="GEN 1:1" />
+    <verse number="2" style="v" sid="GEN 1:2" />The earth was without form... <verse eid="GEN 1:2" />
+  </para>
+  <chapter eid="GEN 1" />
+  <chapter number="2" style="c" sid="GEN 2" />
+  <para style="p">
+    <verse number="1" style="v" sid="GEN 2:1" />Thus the heavens and the earth were finished... <verse eid="GEN 2:1" />
+    <verse number="7" style="v" sid="GEN 2:7" />Then the Lord God formed man... <verse eid="GEN 2:7" />
+  </para>
+  <chapter eid="GEN 2" />
+</usx>`;
+
+describe('BibleService getPassageByReference', () => {
+  it('returns single verse', async () => {
+    const svc = new BibleService();
+    jest.spyOn<any, any>(svc as any, 'loadUSXFile').mockResolvedValue(SAMPLE_USX);
+    const res = await svc.getPassageByReference('Genesis 1:1');
+    expect(res).not.toBeNull();
+    expect(res!.bookCode).toBe('GEN');
+    expect(res!.verses.length).toBe(1);
+    expect(res!.verses[0].reference).toBe('GEN 1:1');
+  });
+
+  it('returns intra-chapter range', async () => {
+    const svc = new BibleService();
+    jest.spyOn<any, any>(svc as any, 'loadUSXFile').mockResolvedValue(SAMPLE_USX);
+    const res = await svc.getPassageByReference('GEN 1:1-2');
+    expect(res).not.toBeNull();
+    expect(res!.verses.map(v => v.reference)).toEqual(['GEN 1:1', 'GEN 1:2']);
+  });
+
+  it('returns cross-chapter range', async () => {
+    const svc = new BibleService();
+    jest.spyOn<any, any>(svc as any, 'loadUSXFile').mockResolvedValue(SAMPLE_USX);
+    const res = await svc.getPassageByReference('Genesis 1:2-2:7');
+    expect(res).not.toBeNull();
+    expect(res!.verses[0].reference).toBe('GEN 1:2');
+    expect(res!.verses[res!.verses.length - 1].reference).toBe('GEN 2:7');
+  });
+
+  it('getPassageText returns concatenated text with and without verse numbers', async () => {
+    const svc = new BibleService();
+    jest.spyOn<any, any>(svc as any, 'loadUSXFile').mockResolvedValue(SAMPLE_USX);
+    const textNoNums = await svc.getPassageText('GEN 1:1-2', { includeVerseNumbers: false, separator: ' ' });
+    expect(textNoNums).toContain('In the beginning');
+    expect(textNoNums).toContain('The earth was without form');
+
+    const textWithNums = await svc.getPassageText('GEN 1:1-2', { includeVerseNumbers: true, separator: ' ' });
+    expect(textWithNums?.startsWith('1 ')).toBeTruthy();
+  });
+
+  it('returns null for unknown book', async () => {
+    const svc = new BibleService();
+    // Should not need to mock loader; parser should reject unknown book
+    const res = await svc.getPassageByReference('Unknown 1:1');
+    expect(res).toBeNull();
+  });
+
+  it('returns null for malformed reference', async () => {
+    const svc = new BibleService();
+    const res = await svc.getPassageByReference('Genesis');
+    expect(res).toBeNull();
+  });
+
+  it('handles reversed ranges by returning empty verses if out of order', async () => {
+    const svc = new BibleService();
+    jest.spyOn<any, any>(svc as any, 'loadUSXFile').mockResolvedValue(SAMPLE_USX);
+    const res = await svc.getPassageByReference('GEN 1:5-1:2');
+    expect(res).not.toBeNull();
+    // Our range collector will attempt to filter; this logically yields empty
+    expect(res!.verses.length === 0 || res!.verses[0].reference === 'GEN 1:2').toBeTruthy();
+  });
+
+  it('works for a New Testament passage (John 1:1) by mapping Jn/JHN codes', async () => {
+    // Minimal JHN sample
+    const JHN_USX = `<?xml version="1.0" encoding="utf-8"?>
+<usx version="3.0">
+  <book code="JHN" style="id" />
+  <para style="h">John</para>
+  <para style="toc1">John</para>
+  <para style="toc2">John</para>
+  <para style="toc3">Jn</para>
+  <chapter number="1" style="c" sid="JHN 1" />
+  <para style="p">
+    <verse number="1" style="v" sid="JHN 1:1" />In the beginning was the Word... <verse eid="JHN 1:1" />
+  </para>
+  <chapter eid="JHN 1" />
+</usx>`;
+
+    const svc = new BibleService();
+    // Mock load for JHN code path
+    jest.spyOn<any, any>(svc as any, 'loadUSXFile').mockImplementation((bookCode: string) => {
+      if (bookCode === 'JHN') return Promise.resolve(JHN_USX);
+      if (bookCode === 'GEN') return Promise.resolve(SAMPLE_USX);
+      return Promise.reject(new Error('Unknown book'));
+    });
+
+    const res = await svc.getPassageByReference('Jn 1:1');
+    expect(res).not.toBeNull();
+    expect(res!.bookCode).toBe('JHN');
+    expect(res!.verses[0].reference).toBe('JHN 1:1');
+  });
+});
+

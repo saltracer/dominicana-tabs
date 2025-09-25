@@ -2,6 +2,10 @@
 
 A comprehensive liturgical companion mobile application for the Order of Preachers (Dominicans) that aids in praying the Liturgy of the Hours and the Rosary, featuring a specialized Dominican calendar with saints database and interactive community features.
 
+## 📚 Documentation
+
+- See the full project documentation in `docs/`: [Documentation Index](docs/README.md)
+
 ## 🎯 Overview
 
 Dominicana serves as a complete spiritual resource for Dominican friars and the faithful, integrating the four pillars of Dominican life:
@@ -160,6 +164,59 @@ dominicana-tabs/
 - **Calendar**: For liturgical event integration
 
 ## 📊 Data Sources
+
+## 📖 Bible Reference API (for Liturgy of the Hours)
+
+The app can retrieve Scripture by simple bible references, so your LOH JSON only needs to include a reference string.
+
+### Supported reference forms
+- Single verse: `"Genesis 1:1"`, `"Jn 1:1"`
+- Intra-chapter range: `"Mat 5:3-9"`
+- Cross-chapter range: `"Genesis 1:1-2:7"`
+- Book names/abbreviations: flexible (e.g., `Gen`, `Gn`, `Genesis`, `Mt`, `Mat`, `Matthew`, `1 Sam`, `1 Samuel`, `1SA`)
+- Dashes: en/em dashes are accepted and normalized
+
+### Services
+- Single-version (Douay-Rheims USX): `services/BibleService.ts`
+- Multi-version (DR + Vulgate): `services/MultiVersionBibleService.ts`
+
+### API
+```ts
+// Get structured verses for a reference
+const passage = await bibleService.getPassageByReference('Genesis 1:1-2:7');
+// {
+//   bookCode: 'GEN',
+//   startChapter: 1,
+//   startVerse: 1,
+//   endChapter: 2,
+//   endVerse: 7,
+//   verses: [{ number, text, reference }, ...],
+//   reference: 'GEN 1:1-2:7'
+// }
+
+// Get a single string suitable for LOH content
+const text = await bibleService.getPassageText('Mat 5:3-9', {
+  includeVerseNumbers: false,   // omit or include verse numbers
+  separator: ' '                // string used to join verses
+});
+
+// Multi-version: same API, with optional versionId
+const mvText = await multiVersionBibleService.getPassageText('Jn 1:1');
+const mvPassage = await multiVersionBibleService.getPassageByReference('Sir 1:1');
+```
+
+### Utilities (if you need to format or validate references)
+`utils/bibleReference.ts` provides:
+- `parseBibleReference(input)` → `{ bookCode, startChapter, startVerse, endChapter, endVerse } | null`
+- `normalizeRangeOrder(parsed)` → ensures start ≤ end (swaps if reversed)
+- `formatReference(parsed, style)` → returns a human-facing string
+  - `style`: `'code' | 'abbr' | 'full'` (e.g., `GEN`, `Gen`, `Genesis`)
+
+### Notes for LOH integration
+- Prefer using `getPassageText` with `includeVerseNumbers: false` for reading texts.
+- Use `separator: '\n'` if you need each verse on a new line; for continuous readings keep the default single space.
+- Deuterocanonical books are supported (Sir, Tob, Bar, etc.). Internally, Baruch may appear as `BAR_LjeInBar`; utilities format it as `Bar/Baruch` for display.
+- Reversed ranges like `Gen 1:5-1:2` are normalized automatically to `Gen 1:2-1:5`.
 
 ### Liturgical Calendar
 - **Movable Feasts**: Easter cycle calculations using Meeus/Jones/Butcher algorithm

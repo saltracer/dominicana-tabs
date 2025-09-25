@@ -51,29 +51,37 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <CalendarProvider>
-        <BibleProvider>
-          <AuthProvider>
-            <RootLayoutNav />
-          </AuthProvider>
-        </BibleProvider>
-      </CalendarProvider>
+      <AuthProvider>
+        <CalendarProvider>
+          <BibleProvider>
+            <ThemedNavigation />
+          </BibleProvider>
+        </CalendarProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
 
 function RootLayoutNav() {
-  const { colorScheme } = useTheme();
-
   return (
     <SafeAreaProvider>
-      <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
-        </Stack>
-      </NavigationThemeProvider>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
+        <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
+        {/* <Stack.Screen name="settings" options={{ headerShown: false }} /> */}
+      </Stack>
     </SafeAreaProvider>
+  );
+}
+
+function ThemedNavigation() {
+  const { colorScheme } = useTheme();
+  
+  return (
+    <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <RootLayoutNav />
+    </NavigationThemeProvider>
   );
 }

@@ -19,105 +19,41 @@ import FeastBanner from '../../../components/FeastBanner';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay, Book, BookCategory } from '../../../types';
 import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useBooks } from '../../../hooks/useBooks';
 
 export default function StudyScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const { user, loading: authLoading } = useAuth();
+  const { books, loading: booksLoading, searchBooks } = useBooks();
   const isWeb = Platform.OS === 'web';
   const platformStyles = getStudyPlatformStyles(isWeb);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
-  const [books, setBooks] = useState<Book[]>([]);
+  const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
 
   useEffect(() => {
-    loadSampleBooks();
-  }, []);
+    filterBooks();
+  }, [books, searchQuery, selectedCategory]);
 
-  const loadSampleBooks = () => {
-    const sampleBooks: Book[] = [
-      {
-        id: 'summa-theologica',
-        title: 'Summa Theologica',
-        author: 'St. Thomas Aquinas',
-        category: 'theology',
-        language: 'Latin/English',
-        filePath: '/books/summa-theologica.epub',
-        coverImage: undefined,
-        description: 'The masterwork of St. Thomas Aquinas, a comprehensive theological treatise.',
-        isDominican: true,
-        tags: ['theology', 'philosophy', 'scholasticism', 'dominican'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'summa-theologica',
-          currentPosition: 0,
-          totalPages: 3000,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      },
-      {
-        id: 'divine-comedy',
-        title: 'The Divine Comedy',
-        author: 'Dante Alighieri',
-        category: 'spirituality',
-        language: 'Italian/English',
-        filePath: '/books/divine-comedy.epub',
-        coverImage: undefined,
-        description: 'Dante\'s epic poem describing his journey through Hell, Purgatory, and Paradise.',
-        isDominican: false,
-        tags: ['poetry', 'medieval', 'spirituality', 'allegory'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'divine-comedy',
-          currentPosition: 0,
-          totalPages: 500,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      },
-      {
-        id: 'confessions',
-        title: 'Confessions',
-        author: 'St. Augustine',
-        category: 'spirituality',
-        language: 'Latin/English',
-        filePath: '/books/confessions.epub',
-        coverImage: undefined,
-        description: 'St. Augustine\'s autobiographical work and theological masterpiece.',
-        isDominican: false,
-        tags: ['autobiography', 'theology', 'patristic', 'conversion'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'confessions',
-          currentPosition: 0,
-          totalPages: 400,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      },
-      {
-        id: 'imitation-of-christ',
-        title: 'The Imitation of Christ',
-        author: 'Thomas à Kempis',
-        category: 'spirituality',
-        language: 'Latin/English',
-        filePath: '/books/imitation-of-christ.epub',
-        coverImage: undefined,
-        description: 'A classic devotional book on Christian spirituality.',
-        isDominican: false,
-        tags: ['devotional', 'spirituality', 'meditation', 'christian'],
-        bookmarks: [],
-        readingProgress: {
-          bookId: 'imitation-of-christ',
-          currentPosition: 0,
-          totalPages: 300,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0
-        }
-      }
-    ];
-    setBooks(sampleBooks);
+  const filterBooks = () => {
+    const filtered = books.filter(book => {
+      const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
+      const matchesSearch = searchQuery === '' || 
+        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+    setFilteredBooks(filtered);
+  };
+
+  const handleSearch = async () => {
+    if (searchQuery.trim()) {
+      await searchBooks(searchQuery, selectedCategory);
+    } else {
+      filterBooks();
+    }
   };
 
   const categories: { type: BookCategory | 'all'; name: string; icon: string }[] = [
@@ -141,21 +77,7 @@ export default function StudyScreen() {
   });
 
   const handleLogin = () => {
-    Alert.alert(
-      'Login Required',
-      'Please log in to access the Catholic classics library.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Login', 
-          onPress: () => {
-            // In a real app, this would navigate to login screen
-            setIsLoggedIn(true);
-            Alert.alert('Success', 'You are now logged in and can access the library.');
-          }
-        }
-      ]
-    );
+    router.push('/auth');
   };
 
   const handleBookPress = (book: Book) => {
@@ -166,12 +88,12 @@ export default function StudyScreen() {
     router.push({ pathname: '/(tabs)/study/reader/[bookId]', params: { bookId: book.id } });
   };
 
-  if (!liturgicalDay) {
+  if (!liturgicalDay || authLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading liturgical information...
+            {!liturgicalDay ? 'Loading liturgical information...' : 'Loading...'}
           </Text>
         </View>
       </SafeAreaView>
@@ -183,7 +105,7 @@ export default function StudyScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
 
         {/* Login Status */}
-        {!isLoggedIn && (
+        {!user && (
           <View style={styles.loginBanner}>
             <Ionicons name="lock-closed" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
             <Text style={[styles.loginText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
@@ -328,7 +250,7 @@ export default function StudyScreen() {
         </View>
 
         {/* Reading Progress */}
-        {isLoggedIn && (
+        {user && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Continue Reading
