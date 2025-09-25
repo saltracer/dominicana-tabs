@@ -18,6 +18,7 @@ import { useTheme } from './ThemeProvider';
 import BookService from '../services/BookService';
 import AudioService from '../services/AudioService';
 import OfflineStorageService from '../services/OfflineStorageService';
+import AccessibilityService from '../services/AccessibilityService';
 import { Book, Bookmark, ReadingProgress } from '../types';
 
 interface EpubReaderProps {
@@ -54,6 +55,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
   const [isOffline, setIsOffline] = useState(false);
   const [audioState, setAudioState] = useState(AudioService.getAudioState());
   const [showAudioControls, setShowAudioControls] = useState(false);
+  const [accessibilitySettings, setAccessibilitySettings] = useState(AccessibilityService.getAccessibilitySettings());
 
   const startTimeRef = useRef<number>(Date.now());
 
@@ -63,6 +65,7 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
     loadReadingProgress();
     checkOfflineStatus();
     setupAudioListeners();
+    setupAccessibility();
   }, []);
 
   useEffect(() => {
@@ -119,6 +122,10 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
         note: `Chapter ${readingState.currentChapter}`,
       });
       loadBookmarks();
+      
+      // Accessibility announcement
+      AccessibilityService.announceBookmarkCreated(`Chapter ${readingState.currentChapter}`);
+      
       Alert.alert('Success', 'Bookmark added successfully!');
     } catch (error) {
       Alert.alert('Error', 'Failed to add bookmark.');
@@ -204,6 +211,14 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
     }, 1000);
 
     return () => clearInterval(interval);
+  };
+
+  const setupAccessibility = () => {
+    // Initialize accessibility settings
+    setAccessibilitySettings(AccessibilityService.getAccessibilitySettings());
+    
+    // Announce reader opening
+    AccessibilityService.announceToScreenReader(`Opening ${book.title} for reading`);
   };
 
   const handleAudioToggle = async () => {
@@ -796,7 +811,13 @@ const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose, initialPosition 
         </View>
 
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={addBookmark} style={styles.headerButton}>
+          <TouchableOpacity 
+            onPress={addBookmark} 
+            style={styles.headerButton}
+            accessibilityLabel="Add bookmark"
+            accessibilityHint="Add a bookmark to the current position"
+            accessibilityRole="button"
+          >
             <Ionicons name="bookmark-outline" size={24} color={Colors[colorScheme ?? 'light'].text} />
           </TouchableOpacity>
           
