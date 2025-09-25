@@ -107,3 +107,121 @@ Storage ACL:
 - Add bookmarks, annotations, highlights using toolkit features.
 - Persist reading location (`locator`) to Supabase per user/book.
 
+---
+
+## Implementation Notes (as built)
+
+This section documents what has been implemented in this repository and how the pieces fit together.
+
+### Key files added/edited
+
+- Auth and Providers
+  - `contexts/AuthContext.tsx`: Simple auth context providing `isAuthenticated`, `login()`, and `logout()`.
+  - `app/_layout.tsx`: Wrapped the app in `AuthProvider` alongside existing providers.
+
+- Supabase
+  - `services/supabaseClient.ts`: Supabase JS client using `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+  - `services/EbooksService.ts`:
+    - `listBooks()`: `select` from `books` table (metadata only, public).
+    - `getBookById(idOrSlug)`: fetch a single book by `id` or `slug`.
+    - `getSignedFileUrl(filePath)`: creates a signed URL from `ebooks` bucket for private EPUBs.
+
+- Screens and Components
+  - `app/(tabs)/study/book/[bookId].tsx`: Metadata-only screen with Login or Open Reader CTA.
+  - `app/(tabs)/study/reader/[bookId].tsx`: Auth-gated reader screen. If logged-in, retrieves a signed URL via `EbooksService` and mounts the native reader.
+  - `components/ReadiumReader.tsx`: React wrapper for the native view `ReadiumReaderView` exposing props `source`, `initialLocator`, and event `onLocationChange`.
+  - Study navigation (`app/(tabs)/study/index.tsx`): For guests, pressing a book navigates to metadata details; for authed users, it opens the reader.
+
+- Native modules scaffolding
+  - iOS: `native/ios/ReadiumReaderViewManager.swift` + `ReadiumReaderViewManager.m`
+    - Exposes a `UIView` to RN. Accepts `source` and `initialLocator`, emits `onLocationChange` (currently synthetic) to validate wiring.
+    - TODO: Wire `Streamer` + `Navigator` to render EPUBs from signed URL.
+  - Android: `native/android/src/main/java/com/dominicana/readium/ReadiumReaderViewManager.kt`
+    - Exposes a `View` to RN with `source` and `initialLocator`, and an `onLocationChange` event (currently synthetic).
+    - TODO: Wire Kotlin toolkit `Streamer` + `NavigatorFragment` to render EPUBs from signed URL.
+
+- Config plugin (scaffold)
+  - `plugins/with-readium-native.ts`: Minimal plugin placeholder ready to be enhanced to add native dependencies.
+  - `app.json`: Plugin entry added (will be switched to a relative path when finalizing).
+
+- Tests
+  - `components/__tests__/EpubAccess.test.tsx`: Ensures unauthenticated users see the login gate on the reader screen.
+  - `components/__tests__/ReadiumReader.test.tsx`: Verifies wrapper renders and props are wired.
+  - `services/__tests__/EbooksService.test.ts`: Mocks Supabase and verifies signed URL/list code paths.
+
+### How it works
+
+1) A user opens Study and taps a book card.
+   - If not authenticated, they are routed to `book/[bookId]` which shows metadata and a login button.
+   - If authenticated, they are routed to `reader/[bookId]`.
+
+2) On `reader/[bookId]`, the screen requests a signed URL from `EbooksService` using the book's `file_path`. The signed URL is passed to `ReadiumReader` via the `source` prop.
+
+3) `ReadiumReader` renders a native view `ReadiumReaderView` (iOS/Android). The native view will load the EPUB (via Readium toolkits) and emit `onLocationChange` with a locator string when navigation occurs. The JS side can persist that locator to Supabase for resuming reading.
+
+4) Supabase tables and access control:
+   - `books` is public-readable for metadata. Users can browse titles, authors, descriptions, and covers without authentication.
+   - `ebooks` Storage bucket is private for `files/` and public for `covers/`. Authenticated users get a time-limited signed URL for the EPUB file.
+
+### Build and run (expected flow)
+
+- Web: Library UI and metadata screens should run. Reader is native-only.
+- Native:
+  - Configure env vars: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+  - Add Readium dependencies via the config plugin (see TODO) and run `expo prebuild` to generate native projects.
+  - iOS: `cd ios && pod install` (if using CocoaPods); build via Xcode or `expo run:ios`.
+  - Android: Ensure Gradle deps for Readium Kotlin; build via Android Studio or `expo run:android`.
+
+### Notes on Readium integration
+
+- iOS: The Readium Swift Toolkit will provide `Streamer` to open publications and `Navigator` to render. The native view should host the navigator view controller and forward locator updates to RN events.
+- Android: The Kotlin Toolkit similarly provides `Streamer` and `NavigatorFragment`. The RN view should host the fragment and forward events.
+- We avoid `epub.js` entirely, as requested.
+
+### Supabase schema and policies
+
+See the SQL in this document above. Implement in your Supabase project:
+- Create `books`, `user_books` with RLS as specified.
+- Configure Storage bucket `ebooks` with public `covers/*` and private `files/*`.
+- Replace `EbooksService` placeholders to match your actual table/paths.
+
+### Testing strategy
+
+- Unit tests (JS) cover:
+  - Access gating for unauthenticated users.
+  - Reader wrapper props and event mapping (native mocked).
+  - Service interactions (Supabase mocked).
+- E2E tests (future):
+  - Detox tests can verify navigation to reader on-device and location persistence.
+
+---
+
+## Remaining Work (Backlog and Acceptance)
+
+1) Config plugin to add native dependencies [iOS/Android]
+   - iOS: Add Readium Swift Toolkit via SPM or CocoaPods. Acceptance: `pod install` resolves and `ReadiumReaderView` compiles.
+   - Android: Add Kotlin Toolkit Gradle dependencies. Acceptance: Gradle sync/build succeeds.
+
+2) Wire toolkits inside native views
+   - iOS: Implement `Streamer` open from `source` (signed URL), mount `Navigator`, forward `onLocationChange` with locator JSON. Acceptance: an EPUB renders and page turns emit events.
+   - Android: Implement `Streamer` + `NavigatorFragment` with same behavior. Acceptance: EPUB renders and events fire.
+
+3) Supabase SQL and Storage
+   - Run migrations to create tables and RLS; set Storage policies. Acceptance: anonymous can list metadata; authenticated can fetch signed URL for file.
+
+4) Auth integration
+   - Replace demo `AuthContext` with actual auth (e.g., Supabase Auth), wiring `isAuthenticated` and tokens. Acceptance: Reader access truly gated by real auth state.
+
+5) Persistence
+   - Save and restore reading locator per user/book to `user_books.progress`. Acceptance: Returning to a book resumes at last location.
+
+6) UI polish & error states
+   - Loading and error handling in details/reader screens; retry flows. Acceptance: graceful UX on network/storage issues.
+
+7) Tests expansion
+   - Add more wrapper tests (prop changes, unmount), service error cases, and E2E tests with Detox. Acceptance: green CI on unit + e2e suites.
+
+8) Documentation & Ops
+   - Update `README.md` with native build steps, env var usage, and Supabase setup instructions. Acceptance: a new dev can follow docs and run the app with a sample EPUB end-to-end.
+
+
