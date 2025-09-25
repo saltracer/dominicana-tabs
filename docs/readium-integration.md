@@ -1,25 +1,22 @@
-## Readium EPUB Integration Plan
+## Readium EPUB Integration Plan (React Native)
 
-This document proposes adding EPUB reading using maintained Readium toolkits, with auth-gated access: logged-in users can read; logged-out users see metadata only.
+This document proposes adding EPUB reading using the maintained Readium mobile toolkits (Swift for iOS, Kotlin for Android), with auth-gated access: authenticated users can read; unauthenticated users see metadata only. We do not use `epub.js`.
 
 ### Library selection (2025)
 
-- Readium has actively maintained mobile toolkits: Swift (iOS) and Kotlin (Android). Historical web modules like `r2-navigator-js`/`r2-streamer-js` appear stale/archived. For Web in a React/Expo environment, a common approach is:
-  - Use a lightweight in-app web view for rendering Readium-powered reader from a controlled URL, or
-  - Use the mobile toolkits on native (Android/iOS) and a minimal custom web renderer leveraging `readium-css` for typography + a manifest parser.
-
-Given this project is an Expo app with web support, we will:
-1) Implement a Web EPUB renderer using a sandboxed `iframe`/`WebView` loading a local reader UI built with standard HTML/CSS/JS and `readium-css` styles, reading from a publication manifest we generate client-side.
-2) Encapsulate native platforms for future Readium Swift/Kotlin integration behind a single `EpubReader` interface.
-
-Note: We explicitly avoid `epub.js` per product decision.
+- Use official Readium mobile toolkits:
+  - iOS: Readium Swift Toolkit (`ReadiumShared`, `ReadiumStreamer`, `ReadiumNavigator`)
+  - Android: Readium Kotlin Toolkit (shared/streamer/navigator modules)
+- There is no officially maintained Readium Web navigator on npm for React/Expo. For Web, we will show metadata for now (no EPUB reading on web).
+- We explicitly avoid `epub.js` and any wrappers built on it.
 
 ### High-level architecture
 
 - `types/ebooks.ts`: Domain types for `Ebook`, `EbookAccess`, `ReadingProgress`.
 - `services/EbooksService.ts`: Book metadata fetch from Supabase; secure asset URL retrieval for authenticated users.
-- `components/EpubReader.(web|native).tsx`: Platform-specific reader: web uses `react-native-webview` (or `iframe` for web), native later implements Readium Swift/Kotlin.
-- `app/(tabs)/study/reader/[bookId].tsx`: Reader screen. Guards: if not logged in => redirect to book details.
+- `native/ios` and `native/android`: React Native bridges to Readium Swift/Kotlin toolkits exposing a `ReadiumReaderView` and control methods/events.
+- `components/ReadiumReader.tsx`: JS wrapper around the native view with props like `source`, `initialLocator`, callbacks for location changes, TOC, etc.
+- `app/(tabs)/study/reader/[bookId].tsx`: Reader screen. Guards: if not logged in => navigate to book details.
 - `app/(tabs)/study/book/[bookId].tsx`: Metadata-only view for guests, includes login CTA.
 
 ### Supabase schema (proposed)
@@ -77,33 +74,36 @@ Storage ACL:
 - Logged out: show `BookDetails` from `public.books`; hide/disable read button.
 - Logged in: fetch signed download URL for `file_path` via Supabase; open reader.
 
-### Web reader approach
+### Web platform (current stance)
 
-- Generate a minimal publication manifest in memory and load EPUB via `JSZip` + web worker or stream from signed URL, then render reflowable content using `readium-css` classes within an `iframe`. Navigation, TOC, font size, theme toggles implemented in React.
-- This provides a maintained and replaceable path for a future official Readium Web module if it becomes available.
+- No EPUB reading on web at this time. Show metadata and a sign-in CTA. If Readium publishes a maintained Web navigator, we can add a web renderer behind the same `ReadiumReader` interface.
 
-### Packages
+### Native packages and setup
 
-- `react-native-webview` (already present) for native/web unified API.
-- `readium-css` for standard EPUB typography classes.
-- `jszip` for EPUB (zip) handling on web.
+- Add Readium Swift Toolkit via Swift Package Manager to the iOS project.
+- Add Readium Kotlin Toolkit dependencies to the Android project (Gradle/MavenCentral/JitPack as per toolkit docs).
+- Create RN native modules:
+  - iOS: `ReadiumReaderViewManager` exposing a `UIView` hosting `Navigator` and wired to `Streamer` for loading EPUB from a signed URL or local file.
+  - Android: `ReadiumReaderViewManager` exposing a `View` hosting `NavigatorFragment` with `Streamer`.
+- Expo: use a config plugin and `expo prebuild` to add native dependencies; ship via Dev Client.
 
 ### Implementation steps
 
 1. Add domain types and service layer.
 2. Create `BookDetails` screen and `Reader` screen with auth gating.
-3. Implement `EpubReader.web.tsx` using `iframe` + `readium-css`.
-4. Wire Study list to details/reader.
-5. Tests: unit tests for gating and service calls; snapshot tests for screens.
+3. Implement `ReadiumReader` JS wrapper and native bridges on iOS/Android.
+4. Wire Study list to details/reader and load signed URLs for authenticated users.
+5. Tests: unit tests for gating and service calls; JS wrapper mocks for native view; snapshot tests for screens.
 
 ### Tests
 
 - Render `BookDetails` logged-out: shows metadata and Login CTA, no reader.
-- Render `Reader` logged-in with mocked signed URL: mounts `EpubReader`.
+- Render `Reader` logged-in with mocked signed URL: mounts `ReadiumReader` wrapper.
 - Service: `getSignedFileUrl` only called when authenticated.
+- JS wrapper: verify it forwards props and calls event callbacks when the native module emits events (mocked).
 
-### Future native integration
+### Future enhancements
 
-- iOS: integrate Readium Swift (Streamer + Navigator) and map to `EpubReader.native.tsx`.
-- Android: integrate Readium Kotlin toolkit similarly.
+- Add bookmarks, annotations, highlights using toolkit features.
+- Persist reading location (`locator`) to Supabase per user/book.
 
