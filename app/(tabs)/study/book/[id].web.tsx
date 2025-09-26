@@ -60,9 +60,6 @@ export default function BookDetailWebScreen() {
     }
 
     try {
-      // Show loading state
-      Alert.alert('Downloading...', 'Preparing download...');
-
       // Extract file path from the URL
       const urlPath = book.epubPath;
       let filePath = '';
@@ -87,12 +84,10 @@ export default function BookDetailWebScreen() {
 
       if (signedUrlError) {
         console.error('Error generating signed URL:', signedUrlError);
-        Alert.alert('Error', `Failed to generate download link: ${signedUrlError.message}`);
         return;
       }
 
       if (!signedUrlData?.signedUrl) {
-        Alert.alert('Error', 'Failed to generate download link. Please try again.');
         return;
       }
 
@@ -110,11 +105,8 @@ export default function BookDetailWebScreen() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      Alert.alert('Download Started', 'The book download has been initiated.');
     } catch (error) {
       console.error('Error downloading book:', error);
-      Alert.alert('Error', 'Failed to download book. Please try again.');
     }
   };
 
