@@ -20,6 +20,7 @@ import { StudyStyles } from '../../../../styles';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBooks } from '../../../../hooks/useBooks';
 import { supabase } from '../../../../lib/supabase';
+import { EpubReader } from '../../../../components/EpubReader.web';
 
 export default function BookDetailWebScreen() {
   const { colorScheme } = useTheme();
@@ -28,6 +29,7 @@ export default function BookDetailWebScreen() {
   const { id } = useLocalSearchParams();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showReader, setShowReader] = useState(false);
 
   useEffect(() => {
     loadBook();
@@ -46,6 +48,20 @@ export default function BookDetailWebScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRead = () => {
+    if (!book?.epubPath) {
+      Alert.alert('Reading Unavailable', 'This book is not available for reading.');
+      return;
+    }
+
+    if (!user) {
+      Alert.alert('Authentication Required', 'Please log in to read books.');
+      return;
+    }
+
+    setShowReader(true);
   };
 
   const handleDownload = async () => {
@@ -123,6 +139,15 @@ export default function BookDetailWebScreen() {
           </Text>
         </View>
       </SafeAreaView>
+    );
+  }
+
+  if (showReader && book) {
+    return (
+      <EpubReader 
+        book={book} 
+        onClose={() => setShowReader(false)} 
+      />
     );
   }
 
@@ -218,40 +243,70 @@ export default function BookDetailWebScreen() {
           </Text>
         </View>
 
-        {/* Download Section */}
+        {/* Reading Section */}
         {user ? (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Download
+              Reading Options
             </Text>
-            <TouchableOpacity 
-              style={[
-                styles.downloadButton, 
-                { 
-                  backgroundColor: book.epubPath ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].surface,
-                  opacity: book.epubPath ? 1 : 0.5
-                }
-              ]}
-              onPress={handleDownload}
-              disabled={!book.epubPath}
-            >
-              <Ionicons 
-                name="download" 
-                size={20} 
-                color={book.epubPath ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].textMuted} 
-              />
-              <Text style={[
-                styles.downloadButtonText, 
-                { 
-                  color: book.epubPath ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].textMuted 
-                }
-              ]}>
-                {book.epubPath ? 'Download EPUB' : 'Download Unavailable'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[
+                  styles.readButton, 
+                  { 
+                    backgroundColor: book.epubPath ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].surface,
+                    opacity: book.epubPath ? 1 : 0.5
+                  }
+                ]}
+                onPress={handleRead}
+                disabled={!book.epubPath}
+              >
+                <Ionicons 
+                  name="book" 
+                  size={20} 
+                  color={book.epubPath ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].textMuted} 
+                />
+                <Text style={[
+                  styles.readButtonText, 
+                  { 
+                    color: book.epubPath ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].textMuted 
+                  }
+                ]}>
+                  {book.epubPath ? 'Read Book' : 'Reading Unavailable'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[
+                  styles.downloadButton, 
+                  { 
+                    backgroundColor: book.epubPath ? Colors[colorScheme ?? 'light'].surface : Colors[colorScheme ?? 'light'].surface,
+                    borderColor: Colors[colorScheme ?? 'light'].primary,
+                    borderWidth: 1,
+                    opacity: book.epubPath ? 1 : 0.5
+                  }
+                ]}
+                onPress={handleDownload}
+                disabled={!book.epubPath}
+              >
+                <Ionicons 
+                  name="download" 
+                  size={20} 
+                  color={book.epubPath ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textMuted} 
+                />
+                <Text style={[
+                  styles.downloadButtonText, 
+                  { 
+                    color: book.epubPath ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textMuted 
+                  }
+                ]}>
+                  {book.epubPath ? 'Download EPUB' : 'Download Unavailable'}
+                </Text>
+              </TouchableOpacity>
+            </View>
             {!book.epubPath && (
               <Text style={[styles.downloadNote, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                This book is not available for download at this time.
+                This book is not available for reading or download at this time.
               </Text>
             )}
           </View>
@@ -260,7 +315,7 @@ export default function BookDetailWebScreen() {
             <View style={[styles.loginPrompt, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
               <Ionicons name="lock-closed" size={24} color={Colors[colorScheme ?? 'light'].primary} />
               <Text style={[styles.loginPromptText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Login required to download books
+                Login required to read and download books
               </Text>
               <TouchableOpacity 
                 style={[styles.loginButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
@@ -431,6 +486,27 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   
+  buttonContainer: {
+    gap: 12,
+  },
+  
+  readButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    cursor: 'pointer',
+  },
+  
+  readButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  
   downloadButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -438,7 +514,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    marginBottom: 8,
     cursor: 'pointer',
   },
   
