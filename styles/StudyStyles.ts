@@ -358,6 +358,12 @@ export const StudyStyles = StyleSheet.create({
     position: 'relative',
   },
 
+  bookCoverImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4,
+  },
+
   dominicanBadge: {
     position: 'absolute',
     top: 0,

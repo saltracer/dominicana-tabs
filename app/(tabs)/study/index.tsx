@@ -8,6 +8,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -72,25 +73,8 @@ export default function StudyScreen() {
   };
 
   const handleBookPress = (book: Book) => {
-    if (!user) {
-      handleLogin();
-      return;
-    }
-    
-    Alert.alert(
-      'Open Book',
-      `Would you like to open "${book.title}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Open', 
-          onPress: () => {
-            // In a real app, this would open the epub reader
-            Alert.alert('Reader', 'Epub reader would open here with the selected book.');
-          }
-        }
-      ]
-    );
+    // Navigate to book detail page instead of requiring login
+    router.push(`/(tabs)/study/book/${book.id}`);
   };
 
   if (!liturgicalDay || authLoading) {
@@ -227,15 +211,18 @@ export default function StudyScreen() {
                 onPress={() => handleBookPress(book)}
               >
                 <View style={styles.bookCover}>
-                  <Ionicons 
-                    name="book" 
-                    size={40} 
-                    color={Colors[colorScheme ?? 'light'].primary} 
-                  />
-                  {book.isDominican && (
-                    <View style={styles.dominicanBadge}>
-                      <Text style={styles.dominicanBadgeText}>OP</Text>
-                    </View>
+                  {book.coverImage ? (
+                    <Image 
+                      source={{ uri: book.coverImage }} 
+                      style={styles.bookCoverImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons 
+                      name="book" 
+                      size={40} 
+                      color={Colors[colorScheme ?? 'light'].primary} 
+                    />
                   )}
                 </View>
                 <View style={styles.bookInfo}>
