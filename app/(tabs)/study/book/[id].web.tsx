@@ -19,6 +19,7 @@ import { Book } from '../../../../types';
 import { StudyStyles } from '../../../../styles';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useBooks } from '../../../../hooks/useBooks';
+import { supabase } from '../../../../lib/supabase';
 
 export default function BookDetailWebScreen() {
   const { colorScheme } = useTheme();
@@ -53,25 +54,67 @@ export default function BookDetailWebScreen() {
       return;
     }
 
+    if (!user) {
+      Alert.alert('Authentication Required', 'Please log in to download books.');
+      return;
+    }
+
     try {
-      // For now, we'll show an alert. In a real app, you'd implement actual download logic
-      Alert.alert(
-        'Download Book',
-        `Would you like to download "${book.title}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Download', 
-            onPress: () => {
-              // In a real app, this would trigger the download
-              Alert.alert('Download Started', 'The book download has been initiated.');
-            }
+      // Show loading state
+      Alert.alert('Downloading...', 'Preparing download...');
+
+      // Extract file path from the URL
+      const urlPath = book.epubPath;
+      let filePath = '';
+      
+      if (urlPath.includes('/storage/v1/object/')) {
+        const parts = urlPath.split('/storage/v1/object/');
+        if (parts.length > 1) {
+          const pathParts = parts[1].split('/');
+          if (pathParts.length > 2) {
+            filePath = pathParts.slice(2).join('/'); // Remove 'public' and bucket name
           }
-        ]
-      );
+        }
+      }
+
+      console.log('Original URL:', urlPath);
+      console.log('Extracted file path:', filePath);
+
+      // Generate signed URL for private storage access
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+        .from('epub_files')
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+      if (signedUrlError) {
+        console.error('Error generating signed URL:', signedUrlError);
+        Alert.alert('Error', `Failed to generate download link: ${signedUrlError.message}`);
+        return;
+      }
+
+      if (!signedUrlData?.signedUrl) {
+        Alert.alert('Error', 'Failed to generate download link. Please try again.');
+        return;
+      }
+
+      const downloadUrl = signedUrlData.signedUrl;
+      const fileName = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.epub`;
+
+      console.log('Generated signed URL:', downloadUrl);
+      
+      // Create a temporary anchor element to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      link.target = '_blank';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      Alert.alert('Download Started', 'The book download has been initiated.');
     } catch (error) {
       console.error('Error downloading book:', error);
-      Alert.alert('Error', 'Failed to download book');
+      Alert.alert('Error', 'Failed to download book. Please try again.');
     }
   };
 
