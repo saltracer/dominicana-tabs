@@ -128,145 +128,88 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading Book...
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Preparing {book.title} for reading...
-          </Text>
-        </View>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+        <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+          Preparing {book.title} for reading...
+        </Text>
       </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Error
+      <SafeAreaView style={[styles.errorContainer, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <Ionicons name="alert-circle" size={48} color={Colors[colorScheme ?? 'light'].error} />
+        <Text style={[styles.errorTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+          Unable to Load Book
+        </Text>
+        <Text style={[styles.errorMessage, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+          {error}
+        </Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+          onPress={handleRetry}
+        >
+          <Text style={[styles.retryButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            Try Again
           </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color={Colors[colorScheme ?? 'light'].error} />
-          <Text style={[styles.errorTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Unable to Load Book
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface, marginTop: 10 }]}
+          onPress={onClose}
+        >
+          <Text style={[styles.retryButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Close
           </Text>
-          <Text style={[styles.errorMessage, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            {error}
-          </Text>
-          <TouchableOpacity 
-            style={[styles.retryButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-            onPress={handleRetry}
-          >
-            <Text style={[styles.retryButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              Try Again
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   if (!localFilePath) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            No File Available
+      <SafeAreaView style={[styles.errorContainer, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <Ionicons name="book-outline" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
+        <Text style={[styles.errorTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+          No EPUB File Available
+        </Text>
+        <Text style={[styles.errorMessage, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+          This book is not available for reading at this time.
+        </Text>
+        <TouchableOpacity 
+          style={[styles.retryButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+          onPress={onClose}
+        >
+          <Text style={[styles.retryButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            Close
           </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="book-outline" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
-          <Text style={[styles.errorTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            No EPUB File Available
-          </Text>
-          <Text style={[styles.errorMessage, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            This book is not available for reading at this time.
-          </Text>
-        </View>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-          <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-          {book.title}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
-      <View style={styles.readerContainer}>
-        <ReadiumView 
-          file={{ url: localFilePath }}
-          style={styles.readiumView}
-          preferences={{
-            // fontSize: 100, // Default font size percentage
-            // fontFamily: 'serif',
-            // pageMargins: 15, // Page margins
-            theme: colorScheme === 'dark' ? 'dark' : 'light',
-          }}
-          onLocationChange={(locator) => {
-            console.log('Location changed:', locator);
-          }}
-          onTableOfContents={(toc) => {
-            console.log('Table of contents loaded:', toc);
-          }}
-        />
-      </View>
-    </SafeAreaView>
+    <ReadiumView 
+      file={{ url: localFilePath }}
+      style={styles.readiumView}
+      preferences={{
+        // fontSize: 100, // Default font size percentage
+        // fontFamily: 'serif',
+        // pageMargins: 15, // Page margins
+        theme: colorScheme === 'dark' ? 'dark' : 'light',
+      }}
+      onLocationChange={(locator) => {
+        console.log('Location changed:', locator);
+      }}
+      onTableOfContents={(toc) => {
+        console.log('Table of contents loaded:', toc);
+      }}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  closeButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Georgia',
-    fontWeight: '600',
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  readerContainer: {
-    flex: 1,
-  },
   readiumView: {
     flex: 1,
   },
