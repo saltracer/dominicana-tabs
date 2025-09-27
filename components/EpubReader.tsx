@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ReadiumView } from 'react-native-readium';
-import * as FileSystem from 'expo-file-system/legacy';
+import { File, Directory, Paths } from 'expo-file-system';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { Book } from '../types';
@@ -31,14 +31,21 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   useEffect(() => {
     loadEpubFile();
     
-    // Cleanup function to delete downloaded file when component unmounts
+    // Cleanup function to delete downloaded file when component unmounts or book changes
     return () => {
       if (localFilePath) {
-        FileSystem.deleteAsync(localFilePath, { idempotent: true })
-          .catch((error: any) => console.warn('Failed to delete EPUB file:', error));
+        try {
+          const file = new File(localFilePath);
+          if (file.exists) {
+            console.log('Cleaning up EPUB file:', localFilePath);
+            file.delete();
+          }
+        } catch (error: any) {
+          console.warn('Failed to delete EPUB file:', error);
+        }
       }
     };
-  }, [book]);
+  }, [book, localFilePath]);
 
   const loadEpubFile = async () => {
     try {
@@ -47,6 +54,14 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
 
       if (!book.epubPath) {
         throw new Error('No EPUB file available for this book');
+      }
+
+      // Clean up any existing file for this book first
+      const fileName = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.epub`;
+      const existingFile = new File(Paths.cache, fileName);
+      if (existingFile.exists) {
+        console.log('Cleaning up existing file before new download');
+        existingFile.delete();
       }
 
       // Extract file path from the URL
@@ -82,23 +97,23 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
 
       console.log('Generated signed URL:', signedUrlData.signedUrl);
 
-      // Download the EPUB file locally using the legacy FileSystem API
-      const fileName = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.epub`;
-      const localUri = `${FileSystem.cacheDirectory}${fileName}`;
+      // Download the EPUB file locally using the new FileSystem API
+      const outputFile = new File(Paths.cache, fileName);
       
-      console.log('Downloading EPUB to:', localUri);
+      console.log('Downloading EPUB to:', outputFile.uri);
       
-      const downloadResult = await FileSystem.downloadAsync(
+      // Use File.downloadFileAsync for downloading
+      const downloadedFile = await File.downloadFileAsync(
         signedUrlData.signedUrl,
-        localUri
+        outputFile
       );
 
-      if (downloadResult.status !== 200) {
-        throw new Error(`Download failed with status: ${downloadResult.status}`);
+      if (!downloadedFile.exists) {
+        throw new Error('Download failed - file does not exist');
       }
 
-      console.log('EPUB downloaded successfully to:', localUri);
-      setLocalFilePath(localUri);
+      console.log('EPUB downloaded successfully to:', downloadedFile.uri);
+      setLocalFilePath(downloadedFile.uri);
     } catch (err) {
       console.error('Error loading EPUB file:', err);
       setError(err instanceof Error ? err.message : 'Failed to load EPUB file');
