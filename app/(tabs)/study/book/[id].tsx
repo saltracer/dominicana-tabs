@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { Book } from '../../../../types';
@@ -27,6 +27,7 @@ export default function BookDetailScreen() {
   const { user } = useAuth();
   const { getBookById } = useBooks();
   const { id } = useLocalSearchParams();
+  const navigation = useNavigation();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReader, setShowReader] = useState(false);
@@ -34,6 +35,15 @@ export default function BookDetailScreen() {
   useEffect(() => {
     loadBook();
   }, [id]);
+
+  // Set header title when book is loaded
+  useEffect(() => {
+    if (book) {
+      navigation.setOptions({
+        title: book.title
+      });
+    }
+  }, [book, navigation]);
 
   const loadBook = async () => {
     try {
