@@ -41,6 +41,7 @@ export default function BookDetailScreen() {
     if (book) {
       navigation.setOptions({
         title: book.title,
+        headerBackButtonDisplayMode: 'minimal', // Show only back arrow, no text
       });
     }
   }, [book, navigation]);
@@ -222,7 +223,7 @@ export default function BookDetailScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         
         {/* Header */}
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => router.back()}
@@ -233,7 +234,7 @@ export default function BookDetailScreen() {
             Book Details
           </Text>
           <View style={styles.headerSpacer} />
-        </View>
+        </View> */}
 
         {/* Book Cover and Basic Info */}
         <View style={styles.bookHeader}>
