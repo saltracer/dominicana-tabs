@@ -1,7 +1,7 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
-import { Link, Tabs } from 'expo-router';
+import { Link, Tabs, usePathname } from 'expo-router';
 import { Pressable, View, StyleSheet, Image, Text, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -30,6 +30,10 @@ export default function TabLayout() {
   const { colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { liturgicalDay } = useCalendar();
+  const pathname = usePathname();
+  
+  // Check if we're in a book reader (hide feast banner when reading)
+  const isInBookReader = pathname.includes('/study/book/');
 
   return (
     <View style={styles.container}>
@@ -108,6 +112,7 @@ export default function TabLayout() {
         name="study"
         options={{
           title: 'Study',
+          headerShown: !isInBookReader, // Hide header when in book reader
           tabBarIcon: ({ color, focused }) => (
             <IoniconsTabBarIcon 
               name={focused ? "library" : "library-outline"} 
@@ -212,8 +217,8 @@ export default function TabLayout() {
 
       </Tabs>
       
-      {/* Feast Banner positioned above tab bar */}
-      {liturgicalDay && (
+      {/* Feast Banner positioned above tab bar - hide when in book reader */}
+      {liturgicalDay && !isInBookReader && (
         <View style={[styles.feastBannerContainer, { bottom: 60 + Math.max(insets.bottom, 10) }]}>
           <FeastBanner liturgicalDay={liturgicalDay} />
         </View>

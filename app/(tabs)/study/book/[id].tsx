@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { Book } from '../../../../types';
@@ -40,10 +40,37 @@ export default function BookDetailScreen() {
   useEffect(() => {
     if (book) {
       navigation.setOptions({
-        title: book.title
+        title: book.title,
       });
     }
   }, [book, navigation]);
+
+  // Hide header/tab bar when reader is shown
+  useFocusEffect(
+    React.useCallback(() => {
+      navigation.setOptions({
+        headerShown: !showReader, // Hide header when reader is shown
+      });
+      
+      // Hide tab bar when reader is shown
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.setOptions({
+          tabBarStyle: showReader ? { display: 'none' } : undefined,
+          tabBarVisible: !showReader
+        });
+      }
+      
+      // Cleanup function to restore tab bar when leaving
+      return () => {
+        if (parentNavigation) {
+          parentNavigation.setOptions({
+            tabBarStyle: undefined
+          });
+        }
+      };
+    }, [navigation, showReader])
+  );
 
   const loadBook = async () => {
     try {
