@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ReadiumView } from 'react-native-readium';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { Book } from '../types';
@@ -25,10 +26,18 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   const { colorScheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [localFilePath, setLocalFilePath] = useState<string | null>(null);
 
   useEffect(() => {
     loadEpubFile();
+    
+    // Cleanup function to delete downloaded file when component unmounts
+    return () => {
+      if (localFilePath) {
+        FileSystem.deleteAsync(localFilePath, { idempotent: true })
+          .catch((error: any) => console.warn('Failed to delete EPUB file:', error));
+      }
+    };
   }, [book]);
 
   const loadEpubFile = async () => {
@@ -72,7 +81,24 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       }
 
       console.log('Generated signed URL:', signedUrlData.signedUrl);
-      setFileUrl(signedUrlData.signedUrl);
+
+      // Download the EPUB file locally using the legacy FileSystem API
+      const fileName = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.epub`;
+      const localUri = `${FileSystem.cacheDirectory}${fileName}`;
+      
+      console.log('Downloading EPUB to:', localUri);
+      
+      const downloadResult = await FileSystem.downloadAsync(
+        signedUrlData.signedUrl,
+        localUri
+      );
+
+      if (downloadResult.status !== 200) {
+        throw new Error(`Download failed with status: ${downloadResult.status}`);
+      }
+
+      console.log('EPUB downloaded successfully to:', localUri);
+      setLocalFilePath(localUri);
     } catch (err) {
       console.error('Error loading EPUB file:', err);
       setError(err instanceof Error ? err.message : 'Failed to load EPUB file');
@@ -140,7 +166,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
     );
   }
 
-  if (!fileUrl) {
+  if (!localFilePath) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.header}>
@@ -178,8 +204,19 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       </View>
       <View style={styles.readerContainer}>
         <ReadiumView 
-          file={{ url: fileUrl }}
+          file={{ url: localFilePath }}
           style={styles.readiumView}
+          preferences={{
+            fontSize: 100, // Default font size percentage
+            fontFamily: 'serif',
+            pageMargins: 15, // Page margins
+          }}
+          onLocationChange={(locator) => {
+            console.log('Location changed:', locator);
+          }}
+          onTableOfContents={(toc) => {
+            console.log('Table of contents loaded:', toc);
+          }}
         />
       </View>
     </SafeAreaView>

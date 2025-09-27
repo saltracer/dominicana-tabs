@@ -276,7 +276,7 @@ export default function BookDetailWebScreen() {
                 </Text>
               </TouchableOpacity>
               
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 style={[
                   styles.downloadButton, 
                   { 
@@ -302,7 +302,7 @@ export default function BookDetailWebScreen() {
                 ]}>
                   {book.epubPath ? 'Download EPUB' : 'Download Unavailable'}
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
             {!book.epubPath && (
               <Text style={[styles.downloadNote, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
