@@ -222,9 +222,10 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
           file={{ url: localFilePath }}
           style={styles.readiumView}
           preferences={{
-            fontSize: 100, // Default font size percentage
-            fontFamily: 'serif',
-            pageMargins: 15, // Page margins
+            // fontSize: 100, // Default font size percentage
+            // fontFamily: 'serif',
+            // pageMargins: 15, // Page margins
+            theme: colorScheme === 'dark' ? 'dark' : 'light',
           }}
           onLocationChange={(locator) => {
             console.log('Location changed:', locator);
