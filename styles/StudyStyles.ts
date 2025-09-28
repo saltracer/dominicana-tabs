@@ -205,8 +205,17 @@ export const StudyStyles = StyleSheet.create({
 
   bookCardGrid: {
     ...GlobalStyles.card,
-    width: '48%',
+    width: screenWidth > 768 ? (screenWidth - 64) / 3 : (screenWidth - 48) / 2, // 3 columns on iPad, 2 on mobile
     padding: 12,
+    aspectRatio: 1 / 1.5, // 1:1.5 portrait aspect ratio
+  },
+
+  bookCardGridWeb: {
+    ...GlobalStyles.card,
+    width: 200, // Fixed width for web to allow more columns
+    padding: 16,
+    aspectRatio: 1 / 1.5, // 1:1.5 portrait aspect ratio
+    cursor: 'pointer',
   },
 
   bookCardWeb: {
@@ -272,13 +281,15 @@ export const StudyStyles = StyleSheet.create({
   booksGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 8, // Add gap between cards
   },
 
   booksGridWeb: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 12, // Larger gap for web
   },
 
   booksList: {
@@ -353,7 +364,7 @@ export const StudyStyles = StyleSheet.create({
   bookCover: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 80,
+    aspectRatio: 1 / 1.5, // 1:1.5 portrait aspect ratio for book cover
     marginBottom: 8,
     position: 'relative',
   },
@@ -760,6 +771,7 @@ export const getStudyPlatformStyles = (isWeb: boolean) => ({
   searchInputContainer: isWeb ? StudyStyles.searchInputContainerWeb : StudyStyles.searchInputContainer,
   searchButton: isWeb ? StudyStyles.searchButtonWeb : StudyStyles.searchButton,
   bookCard: isWeb ? StudyStyles.bookCardWeb : StudyStyles.bookCard,
+  bookCardGrid: isWeb ? StudyStyles.bookCardGridWeb : StudyStyles.bookCardGrid,
   booksGrid: isWeb ? StudyStyles.booksGridWeb : StudyStyles.booksGrid,
   categoryCard: isWeb ? StudyStyles.categoryCardCompact : StudyStyles.categoryCard,
   categoryText: isWeb ? StudyStyles.categoryTextCompact : StudyStyles.categoryText,

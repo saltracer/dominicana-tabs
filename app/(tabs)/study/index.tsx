@@ -205,7 +205,7 @@ export default function StudyScreen() {
               <TouchableOpacity
                 key={book.id}
                 style={[
-                  styles.bookCardGrid,
+                  platformStyles.bookCardGrid,
                   { backgroundColor: Colors[colorScheme ?? 'light'].card }
                 ]}
                 onPress={() => handleBookPress(book)}
