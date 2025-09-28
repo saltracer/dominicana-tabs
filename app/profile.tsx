@@ -222,6 +222,29 @@ function ProfileScreenContent() {
               </View>
             </View>
           </View>
+          
+          {/* Sign In Prompt */}
+          <View style={styles.section}>
+            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+              <View style={styles.signInPrompt}>
+                <Ionicons name="log-in" size={32} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.signInTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Sign in for more features
+                </Text>
+                <Text style={[styles.signInDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Access your personalized prayer settings, reading progress, and more
+                </Text>
+                <TouchableOpacity
+                  style={[styles.primaryLoginButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+                  onPress={handleLogin}
+                >
+                  <Text style={[styles.primaryLoginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                    Sign In
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
 
           {/* About Section */}
           <View style={styles.section}>
@@ -260,28 +283,6 @@ function ProfileScreenContent() {
             </View>
           </View>
 
-          {/* Sign In Prompt */}
-          <View style={styles.section}>
-            <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-              <View style={styles.signInPrompt}>
-                <Ionicons name="log-in" size={32} color={Colors[colorScheme ?? 'light'].primary} />
-                <Text style={[styles.signInTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Sign in for more features
-                </Text>
-                <Text style={[styles.signInDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Access your personalized prayer settings, reading progress, and more
-                </Text>
-                <TouchableOpacity
-                  style={[styles.primaryLoginButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-                  onPress={handleLogin}
-                >
-                  <Text style={[styles.primaryLoginButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
         </ScrollView>
       </SafeAreaView>
     );
