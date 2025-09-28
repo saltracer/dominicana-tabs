@@ -10,29 +10,66 @@ export class ReadingProgressService {
     progress: ReadingProgressUpdate
   ): Promise<ReadingProgress> {
     try {
-      const { data, error } = await supabase
+      // First, try to update existing record
+      const { data: existingData, error: selectError } = await supabase
         .from('reading_progress')
-        .upsert({
-          user_id: userId,
-          book_id: progress.book_id,
-          book_title: progress.book_title,
-          current_location: progress.current_location,
-          progress_percentage: progress.progress_percentage,
-          total_pages: progress.total_pages,
-          current_page: progress.current_page,
-          last_read_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id,book_id'
-        })
-        .select()
+        .select('id')
+        .eq('user_id', userId)
+        .eq('book_id', progress.book_id)
         .single();
 
-      if (error) {
-        console.error('Error saving reading progress:', error);
-        throw new Error(`Failed to save reading progress: ${error.message}`);
+      if (selectError && selectError.code !== 'PGRST116') {
+        console.error('Error checking existing progress:', selectError);
+        throw new Error(`Failed to check existing progress: ${selectError.message}`);
       }
 
-      return data;
+      if (existingData) {
+        // Update existing record
+        const { data, error } = await supabase
+          .from('reading_progress')
+          .update({
+            book_title: progress.book_title,
+            current_location: progress.current_location,
+            progress_percentage: progress.progress_percentage,
+            total_pages: progress.total_pages,
+            current_page: progress.current_page,
+            last_read_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingData.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating reading progress:', error);
+          throw new Error(`Failed to update reading progress: ${error.message}`);
+        }
+
+        return data;
+      } else {
+        // Insert new record
+        const { data, error } = await supabase
+          .from('reading_progress')
+          .insert({
+            user_id: userId,
+            book_id: progress.book_id,
+            book_title: progress.book_title,
+            current_location: progress.current_location,
+            progress_percentage: progress.progress_percentage,
+            total_pages: progress.total_pages,
+            current_page: progress.current_page,
+            last_read_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error inserting reading progress:', error);
+          throw new Error(`Failed to insert reading progress: ${error.message}`);
+        }
+
+        return data;
+      }
     } catch (error) {
       console.error('ReadingProgressService.saveProgress error:', error);
       throw error;
@@ -44,7 +81,7 @@ export class ReadingProgressService {
    */
   static async getBookProgress(
     userId: string,
-    bookId: string
+    bookId: number
   ): Promise<ReadingProgress | null> {
     try {
       const { data, error } = await supabase
@@ -143,7 +180,7 @@ export class ReadingProgressService {
    */
   static async deleteProgress(
     userId: string,
-    bookId: string
+    bookId: number
   ): Promise<void> {
     try {
       const { error } = await supabase
@@ -164,12 +201,20 @@ export class ReadingProgressService {
 
   /**
    * Calculate progress percentage from Readium locator
+   * Uses totalProgression which represents progress through the entire EPUB
    */
   static calculateProgressPercentage(locator: any): number {
     try {
-      // Readium locator typically has href and locations
+      // Use totalProgression for entire book progress, not just current file
+      if (locator?.locations?.totalProgression !== undefined) {
+        const percentage = locator.locations.totalProgression * 100;
+        return Math.round(Math.max(0, Math.min(100, percentage))); // Clamp between 0-100
+      }
+      
+      // Fallback to regular progression if totalProgression not available
       if (locator?.locations?.progression !== undefined) {
-        return Math.round(locator.locations.progression * 100);
+        const percentage = locator.locations.progression * 100;
+        return Math.round(Math.max(0, Math.min(100, percentage))); // Clamp between 0-100
       }
       
       // Fallback calculation based on href position
@@ -188,18 +233,33 @@ export class ReadingProgressService {
 
   /**
    * Extract page information from Readium locator
+   * Uses totalProgression for accurate book-wide page calculation
    */
   static extractPageInfo(locator: any): { totalPages?: number; currentPage?: number } {
     try {
-      const totalPages = locator?.locations?.totalProgression 
-        ? Math.round(1 / locator.locations.totalProgression)
-        : undefined;
+      // Use totalProgression for entire book page calculation
+      const totalProgression = locator?.locations?.totalProgression;
+      const currentProgression = locator?.locations?.progression;
       
-      const currentPage = locator?.locations?.progression && totalPages
-        ? Math.round(locator.locations.progression * totalPages)
-        : undefined;
+      if (totalProgression && currentProgression !== undefined) {
+        // Calculate total pages based on totalProgression
+        const totalPages = Math.round(1 / totalProgression);
+        
+        // Calculate current page based on progression through entire book
+        const currentPage = Math.round(currentProgression * totalPages);
+        
+        return { totalPages, currentPage };
+      }
+      
+      // Fallback if totalProgression not available
+      if (currentProgression !== undefined) {
+        // This is less accurate but better than nothing
+        const estimatedTotalPages = 200; // Default estimate
+        const currentPage = Math.round(currentProgression * estimatedTotalPages);
+        return { totalPages: estimatedTotalPages, currentPage };
+      }
 
-      return { totalPages, currentPage };
+      return {};
     } catch (error) {
       console.error('Error extracting page info:', error);
       return {};

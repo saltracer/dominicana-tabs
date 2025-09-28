@@ -1,7 +1,7 @@
 export interface ReadingProgress {
   id?: string;
   user_id: string;
-  book_id: string;
+  book_id: number; // Changed from string to number to match database INTEGER
   book_title: string;
   current_location: string; // Readium locator string
   progress_percentage: number; // 0-100
@@ -13,7 +13,7 @@ export interface ReadingProgress {
 }
 
 export interface ReadingProgressUpdate {
-  book_id: string;
+  book_id: number; // Changed from string to number to match database INTEGER
   book_title: string;
   current_location: string;
   progress_percentage: number;

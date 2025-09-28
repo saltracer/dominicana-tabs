@@ -12,14 +12,14 @@ interface ReadingProgressContextType {
   
   // Actions
   saveProgress: (progress: ReadingProgressUpdate) => Promise<void>;
-  getBookProgress: (bookId: string) => Promise<ReadingProgress | null>;
-  deleteProgress: (bookId: string) => Promise<void>;
+  getBookProgress: (bookId: number) => Promise<ReadingProgress | null>;
+  deleteProgress: (bookId: number) => Promise<void>;
   refreshProgress: () => Promise<void>;
   refreshStats: () => Promise<void>;
   
   // Utility
-  getBookProgressPercentage: (bookId: string) => number;
-  isBookInProgress: (bookId: string) => boolean;
+  getBookProgressPercentage: (bookId: number) => number;
+  isBookInProgress: (bookId: number) => boolean;
 }
 
 const ReadingProgressContext = createContext<ReadingProgressContextType | undefined>(undefined);
@@ -76,7 +76,7 @@ export function ReadingProgressProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getBookProgress = async (bookId: string): Promise<ReadingProgress | null> => {
+  const getBookProgress = async (bookId: number): Promise<ReadingProgress | null> => {
     if (!user) {
       return null;
     }
@@ -89,7 +89,7 @@ export function ReadingProgressProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const deleteProgress = async (bookId: string) => {
+  const deleteProgress = async (bookId: number) => {
     if (!user) {
       throw new Error('User must be authenticated to delete reading progress');
     }
@@ -152,12 +152,12 @@ export function ReadingProgressProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getBookProgressPercentage = (bookId: string): number => {
+  const getBookProgressPercentage = (bookId: number): number => {
     const bookProgress = progress.find(p => p.book_id === bookId);
     return bookProgress?.progress_percentage || 0;
   };
 
-  const isBookInProgress = (bookId: string): boolean => {
+  const isBookInProgress = (bookId: number): boolean => {
     const bookProgress = progress.find(p => p.book_id === bookId);
     return bookProgress !== undefined && bookProgress.progress_percentage > 0;
   };

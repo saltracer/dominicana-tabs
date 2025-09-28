@@ -221,8 +221,14 @@ export default function StudyScreen() {
               </View>
             ) : readingProgress.length > 0 ? (
               <View style={styles.booksGrid}>
-                {readingProgress.map((progress) => {
-                  const book = books.find(b => b.id.toString() === progress.book_id.toString());
+                {readingProgress
+                  .filter((progress, index, self) => 
+                    // Remove duplicates by keeping only the most recent entry for each book
+                    index === self.findIndex(p => p.book_id === progress.book_id)
+                  )
+                  .sort((a, b) => new Date(b.last_read_at).getTime() - new Date(a.last_read_at).getTime()) // Sort by most recent
+                  .map((progress, index) => {
+                  const book = books.find(b => b.id === progress.book_id);
                   console.log('📚 Book matching debug:', {
                     progressBookId: progress.book_id,
                     progressBookIdType: typeof progress.book_id,
@@ -232,7 +238,7 @@ export default function StudyScreen() {
                   
                   // Create a fallback book object if not found in main books array
                   const bookData = book || {
-                    id: parseInt(progress.book_id.toString()),
+                    id: progress.book_id,
                     title: progress.book_title,
                     author: 'Unknown Author', // We don't have author in progress data
                     description: 'Continue reading this book',
@@ -250,7 +256,7 @@ export default function StudyScreen() {
                   
                   return (
                     <TouchableOpacity
-                      key={progress.id}
+                      key={`continue-reading-${progress.book_id}-${index}`}
                       style={[
                         platformStyles.bookCardGrid,
                         { backgroundColor: Colors[colorScheme ?? 'light'].card }
@@ -329,15 +335,15 @@ export default function StudyScreen() {
           </Text>
           
           <View style={styles.booksGrid}>
-            {filteredBooks.map((book) => (
-              <TouchableOpacity
-                key={book.id}
-                style={[
-                  platformStyles.bookCardGrid,
-                  { backgroundColor: Colors[colorScheme ?? 'light'].card }
-                ]}
-                onPress={() => handleBookPress(book)}
-              >
+             {filteredBooks.map((book) => (
+               <TouchableOpacity
+                 key={`library-${book.id}`}
+                 style={[
+                   platformStyles.bookCardGrid,
+                   { backgroundColor: Colors[colorScheme ?? 'light'].card }
+                 ]}
+                 onPress={() => handleBookPress(book)}
+               >
                 <View style={styles.bookCover}>
                   {book.coverImage ? (
                     <Image 

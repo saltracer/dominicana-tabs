@@ -311,7 +311,7 @@ export default function BookDetailScreen() {
         </View>
 
         {/* Reading Progress Section */}
-        {user && isBookInProgress(book.id.toString()) && (
+        {user && isBookInProgress(book.id) && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Reading Progress
@@ -332,13 +332,13 @@ export default function BookDetailScreen() {
                       styles.progressBarFill, 
                       { 
                         backgroundColor: Colors[colorScheme ?? 'light'].primary,
-                        width: `${getBookProgressPercentage(book.id.toString())}%`
+                        width: `${getBookProgressPercentage(book.id)}%`
                       }
                     ]} 
                   />
                 </View>
                 <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {Math.round(getBookProgressPercentage(book.id.toString()))}% Complete
+                  {Math.round(getBookProgressPercentage(book.id))}% Complete
                 </Text>
               </View>
             </View>

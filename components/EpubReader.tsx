@@ -36,7 +36,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   const [readiumViewRef, setReadiumViewRef] = useState<any>(null);
 
   // Debounced progress saving
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const saveProgressDebounced = useCallback(
     (locator: any) => {
@@ -52,20 +52,22 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
         try {
           setSavingProgress(true);
           
-          const progressPercentage = ReadingProgressService.calculateProgressPercentage(locator);
-          const pageInfo = ReadingProgressService.extractPageInfo(locator);
-          const locationString = JSON.stringify(locator);
-          
-          console.log('💾 Saving progress:', {
-            bookId: book.id,
-            bookTitle: book.title,
-            progressPercentage,
-            pageInfo,
-            locationString: locationString.substring(0, 100) + '...'
-          });
+            const progressPercentage = ReadingProgressService.calculateProgressPercentage(locator);
+            const pageInfo = ReadingProgressService.extractPageInfo(locator);
+            const locationString = JSON.stringify(locator);
+            
+            console.log('💾 Saving progress:', {
+              bookId: book.id,
+              bookTitle: book.title,
+              progressPercentage,
+              pageInfo,
+              locatorProgression: locator?.locations?.progression,
+              locatorTotalProgression: locator?.locations?.totalProgression,
+              locationString: locationString.substring(0, 100) + '...'
+            });
           
           await saveProgress({
-            book_id: book.id.toString(),
+            book_id: book.id,
             book_title: book.title,
             current_location: locationString,
             progress_percentage: progressPercentage,
@@ -109,6 +111,23 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
     };
   }, [book, localFilePath]);
 
+  const navigateToSavedLocation = useCallback(() => {
+    if (initialLocation && readiumViewRef) {
+      console.log('🎯 Navigating to saved location:', initialLocation);
+      try {
+        // Use the ReadiumView's navigation method
+        if (readiumViewRef.goToLocation) {
+          readiumViewRef.goToLocation(initialLocation);
+          console.log('✅ Successfully navigated to saved location');
+        } else {
+          console.log('⚠️ goToLocation method not available on ReadiumView');
+        }
+      } catch (error) {
+        console.error('❌ Error navigating to saved location:', error);
+      }
+    }
+  }, [initialLocation, readiumViewRef]);
+
   // Navigate to saved location after ReadiumView loads
   useEffect(() => {
     if (initialLocation && readiumViewRef) {
@@ -124,7 +143,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   const loadSavedProgress = async () => {
     try {
       console.log('🔍 Loading saved progress for book:', book.id);
-      const savedProgress = await getBookProgress(book.id.toString());
+      const savedProgress = await getBookProgress(book.id);
       
       if (savedProgress && savedProgress.current_location) {
         console.log('✅ Found saved progress:', {
@@ -151,23 +170,6 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       setLastSavedLocation(null);
     }
   };
-
-  const navigateToSavedLocation = useCallback(() => {
-    if (initialLocation && readiumViewRef) {
-      console.log('🎯 Navigating to saved location:', initialLocation);
-      try {
-        // Use the ReadiumView's navigation method
-        if (readiumViewRef.goToLocation) {
-          readiumViewRef.goToLocation(initialLocation);
-          console.log('✅ Successfully navigated to saved location');
-        } else {
-          console.log('⚠️ goToLocation method not available on ReadiumView');
-        }
-      } catch (error) {
-        console.error('❌ Error navigating to saved location:', error);
-      }
-    }
-  }, [initialLocation, readiumViewRef]);
 
   const loadEpubFile = async () => {
     try {
@@ -323,7 +325,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   return (
     <View style={styles.container}>
       <ReadiumView 
-        ref={(ref) => {
+        ref={(ref: any) => {
           if (ref && !readiumViewRef) {
             setReadiumViewRef(ref);
           }
@@ -339,12 +341,14 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
           // pageMargins: 15, // Page margins
           theme: colorScheme === 'dark' ? 'dark' : 'light',
         }}
-      onLocationChange={(locator) => {
-        console.log('🔄 Location changed:', {
-          href: locator?.href,
-          locations: locator?.locations,
-          progression: locator?.locations?.progression
-        });
+        onLocationChange={(locator) => {
+          console.log('🔄 Location changed:', {
+            href: locator?.href,
+            locations: locator?.locations,
+            progression: locator?.locations?.progression,
+            totalProgression: locator?.locations?.totalProgression,
+            position: locator?.locations?.position
+          });
         
         // Only save if location has actually changed and we're not currently saving
         const currentLocation = JSON.stringify(locator);
