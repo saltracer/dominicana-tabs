@@ -45,7 +45,7 @@ export default function PrayerIndex() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']} >
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Prayer Navigation */}
         <PrayerNavigation activeTab="prayer" />
@@ -103,9 +103,9 @@ export default function PrayerIndex() {
       </ScrollView>
       
       {/* Feast Banner at Bottom */}
-      {liturgicalDay && (
+      {/* {liturgicalDay && (
         <FeastBanner liturgicalDay={liturgicalDay} />
-      )}
+      )} */}
     </SafeAreaView>
   );
 }
