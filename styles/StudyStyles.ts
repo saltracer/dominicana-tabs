@@ -206,16 +206,30 @@ export const StudyStyles = StyleSheet.create({
   bookCardGrid: {
     ...GlobalStyles.card,
     width: screenWidth > 768 ? (screenWidth - 64) / 3 : (screenWidth - 48) / 2, // 3 columns on iPad, 2 on mobile
-    padding: 12,
-    aspectRatio: 1 / 1.5, // 1:1.5 portrait aspect ratio
+    padding: 8,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    borderRadius: 8,
   },
 
   bookCardGridWeb: {
     ...GlobalStyles.card,
     width: 200, // Fixed width for web to allow more columns
-    padding: 16,
-    aspectRatio: 1 / 1.5, // 1:1.5 portrait aspect ratio
+    padding: 12,
+    flexDirection: 'column',
+    alignItems: 'stretch',
     cursor: 'pointer',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    borderRadius: 8,
   },
 
   bookCardWeb: {
@@ -228,6 +242,9 @@ export const StudyStyles = StyleSheet.create({
 
   bookInfo: {
     flex: 1,
+    justifyContent: 'flex-start',
+    paddingTop: 4,
+    minHeight: 60, // Ensure minimum space for text content
   },
 
   bookHeader: {
@@ -242,9 +259,12 @@ export const StudyStyles = StyleSheet.create({
   },
 
   bookTitleGrid: {
-    ...GlobalStyles.textBody,
-    ...GlobalStyles.textBold,
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
     marginBottom: 4,
+    lineHeight: 18,
+    color: '#1a1a1a', // Darker text for better visibility
   },
 
   bookSubtitle: {
@@ -258,8 +278,12 @@ export const StudyStyles = StyleSheet.create({
   },
 
   bookAuthor: {
-    ...GlobalStyles.textSmall,
-    marginBottom: 4,
+    fontSize: 12,
+    fontWeight: '500',
+    fontFamily: 'Georgia',
+    marginBottom: 6,
+    lineHeight: 16,
+    color: '#666666', // Medium gray for author
   },
 
   bookCategory: {
@@ -267,9 +291,11 @@ export const StudyStyles = StyleSheet.create({
   },
 
   bookDescription: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'Georgia',
-    lineHeight: 14,
+    lineHeight: 13,
+    color: '#888888', // Light gray for description
+    marginTop: 2,
   },
 
   chapterCount: {
@@ -360,6 +386,38 @@ export const StudyStyles = StyleSheet.create({
     lineHeight: 16,
   },
 
+  // PROGRESS BARS
+  progressContainer: {
+    marginTop: 6,
+  },
+
+  progressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  progressBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+
+  progressText: {
+    fontSize: 11,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    minWidth: 35,
+    textAlign: 'right',
+  },
+
   // BOOK COVER & BADGES
   bookCover: {
     alignItems: 'center',
@@ -367,12 +425,15 @@ export const StudyStyles = StyleSheet.create({
     aspectRatio: 1 / 1.5, // 1:1.5 portrait aspect ratio for book cover
     marginBottom: 8,
     position: 'relative',
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: '#f5f5f5', // Light background for placeholder
   },
 
   bookCoverImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 6,
   },
 
   dominicanBadge: {

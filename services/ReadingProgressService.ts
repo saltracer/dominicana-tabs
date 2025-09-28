@@ -75,6 +75,7 @@ export class ReadingProgressService {
    */
   static async getUserProgress(userId: string): Promise<ReadingProgress[]> {
     try {
+      console.log('📚 ReadingProgressService: Getting progress for user:', userId);
       const { data, error } = await supabase
         .from('reading_progress')
         .select('*')
@@ -86,6 +87,7 @@ export class ReadingProgressService {
         throw new Error(`Failed to get user reading progress: ${error.message}`);
       }
 
+      console.log('📚 ReadingProgressService: Found progress records:', data?.length || 0, data);
       return data || [];
     } catch (error) {
       console.error('ReadingProgressService.getUserProgress error:', error);

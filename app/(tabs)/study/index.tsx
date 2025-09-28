@@ -21,12 +21,14 @@ import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay, Book, BookCategory } from '../../../types';
 import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useReadingProgress } from '../../../contexts/ReadingProgressContext';
 import { useBooks } from '../../../hooks/useBooks';
 
 export default function StudyScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
   const { user, loading: authLoading } = useAuth();
+  const { progress: readingProgress, getBookProgressPercentage, loading: progressLoading } = useReadingProgress();
   const { books, loading: booksLoading, searchBooks } = useBooks();
   const isWeb = Platform.OS === 'web';
   const platformStyles = getStudyPlatformStyles(isWeb);
@@ -37,6 +39,17 @@ export default function StudyScreen() {
   useEffect(() => {
     filterBooks();
   }, [books, searchQuery, selectedCategory]);
+
+  // Debug reading progress
+  useEffect(() => {
+    console.log('📚 Study Screen - Reading Progress Debug:', {
+      user: user?.id,
+      readingProgress: readingProgress,
+      progressLength: readingProgress?.length || 0,
+      progressLoading,
+      books: books?.length || 0
+    });
+  }, [user, readingProgress, progressLoading, books]);
 
   const filterBooks = () => {
     const filtered = books.filter(book => {
@@ -193,7 +206,122 @@ export default function StudyScreen() {
             </View>
           </TouchableOpacity>
         </View>
+        
+        {/* Reading Progress */}
+        {user && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Continue Reading
+            </Text>
+            {progressLoading ? (
+              <View style={[styles.progressCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+                <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Loading reading progress...
+                </Text>
+              </View>
+            ) : readingProgress.length > 0 ? (
+              <View style={styles.booksGrid}>
+                {readingProgress.map((progress) => {
+                  const book = books.find(b => b.id.toString() === progress.book_id.toString());
+                  console.log('📚 Book matching debug:', {
+                    progressBookId: progress.book_id,
+                    progressBookIdType: typeof progress.book_id,
+                    booksIds: books.map(b => ({ id: b.id, type: typeof b.id })),
+                    foundBook: book
+                  });
+                  
+                  // Create a fallback book object if not found in main books array
+                  const bookData = book || {
+                    id: parseInt(progress.book_id.toString()),
+                    title: progress.book_title,
+                    author: 'Unknown Author', // We don't have author in progress data
+                    description: 'Continue reading this book',
+                    coverImage: null,
+                    epubPath: null, // We'll need to handle this
+                    category: 'Unknown',
+                    year: null,
+                    createdAt: progress.created_at || new Date().toISOString(),
+                    updatedAt: progress.updated_at || new Date().toISOString()
+                  };
+                  
+                  if (!book) {
+                    console.log('📚 Using fallback book data for:', progress.book_title);
+                  }
+                  
+                  return (
+                    <TouchableOpacity
+                      key={progress.id}
+                      style={[
+                        platformStyles.bookCardGrid,
+                        { backgroundColor: Colors[colorScheme ?? 'light'].card }
+                      ]}
+                      onPress={() => handleBookPress(bookData)}
+                    >
+                      <View style={styles.bookCover}>
+                        {bookData.coverImage ? (
+                          <Image 
+                            source={{ uri: bookData.coverImage }} 
+                            style={styles.bookCoverImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <Ionicons 
+                            name="book" 
+                            size={40} 
+                            color={Colors[colorScheme ?? 'light'].primary} 
+                          />
+                        )}
+                      </View>
+                      <View style={styles.bookInfo}>
+                        <Text style={[styles.bookTitleGrid, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
+                          {bookData.title}
+                        </Text>
+                        <Text style={[styles.bookAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                          {bookData.author}
+                        </Text>
+                        <View style={styles.progressContainer}>
+                          <View style={styles.progressBarContainer}>
+                            <View 
+                              style={[
+                                styles.progressBar, 
+                                { 
+                                  backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                                  borderColor: Colors[colorScheme ?? 'light'].border 
+                                }
+                              ]}
+                            >
+                              <View 
+                                style={[
+                                  styles.progressBarFill, 
+                                  { 
+                                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
+                                    width: `${getBookProgressPercentage(progress.book_id)}%`
+                                  }
+                                ]} 
+                              />
+                            </View>
+                            <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                              {Math.round(getBookProgressPercentage(progress.book_id))}%
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={[styles.progressCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+                <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  No books in progress. Start reading to track your progress.
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
+        
         {/* Books Grid */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -226,7 +354,7 @@ export default function StudyScreen() {
                   )}
                 </View>
                 <View style={styles.bookInfo}>
-                  <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
+                  <Text style={[styles.bookTitleGrid, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
                     {book.title}
                   </Text>
                   <Text style={[styles.bookAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
@@ -241,20 +369,7 @@ export default function StudyScreen() {
           </View>
         </View>
 
-        {/* Reading Progress */}
-        {user && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Continue Reading
-            </Text>
-            <View style={[styles.progressCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-              <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].primary} />
-              <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                No books in progress. Start reading to track your progress.
-              </Text>
-            </View>
-          </View>
-        )}
+        
       </ScrollView>
 
     </SafeAreaView>
