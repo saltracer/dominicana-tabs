@@ -12,8 +12,8 @@ export default function StudyLayout() {
         contentStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background }
       }}
     >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="bible" />
+      {/* <Stack.Screen name="index" /> */}
+      {/* <Stack.Screen name="bible" /> */}
     </Stack>
   );
 }

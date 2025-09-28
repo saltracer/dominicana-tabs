@@ -6,6 +6,7 @@ import { Pressable, View, StyleSheet, Image, Text, Platform } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/Colors';
+import { GlobalStyles } from '@/styles/GlobalStyles';
 import { useTheme } from '@/components/ThemeProvider';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useCalendar } from '@/components/CalendarContext';
@@ -73,7 +74,7 @@ export default function TabLayout() {
         // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
       }}>
-            <Tabs.Screen
+      <Tabs.Screen
         name="prayer"
         options={{
           title: 'Prayer',
@@ -228,9 +229,10 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  ...GlobalStyles,
+  // container: {
+  //   flex: 1,
+  // },
   feastBannerContainer: {
     position: 'absolute',
     left: 0,
