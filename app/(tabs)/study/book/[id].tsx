@@ -10,7 +10,7 @@ import {
   Image,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
@@ -28,6 +28,7 @@ export default function BookDetailScreen() {
   const { getBookById } = useBooks();
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReader, setShowReader] = useState(false);
@@ -66,7 +67,19 @@ export default function BookDetailScreen() {
       return () => {
         if (parentNavigation) {
           parentNavigation.setOptions({
-            tabBarStyle: undefined
+            tabBarStyle: {
+              backgroundColor: Colors[colorScheme ?? 'light'].surface,
+              borderTopColor: Colors[colorScheme ?? 'light'].border,
+              borderTopWidth: 1,
+              paddingBottom: Math.max(insets.bottom, 10),
+              paddingTop: 10,
+              height: 60 + Math.max(insets.bottom, 10),
+              paddingHorizontal: 10,
+              zIndex: 1001,
+              ...(Platform.OS === 'ios' && {
+               marginBottom: -1,
+              }),
+            }
           });
         }
       };
