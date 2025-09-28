@@ -19,6 +19,7 @@ import { Book } from '../../../../types';
 import { StudyStyles } from '../../../../styles';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useReading } from '../../../../contexts/ReadingContext';
+import { useReadingProgress } from '../../../../contexts/ReadingProgressContext';
 import { useBooks } from '../../../../hooks/useBooks';
 import { supabase } from '../../../../lib/supabase';
 import { EpubReader } from '../../../../components/EpubReader';
@@ -27,6 +28,7 @@ export default function BookDetailScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
   const { setIsReading } = useReading();
+  const { getBookProgressPercentage, isBookInProgress } = useReadingProgress();
   const { getBookById } = useBooks();
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
@@ -307,6 +309,41 @@ export default function BookDetailScreen() {
             {book.description}
           </Text>
         </View>
+
+        {/* Reading Progress Section */}
+        {user && isBookInProgress(book.id.toString()) && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Reading Progress
+            </Text>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarContainer}>
+                <View 
+                  style={[
+                    styles.progressBar, 
+                    { 
+                      backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                      borderColor: Colors[colorScheme ?? 'light'].border 
+                    }
+                  ]}
+                >
+                  <View 
+                    style={[
+                      styles.progressBarFill, 
+                      { 
+                        backgroundColor: Colors[colorScheme ?? 'light'].primary,
+                        width: `${getBookProgressPercentage(book.id.toString())}%`
+                      }
+                    ]} 
+                  />
+                </View>
+                <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {Math.round(getBookProgressPercentage(book.id.toString()))}% Complete
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Reading Section */}
         {user ? (
@@ -622,5 +659,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
     fontWeight: '600',
+  },
+  
+  progressContainer: {
+    marginTop: 8,
+  },
+  
+  progressBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  
+  progressBar: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  
+  progressText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    minWidth: 80,
+    textAlign: 'right',
   },
 });

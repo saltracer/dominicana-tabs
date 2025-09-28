@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { Book } from '../types';
 import { supabase } from '../lib/supabase';
+import { useReadingProgress } from '../contexts/ReadingProgressContext';
+import { ReadingProgressService } from '../services/ReadingProgressService';
 
 interface EpubReaderProps {
   book: Book;
@@ -24,15 +26,75 @@ interface EpubReaderProps {
 
 export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   const { colorScheme } = useTheme();
+  const { saveProgress, getBookProgress } = useReadingProgress();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [localFilePath, setLocalFilePath] = useState<string | null>(null);
+  const [savingProgress, setSavingProgress] = useState(false);
+  const [lastSavedLocation, setLastSavedLocation] = useState<string | null>(null);
+  const [initialLocation, setInitialLocation] = useState<any>(null);
+  const [readiumViewRef, setReadiumViewRef] = useState<any>(null);
+
+  // Debounced progress saving
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const saveProgressDebounced = useCallback(
+    (locator: any) => {
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      // Set new timeout
+      saveTimeoutRef.current = setTimeout(async () => {
+        if (savingProgress) return;
+        
+        try {
+          setSavingProgress(true);
+          
+          const progressPercentage = ReadingProgressService.calculateProgressPercentage(locator);
+          const pageInfo = ReadingProgressService.extractPageInfo(locator);
+          const locationString = JSON.stringify(locator);
+          
+          console.log('💾 Saving progress:', {
+            bookId: book.id,
+            bookTitle: book.title,
+            progressPercentage,
+            pageInfo,
+            locationString: locationString.substring(0, 100) + '...'
+          });
+          
+          await saveProgress({
+            book_id: book.id.toString(),
+            book_title: book.title,
+            current_location: locationString,
+            progress_percentage: progressPercentage,
+            total_pages: pageInfo.totalPages,
+            current_page: pageInfo.currentPage,
+          });
+          
+          setLastSavedLocation(locationString);
+          console.log('✅ Progress saved successfully');
+        } catch (error) {
+          console.error('❌ Error saving progress:', error);
+        } finally {
+          setSavingProgress(false);
+        }
+      }, 2000); // Increased to 2 seconds to reduce frequency
+      
+    },
+    [book, saveProgress, savingProgress]
+  );
 
   useEffect(() => {
+    loadSavedProgress();
     loadEpubFile();
     
     // Cleanup function to delete downloaded file when component unmounts or book changes
     return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
       if (localFilePath) {
         try {
           const file = new File(localFilePath);
@@ -46,6 +108,66 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       }
     };
   }, [book, localFilePath]);
+
+  // Navigate to saved location after ReadiumView loads
+  useEffect(() => {
+    if (initialLocation && readiumViewRef) {
+      // Add a small delay to ensure ReadiumView is fully loaded
+      const timer = setTimeout(() => {
+        navigateToSavedLocation();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [initialLocation, readiumViewRef, navigateToSavedLocation]);
+
+  const loadSavedProgress = async () => {
+    try {
+      console.log('🔍 Loading saved progress for book:', book.id);
+      const savedProgress = await getBookProgress(book.id.toString());
+      
+      if (savedProgress && savedProgress.current_location) {
+        console.log('✅ Found saved progress:', {
+          bookId: savedProgress.book_id,
+          progressPercentage: savedProgress.progress_percentage,
+          currentLocation: savedProgress.current_location,
+          lastReadAt: savedProgress.last_read_at
+        });
+        
+        const location = JSON.parse(savedProgress.current_location);
+        console.log('📍 Parsed location:', location);
+        
+        setInitialLocation(location);
+        setLastSavedLocation(savedProgress.current_location);
+        console.log('🎯 Set initial location for ReadiumView');
+      } else {
+        console.log('❌ No saved progress found, starting from beginning');
+        setInitialLocation(null);
+        setLastSavedLocation(null);
+      }
+    } catch (error) {
+      console.error('❌ Error loading saved progress:', error);
+      setInitialLocation(null);
+      setLastSavedLocation(null);
+    }
+  };
+
+  const navigateToSavedLocation = useCallback(() => {
+    if (initialLocation && readiumViewRef) {
+      console.log('🎯 Navigating to saved location:', initialLocation);
+      try {
+        // Use the ReadiumView's navigation method
+        if (readiumViewRef.goToLocation) {
+          readiumViewRef.goToLocation(initialLocation);
+          console.log('✅ Successfully navigated to saved location');
+        } else {
+          console.log('⚠️ goToLocation method not available on ReadiumView');
+        }
+      } catch (error) {
+        console.error('❌ Error navigating to saved location:', error);
+      }
+    }
+  }, [initialLocation, readiumViewRef]);
 
   const loadEpubFile = async () => {
     try {
@@ -189,27 +311,73 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
     );
   }
 
+  console.log('📖 Rendering ReadiumView with:', {
+    hasLocalFile: !!localFilePath,
+    hasInitialLocation: !!initialLocation,
+    initialLocation: initialLocation ? {
+      href: initialLocation.href,
+      locations: initialLocation.locations
+    } : null
+  });
+
   return (
-    <ReadiumView 
-      file={{ url: localFilePath }}
-      style={styles.readiumView}
-      preferences={{
-        // fontSize: 100, // Default font size percentage
-        // fontFamily: 'serif',
-        // pageMargins: 15, // Page margins
-        theme: colorScheme === 'dark' ? 'dark' : 'light',
-      }}
+    <View style={styles.container}>
+      <ReadiumView 
+        ref={(ref) => {
+          if (ref && !readiumViewRef) {
+            setReadiumViewRef(ref);
+          }
+        }}
+        file={{ 
+          url: localFilePath,
+          initialLocation: initialLocation
+        }}
+        style={styles.readiumView}
+        preferences={{
+          // fontSize: 100, // Default font size percentage
+          // fontFamily: 'serif',
+          // pageMargins: 15, // Page margins
+          theme: colorScheme === 'dark' ? 'dark' : 'light',
+        }}
       onLocationChange={(locator) => {
-        console.log('Location changed:', locator);
+        console.log('🔄 Location changed:', {
+          href: locator?.href,
+          locations: locator?.locations,
+          progression: locator?.locations?.progression
+        });
+        
+        // Only save if location has actually changed and we're not currently saving
+        const currentLocation = JSON.stringify(locator);
+        const hasChanged = currentLocation !== lastSavedLocation;
+        const isNotSaving = !savingProgress;
+        
+        console.log('📊 Location change analysis:', {
+          hasChanged,
+          isNotSaving,
+          willSave: hasChanged && isNotSaving,
+          lastSavedLength: lastSavedLocation?.length || 0,
+          currentLength: currentLocation.length
+        });
+        
+        if (hasChanged && isNotSaving) {
+          console.log('🚀 Triggering save progress...');
+          saveProgressDebounced(locator);
+        } else {
+          console.log('⏸️ Skipping save (no change or already saving)');
+        }
       }}
       onTableOfContents={(toc) => {
         console.log('Table of contents loaded:', toc);
       }}
-    />
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   readiumView: {
     flex: 1,
   },

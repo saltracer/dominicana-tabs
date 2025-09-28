@@ -11,6 +11,7 @@ ALTER TABLE IF EXISTS liturgy_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS user_liturgy_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS reading_progress ENABLE ROW LEVEL SECURITY;
 
 -- Create blog_posts table (ACTUAL STRUCTURE)
 CREATE TABLE IF NOT EXISTS blog_posts (
@@ -217,6 +218,19 @@ CREATE POLICY "Admins can manage all user roles" ON user_roles
     )
   );
 
+-- Reading Progress RLS Policies
+CREATE POLICY "Users can view their own reading progress" ON reading_progress
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own reading progress" ON reading_progress
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own reading progress" ON reading_progress
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own reading progress" ON reading_progress
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Functions and Triggers
 
 -- Function to update updated_at timestamp
@@ -251,6 +265,26 @@ CREATE TRIGGER update_user_liturgy_preferences_updated_at BEFORE UPDATE ON user_
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_user_roles_updated_at BEFORE UPDATE ON user_roles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Create reading_progress table
+CREATE TABLE IF NOT EXISTS reading_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  book_title TEXT NOT NULL,
+  current_location TEXT NOT NULL, -- Readium locator string
+  progress_percentage DECIMAL(5,2) NOT NULL DEFAULT 0.00 CHECK (progress_percentage >= 0 AND progress_percentage <= 100),
+  total_pages INTEGER,
+  current_page INTEGER,
+  last_read_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, book_id) -- One progress record per user per book
+);
+
+-- Create trigger for reading_progress updated_at
+CREATE TRIGGER update_reading_progress_updated_at BEFORE UPDATE ON reading_progress
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to handle new user registration (UPDATED FOR ACTUAL STRUCTURE)
