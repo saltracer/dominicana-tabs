@@ -18,6 +18,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { Book } from '../../../../types';
 import { StudyStyles } from '../../../../styles';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { useReading } from '../../../../contexts/ReadingContext';
 import { useBooks } from '../../../../hooks/useBooks';
 import { supabase } from '../../../../lib/supabase';
 import { EpubReader } from '../../../../components/EpubReader';
@@ -25,6 +26,7 @@ import { EpubReader } from '../../../../components/EpubReader';
 export default function BookDetailScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
+  const { setIsReading } = useReading();
   const { getBookById } = useBooks();
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
@@ -50,6 +52,9 @@ export default function BookDetailScreen() {
   // Hide header/tab bar when reader is shown
   useFocusEffect(
     React.useCallback(() => {
+      // Update reading state for feast banner visibility
+      setIsReading(showReader);
+      
       navigation.setOptions({
         headerShown: !showReader, // Hide header when reader is shown
       });
@@ -65,6 +70,7 @@ export default function BookDetailScreen() {
       
       // Cleanup function to restore tab bar when leaving
       return () => {
+        setIsReading(false); // Reset reading state
         if (parentNavigation) {
           parentNavigation.setOptions({
             tabBarStyle: {
@@ -83,7 +89,7 @@ export default function BookDetailScreen() {
           });
         }
       };
-    }, [navigation, showReader])
+    }, [navigation, showReader, setIsReading])
   );
 
   const loadBook = async () => {

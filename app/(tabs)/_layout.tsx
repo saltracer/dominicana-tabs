@@ -11,6 +11,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useCalendar } from '@/components/CalendarContext';
 import FeastBanner from '@/components/FeastBanner';
+import { ReadingProvider, useReading } from '@/contexts/ReadingContext';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -27,14 +28,15 @@ function IoniconsTabBarIcon(props: {
   return <Ionicons size={28} style={{ marginBottom: -3 }} {...props} />;
 }
 
-export default function TabLayout() {
+function TabLayoutContent() {
   const { colorScheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { liturgicalDay } = useCalendar();
   const pathname = usePathname();
+  const { isReading } = useReading();
   
   // Check if we're in a book reader (hide feast banner when reading)
-  const isInBookReader = pathname.includes('/study/book/');
+  const isInBookReader = isReading;
 
   return (
     <View style={styles.container}>
@@ -251,3 +253,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 });
+
+export default function TabLayout() {
+  return (
+    <ReadingProvider>
+      <TabLayoutContent />
+    </ReadingProvider>
+  );
+}
