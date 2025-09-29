@@ -10,7 +10,7 @@ import { File } from "expo-file-system";
 import { USXParser } from './USXParser';
 import { BookMetadata, ParsedBook } from '../types/usx-types';
 import { BiblePassage } from '../types';
-import { parseBibleReference, formatNormalizedReference, normalizeRangeOrder } from '../utils/bibleReference';
+import { parseBibleReference, parseBibleReferenceWithRanges, formatNormalizedReference, normalizeRangeOrder } from '../utils/bibleReference';
 
 export interface BibleBook {
   code: string;
@@ -371,9 +371,16 @@ export class BibleService {
   }
 
   /**
-   * Get a passage by Bible reference string (e.g., "Genesis 1:1-2:7", "Mat 5:3-9")
+   * Get a passage by Bible reference string (e.g., "Genesis 1:1-2:7", "Mat 5:3-9", "Col 3:17, 23-24")
    */
   async getPassageByReference(reference: string): Promise<BiblePassage | null> {
+    // First try to parse as a complex reference with multiple ranges
+    const complexParsed = parseBibleReferenceWithRanges(reference);
+    if (complexParsed) {
+      return this.getPassageFromComplexReference(complexParsed);
+    }
+
+    // Fall back to simple reference parsing
     const parsed = parseBibleReference(reference);
     if (!parsed) return null;
 
@@ -387,6 +394,10 @@ export class BibleService {
       ? (this.parser as any).getVerseRange(book, startRef, endRef)
       : this.fallbackCollectRange(book, parsed.startChapter, parsed.startVerse, parsed.endChapter, parsed.endVerse);
 
+    if (!verses || !Array.isArray(verses)) {
+      return null;
+    }
+
     return {
       bookCode: normalized.bookCode,
       startChapter: normalized.startChapter,
@@ -395,6 +406,56 @@ export class BibleService {
       endVerse: normalized.endVerse,
       verses: verses.map((v: any) => ({ number: v.number, text: v.text, reference: v.reference })),
       reference: formatNormalizedReference(normalized)
+    };
+  }
+
+  /**
+   * Handle complex references with multiple verse ranges
+   */
+  private async getPassageFromComplexReference(complexParsed: any): Promise<BiblePassage | null> {
+    const book = await this.loadBook(complexParsed.bookCode);
+    const allVerses: any[] = [];
+
+    // Process each range
+    for (const range of complexParsed.ranges) {
+      const startRef = `${complexParsed.bookCode} ${range.startChapter}:${range.startVerse}`;
+      const endRef = `${complexParsed.bookCode} ${range.endChapter}:${range.endVerse}`;
+
+      const hasRange = typeof (this.parser as any).getVerseRange === 'function';
+      const verses = hasRange
+        ? (this.parser as any).getVerseRange(book, startRef, endRef)
+        : this.fallbackCollectRange(book, range.startChapter, range.startVerse, range.endChapter, range.endVerse);
+
+      if (verses && Array.isArray(verses)) {
+        allVerses.push(...verses);
+      }
+    }
+
+    // Sort verses by chapter and verse number
+    allVerses.sort((a, b) => {
+      const aChapter = parseInt(a.reference.split(':')[0].split(' ')[1]);
+      const bChapter = parseInt(b.reference.split(':')[0].split(' ')[1]);
+      if (aChapter !== bChapter) return aChapter - bChapter;
+      return a.number - b.number;
+    });
+
+    // If no verses were found, return null
+    if (allVerses.length === 0) {
+      return null;
+    }
+
+    // Get the overall range
+    const firstRange = complexParsed.ranges[0];
+    const lastRange = complexParsed.ranges[complexParsed.ranges.length - 1];
+
+    return {
+      bookCode: complexParsed.bookCode,
+      startChapter: firstRange.startChapter,
+      startVerse: firstRange.startVerse,
+      endChapter: lastRange.endChapter,
+      endVerse: lastRange.endVerse,
+      verses: allVerses.map((v: any) => ({ number: v.number, text: v.text, reference: v.reference })),
+      reference: complexParsed.original
     };
   }
 

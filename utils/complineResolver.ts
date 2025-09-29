@@ -56,10 +56,10 @@ async function resolveScriptureContent(component: any): Promise<any> {
     console.log(`Passage result for ${reference}:`, passage);
     
     if (passage && passage.verses && passage.verses.length > 0) {
-      // Convert verses to a single text string
+      // Format verses with proper structure and verse numbers
       const scriptureText = passage.verses
-        .map((v: any) => v.text)
-        .join(' ');
+        .map((v: any) => `${v.number} ${v.text}`)
+        .join('\n\n');
       
       // Return component with resolved content
       // Always use 'verses' field for consistency

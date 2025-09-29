@@ -356,7 +356,7 @@ export const ordinaryTimeCompline: ComplineData = {
           },
           scriptureRef: {
             book: "PSA",
-            chapter: 130,
+            chapter: 129,
             verse: "1-8",
             translation: "DRA"
           },

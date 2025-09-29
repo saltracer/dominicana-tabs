@@ -17,6 +17,17 @@ export interface ParsedBibleReference {
   original: string;
 }
 
+export interface ParsedBibleReferenceWithRanges {
+  bookCode: string;
+  ranges: Array<{
+    startChapter: number;
+    startVerse: number;
+    endChapter: number;
+    endVerse: number;
+  }>;
+  original: string;
+}
+
 /**
  * Normalizes a book key for matching in the map
  */
@@ -135,6 +146,62 @@ export function resolveBookCode(book: string): string | null {
   const noSpace = key.replace(/\s+/g, '');
   if (BOOK_NAME_TO_CODE[noSpace]) return BOOK_NAME_TO_CODE[noSpace];
   return null;
+}
+
+/**
+ * Parse a complex Bible reference string with multiple ranges (e.g., "Col 3:17, 23-24")
+ * Returns null if not a complex reference, so it can fall back to simple parsing
+ */
+export function parseBibleReferenceWithRanges(input: string): ParsedBibleReferenceWithRanges | null {
+  if (!input || typeof input !== 'string') return null;
+  const ref = input.replace(/\u2013|\u2014/g, '-') // normalize en dash/em dash
+                   .replace(/\s+/g, ' ')
+                   .trim();
+
+  // Check if it contains commas (complex reference)
+  if (!ref.includes(',')) return null;
+
+  // Match pattern like "Book 3:17, 23-24" or "Book 3:17, 23-25"
+  const match = ref.match(/^(.*?)\s+(\d+):(.+)$/);
+  if (!match) return null;
+
+  const [, bookName, chapter, versePart] = match;
+  const bookCode = resolveBookCode(bookName);
+  if (!bookCode) return null;
+
+  const chapterNum = parseInt(chapter, 10);
+  const ranges: Array<{
+    startChapter: number;
+    startVerse: number;
+    endChapter: number;
+    endVerse: number;
+  }> = [];
+
+  // Split by comma and parse each part
+  const verseParts = versePart.split(',').map(p => p.trim());
+  
+  for (const part of verseParts) {
+    // Handle range like "23-24" or single verse like "17"
+    const rangeMatch = part.match(/^(\d+)(?:-(\d+))?$/);
+    if (!rangeMatch) return null;
+
+    const [, startVerse, endVerse] = rangeMatch;
+    const startVerseNum = parseInt(startVerse, 10);
+    const endVerseNum = endVerse ? parseInt(endVerse, 10) : startVerseNum;
+
+    ranges.push({
+      startChapter: chapterNum,
+      startVerse: startVerseNum,
+      endChapter: chapterNum,
+      endVerse: endVerseNum
+    });
+  }
+
+  return {
+    bookCode,
+    ranges,
+    original: ref
+  };
 }
 
 /**
