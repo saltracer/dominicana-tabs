@@ -408,22 +408,17 @@ export const ordinaryTimeCompline: ComplineData = {
           en: { text: "Short Reading" },
           la: { text: "Lectio Brevis" }
         },
-        content: {
-          en: {
-            text: "Cast all your anxiety on him because he cares for you. Be alert and of sober mind. Your enemy the devil prowls around like a roaring lion looking for someone to devour. Resist him, standing firm in the faith."
-          },
-          la: {
-            text: "Omnem sollicitudinem vestram proicientes in eum, quoniam ipsi cura est de vobis. Sobrii estote et vigilate, quia adversarius vester diabolus tamquam leo rugiens circuit, quaerens quem devoret: cui resistite fortes in fide."
-          }
+        scriptureRef: {
+          book: "1 Peter",
+          chapter: 5,
+          verse: "7-9",
+          translation: "DRA"
         },
         source: {
           en: { text: "From the First Letter of Peter" },
           la: { text: "Ex Epistula prima Petri" }
         },
         metadata: {
-          book: "1 Peter",
-          chapter: 5,
-          verse: "7-9",
           author: "Saint Peter"
         }
       },
@@ -435,22 +430,17 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Short Reading" },
             la: { text: "Lectio Brevis" }
           },
-          content: {
-            en: {
-              text: "Blessed are the dead who die in the Lord henceforth. 'Blessed indeed,' says the Spirit, 'that they may rest from their labors, for their deeds follow them!'"
-            },
-            la: {
-              text: "Beati mortui qui in Domino moriuntur. Amodo dicit Spiritus ut requiescant a laboribus suis; opera enim illorum sequuntur illos."
-            }
+          scriptureRef: {
+            book: "Revelation",
+            chapter: 14,
+            verse: "13",
+            translation: "DRA"
           },
           source: {
             en: { text: "From the Book of Revelation" },
             la: { text: "Ex Apocalypsi" }
           },
           metadata: {
-            book: "Revelation",
-            chapter: 14,
-            verse: "13",
             author: "Saint John"
           }
         },
@@ -461,22 +451,17 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Short Reading" },
             la: { text: "Lectio Brevis" }
           },
-          content: {
-            en: {
-              text: "Submit yourselves therefore to God. Resist the devil, and he will flee from you. Draw near to God, and he will draw near to you. Cleanse your hands, you sinners, and purify your hearts, you double-minded."
-            },
-            la: {
-              text: "Subditi igitur estote Deo, resistite autem diabolo, et fugiet a vobis. Appropinquate Deo, et appropinquabit vobis. Emundate manus, peccatores, et purificate corda, duplices animo."
-            }
+          scriptureRef: {
+            book: "James",
+            chapter: 4,
+            verse: "7-8",
+            translation: "DRA"
           },
           source: {
             en: { text: "From the Letter of James" },
             la: { text: "Ex Epistula Iacobi" }
           },
           metadata: {
-            book: "James",
-            chapter: 4,
-            verse: "7-8",
             author: "Saint James"
           }
         },
@@ -487,22 +472,17 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Short Reading" },
             la: { text: "Lectio Brevis" }
           },
-          content: {
-            en: {
-              text: "For I am convinced that neither death, nor life, nor angels, nor rulers, nor things present, nor things to come, nor powers, nor height, nor depth, nor anything else in all creation, will be able to separate us from the love of God in Christ Jesus our Lord."
-            },
-            la: {
-              text: "Certus sum enim quia neque mors neque vita neque angeli neque principatus neque instantia neque futura neque virtutes neque altitudo neque profundum neque creatura alia poterit nos separare a caritate Dei quae est in Christo Iesu Domino nostro."
-            }
+          scriptureRef: {
+            book: "Romans",
+            chapter: 8,
+            verse: "38-39",
+            translation: "DRA"
           },
           source: {
             en: { text: "From the Letter to the Romans" },
             la: { text: "Ex Epistula ad Romanos" }
           },
           metadata: {
-            book: "Romans",
-            chapter: 8,
-            verse: "38-39",
             author: "Saint Paul"
           }
         },
@@ -513,22 +493,17 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Short Reading" },
             la: { text: "Lectio Brevis" }
           },
-          content: {
-            en: {
-              text: "But we have this treasure in clay jars, so that it may be made clear that this extraordinary power belongs to God and does not come from us. We are afflicted in every way, but not crushed; perplexed, but not driven to despair; persecuted, but not forsaken; struck down, but not destroyed."
-            },
-            la: {
-              text: "Habemus autem thesaurum istum in vasis fictilibus, ut sublimitas sit virtutis Dei et non ex nobis. In omnibus tribulationem patimur, sed non angustiamur; aporiamur, sed non destituimur; persecutionem patimur, sed non derelinquimur; deicimur, sed non perimus."
-            }
+          scriptureRef: {
+            book: "2 Corinthians",
+            chapter: 4,
+            verse: "7-9",
+            translation: "DRA"
           },
           source: {
             en: { text: "From the Second Letter to the Corinthians" },
             la: { text: "Ex Epistula secunda ad Corinthios" }
           },
           metadata: {
-            book: "2 Corinthians",
-            chapter: 4,
-            verse: "7-9",
             author: "Saint Paul"
           }
         },
@@ -539,22 +514,17 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Short Reading" },
             la: { text: "Lectio Brevis" }
           },
-          content: {
-            en: {
-              text: "Finally, be strong in the Lord and in the strength of his power. Put on the whole armor of God, so that you may be able to stand against the wiles of the devil. For our struggle is not against enemies of blood and flesh, but against the rulers, against the authorities, against the cosmic powers of this present darkness, against the spiritual forces of evil in the heavenly places."
-            },
-            la: {
-              text: "De cetero, fratres, confortamini in Domino et in potentia virtutis eius. Induite vos armaturam Dei, ut possitis stare adversus insidias diaboli. Quia non est nobis conluctatio adversus carnem et sanguinem, sed adversus principes et potestates, adversus mundi rectores tenebrarum harum, contra spiritualia nequitiae in caelestibus."
-            }
+          scriptureRef: {
+            book: "Ephesians",
+            chapter: 6,
+            verse: "10-12",
+            translation: "DRA"
           },
           source: {
             en: { text: "From the Letter to the Ephesians" },
             la: { text: "Ex Epistula ad Ephesios" }
           },
           metadata: {
-            book: "Ephesians",
-            chapter: 6,
-            verse: "10-12",
             author: "Saint Paul"
           }
         },
@@ -565,22 +535,17 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Short Reading" },
             la: { text: "Lectio Brevis" }
           },
-          content: {
-            en: {
-              text: "And whatever you do, in word or deed, do everything in the name of the Lord Jesus, giving thanks to God the Father through him. And whatever you do, work at it with all your heart, as working for the Lord, not for human masters, since you know that you will receive an inheritance from the Lord as a reward."
-            },
-            la: {
-              text: "Et omne quodcumque facitis in verbo aut in opere, omnia in nomine Domini Iesu Christi gratias agentes Deo et Patri per ipsum. Et quodcumque facitis, ex animo operamini sicut Domino et non hominibus, scientes quoniam a Domino accipietis retributionem hereditatis."
-            }
+          scriptureRef: {
+            book: "Colossians",
+            chapter: 3,
+            verse: "17, 23-24",
+            translation: "DRA"
           },
           source: {
             en: { text: "From the Letter to the Colossians" },
             la: { text: "Ex Epistula ad Colossenses" }
           },
           metadata: {
-            book: "Colossians",
-            chapter: 3,
-            verse: "17, 23-24",
             author: "Saint Paul"
           }
         },
@@ -591,22 +556,17 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Short Reading" },
             la: { text: "Lectio Brevis" }
           },
-          content: {
-            en: {
-              text: "Since we have a great high priest who has passed through the heavens, Jesus, the Son of God, let us hold fast our confession. For we do not have a high priest who is unable to sympathize with our weaknesses, but one who in every respect has been tempted as we are, yet without sin."
-            },
-            la: {
-              text: "Habentes igitur pontificem magnum qui penetravit caelos, Iesum Filium Dei, teneamus confessionem. Non enim habemus pontificem qui non possit compati infirmitatibus nostris: tentatum autem per omnia pro similitudine absque peccato."
-            }
+          scriptureRef: {
+            book: "Hebrews",
+            chapter: 4,
+            verse: "14-15",
+            translation: "DRA"
           },
           source: {
             en: { text: "From the Letter to the Hebrews" },
             la: { text: "Ex Epistula ad Hebraeos" }
           },
           metadata: {
-            book: "Hebrews",
-            chapter: 4,
-            verse: "14-15",
             author: "Unknown"
           }
         }

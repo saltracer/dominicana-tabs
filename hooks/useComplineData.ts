@@ -41,7 +41,7 @@ export function useComplineData(
       setError(null);
       
       const rawData = await complineService.getComplineForDate(date, language);
-      const resolvedData = resolveComplineComponents(rawData, date);
+      const resolvedData = await resolveComplineComponents(rawData, date);
       setComplineData(resolvedData);
       
     } catch (err) {

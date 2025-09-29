@@ -116,11 +116,19 @@ export interface PsalmodyComponent {
   };
 }
 
+export interface ScriptureReference {
+  book: string;
+  chapter: number;
+  verse: string;
+  translation?: string;
+}
+
 export interface ReadingComponent {
   id: string;
   type: 'reading';
   title: MultiLanguageContent;
-  content: MultiLanguageContent;
+  content?: MultiLanguageContent;
+  scriptureRef?: ScriptureReference;
   source: MultiLanguageContent;
   audio?: AudioResource[];
   metadata: {
