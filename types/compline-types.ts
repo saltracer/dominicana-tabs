@@ -242,7 +242,6 @@ export function isDayOfWeekVariations<T>(component: T | DayOfWeekVariations<T>):
 
 // New day-based structure interfaces
 export interface DaySpecificCompline {
-  hymn: HymnComponent;
   psalmody: PsalmodyComponent;
   reading: ReadingComponent;
   concludingPrayer: PrayerComponent;
@@ -257,6 +256,7 @@ export interface ComplineDataByDay {
   sharedComponents: {
     examinationOfConscience: ExaminationComponent;
     opening: OpeningComponent;
+    hymn: HymnComponent;
     responsory: ResponsoryComponent;
     canticle: CanticleComponent;
     finalBlessing: BlessingComponent;

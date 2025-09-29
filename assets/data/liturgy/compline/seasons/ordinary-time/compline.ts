@@ -13,36 +13,58 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
   },
   rank: 'ferial',
   sharedComponents: {
+    opening: {
+      id: 'opening-ot',
+      type: 'opening',
+      content: {
+        en: {
+          text: "God, come to my assistance.\n - Lord, make haste to help me.\n Glory to the Father, and to the Son, and to the Holy Spirit,\n as it was in the beginning, is now, and will be for ever. Amen."
+        },
+        la: {
+          text: "Deus, in adiutorium meum intende.\nDomine, ad adiuvandum me festina.\nGloria Patri, et Filio, et Spiritui Sancto, sicut erat in principio, et nunc, et semper, et in saecula saeculorum. Amen."
+        }
+      }
+    },
     examinationOfConscience: {
       id: 'examination-ot',
       type: 'examination',
       content: {
         en: {
-          text: "Brothers and sisters, let us examine our conscience and repent of our sins, that we may be worthy to offer our prayers to God.\n\nI confess to almighty God, and to you, my brothers and sisters, that I have greatly sinned, in my thoughts and in my words, in what I have done and in what I have failed to do, through my fault, through my fault, through my most grievous fault.\n\nTherefore I ask blessed Mary ever-Virgin, all the Angels and Saints, and you, my brothers and sisters, to pray for me to the Lord our God."
+          text: ""
         },
         la: {
-          text: "Fratres, examinemus conscientiam nostram et paenitentiam agamus de peccatis nostris, ut digni simus orationes nostras Deo offerre.\n\nConfiteor Deo omnipotenti, et vobis fratres, quia peccavi nimis cogitatione, verbo et opere: mea culpa, mea culpa, mea maxima culpa.\n\nIdeo precor beatam Mariam semper Virginem, omnes Angelos et Sanctos, et vos fratres, orare pro me ad Dominum Deum nostrum."
+          text: ""
         }
       },
       rubric: {
         en: {
-          text: "The examination of conscience may be made in silence or with the following or similar words:"
+          text: "A brief examination of conscience may be made. In the communal celebration of the office, a penitential rite using the formulas of the Mass my be inserted here."
         },
         la: {
           text: "Examen conscientiae fieri potest in silentio vel his vel similibus verbis:"
         }
       }
     },
-    opening: {
-      id: 'opening-ot',
-      type: 'opening',
+    hymn: {
+      id: 'hymn-te-lucis',
+      type: 'hymn',
+      title: {
+        en: { text: "Now that the daylight dies away" },
+        la: { text: "Te Lucis Ante Terminum" }
+      },
       content: {
         en: {
-          text: "O God, come to my assistance.\nO Lord, make haste to help me.\nGlory to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be for ever. Amen."
+          text: "Now that the daylight dies away,\nBy all thy grace and love\nThee maker of the world we pray\nTo watch our bed above.\n\nLet dreams depart and phantoms fly,\nThe offspring of the night,\nKeep us like shrines, beneath thing eye,\nPure in our foe's despite.\n\nThis grace on they redeemed confer,\nFather, co-equal Son,\nAnd Holy Ghost, the Comforter,\nEternal Three in One."
         },
         la: {
-          text: "Deus, in adiutorium meum intende.\nDomine, ad adiuvandum me festina.\nGloria Patri, et Filio, et Spiritui Sancto, sicut erat in principio, et nunc, et semper, et in saecula saeculorum. Amen."
+          text: "Te lucis ante terminum,\nrerum Creator, poscimus,\nut pro tua clementia\nsis praesul et custodia.\n\nProcul recedant somnia\net noctium phantasmata;\nhostemque nostrum comprime,\nne polluantur corpora.\n\nPraesta, Pater piissime,\nPatrique compar Unice,\ncum Spiritu Paraclito\nregnans per omne saeculum."
         }
+      },
+      metadata: {
+        composer: "Traditional",
+        century: "7th century",
+        meter: "8.8.8.8",
+        tune: "Te Lucis"
       }
     },
     responsory: {
@@ -50,7 +72,7 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       type: 'responsory',
       content: {
         en: {
-          text: "℟. Into your hands, O Lord, I commend my spirit.\n℣. You have redeemed us, Lord God of truth.\n℟. Glory to the Father, and to the Son, and to the Holy Spirit."
+          text: "Into your hands, O Lord, I commend my spirit.\n - Into your hands, Lord, I commend my spirit.\nYou have redeemed us, Lord God of truth.\n - I commend my spirit. \nGlory to the Father, and to the Son, and to the Holy Spirit.\n - Into your hands, Lord, I commend my spirit."
         },
         la: {
           text: "℟. In manus tuas, Domine, commendo spiritum meum.\n℣. Redemisti nos, Domine, Deus veritatis.\n℟. Gloria Patri, et Filio, et Spiritui Sancto."
@@ -62,12 +84,12 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       type: 'canticle',
       name: "Canticle of Simeon",
       antiphon: {
-        en: { text: "Protect us, Lord, while we are awake and safeguard us while we sleep." },
+        en: { text: "Protect us, Lord, as we stay awake; watch over us as we sleep; that awake, we may keep watch with Christ, and asleep, rest in his peace." },
         la: { text: "Salva nos, Domine, vigilantes, custodi nos dormientes." }
       },
       content: {
         en: {
-          text: "Lord, now you let your servant go in peace;\nyour word has been fulfilled:\nmy own eyes have seen the salvation\nwhich you have prepared in the sight of every people:\na light to reveal you to the nations\nand the glory of your people Israel."
+          text: "Lord, now you let your servant go in peace; your word has been fulfilled:\nMy own eyes have seen the salvation which you have prepared in the sight of every people:\na light to reveal you to the nations and the glory of your people Israel."
         },
         la: {
           text: "Nunc dimittis servum tuum, Domine,\nsecundum verbum tuum in pace:\nquia viderunt oculi mei salutare tuum,\nquod parasti ante faciem omnium populorum,\nlumen ad revelationem gentium,\net gloriam plebis tuae Israel."
@@ -83,7 +105,7 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       type: 'blessing',
       content: {
         en: {
-          text: "May the almighty Lord grant us a quiet night and a perfect end.\nAmen."
+          text: "May the all-powerful Lord grant us a quiet night and a peaceful death.\nAmen."
         },
         la: {
           text: "Benedicat nos omnipotens Dominus, quiete nocte et perfecto fine.\nAmen."
@@ -93,39 +115,17 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
   },
   days: {
     sunday: {
-      hymn: {
-        id: 'hymn-sunday-compline',
-        type: 'hymn',
-        title: {
-          en: { text: "Christ, the Fair Glory" },
-          la: { text: "Christe, qui lux es et dies" }
-        },
-        content: {
-          en: {
-            text: "Christ, the fair glory of the holy angels,\nthou who art the light of the world,\nthou who art the light of the world,\nthou who art the light of the world,\nthou who art the light of the world."
-          },
-          la: {
-            text: "Christe, qui lux es et dies,\nnoctis tenebras detegis,\nlucisque lumen crederis,\nlumen beatum praedicans."
-          }
-        },
-        metadata: {
-          composer: "Traditional",
-          century: "6th century",
-          meter: "8.8.8.8",
-          tune: "Christe Qui Lux"
-        }
-      },
       psalmody: {
         id: 'psalm-91',
         type: 'psalm',
         psalmNumber: 91,
         antiphon: {
-          en: { text: "He who dwells in the shelter of the Most High." },
-          la: { text: "Qui habitat in adiutorio Altissimi." }
+          en: { text: "Night holds no terror for me sleeping under God's wings." },
+          la: { text: "Alis suis obrmbrabit tibi; non timebis a timore nocturno." }
         },
         scriptureRef: {
           book: "PSA",
-          chapter: 91,
+          chapter: 90,
           verse: "1-16",
           translation: "DRA"
         },
@@ -143,13 +143,13 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         scriptureRef: {
           book: "REV",
-          chapter: 14,
-          verse: "13",
+          chapter: 22,
+          verse: "4-5",
           translation: "DRA"
         },
         source: {
-          en: { text: "From the Book of Revelation" },
-          la: { text: "Ex Apocalypsi" }
+          en: { text: "Revelation 22:4-5" },
+          la: { text: "Apocalypsi 22:4-5" }
         },
         metadata: {
           author: "Saint John"
@@ -164,37 +164,15 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         content: {
           en: {
-            text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
+            text: "Lord, we have celebrated today the mystery of the rising of Christ to new life.\nMay we now rest in your peace, safe from all that could harm us,\nand rise again refreshed and joyful, to praise you throughout another day.\nWe ask this through Christ our Lord."
           },
           la: {
-            text: "Visita, quaesumus, Domine, habitationem istam, et omnes insidias inimici ab ea longe repelle: angeli tui sancti habitent in ea, qui nos in pace custodiant, et benedictio tua sit super nos semper. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
+            text: "Domine, celebramus hodie mysterium de resurrectione Christi ad novam vitam.\n Nos tibi nocte reponemus, ut non deficiamus ab omnibus quae nos possunt perire, et resurgere renovati et laetiti, ad te laudare per omne die. Per Dominum nostrum Iesum Christum."
           }
         }
       }
     },
     monday: {
-      hymn: {
-        id: 'hymn-monday-compline',
-        type: 'hymn',
-        title: {
-          en: { text: "O God, Our Help in Ages Past" },
-          la: { text: "Deus, refugium nostrum" }
-        },
-        content: {
-          en: {
-            text: "O God, our help in ages past,\nour hope for years to come,\nour shelter from the stormy blast,\nand our eternal home.\n\nUnder the shadow of thy throne\nthy saints have dwelt secure;\nsufficient is thine arm alone,\nand our defense is sure."
-          },
-          la: {
-            text: "Deus, refugium nostrum et virtus,\nadiutor in tribulationibus quae invenerunt nos nimis.\nPropterea non timebimus dum turbabitur terra,\net transferentur montes in cor maris."
-          }
-        },
-        metadata: {
-          composer: "Traditional",
-          century: "18th century",
-          meter: "8.8.8.8",
-          tune: "St. Anne"
-        }
-      },
       psalmody: {
         id: 'psalm-134',
         type: 'psalm',
@@ -253,28 +231,6 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       }
     },
     tuesday: {
-      hymn: {
-        id: 'hymn-tuesday-compline',
-        type: 'hymn',
-        title: {
-          en: { text: "All Praise to Thee, My God" },
-          la: { text: "Te Deum laudamus" }
-        },
-        content: {
-          en: {
-            text: "All praise to thee, my God, this night,\nfor all the blessings of the light;\nkeep me, O keep me, King of kings,\nunder thine own almighty wings.\n\nForgive me, Lord, for thy dear Son,\nthe ill that I this day have done,\nthat with the world, myself, and thee,\nI, ere I sleep, at peace may be."
-          },
-          la: {
-            text: "Te Deum laudamus, te Dominum confitemur.\nTe aeternum Patrem omnis terra veneratur.\nTibi omnes Angeli, tibi caeli et universae Potestates,\nTibi Cherubim et Seraphim incessabili voce proclamant."
-          }
-        },
-        metadata: {
-          composer: "Traditional",
-          century: "17th century",
-          meter: "8.8.8.8",
-          tune: "Tallis' Canon"
-        }
-      },
       psalmody: {
         id: 'psalm-16',
         type: 'psalm',
@@ -333,28 +289,6 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       }
     },
     wednesday: {
-      hymn: {
-        id: 'hymn-wednesday-compline',
-        type: 'hymn',
-        title: {
-          en: { text: "Now the Day is Over" },
-          la: { text: "Iam lucis orto sidere" }
-        },
-        content: {
-          en: {
-            text: "Now the day is over,\nnight is drawing nigh,\nshadows of the evening\nsteal across the sky.\n\nJesus, give the weary\ncalm and sweet repose;\nwith thy tenderest blessing\nmay mine eyelids close."
-          },
-          la: {
-            text: "Iam lucis orto sidere,\nDeum precemur supplices,\nut in diurnis actibus\nnos servet a nocentibus."
-          }
-        },
-        metadata: {
-          composer: "Traditional",
-          century: "19th century",
-          meter: "8.7.8.7",
-          tune: "Merrial"
-        }
-      },
       psalmody: {
         id: 'psalm-86',
         type: 'psalm',
@@ -413,28 +347,6 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       }
     },
     thursday: {
-      hymn: {
-        id: 'hymn-thursday-compline',
-        type: 'hymn',
-        title: {
-          en: { text: "Abide with Me" },
-          la: { text: "Mane nobiscum, Domine" }
-        },
-        content: {
-          en: {
-            text: "Abide with me; fast falls the eventide;\nthe darkness deepens; Lord, with me abide.\nWhen other helpers fail and comforts flee,\nHelp of the helpless, O abide with me.\n\nI need thy presence every passing hour;\nwhat but thy grace can foil the tempter's power?\nWho, like thyself, my guide and stay can be?\nThrough cloud and sunshine, Lord, abide with me."
-          },
-          la: {
-            text: "Mane nobiscum, Domine, quoniam advesperascit,\net inclinata est iam dies.\nEt cognoverunt eum in fractione panis.\nEt ipse evanuit ex oculis eorum."
-          }
-        },
-        metadata: {
-          composer: "Traditional",
-          century: "19th century",
-          meter: "10.10.10.10",
-          tune: "Eventide"
-        }
-      },
       psalmody: {
         id: 'psalm-143',
         type: 'psalm',
@@ -493,28 +405,6 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       }
     },
     friday: {
-      hymn: {
-        id: 'hymn-friday-compline',
-        type: 'hymn',
-        title: {
-          en: { text: "O Sacred Head" },
-          la: { text: "Salve Caput Cruentatum" }
-        },
-        content: {
-          en: {
-            text: "O sacred Head, sore wounded,\ndefiled and put to scorn;\nO kingly Head surrounded\nwith mocking crown of thorn:\nWhat sorrow mars thy grandeur?\nCan death thy bloom deflower?\nO countenance whose splendor\nthe hosts of heaven adore!"
-          },
-          la: {
-            text: "Salve caput cruentatum,\ntotum spinis coronatum,\nconquassatum, vulneratum,\narundine sic verberatum,\nfacie sputis illita."
-          }
-        },
-        metadata: {
-          composer: "Traditional",
-          century: "12th century",
-          meter: "8.7.8.7.8.7.8.7",
-          tune: "Passion Chorale"
-        }
-      },
       psalmody: {
         id: 'psalm-31',
         type: 'psalm',
@@ -576,28 +466,6 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       }
     },
     saturday: {
-      hymn: {
-        id: 'hymn-saturday-compline',
-        type: 'hymn',
-        title: {
-          en: { text: "Hail, Queen of Heaven" },
-          la: { text: "Salve Regina" }
-        },
-        content: {
-          en: {
-            text: "Hail, Queen of Heaven, the ocean star,\nGuide of the wanderer here below,\nThrown on life's surge, we claim thy care,\nSave us from peril and from woe.\n\nMother of Christ, Star of the sea,\nPray for the wanderer, pray for me."
-          },
-          la: {
-            text: "Salve Regina, Mater misericordiae,\nVita, dulcedo, et spes nostra, salve.\nAd te clamamus, exsules filii Evae,\nAd te suspiramus, gementes et flentes\nin hac lacrimarum valle."
-          }
-        },
-        metadata: {
-          composer: "Traditional",
-          century: "11th century",
-          meter: "8.8.8.8",
-          tune: "Salve Regina"
-        }
-      },
       psalmody: {
         id: 'psalm-130',
         type: 'psalm',

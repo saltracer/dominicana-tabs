@@ -144,7 +144,7 @@ function ComplineScreenContent() {
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             {complineData.components.examinationOfConscience.rubric && (
-              <Text style={[styles.rubric, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              <Text style={[styles.rubric, { color: Colors[colorScheme ?? 'light'].primary, marginBottom: -12 }]}>
                 {complineData.components.examinationOfConscience.rubric[language]?.text}
               </Text>
             )}
@@ -184,14 +184,14 @@ function ComplineScreenContent() {
             <Text style={[styles.contentTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Psalm {complineData.components.psalmody.psalmNumber}
             </Text>
-            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
+            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.psalmody.verses?.[language]?.text || 
                (complineData.components.psalmody.scriptureRef ? 'Loading psalm...' : 'Psalm content not available')}
             </Text>
-            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
+            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
           </View>
@@ -239,13 +239,13 @@ function ComplineScreenContent() {
           </View>
           
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
+            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.canticle.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.canticle.content[language]?.text}
             </Text>
-            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
+            <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.canticle.antiphon[language]?.text}
             </Text>
           </View>

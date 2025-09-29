@@ -23,7 +23,7 @@ export function getComplineForDate(date: Date, language: LanguageCode = 'en'): C
     components: {
       examinationOfConscience: ordinaryTimeCompline.sharedComponents.examinationOfConscience,
       opening: ordinaryTimeCompline.sharedComponents.opening,
-      hymn: dayComponents.hymn,
+      hymn: ordinaryTimeCompline.sharedComponents.hymn,
       psalmody: dayComponents.psalmody,
       reading: dayComponents.reading,
       responsory: ordinaryTimeCompline.sharedComponents.responsory,

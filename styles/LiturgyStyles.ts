@@ -90,7 +90,7 @@ export const LiturgyStyles = StyleSheet.create({
   
   contentCard: {
     backgroundColor: 'transparent', // Will be overridden by theme colors
-    padding: 10,
+    padding: 5,
     borderRadius: 12,
     // marginBottom: 8,
   },
@@ -128,7 +128,7 @@ export const LiturgyStyles = StyleSheet.create({
   antiphon: {
     fontSize: 16,
     // fontWeight: '600',
-    // fontStyle: 'italic',
+    fontStyle: 'italic',
     marginBottom: 12,
     fontFamily: 'Georgia',
     // textAlign: 'center',
