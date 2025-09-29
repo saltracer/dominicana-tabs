@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS books (
   category TEXT NOT NULL,
   cover_image TEXT,
   description TEXT NOT NULL,
+  long_description TEXT[], -- Array of paragraphs for detailed description
   epub_path TEXT,
   epub_sample_path TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

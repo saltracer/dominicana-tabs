@@ -243,19 +243,6 @@ export default function BookDetailScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         
-        {/* Header */}
-        {/* <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Book Details
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View> */}
 
         {/* Book Cover and Basic Info */}
         <View style={styles.bookHeader}>
@@ -297,53 +284,44 @@ export default function BookDetailScreen() {
                 {book.category}
               </Text>
             </View>
-          </View>
-        </View>
 
-        {/* Description */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Description
-          </Text>
-          <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}>
-            {book.description}
-          </Text>
-        </View>
-
-        {/* Reading Progress Section */}
-        {user && isBookInProgress(book.id) && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Reading Progress
-            </Text>
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBarContainer}>
-                <View 
-                  style={[
-                    styles.progressBar, 
-                    { 
-                      backgroundColor: Colors[colorScheme ?? 'light'].surface,
-                      borderColor: Colors[colorScheme ?? 'light'].border 
-                    }
-                  ]}
-                >
+            {/* Reading Progress Section */}
+            {user && isBookInProgress(book.id) && (
+            <View style={styles.section}>
+              {/* <Text style={[styles.categoryLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Reading Progress
+              </Text> */}
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBarContainer}>
                   <View 
                     style={[
-                      styles.progressBarFill, 
+                      styles.progressBar, 
                       { 
-                        backgroundColor: Colors[colorScheme ?? 'light'].primary,
-                        width: `${getBookProgressPercentage(book.id)}%`
+                        backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                        borderColor: Colors[colorScheme ?? 'light'].border 
                       }
-                    ]} 
-                  />
+                    ]}
+                  >
+                    <View 
+                      style={[
+                        styles.progressBarFill, 
+                        { 
+                          backgroundColor: Colors[colorScheme ?? 'light'].primary,
+                          width: `${getBookProgressPercentage(book.id)}%`
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    {Math.round(getBookProgressPercentage(book.id))}% Complete
+                  </Text>
                 </View>
-                <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {Math.round(getBookProgressPercentage(book.id))}% Complete
-                </Text>
               </View>
             </View>
+            )}
+
           </View>
-        )}
+        </View>
 
         {/* Reading Section */}
         {user ? (
@@ -430,6 +408,32 @@ export default function BookDetailScreen() {
             </View>
           </View>
         )}
+
+        {/* Description - Show long description if available, otherwise show regular description */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Description
+          </Text>
+          {book.longDescription && book.longDescription.length > 0 ? (
+            // Show long description as paragraphs
+            book.longDescription.map((paragraph, index) => (
+              <Text 
+                key={index}
+                style={[styles.longDescription, { color: Colors[colorScheme ?? 'light'].text }]}
+              >
+                {paragraph}
+              </Text>
+            ))
+          ) : (
+            // Show regular description
+            <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}>
+              {book.description}
+            </Text>
+          )}
+        </View>
+
+        {/* Bottom padding to ensure content is accessible */}
+        <View style={[styles.bottomPadding, { height: 100 + Math.max(insets.bottom, 20) }]} />
 
       </ScrollView>
     </SafeAreaView>
@@ -587,6 +591,13 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   
+  longDescription: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  
   buttonContainer: {
     gap: 12,
   },
@@ -690,5 +701,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     minWidth: 80,
     textAlign: 'right',
+  },
+  
+  bottomPadding: {
+    // Dynamic height is set inline to account for safe area insets
   },
 });

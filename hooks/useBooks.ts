@@ -32,6 +32,7 @@ export const useBooks = () => {
         category: book.category,
         coverImage: book.cover_image,
         description: book.description,
+        longDescription: book.long_description, // Map long_description from database
         epubPath: book.epub_path,
         epubSamplePath: book.epub_sample_path,
         createdAt: book.created_at,
@@ -86,6 +87,7 @@ export const useBooks = () => {
         category: book.category,
         coverImage: book.cover_image,
         description: book.description,
+        longDescription: book.long_description, // Map long_description from database
         epubPath: book.epub_path,
         epubSamplePath: book.epub_sample_path,
         createdAt: book.created_at,
@@ -129,6 +131,7 @@ export const useBooks = () => {
         category: data.category,
         coverImage: data.cover_image,
         description: data.description,
+        longDescription: data.long_description, // Map long_description from database
         epubPath: data.epub_path,
         epubSamplePath: data.epub_sample_path,
         createdAt: data.created_at,

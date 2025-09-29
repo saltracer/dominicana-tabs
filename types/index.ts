@@ -177,6 +177,7 @@ export interface Book {
   category: string; // Your categories: Philosophy, Theology, Mysticism, Science, Natural History, Spiritual
   coverImage?: string | null;
   description: string;
+  longDescription?: string[]; // Array of paragraphs for detailed description
   epubPath?: string | null;
   epubSamplePath?: string | null;
   createdAt: string;
