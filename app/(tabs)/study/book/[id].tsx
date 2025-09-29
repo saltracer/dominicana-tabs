@@ -23,6 +23,7 @@ import { useReadingProgress } from '../../../../contexts/ReadingProgressContext'
 import { useBooks } from '../../../../hooks/useBooks';
 import { supabase } from '../../../../lib/supabase';
 import { EpubReader } from '../../../../components/EpubReader';
+import { getTabBarStyle } from '../../../../utils/tabBarStyles';
 
 export default function BookDetailScreen() {
   const { colorScheme } = useTheme();
@@ -65,19 +66,11 @@ export default function BookDetailScreen() {
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
-          tabBarStyle: showReader ? { display: 'none' } : {
-            backgroundColor: Colors[colorScheme ?? 'light'].surface,
-            borderTopColor: Colors[colorScheme ?? 'light'].border,
-            borderTopWidth: 1,
-            paddingBottom: Math.max(insets.bottom, 10),
-            paddingTop: 10,
-            height: 60 + Math.max(insets.bottom, 10),
-            paddingHorizontal: 10,
-            zIndex: 1001,
-            ...(Platform.OS === 'ios' && {
-              marginBottom: -1, // Match original tab bar positioning
-            }),
-          },
+          tabBarStyle: getTabBarStyle({
+            colorScheme: colorScheme ?? 'light',
+            insets,
+            isHidden: showReader,
+          }),
           tabBarVisible: !showReader
         });
       }
@@ -87,19 +80,11 @@ export default function BookDetailScreen() {
         setIsReading(false); // Reset reading state
         if (parentNavigation) {
           parentNavigation.setOptions({
-            tabBarStyle: {
-              backgroundColor: Colors[colorScheme ?? 'light'].surface,
-              borderTopColor: Colors[colorScheme ?? 'light'].border,
-              borderTopWidth: 1,
-              paddingBottom: Math.max(insets.bottom, 10),
-              paddingTop: 10,
-              height: 60 + Math.max(insets.bottom, 10),
-              paddingHorizontal: 10,
-              zIndex: 1001,
-              ...(Platform.OS === 'ios' && {
-                marginBottom: -1, // Match original tab bar positioning
-              }),
-            }
+            tabBarStyle: getTabBarStyle({
+              colorScheme: colorScheme ?? 'light',
+              insets,
+              isHidden: false,
+            })
           });
         }
       };

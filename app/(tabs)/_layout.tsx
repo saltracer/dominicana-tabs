@@ -12,6 +12,7 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useCalendar } from '@/components/CalendarContext';
 import FeastBanner from '@/components/FeastBanner';
 import { ReadingProvider, useReading } from '@/contexts/ReadingContext';
+import { getTabBarStyle } from '@/utils/tabBarStyles';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -44,21 +45,10 @@ function TabLayoutContent() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].text,
         tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].textMuted,
-        tabBarStyle: {
-          backgroundColor: Colors[colorScheme ?? 'light'].surface,
-          borderTopColor: Colors[colorScheme ?? 'light'].border,
-          borderTopWidth: 1,
-          paddingBottom: Math.max(insets.bottom, 10),
-          paddingTop: 10,
-          height: 60 + Math.max(insets.bottom, 10),
-          paddingHorizontal: 10,
-          //marginBottom: liturgicalDay ? 60 : 0, // Add space for FeastBanner
-          zIndex: 1001, // Ensure tab bar is above FeastBanner
-          // iOS 26 specific fix: ensure tab bar stays within safe bounds
-          ...(Platform.OS === 'ios' && {
-           marginBottom: -1, // Add margin to position tab bar correctly
-          }),
-        },
+        tabBarStyle: getTabBarStyle({
+          colorScheme: colorScheme ?? 'light',
+          insets,
+        }),
         tabBarLabelStyle: {
           fontFamily: 'System',
           fontSize: 12,
