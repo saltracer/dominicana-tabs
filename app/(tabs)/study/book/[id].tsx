@@ -65,7 +65,19 @@ export default function BookDetailScreen() {
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
-          tabBarStyle: showReader ? { display: 'none' } : undefined,
+          tabBarStyle: showReader ? { display: 'none' } : {
+            backgroundColor: Colors[colorScheme ?? 'light'].surface,
+            borderTopColor: Colors[colorScheme ?? 'light'].border,
+            borderTopWidth: 1,
+            paddingBottom: Math.max(insets.bottom, 10),
+            paddingTop: 10,
+            height: 60 + Math.max(insets.bottom, 10),
+            paddingHorizontal: 10,
+            zIndex: 1001,
+            ...(Platform.OS === 'ios' && {
+              marginBottom: -1, // Match original tab bar positioning
+            }),
+          },
           tabBarVisible: !showReader
         });
       }
@@ -85,13 +97,13 @@ export default function BookDetailScreen() {
               paddingHorizontal: 10,
               zIndex: 1001,
               ...(Platform.OS === 'ios' && {
-               marginBottom: -1,
+                marginBottom: -1, // Match original tab bar positioning
               }),
             }
           });
         }
       };
-    }, [navigation, showReader, setIsReading])
+    }, [navigation, showReader, setIsReading, insets, colorScheme])
   );
 
   const loadBook = async () => {
@@ -433,7 +445,7 @@ export default function BookDetailScreen() {
         </View>
 
         {/* Bottom padding to ensure content is accessible */}
-        <View style={[styles.bottomPadding, { height: 100 + Math.max(insets.bottom, 20) }]} />
+        <View style={[styles.bottomPadding, { height: 80 + Math.max(insets.bottom, 10) }]} />
 
       </ScrollView>
     </SafeAreaView>
