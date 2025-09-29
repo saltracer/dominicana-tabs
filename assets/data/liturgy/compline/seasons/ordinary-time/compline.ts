@@ -236,13 +236,14 @@ export const ordinaryTimeCompline: ComplineData = {
           en: { text: "In peace I will lie down and sleep." },
           la: { text: "In pace in idipsum dormiam et requiescam." }
         },
+        scriptureRef: {
+          book: "PSA",
+          chapter: 4,
+          verse: "1-8",
+          translation: "DRA"
+        },
         verses: {
-          en: {
-            text: "Answer me when I call, O God of my righteousness!\nYou have given me relief when I was in distress.\nBe gracious to me and hear my prayer!\n\nO men, how long shall my honor be turned into shame?\nHow long will you love vain words and seek after lies?\n\nBut know that the Lord has set apart the godly for himself;\nthe Lord hears when I call to him.\n\nBe angry, and do not sin;\nponder in your own hearts on your beds, and be silent.\n\nOffer right sacrifices,\nand put your trust in the Lord.\n\nIn peace I will both lie down and sleep;\nfor you alone, O Lord, make me dwell in safety."
-          },
-          la: {
-            text: "Cum invocarem exaudivit me Deus iustitiae meae;\nin tribulatione dilatasti mihi.\nMiserere mei et exaudi orationem meam.\n\nFilii hominum, usquequo gravi corde?\nUt quid diligitis vanitatem et quaeritis mendacium?\n\nEt scitote quoniam mirificavit Dominus sanctum suum;\nDominus exaudiet me cum clamavero ad eum.\n\nIrascimini et nolite peccare;\nquae dicitis in cordibus vestris, in cubilibus vestris compungimini.\n\nSacrificate sacrificium iustitiae et sperate in Domino.\n\nIn pace in idipsum dormiam et requiescam."
-          }
+          en: { text: "When I called upon him, the God of my justice heard me: when I was in distress, thou hast enlarged me. Have mercy on me: and hear my prayer. O ye sons of men, how long will you be dull of heart? why do you love vanity, and seek after lying? Know ye also that the Lord hath made his holy one wonderful: the Lord will hear me when I shall cry unto him. Be angry, and sin not: the things you say in your hearts, be sorry for them upon your beds. Offer up the sacrifice of justice, and trust in the Lord: many say, Who sheweth us good things? The light of thy countenance, O Lord, is signed upon us: thou hast given gladness in my heart." }
         },
         metadata: {
           tone: "Psalm tone 1",
@@ -258,13 +259,11 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "He who dwells in the shelter of the Most High." },
             la: { text: "Qui habitat in adiutorio Altissimi." }
           },
-          verses: {
-            en: {
-              text: "He who dwells in the shelter of the Most High,\nwho abides in the shadow of the Almighty,\nwill say to the Lord, 'My refuge and my fortress;\nmy God, in whom I trust.'\n\nFor he will deliver you from the snare of the fowler\nand from the deadly pestilence;\nhe will cover you with his pinions,\nand under his wings you will find refuge;\nhis faithfulness is a shield and buckler."
-            },
-            la: {
-              text: "Qui habitat in adiutorio Altissimi,\nin protectione Dei caeli commorabitur.\nDicet Domino: 'Susceptor meus es tu et refugium meum;\nDeus meus, sperabo in eum.'\n\nQuoniam ipse liberabit me de laqueo venantium\net a verbo aspero.\nScapulis suis obumbrabit tibi,\net sub alis eius sperabis;\nscuto circumdabit te veritas eius."
-            }
+          scriptureRef: {
+            book: "PSA",
+            chapter: 91,
+            verse: "1-16",
+            translation: "DRA"
           },
           metadata: {
             tone: "Psalm tone 2",
@@ -279,13 +278,11 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Come, bless the Lord, all you servants of the Lord." },
             la: { text: "Ecce nunc benedicite Dominum, omnes servi Domini." }
           },
-          verses: {
-            en: {
-              text: "Come, bless the Lord, all you servants of the Lord,\nwho stand by night in the house of the Lord!\nLift up your hands to the holy place,\nand bless the Lord!\n\nMay the Lord bless you from Zion,\nhe who made heaven and earth!"
-            },
-            la: {
-              text: "Ecce nunc benedicite Dominum,\nomnes servi Domini,\nqui statis in domo Domini,\nin atriis domus Dei nostri.\n\nIn noctibus extollite manus vestras in sancta,\net benedicite Dominum.\nBenedicat te Dominus ex Sion,\nqui fecit caelum et terram."
-            }
+          scriptureRef: {
+            book: "PSA",
+            chapter: 134,
+            verse: "1-3",
+            translation: "DRA"
           },
           metadata: {
             tone: "Psalm tone 4",
@@ -300,13 +297,11 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "You show me the path of life." },
             la: { text: "Notas mihi fecisti vias vitae." }
           },
-          verses: {
-            en: {
-              text: "Protect me, O God, for in you I take refuge.\nI say to the Lord, 'You are my Lord;\nI have no good apart from you.'\n\nThe Lord is my chosen portion and my cup;\nyou hold my lot.\nThe boundary lines have fallen for me in pleasant places;\nI have a goodly heritage.\n\nI bless the Lord who gives me counsel;\nin the night also my heart instructs me.\nI keep the Lord always before me;\nbecause he is at my right hand, I shall not be moved.\n\nTherefore my heart is glad, and my soul rejoices;\nmy body also rests secure.\nFor you do not give me up to Sheol,\nor let your faithful one see the Pit.\n\nYou show me the path of life.\nIn your presence there is fullness of joy;\nat your right hand are pleasures forevermore."
-            },
-            la: {
-              text: "Conserva me, Domine, quoniam speravi in te.\nDixi Domino: 'Dominus meus es tu,\nbonorum meorum non eges.'\n\nDominus pars hereditatis meae et calicis mei:\ntu es qui restitues hereditatem meam mihi.\nFunes ceciderunt mihi in praeclaris;\net hereditas mea praeclara est mihi.\n\nBenedicam Dominum qui tribuit mihi intellectum;\ninsuper et usque ad noctem increpuerunt me renes mei.\nProvidebam Dominum in conspectu meo semper,\nquoniam a dextris est mihi, ne commovear.\n\nPropter hoc laetatum est cor meum et exsultavit lingua mea,\ninsuper et caro mea requiescet in spe.\nQuoniam non derelinques animam meam in inferno,\nnec dabis sanctum tuum videre corruptionem.\n\nNotas mihi fecisti vias vitae;\nadimplebis me laetitia cum vultu tuo,\ndelectationes in dextera tua usque in finem."
-            }
+          scriptureRef: {
+            book: "PSA",
+            chapter: 16,
+            verse: "1-11",
+            translation: "DRA"
           },
           metadata: {
             tone: "Psalm tone 5",
@@ -321,13 +316,11 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Incline your ear, O Lord, and answer me." },
             la: { text: "Inclina, Domine, aurem tuam et exaudi me." }
           },
-          verses: {
-            en: {
-              text: "Incline your ear, O Lord, and answer me,\nfor I am poor and needy.\nPreserve my life, for I am devoted to you;\nsave your servant who trusts in you.\nYou are my God; be gracious to me, O Lord,\nfor to you do I cry all day long.\n\nGladden the soul of your servant,\nfor to you, O Lord, I lift up my soul.\nFor you, O Lord, are good and forgiving,\nabounding in steadfast love to all who call on you.\n\nGive ear, O Lord, to my prayer;\nlisten to my cry of supplication.\nIn the day of my trouble I call on you,\nfor you will answer me.\n\nThere is none like you among the gods, O Lord,\nnor are there any works like yours.\nAll the nations you have made shall come\nand bow down before you, O Lord,\nand shall glorify your name.\nFor you are great and do wondrous things;\nyou alone are God."
-            },
-            la: {
-              text: "Inclina, Domine, aurem tuam et exaudi me,\nquoniam inops et pauper sum ego.\nCustodi animam meam, quoniam sanctus sum;\nsalvum fac servum tuum, Deus meus, sperantem in te.\nMiserere mei, Domine, quoniam ad te clamavi tota die.\n\nLaetifica animam servi tui,\nquoniam ad te, Domine, animam meam levavi.\nQuoniam tu, Domine, suavis et mitis,\net multae misericordiae omnibus invocantibus te.\n\nAuribus percipe, Domine, orationem meam,\net intende voci deprecationis meae.\nIn die tribulationis meae clamavi ad te,\nquia exaudisti me.\n\nNon est similis tui in diis, Domine,\net non est secundum opera tua.\nOmnes gentes quascumque fecisti venient\net adorabunt coram te, Domine,\net glorificabunt nomen tuum.\nQuoniam magnus es tu et faciens mirabilia:\ntu es Deus solus."
-            }
+          scriptureRef: {
+            book: "PSA",
+            chapter: 86,
+            verse: "1-17",
+            translation: "DRA"
           },
           metadata: {
             tone: "Psalm tone 6",
@@ -342,13 +335,11 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Let me hear of your steadfast love in the morning." },
             la: { text: "Audire me fac mane misericordiam tuam." }
           },
-          verses: {
-            en: {
-              text: "Hear my prayer, O Lord;\ngive ear to my supplications in your faithfulness;\nanswer me in your righteousness.\nDo not enter into judgment with your servant,\nfor no one living is righteous before you.\n\nFor the enemy has pursued me,\ncrushing my life to the ground,\nmaking me sit in darkness like those long dead.\nTherefore my spirit faints within me;\nmy heart within me is appalled.\n\nI remember the days of old,\nI think about all your deeds,\nI meditate on the works of your hands.\nI stretch out my hands to you;\nmy soul thirsts for you like a parched land.\n\nAnswer me quickly, O Lord;\nmy spirit fails.\nDo not hide your face from me,\nor I shall be like those who go down to the Pit.\nLet me hear of your steadfast love in the morning,\nfor in you I put my trust.\nTeach me the way I should go,\nfor to you I lift up my soul."
-            },
-            la: {
-              text: "Domine, exaudi orationem meam,\nauribus percipe obsecrationem meam in veritate tua;\nexaudi me in tua iustitia.\nEt non intres in iudicium cum servo tuo,\nquia non iustificabitur in conspectu tuo omnis vivens.\n\nQuia persecutus est inimicus animam meam,\nhumiliavit in terra vitam meam,\ncollocavit me in obscuris sicut mortuos saeculi.\nEt anxiatus est super me spiritus meus,\nin me turbatum est cor meum.\n\nMemor fui dierum antiquorum,\nmeditatus sum in omnibus operibus tuis,\nin factis manuum tuarum meditabar.\nExpandi manus meas ad te,\nanima mea sicut terra sine aqua tibi.\n\nVelociter exaudi me, Domine;\ndefecit spiritus meus.\nNon abscondas faciem tuam a me,\net similis ero descendentibus in lacum.\nAudire me fac mane misericordiam tuam,\nquia in te speravi.\nNotam fac mihi viam in qua ambulem,\nquia ad te levavi animam meam."
-            }
+          scriptureRef: {
+            book: "PSA",
+            chapter: 143,
+            verse: "1-12",
+            translation: "DRA"
           },
           metadata: {
             tone: "Psalm tone 7",
@@ -363,13 +354,11 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Out of the depths I cry to you, O Lord." },
             la: { text: "De profundis clamavi ad te, Domine." }
           },
-          verses: {
-            en: {
-              text: "Out of the depths I cry to you, O Lord.\nLord, hear my voice!\nLet your ears be attentive\nto the voice of my supplications!\n\nIf you, O Lord, should mark iniquities,\nLord, who could stand?\nBut there is forgiveness with you,\nso that you may be revered.\n\nI wait for the Lord, my soul waits,\nand in his word I hope;\nmy soul waits for the Lord\nmore than those who watch for the morning,\nmore than those who watch for the morning.\n\nO Israel, hope in the Lord!\nFor with the Lord there is steadfast love,\nand with him is great power to redeem.\nIt is he who will redeem Israel\nfrom all its iniquities."
-            },
-            la: {
-              text: "De profundis clamavi ad te, Domine;\nDomine, exaudi vocem meam.\nFiant aures tuae intendentes\nin vocem deprecationis meae.\n\nSi iniquitates observaveris, Domine,\nDomine, quis sustinebit?\nQuia apud te propitiatio est;\net propter legem tuam sustinui te, Domine.\n\nSustinuit anima mea in verbo eius;\nsperavit anima mea in Domino.\nMagis quam custodes auroram,\nsperet Israel in Domino.\n\nQuia apud Dominum misericordia,\net copiosa apud eum redemptio.\nEt ipse redimet Israel\nex omnibus iniquitatibus eius."
-            }
+          scriptureRef: {
+            book: "PSA",
+            chapter: 130,
+            verse: "1-8",
+            translation: "DRA"
           },
           metadata: {
             tone: "Psalm tone 8",
@@ -384,13 +373,11 @@ export const ordinaryTimeCompline: ComplineData = {
             en: { text: "Into your hands I commend my spirit." },
             la: { text: "In manus tuas commendo spiritum meum." }
           },
-          verses: {
-            en: {
-              text: "In you, O Lord, I seek refuge;\nlet me never be put to shame;\nin your righteousness deliver me.\nIncline your ear to me;\nrescue me speedily.\nBe a rock of refuge for me,\na strong fortress to save me.\n\nFor you are my rock and my fortress;\nfor your name's sake lead me and guide me,\ntake me out of the net that is hidden for me,\nfor you are my refuge.\nInto your hand I commit my spirit;\nyou have redeemed me, O Lord, faithful God."
-            },
-            la: {
-              text: "In te, Domine, speravi, non confundar in aeternum;\nin iustitia tua libera me.\nInclina ad me aurem tuam,\naccelera ut eripias me.\nEsto mihi in petram refugii,\net in domum munitam ut salvum me facias.\n\nQuoniam fortitudo mea et refugium meum es tu,\net propter nomen tuum deduces me et enutries me.\nEduces me de laqueo hoc quem absconderunt mihi,\nquoniam tu es protector meus.\nIn manus tuas commendo spiritum meum;\nredemisti me, Domine, Deus veritatis."
-            }
+          scriptureRef: {
+            book: "PSA",
+            chapter: 31,
+            verse: "1-5",
+            translation: "DRA"
           },
           metadata: {
             tone: "Psalm tone 3",
@@ -409,7 +396,7 @@ export const ordinaryTimeCompline: ComplineData = {
           la: { text: "Lectio Brevis" }
         },
         scriptureRef: {
-          book: "1 Peter",
+          book: "1PE",
           chapter: 5,
           verse: "7-9",
           translation: "DRA"
@@ -431,7 +418,7 @@ export const ordinaryTimeCompline: ComplineData = {
             la: { text: "Lectio Brevis" }
           },
           scriptureRef: {
-            book: "Revelation",
+            book: "REV",
             chapter: 14,
             verse: "13",
             translation: "DRA"
@@ -452,7 +439,7 @@ export const ordinaryTimeCompline: ComplineData = {
             la: { text: "Lectio Brevis" }
           },
           scriptureRef: {
-            book: "James",
+            book: "JAS",
             chapter: 4,
             verse: "7-8",
             translation: "DRA"
@@ -473,7 +460,7 @@ export const ordinaryTimeCompline: ComplineData = {
             la: { text: "Lectio Brevis" }
           },
           scriptureRef: {
-            book: "Romans",
+            book: "ROM",
             chapter: 8,
             verse: "38-39",
             translation: "DRA"
@@ -494,7 +481,7 @@ export const ordinaryTimeCompline: ComplineData = {
             la: { text: "Lectio Brevis" }
           },
           scriptureRef: {
-            book: "2 Corinthians",
+            book: "2CO",
             chapter: 4,
             verse: "7-9",
             translation: "DRA"
@@ -515,7 +502,7 @@ export const ordinaryTimeCompline: ComplineData = {
             la: { text: "Lectio Brevis" }
           },
           scriptureRef: {
-            book: "Ephesians",
+            book: "EPH",
             chapter: 6,
             verse: "10-12",
             translation: "DRA"
@@ -536,7 +523,7 @@ export const ordinaryTimeCompline: ComplineData = {
             la: { text: "Lectio Brevis" }
           },
           scriptureRef: {
-            book: "Colossians",
+            book: "COL",
             chapter: 3,
             verse: "17, 23-24",
             translation: "DRA"
@@ -557,10 +544,13 @@ export const ordinaryTimeCompline: ComplineData = {
             la: { text: "Lectio Brevis" }
           },
           scriptureRef: {
-            book: "Hebrews",
+            book: "HEB",
             chapter: 4,
             verse: "14-15",
             translation: "DRA"
+          },
+          verses: {
+            en: { text: "Having therefore a great high priest that hath passed into the heavens, Jesus the Son of God: let us hold fast our confession. For we have not a high priest, who cannot have compassion on our infirmities: but one tempted in all things like as we are, without sin." }
           },
           source: {
             en: { text: "From the Letter to the Hebrews" },

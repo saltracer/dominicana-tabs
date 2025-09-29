@@ -106,7 +106,8 @@ export interface PsalmodyComponent {
   type: 'psalm';
   psalmNumber: number;
   antiphon: MultiLanguageContent;
-  verses: MultiLanguageContent;
+  verses?: MultiLanguageContent;
+  scriptureRef?: ScriptureReference;
   refrain?: MultiLanguageContent;
   chant?: ChantResource;
   audio?: AudioResource[];
@@ -127,7 +128,7 @@ export interface ReadingComponent {
   id: string;
   type: 'reading';
   title: MultiLanguageContent;
-  content?: MultiLanguageContent;
+  verses?: MultiLanguageContent; // Changed from content to verses for consistency
   scriptureRef?: ScriptureReference;
   source: MultiLanguageContent;
   audio?: AudioResource[];

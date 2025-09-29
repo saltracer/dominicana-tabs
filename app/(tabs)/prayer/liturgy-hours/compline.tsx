@@ -23,11 +23,25 @@ import { LanguageCode } from '../../../../types/compline-types';
 import ErrorBoundary from '../../../../components/ErrorBoundary';
 
 function ComplineScreenContent() {
-  const { colorScheme } = useTheme();
+  const theme = useTheme();
+  const colorScheme = theme?.colorScheme ?? 'light';
   const { liturgicalDay } = useCalendar();
   const [language, setLanguage] = useState<LanguageCode>('en');
   const [isInitialized, setIsInitialized] = useState(false);
   const [showQuickPicker, setShowQuickPicker] = useState(false);
+
+  // Early return if theme is not available
+  if (!theme) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: '#ffffff' }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: '#000000' }]}>
+            Loading theme...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
   
   // Memoize the date to prevent infinite re-renders
   const targetDate = useMemo(() => {
@@ -39,6 +53,7 @@ function ComplineScreenContent() {
     targetDate,
     { language }
   );
+
 
   // Initialize the component
   useEffect(() => {
@@ -193,7 +208,8 @@ function ComplineScreenContent() {
               {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {complineData.components.psalmody.verses[language]?.text}
+              {complineData.components.psalmody.verses?.[language]?.text || 
+               (complineData.components.psalmody.scriptureRef ? 'Loading psalm...' : 'Psalm content not available')}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].primary }]}>
               {complineData.components.psalmody.antiphon[language]?.text}
@@ -219,7 +235,7 @@ function ComplineScreenContent() {
               {complineData.components.reading.source[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {complineData.components.reading.content[language]?.text}
+              {complineData.components.reading.verses?.[language]?.text || 'Loading reading...'}
             </Text>
           </View>
         </View>

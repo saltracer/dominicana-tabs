@@ -39,52 +39,56 @@ export interface ResolvedComplineData extends Omit<ComplineData, 'components'> {
  * @returns Component with resolved scripture content
  */
 async function resolveScriptureContent(component: any): Promise<any> {
-  if (component.scriptureRef) {
-    try {
-      // Format the scripture reference for the bible service
-      const { book, chapter, verse } = component.scriptureRef;
-      const reference = `${book} ${chapter}:${verse}`;
+  if (!component || !component.scriptureRef) {
+    return component;
+  }
+
+  try {
+    // Format the scripture reference for the bible service
+    const { book, chapter, verse } = component.scriptureRef;
+    const reference = `${book} ${chapter}:${verse}`;
+    
+    console.log(`Resolving scripture reference: ${reference} for component type: ${component.type}`);
+    
+    // Fetch scripture content from bible service
+    const passage = await bibleService.getPassageByReference(reference);
+    
+    console.log(`Passage result for ${reference}:`, passage);
+    
+    if (passage && passage.verses && passage.verses.length > 0) {
+      // Convert verses to a single text string
+      const scriptureText = passage.verses
+        .map((v: any) => v.text)
+        .join(' ');
       
-      // Fetch scripture content from bible service
-      const passage = await bibleService.getPassageByReference(reference);
-      
-      if (passage && passage.verses.length > 0) {
-        // Convert verses to a single text string
-        const scriptureText = passage.verses
-          .map(v => v.text)
-          .join(' ');
-        
-        // Return component with resolved content
-        return {
-          ...component,
-          content: {
-            en: { text: scriptureText }
-          }
-        };
-      } else {
-        console.warn(`Failed to fetch scripture for reference: ${reference}`);
-        // Return component with fallback content or empty content
-        return {
-          ...component,
-          content: {
-            en: { text: `[Scripture not found: ${reference}]` }
-          }
-        };
-      }
-    } catch (error) {
-      console.error('Error resolving scripture reference:', error);
-      // Return component with error message
+      // Return component with resolved content
+      // Always use 'verses' field for consistency
       return {
         ...component,
-        content: {
-          en: { text: `[Error loading scripture: ${component.scriptureRef.book} ${component.scriptureRef.chapter}:${component.scriptureRef.verse}]` }
+        verses: {
+          en: { text: scriptureText }
+        }
+      };
+    } else {
+      console.warn(`Failed to fetch scripture for reference: ${reference}`);
+      // Return component with fallback content
+      return {
+        ...component,
+        verses: {
+          en: { text: `[Scripture not found: ${reference}]` }
         }
       };
     }
+  } catch (error) {
+    console.error('Error resolving scripture reference:', error);
+    // Return component with error message
+    return {
+      ...component,
+      verses: {
+        en: { text: `[Error loading scripture: ${component.scriptureRef.book} ${component.scriptureRef.chapter}:${component.scriptureRef.verse}]` }
+      }
+    };
   }
-  
-  // No scripture reference, return component as-is
-  return component;
 }
 
 /**
@@ -96,50 +100,88 @@ async function resolveScriptureContent(component: any): Promise<any> {
  * @returns ResolvedComplineData with all components resolved to actual types and scripture content
  */
 export async function resolveComplineComponents(data: ComplineData, targetDate: Date): Promise<ResolvedComplineData> {
-  const dayOfWeek = getDayOfWeekFromDate(targetDate);
-  
-  // Resolve day-of-week variations first
-  const resolvedComponents = {
-    opening: isDayOfWeekVariations(data.components.opening) 
-      ? getComponentForDay(data.components.opening, dayOfWeek)
-      : data.components.opening,
-    examinationOfConscience: isDayOfWeekVariations(data.components.examinationOfConscience)
-      ? getComponentForDay(data.components.examinationOfConscience, dayOfWeek)
-      : data.components.examinationOfConscience,
-    hymn: isDayOfWeekVariations(data.components.hymn)
-      ? getComponentForDay(data.components.hymn, dayOfWeek)
-      : data.components.hymn,
-    psalmody: isDayOfWeekVariations(data.components.psalmody)
-      ? getComponentForDay(data.components.psalmody, dayOfWeek)
-      : data.components.psalmody,
-    reading: isDayOfWeekVariations(data.components.reading)
-      ? getComponentForDay(data.components.reading, dayOfWeek)
-      : data.components.reading,
-    responsory: isDayOfWeekVariations(data.components.responsory)
-      ? getComponentForDay(data.components.responsory, dayOfWeek)
-      : data.components.responsory,
-    canticle: isDayOfWeekVariations(data.components.canticle)
-      ? getComponentForDay(data.components.canticle, dayOfWeek)
-      : data.components.canticle,
-    concludingPrayer: isDayOfWeekVariations(data.components.concludingPrayer)
-      ? getComponentForDay(data.components.concludingPrayer, dayOfWeek)
-      : data.components.concludingPrayer,
-    finalBlessing: isDayOfWeekVariations(data.components.finalBlessing)
-      ? getComponentForDay(data.components.finalBlessing, dayOfWeek)
-      : data.components.finalBlessing,
-  };
+  try {
+    const dayOfWeek = getDayOfWeekFromDate(targetDate);
+    
+    // Resolve day-of-week variations first
+    const resolvedComponents = {
+      opening: isDayOfWeekVariations(data.components.opening) 
+        ? getComponentForDay(data.components.opening, dayOfWeek)
+        : data.components.opening,
+      examinationOfConscience: isDayOfWeekVariations(data.components.examinationOfConscience)
+        ? getComponentForDay(data.components.examinationOfConscience, dayOfWeek)
+        : data.components.examinationOfConscience,
+      hymn: isDayOfWeekVariations(data.components.hymn)
+        ? getComponentForDay(data.components.hymn, dayOfWeek)
+        : data.components.hymn,
+      psalmody: isDayOfWeekVariations(data.components.psalmody)
+        ? getComponentForDay(data.components.psalmody, dayOfWeek)
+        : data.components.psalmody,
+      reading: isDayOfWeekVariations(data.components.reading)
+        ? getComponentForDay(data.components.reading, dayOfWeek)
+        : data.components.reading,
+      responsory: isDayOfWeekVariations(data.components.responsory)
+        ? getComponentForDay(data.components.responsory, dayOfWeek)
+        : data.components.responsory,
+      canticle: isDayOfWeekVariations(data.components.canticle)
+        ? getComponentForDay(data.components.canticle, dayOfWeek)
+        : data.components.canticle,
+      concludingPrayer: isDayOfWeekVariations(data.components.concludingPrayer)
+        ? getComponentForDay(data.components.concludingPrayer, dayOfWeek)
+        : data.components.concludingPrayer,
+      finalBlessing: isDayOfWeekVariations(data.components.finalBlessing)
+        ? getComponentForDay(data.components.finalBlessing, dayOfWeek)
+        : data.components.finalBlessing,
+    };
 
-  // Resolve scripture references for components that may have them
-  const componentsWithScripture = {
-    ...resolvedComponents,
-    reading: await resolveScriptureContent(resolvedComponents.reading),
-    // Add other components that might have scripture references in the future
-  };
+    // Resolve scripture references for components that may have them
+    const componentsWithScripture = {
+      ...resolvedComponents,
+      reading: await resolveScriptureContent(resolvedComponents.reading),
+      psalmody: await resolveScriptureContent(resolvedComponents.psalmody),
+      // Add other components that might have scripture references in the future
+    };
 
-  return {
-    ...data,
-    components: componentsWithScripture
-  };
+    return {
+      ...data,
+      components: componentsWithScripture
+    };
+  } catch (error) {
+    console.error('Error in resolveComplineComponents:', error);
+    // Return the original data without scripture resolution as fallback
+    return {
+      ...data,
+      components: {
+        opening: isDayOfWeekVariations(data.components.opening) 
+          ? getComponentForDay(data.components.opening, getDayOfWeekFromDate(targetDate))
+          : data.components.opening,
+        examinationOfConscience: isDayOfWeekVariations(data.components.examinationOfConscience)
+          ? getComponentForDay(data.components.examinationOfConscience, getDayOfWeekFromDate(targetDate))
+          : data.components.examinationOfConscience,
+        hymn: isDayOfWeekVariations(data.components.hymn)
+          ? getComponentForDay(data.components.hymn, getDayOfWeekFromDate(targetDate))
+          : data.components.hymn,
+        psalmody: isDayOfWeekVariations(data.components.psalmody)
+          ? getComponentForDay(data.components.psalmody, getDayOfWeekFromDate(targetDate))
+          : data.components.psalmody,
+        reading: isDayOfWeekVariations(data.components.reading)
+          ? getComponentForDay(data.components.reading, getDayOfWeekFromDate(targetDate))
+          : data.components.reading,
+        responsory: isDayOfWeekVariations(data.components.responsory)
+          ? getComponentForDay(data.components.responsory, getDayOfWeekFromDate(targetDate))
+          : data.components.responsory,
+        canticle: isDayOfWeekVariations(data.components.canticle)
+          ? getComponentForDay(data.components.canticle, getDayOfWeekFromDate(targetDate))
+          : data.components.canticle,
+        concludingPrayer: isDayOfWeekVariations(data.components.concludingPrayer)
+          ? getComponentForDay(data.components.concludingPrayer, getDayOfWeekFromDate(targetDate))
+          : data.components.concludingPrayer,
+        finalBlessing: isDayOfWeekVariations(data.components.finalBlessing)
+          ? getComponentForDay(data.components.finalBlessing, getDayOfWeekFromDate(targetDate))
+          : data.components.finalBlessing,
+      }
+    };
+  }
 }
 
 /**
