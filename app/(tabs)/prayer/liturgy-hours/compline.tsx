@@ -243,7 +243,8 @@ function ComplineScreenContent() {
               {complineData.components.canticle.antiphon[language]?.text}
             </Text>
             <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {complineData.components.canticle.content[language]?.text}
+              {complineData.components.canticle.verses?.[language]?.text || 
+               (complineData.components.canticle.scriptureRef ? 'Loading canticle...' : complineData.components.canticle.content[language]?.text)}
             </Text>
             <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].text }]}>
               {complineData.components.canticle.antiphon[language]?.text}

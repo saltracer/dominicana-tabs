@@ -153,6 +153,8 @@ export interface CanticleComponent {
   type: 'canticle';
   name: string; // e.g., "Canticle of Simeon"
   antiphon: MultiLanguageContent;
+  scriptureRef?: ScriptureReference;
+  verses?: MultiLanguageContent;
   content: MultiLanguageContent;
   chant?: ChantResource;
   audio?: AudioResource[];

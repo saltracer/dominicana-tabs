@@ -108,7 +108,7 @@ export async function resolveComplineComponents(data: ComplineData, targetDate: 
       ...data.components,
       reading: await resolveScriptureContent(data.components.reading),
       psalmody: await resolveScriptureContent(data.components.psalmody),
-      // Add other components that might have scripture references in the future
+      canticle: await resolveScriptureContent(data.components.canticle),
     };
 
     return {

@@ -87,6 +87,12 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         en: { text: "Protect us, Lord, as we stay awake; watch over us as we sleep; that awake, we may keep watch with Christ, and asleep, rest in his peace." },
         la: { text: "Salva nos, Domine, vigilantes, custodi nos dormientes." }
       },
+      scriptureRef: {
+        book: "LUK",
+        chapter: 2,
+        verse: "29-32",
+        translation: "DRA"
+      },
       content: {
         en: {
           text: "Lord, now you let your servant go in peace; your word has been fulfilled:\nMy own eyes have seen the salvation which you have prepared in the sight of every people:\na light to reveal you to the nations and the glory of your people Israel."
@@ -105,7 +111,7 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
       type: 'blessing',
       content: {
         en: {
-          text: "May the all-powerful Lord grant us a quiet night and a peaceful death.\nAmen."
+          text: "May the all-powerful Lord grant us a restful night and a peaceful death.\nAmen."
         },
         la: {
           text: "Benedicat nos omnipotens Dominus, quiete nocte et perfecto fine.\nAmen."
