@@ -180,28 +180,6 @@ export const ordinaryTimeCompline: ComplineData = {
             tune: "Eventide"
           }
         },
-        saturday: {
-          id: 'hymn-saturday-compline',
-          type: 'hymn',
-          title: {
-            en: { text: "Hail, Queen of Heaven" },
-            la: { text: "Salve Regina" }
-          },
-          content: {
-            en: {
-              text: "Hail, Queen of Heaven, the ocean star,\nGuide of the wanderer here below,\nThrown on life's surge, we claim thy care,\nSave us from peril and from woe.\n\nMother of Christ, Star of the sea,\nPray for the wanderer, pray for me."
-            },
-            la: {
-              text: "Salve Regina, Mater misericordiae,\nVita, dulcedo, et spes nostra, salve.\nAd te clamamus, exsules filii Evae,\nAd te suspiramus, gementes et flentes\nin hac lacrimarum valle."
-            }
-          },
-          metadata: {
-            composer: "Traditional",
-            century: "11th century",
-            meter: "8.8.8.8",
-            tune: "Salve Regina"
-          }
-        },
         friday: {
           id: 'hymn-friday-compline',
           type: 'hymn',
@@ -222,6 +200,28 @@ export const ordinaryTimeCompline: ComplineData = {
             century: "12th century",
             meter: "8.7.8.7.8.7.8.7",
             tune: "Passion Chorale"
+          }
+        },
+        saturday: {
+          id: 'hymn-saturday-compline',
+          type: 'hymn',
+          title: {
+            en: { text: "Hail, Queen of Heaven" },
+            la: { text: "Salve Regina" }
+          },
+          content: {
+            en: {
+              text: "Hail, Queen of Heaven, the ocean star,\nGuide of the wanderer here below,\nThrown on life's surge, we claim thy care,\nSave us from peril and from woe.\n\nMother of Christ, Star of the sea,\nPray for the wanderer, pray for me."
+            },
+            la: {
+              text: "Salve Regina, Mater misericordiae,\nVita, dulcedo, et spes nostra, salve.\nAd te clamamus, exsules filii Evae,\nAd te suspiramus, gementes et flentes\nin hac lacrimarum valle."
+            }
+          },
+          metadata: {
+            composer: "Traditional",
+            century: "11th century",
+            meter: "8.8.8.8",
+            tune: "Salve Regina"
           }
         }
       }
@@ -346,25 +346,6 @@ export const ordinaryTimeCompline: ComplineData = {
             mode: 7
           }
         },
-        saturday: {
-          id: 'psalm-130',
-          type: 'psalm',
-          psalmNumber: 130,
-          antiphon: {
-            en: { text: "Out of the depths I cry to you, O Lord." },
-            la: { text: "De profundis clamavi ad te, Domine." }
-          },
-          scriptureRef: {
-            book: "PSA",
-            chapter: 129,
-            verse: "1-8",
-            translation: "DRA"
-          },
-          metadata: {
-            tone: "Psalm tone 8",
-            mode: 8
-          }
-        },
         friday: {
           id: 'psalm-31',
           type: 'psalm',
@@ -382,6 +363,25 @@ export const ordinaryTimeCompline: ComplineData = {
           metadata: {
             tone: "Psalm tone 3",
             mode: 3
+          }
+        },
+        saturday: {
+          id: 'psalm-130',
+          type: 'psalm',
+          psalmNumber: 130,
+          antiphon: {
+            en: { text: "Out of the depths I cry to you, O Lord." },
+            la: { text: "De profundis clamavi ad te, Domine." }
+          },
+          scriptureRef: {
+            book: "PSA",
+            chapter: 129,
+            verse: "1-8",
+            translation: "DRA"
+          },
+          metadata: {
+            tone: "Psalm tone 8",
+            mode: 8
           }
         }
       }
@@ -515,27 +515,6 @@ export const ordinaryTimeCompline: ComplineData = {
             author: "Saint Paul"
           }
         },
-        saturday: {
-          id: 'reading-colossians',
-          type: 'reading',
-          title: {
-            en: { text: "Short Reading" },
-            la: { text: "Lectio Brevis" }
-          },
-          scriptureRef: {
-            book: "COL",
-            chapter: 3,
-            verse: "17, 23-24",
-            translation: "DRA"
-          },
-          source: {
-            en: { text: "From the Letter to the Colossians" },
-            la: { text: "Ex Epistula ad Colossenses" }
-          },
-          metadata: {
-            author: "Saint Paul"
-          }
-        },
         friday: {
           id: 'reading-hebrews',
           type: 'reading',
@@ -558,6 +537,27 @@ export const ordinaryTimeCompline: ComplineData = {
           },
           metadata: {
             author: "Unknown"
+          }
+        },
+        saturday: {
+          id: 'reading-colossians',
+          type: 'reading',
+          title: {
+            en: { text: "Short Reading" },
+            la: { text: "Lectio Brevis" }
+          },
+          scriptureRef: {
+            book: "COL",
+            chapter: 3,
+            verse: "17, 23-24",
+            translation: "DRA"
+          },
+          source: {
+            en: { text: "From the Letter to the Colossians" },
+            la: { text: "Ex Epistula ad Colossenses" }
+          },
+          metadata: {
+            author: "Saint Paul"
           }
         }
       }
