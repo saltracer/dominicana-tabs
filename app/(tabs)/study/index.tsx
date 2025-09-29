@@ -9,6 +9,7 @@ import {
   TextInput,
   Platform,
   Image,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,13 +29,14 @@ export default function StudyScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
   const { user, loading: authLoading } = useAuth();
-  const { progress: readingProgress, getBookProgressPercentage, loading: progressLoading } = useReadingProgress();
+  const { progress: readingProgress, getBookProgressPercentage, loading: progressLoading, refreshProgress } = useReadingProgress();
   const { books, loading: booksLoading, searchBooks } = useBooks();
   const isWeb = Platform.OS === 'web';
   const platformStyles = getStudyPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     filterBooks();
@@ -60,6 +62,19 @@ export default function StudyScreen() {
       return matchesCategory && matchesSearch;
     });
     setFilteredBooks(filtered);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Refresh reading progress data
+      await refreshProgress();
+      // The books data will be refreshed automatically by the useBooks hook
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSearch = async () => {
@@ -104,7 +119,19 @@ export default function StudyScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors[colorScheme ?? 'light'].primary}
+            colors={[Colors[colorScheme ?? 'light'].primary]}
+          />
+        }
+      >
 
         {/* Login Status */}
         {!user && (

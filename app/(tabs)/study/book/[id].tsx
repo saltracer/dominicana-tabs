@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   Linking,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +30,7 @@ export default function BookDetailScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
   const { setIsReading } = useReading();
-  const { getBookProgressPercentage, isBookInProgress } = useReadingProgress();
+  const { getBookProgressPercentage, isBookInProgress, deleteProgress, refreshProgress } = useReadingProgress();
   const { getBookById } = useBooks();
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
@@ -37,6 +38,7 @@ export default function BookDetailScreen() {
   const [book, setBook] = useState<Book | null>(null);
   const [loading, setLoading] = useState(true);
   const [showReader, setShowReader] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadBook();
@@ -194,6 +196,49 @@ export default function BookDetailScreen() {
     router.push('/auth');
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Refresh both book data and reading progress
+      await Promise.all([
+        loadBook(),
+        refreshProgress()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleClearProgress = async () => {
+    if (!book || !user) return;
+
+    Alert.alert(
+      'Clear Reading Progress',
+      'Are you sure you want to clear your reading progress for this book? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear Progress',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProgress(book.id);
+              Alert.alert('Success', 'Reading progress has been cleared.');
+            } catch (error) {
+              console.error('Error clearing progress:', error);
+              Alert.alert('Error', 'Failed to clear reading progress. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -238,7 +283,18 @@ export default function BookDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors[colorScheme ?? 'light'].primary}
+            colors={[Colors[colorScheme ?? 'light'].primary]}
+          />
+        }
+      >
         
 
         {/* Book Cover and Basic Info */}
@@ -313,6 +369,24 @@ export default function BookDetailScreen() {
                     {Math.round(getBookProgressPercentage(book.id))}% Complete
                   </Text>
                 </View>
+                
+                {/* Clear Progress Button */}
+                <TouchableOpacity 
+                  style={[styles.clearProgressButton, { 
+                    backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                    borderColor: Colors[colorScheme ?? 'light'].border 
+                  }]}
+                  onPress={handleClearProgress}
+                >
+                  <Ionicons 
+                    name="trash-outline" 
+                    size={16} 
+                    color={Colors[colorScheme ?? 'light'].textMuted} 
+                  />
+                  <Text style={[styles.clearProgressText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                    Clear Progress
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
             )}
@@ -698,6 +772,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     minWidth: 80,
     textAlign: 'right',
+  },
+  
+  clearProgressButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  
+  clearProgressText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
+    marginLeft: 4,
   },
   
   bottomPadding: {
