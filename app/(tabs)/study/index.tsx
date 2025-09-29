@@ -121,18 +121,6 @@ export default function StudyScreen() {
           </View>
         )}
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
-            placeholder="Search books..."
-            placeholderTextColor={Colors[colorScheme ?? 'light'].textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-
         {/* Categories */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -173,7 +161,22 @@ export default function StudyScreen() {
               </TouchableOpacity>
             ))}
           </ScrollView>
+          
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            <TextInput
+              style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+              placeholder="Search books..."
+              placeholderTextColor={Colors[colorScheme ?? 'light'].textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
         </View>
+
+
+        
 
         {/* Bible Reading */}
         <View style={styles.section}>
