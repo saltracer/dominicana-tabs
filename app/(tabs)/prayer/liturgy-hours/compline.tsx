@@ -121,11 +121,6 @@ function ComplineScreenContent() {
         {/* Opening */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="moon" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Opening
             </Text>
@@ -142,11 +137,6 @@ function ComplineScreenContent() {
         {/* Examination of Conscience */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="search-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Examination of Conscience
             </Text>
@@ -167,11 +157,6 @@ function ComplineScreenContent() {
         {/* Hymn */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="musical-notes-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Hymn
             </Text>
@@ -190,11 +175,6 @@ function ComplineScreenContent() {
         {/* Psalm */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="book-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Psalm
             </Text>
@@ -220,11 +200,6 @@ function ComplineScreenContent() {
         {/* Reading */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="library-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Short Reading
             </Text>
@@ -243,11 +218,6 @@ function ComplineScreenContent() {
         {/* Responsory */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="repeat-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Responsory
             </Text>
@@ -263,11 +233,6 @@ function ComplineScreenContent() {
         {/* Canticle */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="star-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Canticle of Simeon
             </Text>
@@ -289,11 +254,6 @@ function ComplineScreenContent() {
         {/* Concluding Prayer */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="heart-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Concluding Prayer
             </Text>
@@ -312,11 +272,6 @@ function ComplineScreenContent() {
         {/* Final Blessing */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons 
-              name="shield-checkmark-outline" 
-              size={24} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Final Blessing
             </Text>
@@ -349,12 +304,6 @@ const styles = StyleSheet.create({
   ...PrayerStyles,
   ...LiturgyStyles,
   // Unique styles for Compline
-  rubric: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginBottom: 12,
-    fontFamily: 'Georgia',
-  },
   container: {
     flex: 1,
   },

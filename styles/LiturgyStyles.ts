@@ -80,12 +80,19 @@ export const LiturgyStyles = StyleSheet.create({
   // =============================================================================
   // CONTENT STYLES
   // =============================================================================
+
+  rubric: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginBottom: 12,
+    fontFamily: 'Georgia',
+  },
   
   contentCard: {
     backgroundColor: 'transparent', // Will be overridden by theme colors
-    padding: 20,
+    padding: 10,
     borderRadius: 12,
-    marginBottom: 16,
+    // marginBottom: 8,
   },
   
   // Main body text for prayers, psalms, readings
@@ -93,7 +100,7 @@ export const LiturgyStyles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     fontFamily: 'Georgia',
-    marginBottom: 12,
+    // marginBottom: 5,
   },
   contentBodyLast: {
     fontSize: 16,
@@ -120,8 +127,8 @@ export const LiturgyStyles = StyleSheet.create({
   // Antiphons - italicized serif font
   antiphon: {
     fontSize: 16,
-    fontWeight: '600',
-    fontStyle: 'italic',
+    // fontWeight: '600',
+    // fontStyle: 'italic',
     marginBottom: 12,
     fontFamily: 'Georgia',
     // textAlign: 'center',
