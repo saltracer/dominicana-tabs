@@ -3,49 +3,84 @@ import { ComplineData, DayOfWeekVariations, DayOfWeek } from '../../types/compli
 
 // Mock data for testing
 const createMockHymnComponent = (title: string) => ({
+  id: `hymn-${title.toLowerCase().replace(/\s+/g, '-')}`,
+  type: 'hymn' as const,
   title: { en: { text: title } },
-  content: { en: { text: 'Hymn content' } }
+  content: { en: { text: 'Hymn content' } },
+  metadata: { composer: 'Test', century: '21st', meter: '8.8.8.8', tune: 'Test' }
 });
 
 const createMockComplineData = (): ComplineData => ({
   id: 'test-id',
   version: '1.0.0',
   lastUpdated: '2024-01-01',
-  season: { name: 'Ordinary Time', color: 'green' },
+  season: { 
+    name: 'Ordinary Time', 
+    color: 'green',
+    startDate: '2024-01-01',
+    endDate: '2024-12-31',
+    description: 'Test season'
+  },
   rank: 'ferial',
   metadata: {
-    title: { en: { text: 'Test Compline' } },
-    description: { en: { text: 'Test description' } }
+    created: '2024-01-01T00:00:00Z',
+    lastModified: '2024-01-01T00:00:00Z',
+    version: '1.0.0',
+    contributors: ['Test'],
+    sources: ['Test Source'],
+    notes: 'Test notes'
   },
   components: {
     opening: {
+      id: 'opening-test',
+      type: 'opening' as const,
       content: { en: { text: 'Opening content' } }
     },
     examinationOfConscience: {
+      id: 'examination-test',
+      type: 'examination' as const,
       content: { en: { text: 'Examination content' } },
       rubric: { en: { text: 'Examination rubric' } }
     },
     hymn: createMockHymnComponent('Default Hymn'),
     psalmody: {
-      psalmNumber: '4',
+      id: 'psalm-4',
+      type: 'psalm' as const,
+      psalmNumber: 4,
       antiphon: { en: { text: 'Default antiphon' } },
-      verses: { en: { text: 'Default verses' } }
+      verses: { en: { text: 'Default verses' } },
+      metadata: { tone: 'Psalm tone 1', mode: 1 }
     },
     reading: {
+      id: 'reading-test',
+      type: 'reading' as const,
+      title: { en: { text: 'Short Reading' } },
       source: { en: { text: 'Default source' } },
-      content: { en: { text: 'Default reading' } }
+      verses: { en: { text: 'Default reading' } },
+      metadata: { author: 'Test Author' }
     },
     responsory: {
+      id: 'responsory-test',
+      type: 'responsory' as const,
       content: { en: { text: 'Default responsory' } }
     },
     canticle: {
+      id: 'canticle-test',
+      type: 'canticle' as const,
+      name: 'Test Canticle',
       antiphon: { en: { text: 'Default canticle antiphon' } },
-      content: { en: { text: 'Default canticle content' } }
+      content: { en: { text: 'Default canticle content' } },
+      metadata: { biblical_reference: 'Test 1:1', mode: 1 }
     },
     concludingPrayer: {
+      id: 'prayer-test',
+      type: 'prayer' as const,
+      title: { en: { text: 'Concluding Prayer' } },
       content: { en: { text: 'Default prayer' } }
     },
     finalBlessing: {
+      id: 'blessing-test',
+      type: 'blessing' as const,
       content: { en: { text: 'Default blessing' } }
     }
   }
@@ -53,89 +88,28 @@ const createMockComplineData = (): ComplineData => ({
 
 describe('complineResolver', () => {
   describe('resolveComplineComponents', () => {
-    it('should return the same data when no DayOfWeekVariations are present', () => {
+    it('should return the same data when components are already resolved', async () => {
       const mockData = createMockComplineData();
       const targetDate = new Date('2024-01-15'); // Monday
       
-      const result = resolveComplineComponents(mockData, targetDate);
+      const result = await resolveComplineComponents(mockData, targetDate);
       
       expect(result.id).toBe(mockData.id);
       expect(result.components.hymn.title.en.text).toBe('Default Hymn');
-      expect(result.components.psalmody.psalmNumber).toBe('4');
+      expect(result.components.psalmody.psalmNumber).toBe(4);
     });
 
-    it('should resolve DayOfWeekVariations for hymn component', () => {
-      const mockData = createMockComplineData();
-      const mondayHymn = createMockHymnComponent('Monday Hymn');
-      const sundayHymn = createMockHymnComponent('Sunday Hymn');
-      
-      // Create DayOfWeekVariations for hymn
-      const hymnVariations: DayOfWeekVariations<typeof mondayHymn> = {
-        type: 'day-of-week-variations',
-        default: mondayHymn,
-        variations: {
-          sunday: sundayHymn
-        }
-      };
-      
-      mockData.components.hymn = hymnVariations;
-      
-      // Test Sunday (should get Sunday hymn)
-      const sundayDate = new Date(2024, 0, 14); // Sunday (getDay() = 0)
-      const sundayResult = resolveComplineComponents(mockData, sundayDate);
-      expect(sundayResult.components.hymn.title.en.text).toBe('Sunday Hymn');
-      
-      // Test Monday (should get default hymn)
-      const mondayDate = new Date(2024, 0, 15); // Monday
-      const mondayResult = resolveComplineComponents(mockData, mondayDate);
-      expect(mondayResult.components.hymn.title.en.text).toBe('Monday Hymn');
-    });
-
-    it('should resolve multiple DayOfWeekVariations components', () => {
-      const mockData = createMockComplineData();
-      
-      // Create variations for multiple components
-      const hymnVariations: DayOfWeekVariations<typeof mockData.components.hymn> = {
-        type: 'day-of-week-variations',
-        default: mockData.components.hymn,
-        variations: {
-          sunday: createMockHymnComponent('Sunday Hymn')
-        }
-      };
-      
-      const psalmodyVariations: DayOfWeekVariations<typeof mockData.components.psalmody> = {
-        type: 'day-of-week-variations',
-        default: mockData.components.psalmody,
-        variations: {
-          sunday: {
-            psalmNumber: '23',
-            antiphon: { en: { text: 'Sunday antiphon' } },
-            verses: { en: { text: 'Sunday verses' } }
-          }
-        }
-      };
-      
-      mockData.components.hymn = hymnVariations;
-      mockData.components.psalmody = psalmodyVariations;
-      
-      const sundayDate = new Date(2024, 0, 14); // Sunday
-      const result = resolveComplineComponents(mockData, sundayDate);
-      
-      expect(result.components.hymn.title.en.text).toBe('Sunday Hymn');
-      expect(result.components.psalmody.psalmNumber).toBe('23');
-      expect(result.components.psalmody.antiphon.en.text).toBe('Sunday antiphon');
-    });
-
-    it('should preserve non-variation components unchanged', () => {
+    it('should preserve all components unchanged when no scripture references', async () => {
       const mockData = createMockComplineData();
       const targetDate = new Date('2024-01-15');
       
-      const result = resolveComplineComponents(mockData, targetDate);
+      const result = await resolveComplineComponents(mockData, targetDate);
       
-      // These components don't have variations, so they should be unchanged
+      // All components should be preserved
       expect(result.components.opening.content.en.text).toBe('Opening content');
       expect(result.components.examinationOfConscience.content.en.text).toBe('Examination content');
       expect(result.components.finalBlessing.content.en.text).toBe('Default blessing');
+      expect(result.components.hymn.title.en.text).toBe('Default Hymn');
     });
   });
 

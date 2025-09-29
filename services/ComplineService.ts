@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import { 
   ComplineData, 
+  ComplineDataByDay,
   ComplineCacheEntry, 
   LanguageCode, 
   ComplineServiceConfig,

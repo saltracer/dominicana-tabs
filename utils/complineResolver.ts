@@ -92,94 +92,35 @@ async function resolveScriptureContent(component: any): Promise<any> {
 }
 
 /**
- * Resolves all DayOfWeekVariations components in ComplineData to their actual component types
- * based on the target date. Also resolves scripture references to actual content.
+ * Resolves scripture references to actual content in ComplineData.
+ * Since the new structure already resolves day-of-week variations, this function
+ * now focuses on resolving scripture references.
  * 
- * @param data - Raw ComplineData that may contain DayOfWeekVariations and scriptureRef
- * @param targetDate - Date to use for resolving day-of-week variations
- * @returns ResolvedComplineData with all components resolved to actual types and scripture content
+ * @param data - ComplineData with components already resolved for the specific day
+ * @param targetDate - Date to use for any additional processing
+ * @returns ResolvedComplineData with scripture content resolved
  */
 export async function resolveComplineComponents(data: ComplineData, targetDate: Date): Promise<ResolvedComplineData> {
   try {
-    const dayOfWeek = getDayOfWeekFromDate(targetDate);
-    
-    // Resolve day-of-week variations first
-    const resolvedComponents = {
-      opening: isDayOfWeekVariations(data.components.opening) 
-        ? getComponentForDay(data.components.opening, dayOfWeek)
-        : data.components.opening,
-      examinationOfConscience: isDayOfWeekVariations(data.components.examinationOfConscience)
-        ? getComponentForDay(data.components.examinationOfConscience, dayOfWeek)
-        : data.components.examinationOfConscience,
-      hymn: isDayOfWeekVariations(data.components.hymn)
-        ? getComponentForDay(data.components.hymn, dayOfWeek)
-        : data.components.hymn,
-      psalmody: isDayOfWeekVariations(data.components.psalmody)
-        ? getComponentForDay(data.components.psalmody, dayOfWeek)
-        : data.components.psalmody,
-      reading: isDayOfWeekVariations(data.components.reading)
-        ? getComponentForDay(data.components.reading, dayOfWeek)
-        : data.components.reading,
-      responsory: isDayOfWeekVariations(data.components.responsory)
-        ? getComponentForDay(data.components.responsory, dayOfWeek)
-        : data.components.responsory,
-      canticle: isDayOfWeekVariations(data.components.canticle)
-        ? getComponentForDay(data.components.canticle, dayOfWeek)
-        : data.components.canticle,
-      concludingPrayer: isDayOfWeekVariations(data.components.concludingPrayer)
-        ? getComponentForDay(data.components.concludingPrayer, dayOfWeek)
-        : data.components.concludingPrayer,
-      finalBlessing: isDayOfWeekVariations(data.components.finalBlessing)
-        ? getComponentForDay(data.components.finalBlessing, dayOfWeek)
-        : data.components.finalBlessing,
-    };
-
-    // Resolve scripture references for components that may have them
+    // Since the new structure already resolves day-of-week variations,
+    // we just need to resolve scripture references
     const componentsWithScripture = {
-      ...resolvedComponents,
-      reading: await resolveScriptureContent(resolvedComponents.reading),
-      psalmody: await resolveScriptureContent(resolvedComponents.psalmody),
+      ...data.components,
+      reading: await resolveScriptureContent(data.components.reading),
+      psalmody: await resolveScriptureContent(data.components.psalmody),
       // Add other components that might have scripture references in the future
     };
 
     return {
       ...data,
-      components: componentsWithScripture
+      components: componentsWithScripture as ResolvedComplineComponents
     };
   } catch (error) {
     console.error('Error in resolveComplineComponents:', error);
     // Return the original data without scripture resolution as fallback
     return {
       ...data,
-      components: {
-        opening: isDayOfWeekVariations(data.components.opening) 
-          ? getComponentForDay(data.components.opening, getDayOfWeekFromDate(targetDate))
-          : data.components.opening,
-        examinationOfConscience: isDayOfWeekVariations(data.components.examinationOfConscience)
-          ? getComponentForDay(data.components.examinationOfConscience, getDayOfWeekFromDate(targetDate))
-          : data.components.examinationOfConscience,
-        hymn: isDayOfWeekVariations(data.components.hymn)
-          ? getComponentForDay(data.components.hymn, getDayOfWeekFromDate(targetDate))
-          : data.components.hymn,
-        psalmody: isDayOfWeekVariations(data.components.psalmody)
-          ? getComponentForDay(data.components.psalmody, getDayOfWeekFromDate(targetDate))
-          : data.components.psalmody,
-        reading: isDayOfWeekVariations(data.components.reading)
-          ? getComponentForDay(data.components.reading, getDayOfWeekFromDate(targetDate))
-          : data.components.reading,
-        responsory: isDayOfWeekVariations(data.components.responsory)
-          ? getComponentForDay(data.components.responsory, getDayOfWeekFromDate(targetDate))
-          : data.components.responsory,
-        canticle: isDayOfWeekVariations(data.components.canticle)
-          ? getComponentForDay(data.components.canticle, getDayOfWeekFromDate(targetDate))
-          : data.components.canticle,
-        concludingPrayer: isDayOfWeekVariations(data.components.concludingPrayer)
-          ? getComponentForDay(data.components.concludingPrayer, getDayOfWeekFromDate(targetDate))
-          : data.components.concludingPrayer,
-        finalBlessing: isDayOfWeekVariations(data.components.finalBlessing)
-          ? getComponentForDay(data.components.finalBlessing, getDayOfWeekFromDate(targetDate))
-          : data.components.finalBlessing,
-      }
+      components: data.components as ResolvedComplineComponents
     };
   }
 }

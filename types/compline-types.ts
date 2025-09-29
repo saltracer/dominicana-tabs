@@ -239,3 +239,30 @@ export function getComponentForDay<T>(
 export function isDayOfWeekVariations<T>(component: T | DayOfWeekVariations<T>): component is DayOfWeekVariations<T> {
   return typeof component === 'object' && component !== null && 'type' in component && component.type === 'day-of-week-variations';
 }
+
+// New day-based structure interfaces
+export interface DaySpecificCompline {
+  hymn: HymnComponent;
+  psalmody: PsalmodyComponent;
+  reading: ReadingComponent;
+  concludingPrayer: PrayerComponent;
+}
+
+export interface ComplineDataByDay {
+  id: string;
+  version: string;
+  lastUpdated: string;
+  season: LiturgicalSeason;
+  rank: FeastRank;
+  sharedComponents: {
+    examinationOfConscience: ExaminationComponent;
+    opening: OpeningComponent;
+    responsory: ResponsoryComponent;
+    canticle: CanticleComponent;
+    finalBlessing: BlessingComponent;
+  };
+  days: {
+    [key in DayOfWeek]: DaySpecificCompline;
+  };
+  metadata: ComplineMetadata;
+}

@@ -1,4 +1,4 @@
-import { ComplineData, LanguageCode, getDayOfWeekFromDate, getComponentForDay } from '@/types/compline-types';
+import { ComplineData, ComplineDataByDay, LanguageCode, getDayOfWeekFromDate } from '@/types/compline-types';
 import { ordinaryTimeCompline } from './seasons/ordinary-time/compline';
 
 // Export all Compline data
@@ -10,18 +10,28 @@ export function getComplineForDate(date: Date, language: LanguageCode = 'en'): C
   // In a full implementation, this would determine the season and return appropriate data
   const dayOfWeek = getDayOfWeekFromDate(date);
   
-  // Create a copy of the compline data with day-of-week variations resolved
+  // Get the day-specific components from the new structure
+  const dayComponents = ordinaryTimeCompline.days[dayOfWeek];
+  
+  // Create a ComplineData structure that matches the old interface
   const complineData: ComplineData = {
-    ...ordinaryTimeCompline,
+    id: ordinaryTimeCompline.id,
+    version: ordinaryTimeCompline.version,
+    lastUpdated: ordinaryTimeCompline.lastUpdated,
+    season: ordinaryTimeCompline.season,
+    rank: ordinaryTimeCompline.rank,
     components: {
-      ...ordinaryTimeCompline.components,
-      hymn: getComponentForDay(ordinaryTimeCompline.components.hymn, dayOfWeek),
-      psalmody: getComponentForDay(ordinaryTimeCompline.components.psalmody, dayOfWeek),
-      reading: getComponentForDay(ordinaryTimeCompline.components.reading, dayOfWeek),
-      responsory: getComponentForDay(ordinaryTimeCompline.components.responsory, dayOfWeek),
-      canticle: getComponentForDay(ordinaryTimeCompline.components.canticle, dayOfWeek),
-      concludingPrayer: getComponentForDay(ordinaryTimeCompline.components.concludingPrayer, dayOfWeek),
-    }
+      examinationOfConscience: ordinaryTimeCompline.sharedComponents.examinationOfConscience,
+      opening: ordinaryTimeCompline.sharedComponents.opening,
+      hymn: dayComponents.hymn,
+      psalmody: dayComponents.psalmody,
+      reading: dayComponents.reading,
+      responsory: ordinaryTimeCompline.sharedComponents.responsory,
+      canticle: ordinaryTimeCompline.sharedComponents.canticle,
+      concludingPrayer: dayComponents.concludingPrayer,
+      finalBlessing: ordinaryTimeCompline.sharedComponents.finalBlessing,
+    },
+    metadata: ordinaryTimeCompline.metadata
   };
   
   return complineData;
