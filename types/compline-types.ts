@@ -239,6 +239,22 @@ export interface ComplineServiceConfig {
 // Helper functions for day-of-week variations
 export function getDayOfWeekFromDate(date: Date): DayOfWeek {
   const days: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  
+  // Multiple debug methods to ensure visibility
+  console.log('🔍 getDayOfWeekFromDate DEBUG START');
+  console.log('📅 Original Date:', date.toString());
+  console.log('📅 Local Date:', date.toLocaleDateString());
+  console.log('🕐 Local Time:', date.toLocaleTimeString());
+  console.log('🌍 Timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+  console.log('📊 getDay() result:', date.getDay());
+  console.log('📝 Day Name:', days[date.getDay()]);
+  console.log('🔍 getDayOfWeekFromDate DEBUG END');
+  
+  // Also use console.warn for better visibility
+  console.warn(`🎯 COMPLINE DEBUG: Date ${date.toLocaleDateString()} = Day ${date.getDay()} = ${days[date.getDay()]}`);
+  
+  // Use the local day of week directly
+  // getDay() returns 0-6 where 0=Sunday, 6=Saturday
   return days[date.getDay()];
 }
 

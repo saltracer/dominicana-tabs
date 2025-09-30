@@ -8,7 +8,10 @@ export { ordinaryTimeCompline };
 export function getComplineForDate(date: Date, language: LanguageCode = 'en'): ComplineData {
   // For now, return ordinary time Compline with day-of-week variations applied
   // In a full implementation, this would determine the season and return appropriate data
+  
+  console.warn('🚀 getComplineForDate called with date:', date.toString());
   const dayOfWeek = getDayOfWeekFromDate(date);
+  console.warn('🎯 Final day of week determined:', dayOfWeek);
   
   // Get the day-specific components from the new structure
   const dayComponents = ordinaryTimeCompline.days[dayOfWeek];

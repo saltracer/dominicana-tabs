@@ -78,7 +78,7 @@ async function resolveScriptureContent(component: any): Promise<any> {
     // Fetch scripture content from bible service
     const passage = await bibleService.getPassageByReference(reference);
     
-    console.log(`Passage result for ${reference}:`, passage);
+    //console.log(`Passage result for ${reference}:`, passage);
     
     if (passage && passage.verses && passage.verses.length > 0) {
       // Format verses with proper structure and verse numbers

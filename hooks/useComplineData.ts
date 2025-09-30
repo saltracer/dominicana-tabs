@@ -40,6 +40,11 @@ export function useComplineData(
       setLoading(true);
       setError(null);
       
+      // Debug logging for the date passed to the service
+      console.warn('🔧 useComplineData calling service with date:', date.toString());
+      console.warn('🔧 useComplineData date.getDay():', date.getDay());
+      console.warn('🔧 useComplineData language:', language);
+      
       const rawData = await complineService.getComplineForDate(date, language);
       const resolvedData = await resolveComplineComponents(rawData, date);
       setComplineData(resolvedData);

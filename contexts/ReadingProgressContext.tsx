@@ -116,18 +116,18 @@ export function ReadingProgressProvider({ children }: { children: ReactNode }) {
 
   const refreshProgress = async () => {
     if (!user) {
-      console.log('📚 ReadingProgressContext: No user, clearing progress');
+      //console.log('📚 ReadingProgressContext: No user, clearing progress');
       setProgress([]);
       return;
     }
 
     try {
-      console.log('📚 ReadingProgressContext: Loading progress for user:', user.id);
+      //console.log('📚 ReadingProgressContext: Loading progress for user:', user.id);
       setLoading(true);
       setError(null);
       
       const userProgress = await ReadingProgressService.getUserProgress(user.id);
-      console.log('📚 ReadingProgressContext: Loaded progress:', userProgress);
+      //console.log('📚 ReadingProgressContext: Loaded progress:', userProgress);
       setProgress(userProgress);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load reading progress';

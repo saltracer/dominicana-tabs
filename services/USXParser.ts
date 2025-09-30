@@ -194,7 +194,7 @@ export class USXParser {
           number: chapterNumber,
           verses
         });
-        console.log(`Chapter ${chapterNumber}: ${verses.length} verses`);
+        //console.log(`Chapter ${chapterNumber}: ${verses.length} verses`);
       }
     }
 

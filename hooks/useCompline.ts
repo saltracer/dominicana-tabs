@@ -39,6 +39,12 @@ export function useCompline(
   // Use the smaller, focused hooks
   const { complineService, offlineManager, servicesError } = useComplineServices();
   const { targetDate } = useComplineDate(date);
+  
+  // Debug logging for the date received by useCompline
+  // console.warn('🎯 useCompline received date:', date.toString());
+  // console.warn('🎯 useCompline targetDate:', targetDate.toString());
+  // console.warn('🎯 useCompline targetDate.getDay():', targetDate.getDay());
+  
   const { complineData, loading, error, loadComplineData } = useComplineData(complineService, { language });
   const { cacheInfo, refreshCacheInfo, clearCache } = useComplineCache(offlineManager);
 

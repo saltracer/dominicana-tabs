@@ -45,7 +45,30 @@ function ComplineScreenContent() {
   
   // Memoize the date to prevent infinite re-renders
   const targetDate = useMemo(() => {
-    return liturgicalDay ? new Date(liturgicalDay.date) : new Date();
+    // console.warn('🗓️ COMPLINE DATE DEBUG START');
+    // console.warn('📅 liturgicalDay:', liturgicalDay);
+    // console.warn('📅 liturgicalDay?.date:', liturgicalDay?.date);
+    
+    // Create a pure date object without time components to avoid timezone issues
+    let date: Date;
+    if (liturgicalDay) {
+      // Parse the YYYY-MM-DD string directly to create a date-only object
+      const [year, month, day] = liturgicalDay.date.split('-').map(Number);
+      date = new Date(year, month - 1, day); // month is 0-indexed in Date constructor
+    } else {
+      // Create a date-only object for today
+      const today = new Date();
+      date = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    }
+    
+    // console.warn('📅 Generated targetDate (date-only):', date.toString());
+    // console.warn('📅 targetDate.toLocaleDateString():', date.toLocaleDateString());
+    // console.warn('📅 targetDate.toLocaleTimeString():', date.toLocaleTimeString());
+    // console.warn('📅 targetDate.getDay():', date.getDay());
+    // console.warn('📅 targetDate timezone offset:', date.getTimezoneOffset());
+    // console.warn('🗓️ COMPLINE DATE DEBUG END');
+    
+    return date;
   }, [liturgicalDay?.date]);
   
   // Get Compline data using the new hook

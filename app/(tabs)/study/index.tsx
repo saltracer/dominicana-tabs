@@ -259,12 +259,12 @@ export default function StudyScreen() {
                   .sort((a, b) => new Date(b.last_read_at).getTime() - new Date(a.last_read_at).getTime()) // Sort by most recent
                   .map((progress, index) => {
                   const book = books.find(b => b.id === progress.book_id);
-                  console.log('📚 Book matching debug:', {
-                    progressBookId: progress.book_id,
-                    progressBookIdType: typeof progress.book_id,
-                    booksIds: books.map(b => ({ id: b.id, type: typeof b.id })),
-                    foundBook: book
-                  });
+                  // console.log('📚 Book matching debug:', {
+                  //   progressBookId: progress.book_id,
+                  //   progressBookIdType: typeof progress.book_id,
+                  //   booksIds: books.map(b => ({ id: b.id, type: typeof b.id })),
+                  //   foundBook: book
+                  // });
                   
                   // Create a fallback book object if not found in main books array
                   const bookData = book || {

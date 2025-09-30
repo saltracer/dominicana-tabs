@@ -259,7 +259,7 @@ export class USFXParser {
           number: chapterNumber,
           verses
         });
-        console.log(`Chapter ${chapterNumber}: ${verses.length} verses`);
+        //console.log(`Chapter ${chapterNumber}: ${verses.length} verses`);
       }
     }
 

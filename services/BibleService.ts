@@ -351,7 +351,7 @@ export class BibleService {
       const chapter = book.chapters.find((c: any) => c.number === chapterNumber);
       
       if (chapter) {
-        console.log(`Chapter ${chapterNumber} found in ${bookCode}, verses:`, chapter.verses.length);
+        //Deconsole.log(`Chapter ${chapterNumber} found in ${bookCode}, verses:`, chapter.verses.length);
         return {
           number: chapter.number,
           verses: chapter.verses.map((verse: any) => ({
