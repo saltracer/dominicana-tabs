@@ -473,35 +473,52 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
     },
     saturday: {
       psalmody: {
-        id: 'psalm-130',
+        id: 'psalm-4',
         type: 'psalm',
-        psalmNumber: 130,
+        psalmNumber: 4,
         antiphon: {
-          en: { text: "Out of the depths I cry to you, O Lord." },
-          la: { text: "De profundis clamavi ad te, Domine." }
+          en: { text: "Have mercy, Lord, and hear my voice." },
+          la: { text: "Miserere mei, Domine." }
         },
         scriptureRef: {
           book: "PSA",
-          chapter: 129,
-          verse: "1-8",
+          chapter: 4,
+          verse: "1-10",
           translation: "DRA"
         },
         metadata: {
           tone: "Psalm tone 8",
           mode: 8
+        },
+        secondPsalm: {
+          psalmNumber: 134,
+          antiphon: {
+            en: { text: "In the silent hours of night, bless the Lord." },
+            la: { text: "In noctibus extollite manus vestras in sancta, et benedicite Dominum." }
+          },
+          scriptureRef: {
+            book: "PSA",
+            chapter: 134,
+            verse: "1-3",
+            translation: "DRA"
+          },
+          metadata: {
+            tone: "Psalm tone 8",
+            mode: 8
+          }
         }
       },
       reading: {
-        id: 'reading-colossians',
+        id: 'reading-deuteronomy',
         type: 'reading',
         title: {
           en: { text: "Short Reading" },
           la: { text: "Lectio Brevis" }
         },
         scriptureRef: {
-          book: "COL",
-          chapter: 3,
-          verse: "17, 23-24",
+          book: "DEU",
+          chapter: 6,
+          verse: "4-7",
           translation: "DRA"
         },
         source: {
@@ -521,10 +538,10 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         content: {
           en: {
-            text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
+            text: "Lord, be with us through this night, \n When day somes may we rise from sleep to rejoice in the resurrection of your Christ, who live and reigns for ever and ever."
           },
           la: {
-            text: "Visita, quaesumus, Domine, habitationem istam, et omnes insidias inimici ab ea longe repelle: angeli tui sancti habitent in ea, qui nos in pace custodiant, et benedictio tua sit super nos semper. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
+            text: "Domine, custodi nos hodie nocte, ut, quando die resurgat, a dormiente reviviscamus in resurrectione Christi, qui vivis et regnat in saecula saeculorum. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
           }
         }
       }

@@ -172,14 +172,15 @@ function ComplineScreenContent() {
           </View>
         </View>
 
-        {/* Psalm */}
+        {/* Psalm(s) */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Psalm
+              {complineData.components.psalmody.secondPsalm ? 'Psalms' : 'Psalm'}
             </Text>
           </View>
           
+          {/* First Psalm */}
           <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
             <Text style={[styles.contentTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Psalm {complineData.components.psalmody.psalmNumber}
@@ -195,6 +196,25 @@ function ComplineScreenContent() {
               {complineData.components.psalmody.antiphon[language]?.text}
             </Text>
           </View>
+
+          {/* Second Psalm (if exists) */}
+          {complineData.components.psalmody.secondPsalm && (
+            <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card, marginTop: 16 }]}>
+              <Text style={[styles.contentTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Psalm {complineData.components.psalmody.secondPsalm.psalmNumber}
+              </Text>
+              <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].text }]}>
+                {complineData.components.psalmody.secondPsalm.antiphon[language]?.text}
+              </Text>
+              <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
+                {complineData.components.psalmody.secondPsalm.verses?.[language]?.text || 
+                 (complineData.components.psalmody.secondPsalm.scriptureRef ? 'Loading psalm...' : 'Psalm content not available')}
+              </Text>
+              <Text style={[styles.antiphon, { color: Colors[colorScheme ?? 'light'].text }]}>
+                {complineData.components.psalmody.secondPsalm.antiphon[language]?.text}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Reading */}

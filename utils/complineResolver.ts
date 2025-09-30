@@ -34,6 +34,31 @@ export interface ResolvedComplineData extends Omit<ComplineData, 'components'> {
 }
 
 /**
+ * Helper function to resolve scripture references for psalmody components
+ * @param psalmodyComponent - PsalmodyComponent that may have scriptureRef and secondPsalm
+ * @returns Component with resolved scripture content for both psalms
+ */
+async function resolvePsalmodyContent(psalmodyComponent: any): Promise<any> {
+  if (!psalmodyComponent) {
+    return psalmodyComponent;
+  }
+
+  // Resolve first psalm
+  const resolvedFirstPsalm = await resolveScriptureContent(psalmodyComponent);
+  
+  // Resolve second psalm if it exists
+  let resolvedSecondPsalm = null;
+  if (psalmodyComponent.secondPsalm && psalmodyComponent.secondPsalm.scriptureRef) {
+    resolvedSecondPsalm = await resolveScriptureContent(psalmodyComponent.secondPsalm);
+  }
+
+  return {
+    ...resolvedFirstPsalm,
+    secondPsalm: resolvedSecondPsalm || psalmodyComponent.secondPsalm
+  };
+}
+
+/**
  * Helper function to resolve scripture references to actual content
  * @param component - Component that may have a scriptureRef
  * @returns Component with resolved scripture content
@@ -107,7 +132,7 @@ export async function resolveComplineComponents(data: ComplineData, targetDate: 
     const componentsWithScripture = {
       ...data.components,
       reading: await resolveScriptureContent(data.components.reading),
-      psalmody: await resolveScriptureContent(data.components.psalmody),
+      psalmody: await resolvePsalmodyContent(data.components.psalmody),
       canticle: await resolveScriptureContent(data.components.canticle),
     };
 

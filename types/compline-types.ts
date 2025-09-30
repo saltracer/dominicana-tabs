@@ -111,6 +111,20 @@ export interface PsalmodyComponent {
   refrain?: MultiLanguageContent;
   chant?: ChantResource;
   audio?: AudioResource[];
+  // Optional second psalm for Saturday compline
+  secondPsalm?: {
+    psalmNumber: number;
+    antiphon: MultiLanguageContent;
+    verses?: MultiLanguageContent;
+    scriptureRef?: ScriptureReference;
+    refrain?: MultiLanguageContent;
+    chant?: ChantResource;
+    audio?: AudioResource[];
+    metadata?: {
+      tone?: string;
+      mode?: number;
+    };
+  };
   metadata: {
     tone?: string;
     mode?: number;
