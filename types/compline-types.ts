@@ -67,6 +67,7 @@ export interface ComplineComponents {
   canticle: CanticleComponent | DayOfWeekVariations<CanticleComponent>;
   concludingPrayer: PrayerComponent | DayOfWeekVariations<PrayerComponent>;
   finalBlessing: BlessingComponent;
+  marianHymn: MarianHymnComponent;
 }
 
 export interface ExaminationComponent {
@@ -193,6 +194,36 @@ export interface BlessingComponent {
   content: MultiLanguageContent;
   audio?: AudioResource[];
   chant?: ChantResource[];
+}
+
+export interface MarianHymnComponent {
+  id: string;
+  type: 'marian-hymn';
+  title: MultiLanguageContent;
+  content: MultiLanguageContent;
+  melody?: ChantResource;
+  audio?: AudioResource[];
+  metadata: {
+    composer?: string;
+    century?: string;
+    meter?: string;
+    tune?: string;
+    season?: string; // e.g., 'ordinary-time', 'advent', 'lent'
+  };
+}
+
+export interface SeasonalMarianHymn {
+  id: string;
+  title: MultiLanguageContent;
+  content: MultiLanguageContent;
+  startDate: string; // Format: "MM-DD" (e.g., "12-24" for Christmas Eve)
+  endDate: string;   // Format: "MM-DD" (e.g., "02-01" for Candlemas)
+  metadata: {
+    composer?: string;
+    century?: string;
+    meter?: string;
+    tune?: string;
+  };
 }
 
 export interface ComplineMetadata {

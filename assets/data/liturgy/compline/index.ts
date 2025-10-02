@@ -1,5 +1,6 @@
 import { ComplineData, ComplineDataByDay, LanguageCode, getDayOfWeekFromDate } from '@/types/compline-types';
 import { ordinaryTimeCompline } from './seasons/ordinary-time/compline';
+import { getMarianHymnForDate } from './seasonal-marian-hymns';
 
 // Export all Compline data
 export { ordinaryTimeCompline };
@@ -12,6 +13,10 @@ export function getComplineForDate(date: Date, language: LanguageCode = 'en'): C
   console.warn('🚀 getComplineForDate called with date:', date.toString());
   const dayOfWeek = getDayOfWeekFromDate(date);
   console.warn('🎯 Final day of week determined:', dayOfWeek);
+  
+  // Get the appropriate Marian hymn for this date
+  const seasonalMarianHymn = getMarianHymnForDate(date);
+  console.warn('🎵 Marian hymn selected:', seasonalMarianHymn.id);
   
   // Get the day-specific components from the new structure
   const dayComponents = ordinaryTimeCompline.days[dayOfWeek];
@@ -33,6 +38,7 @@ export function getComplineForDate(date: Date, language: LanguageCode = 'en'): C
       canticle: ordinaryTimeCompline.sharedComponents.canticle,
       concludingPrayer: dayComponents.concludingPrayer,
       finalBlessing: ordinaryTimeCompline.sharedComponents.finalBlessing,
+      marianHymn: seasonalMarianHymn,
     },
     metadata: ordinaryTimeCompline.metadata
   };

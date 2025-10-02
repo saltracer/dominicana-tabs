@@ -11,7 +11,8 @@ import {
   PrayerComponent,
   OpeningComponent,
   ExaminationComponent,
-  BlessingComponent
+  BlessingComponent,
+  MarianHymnComponent
 } from '../types/compline-types';
 import { bibleService } from '../services/BibleService';
 
@@ -26,6 +27,7 @@ export interface ResolvedComplineComponents {
   canticle: CanticleComponent;
   concludingPrayer: PrayerComponent;
   finalBlessing: BlessingComponent;
+  marianHymn: MarianHymnComponent;
 }
 
 // Type for resolved ComplineData

@@ -327,6 +327,22 @@ function ComplineScreenContent() {
             </Text>
           </View>
         </View>
+
+        {/* Marian Hymn */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              {complineData.components.marianHymn.title[language]?.text || 'Marian Hymn'}
+            </Text>
+          </View>
+          
+          <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
+              {complineData.components.marianHymn.content[language]?.text}
+            </Text>
+          </View>
+        </View>
+
         {/* Prayer Navigation Buttons */}
         <PrayerNavButtons currentHour="compline" />
       </ScrollView>
