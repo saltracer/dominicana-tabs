@@ -180,17 +180,17 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
     },
     monday: {
       psalmody: {
-        id: 'psalm-134',
+        id: 'psalm-86',
         type: 'psalm',
-        psalmNumber: 134,
+        psalmNumber: 86,
         antiphon: {
-          en: { text: "Come, bless the Lord, all you servants of the Lord." },
+          en: { text: "Oh Lord, our God, unwearied is your love for us." },
           la: { text: "Ecce nunc benedicite Dominum, omnes servi Domini." }
         },
         scriptureRef: {
           book: "PSA",
-          chapter: 134,
-          verse: "1-3",
+          chapter: 85,
+          verse: "1-17",
           translation: "DRA"
         },
         metadata: {
@@ -199,24 +199,24 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         }
       },
       reading: {
-        id: 'reading-james',
+        id: 'reading-1thessalonians',
         type: 'reading',
         title: {
           en: { text: "Short Reading" },
           la: { text: "Lectio Brevis" }
         },
         scriptureRef: {
-          book: "JAS",
-          chapter: 4,
-          verse: "7-8",
+          book: "1TH",
+          chapter: 5,
+          verse: "9-10",
           translation: "DRA"
         },
         source: {
-          en: { text: "From the Letter of James" },
-          la: { text: "Ex Epistula Iacobi" }
+          en: { text: "From the First Letter to the Thessalonians" },
+          la: { text: "Ex Epistula ad Thessalonicenses" }
         },
         metadata: {
-          author: "Saint James"
+          author: "Saint Paul"
         }
       },
       concludingPrayer: {
@@ -228,26 +228,26 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         content: {
           en: {
-            text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
+            text: "Lord, give our bodies resful sleep\nand let the work we have done today\nbear fruit in eternal life.\nWe ask this through Christ our Lord."
           },
           la: {
-            text: "Visita, quaesumus, Domine, habitationem istam, et omnes insidias inimici ab ea longe repelle: angeli tui sancti habitent in ea, qui nos in pace custodiant, et benedictio tua sit super nos semper. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
+            text: "Domine, da nobis corpora nostra nocte remedia\net fructum laboris nostrae hodie in vitam aeternam. Per Dominum nostrum Iesum Christum."
           }
         }
       }
     },
     tuesday: {
       psalmody: {
-        id: 'psalm-16',
+        id: 'psalm-143',
         type: 'psalm',
-        psalmNumber: 16,
+        psalmNumber: 143,
         antiphon: {
-          en: { text: "You show me the path of life." },
+          en: { text: "Do not hide your face from me; in you I put my trust." },
           la: { text: "Notas mihi fecisti vias vitae." }
         },
         scriptureRef: {
           book: "PSA",
-          chapter: 16,
+          chapter: 143,
           verse: "1-11",
           translation: "DRA"
         },
@@ -257,24 +257,24 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         }
       },
       reading: {
-        id: 'reading-romans',
+        id: 'reading-1peter',
         type: 'reading',
         title: {
           en: { text: "Short Reading" },
           la: { text: "Lectio Brevis" }
         },
         scriptureRef: {
-          book: "ROM",
-          chapter: 8,
-          verse: "38-39",
+          book: "1PE",
+          chapter: 5,
+          verse: "8-9",
           translation: "DRA"
         },
         source: {
-          en: { text: "From the Letter to the Romans" },
-          la: { text: "Ex Epistula ad Romanos" }
+          en: { text: "From the First Letter of Peter" },
+          la: { text: "Ex Epistula ad Petros" }
         },
         metadata: {
-          author: "Saint Paul"
+          author: "Saint Peter"
         }
       },
       concludingPrayer: {
@@ -286,90 +286,49 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         content: {
           en: {
-            text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
+            text: "Lord, fill this night with your radience.\nMay we sleep in peace and rise with joy to welcome the light of a new day in your name.\nWe ask this through Christ our Lord."
           },
           la: {
-            text: "Visita, quaesumus, Domine, habitationem istam, et omnes insidias inimici ab ea longe repelle: angeli tui sancti habitent in ea, qui nos in pace custodiant, et benedictio tua sit super nos semper. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
+            text: "Domine, plenite noctem hodie radientem.\n Nos dormimum nocte pacem, et resurgimus laetiti, ad te laudare in nomine tuo. Per Dominum nostrum Iesum Christum."
           }
         }
       }
     },
     wednesday: {
       psalmody: {
-        id: 'psalm-86',
+        id: 'psalm-31',
         type: 'psalm',
-        psalmNumber: 86,
+        psalmNumber: 31,
         antiphon: {
-          en: { text: "Incline your ear, O Lord, and answer me." },
+          en: { text: "Lord God, be my refuge and my strength." },
           la: { text: "Inclina, Domine, aurem tuam et exaudi me." }
         },
         scriptureRef: {
           book: "PSA",
-          chapter: 86,
-          verse: "1-17",
+          chapter: 31,
+          verse: "1-6",
           translation: "DRA"
         },
         metadata: {
           tone: "Psalm tone 6",
           mode: 6
-        }
-      },
-      reading: {
-        id: 'reading-corinthians',
-        type: 'reading',
-        title: {
-          en: { text: "Short Reading" },
-          la: { text: "Lectio Brevis" }
         },
-        scriptureRef: {
-          book: "2CO",
-          chapter: 4,
-          verse: "7-9",
-          translation: "DRA"
-        },
-        source: {
-          en: { text: "From the Second Letter to the Corinthians" },
-          la: { text: "Ex Epistula secunda ad Corinthios" }
-        },
-        metadata: {
-          author: "Saint Paul"
-        }
-      },
-      concludingPrayer: {
-        id: 'prayer-compline',
-        type: 'prayer',
-        title: {
-          en: { text: "Concluding Prayer" },
-          la: { text: "Oratio Conclusiva" }
-        },
-        content: {
-          en: {
-            text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
+        secondPsalm: {
+          psalmNumber: 130,
+          antiphon: {
+            en: { text: "Out of the depths I cry to you, O Lord." },
+            la: { text: "De profundis clamavi ad te, Domine." }
           },
-          la: {
-            text: "Visita, quaesumus, Domine, habitationem istam, et omnes insidias inimici ab ea longe repelle: angeli tui sancti habitent in ea, qui nos in pace custodiant, et benedictio tua sit super nos semper. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
+          scriptureRef: {
+            book: "PSA",
+            chapter: 129,
+            verse: "1-8",
+            translation: "DRA"
+          },
+          metadata: {
+            tone: "Psalm tone 6",
+            mode: 6
           }
-        }
-      }
-    },
-    thursday: {
-      psalmody: {
-        id: 'psalm-143',
-        type: 'psalm',
-        psalmNumber: 143,
-        antiphon: {
-          en: { text: "Let me hear of your steadfast love in the morning." },
-          la: { text: "Audire me fac mane misericordiam tuam." }
-        },
-        scriptureRef: {
-          book: "PSA",
-          chapter: 143,
-          verse: "1-12",
-          translation: "DRA"
-        },
-        metadata: {
-          tone: "Psalm tone 7",
-          mode: 7
         }
       },
       reading: {
@@ -381,8 +340,8 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         scriptureRef: {
           book: "EPH",
-          chapter: 6,
-          verse: "10-12",
+          chapter: 4,
+          verse: "26-27",
           translation: "DRA"
         },
         source: {
@@ -402,27 +361,85 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         content: {
           en: {
-            text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
+            text: "Lord Jesus Christ,\nyou have given your followers and example of gentleness and humility, a task that is easy, a burden that is light. Accept the prayers and work of this day, and give us the rest that will strengthn us to render more faithful service to you who live and reign for ever and ever."
           },
           la: {
-            text: "Visita, quaesumus, Domine, habitationem istam, et omnes insidias inimici ab ea longe repelle: angeli tui sancti habitent in ea, qui nos in pace custodiant, et benedictio tua sit super nos semper. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
+            text: "Domine Iesu Christe, qui nos servis tuis exemplum gentilitatis et humilitatis dedisti, quae labor est leva, quae labor est leve, accipite, quaesumus, orationes et labores hodie, et datis nobis remedia noctis, ut fortiores ad servitium tuum facias, qui vivis et regnat in saecula saeculorum."
+          }
+        }
+      }
+    },
+    thursday: {
+      psalmody: {
+        id: 'psalm-16',
+        type: 'psalm',
+        psalmNumber: 16,
+        antiphon: {
+          en: { text: "In you, my God, my body will rest in hope" },
+          la: { text: "In te, Domine, sperabo." }
+        },
+        scriptureRef: {
+          book: "PSA",
+          chapter: 15,
+          verse: "1-11",
+          translation: "DRA"
+        },
+        metadata: {
+          tone: "Psalm tone 7",
+          mode: 7
+        }
+      },
+      reading: {
+        id: 'reading-1thessalonians',
+        type: 'reading',
+        title: {
+          en: { text: "Short Reading" },
+          la: { text: "Lectio Brevis" }
+        },
+        scriptureRef: {
+          book: "1TH",
+          chapter: 5,
+          verse: "23",
+          translation: "DRA"
+        },
+        source: {
+          en: { text: "From the First Letter to the Thessalonians" },
+          la: { text: "Ex Epistula ad Thessalonicenses" }
+        },
+        metadata: {
+          author: "Saint Paul"
+        }
+      },
+      concludingPrayer: {
+        id: 'prayer-compline',
+        type: 'prayer',
+        title: {
+          en: { text: "Concluding Prayer" },
+          la: { text: "Oratio Conclusiva" }
+        },
+        content: {
+          en: {
+            text: "Lord God,\nsend peaceful sleep to refresh our tired bodies. May your help always renew us and keep us strong in your service. We ask this through Christ our Lord."
+          },
+          la: {
+            text: "Domine, da nobis corpora nostra nocte remedia\net fructum laboris nostrae hodie in vitam aeternam. Per Dominum nostrum Iesum Christum."
           }
         }
       }
     },
     friday: {
       psalmody: {
-        id: 'psalm-31',
+        id: 'psalm-88',
         type: 'psalm',
-        psalmNumber: 31,
+        psalmNumber: 88,
         antiphon: {
-          en: { text: "Into your hands I commend my spirit." },
-          la: { text: "In manus tuas commendo spiritum meum." }
+          en: { text: "Day and night I cry to you, my God." },
+          la: { text: "Diurnum et noctum invocabo te, Domine." }
         },
         scriptureRef: {
           book: "PSA",
-          chapter: 31,
-          verse: "1-5",
+          chapter: 87,
+          verse: "1-19",
           translation: "DRA"
         },
         metadata: {
@@ -431,24 +448,24 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         }
       },
       reading: {
-        id: 'reading-hebrews',
+        id: 'reading-jeremiah',
         type: 'reading',
         title: {
           en: { text: "Short Reading" },
           la: { text: "Lectio Brevis" }
         },
         scriptureRef: {
-          book: "HEB",
-          chapter: 4,
-          verse: "14-15",
+          book: "JER",
+          chapter: 14,
+          verse: "9",
           translation: "DRA"
         },
         verses: {
           en: { text: "Having therefore a great high priest that hath passed into the heavens, Jesus the Son of God: let us hold fast our confession. For we have not a high priest, who cannot have compassion on our infirmities: but one tempted in all things like as we are, without sin." }
         },
         source: {
-          en: { text: "From the Letter to the Hebrews" },
-          la: { text: "Ex Epistula ad Hebraeos" }
+          en: { text: "From the Prophet Jeremiah" },
+          la: { text: "Ex Prophetis Jeremias" }
         },
         metadata: {
           author: "Unknown"
@@ -463,10 +480,10 @@ export const ordinaryTimeCompline: ComplineDataByDay = {
         },
         content: {
           en: {
-            text: "Visit this place, O Lord, and drive far from it all snares of the enemy; let your holy angels dwell with us to preserve us in peace; and let your blessing be upon us always. Through our Lord Jesus Christ, your Son, who lives and reigns with you in the unity of the Holy Spirit, one God, for ever and ever."
+            text: "All-powerful God,\nkeep us united with your Son in his death and burial so that we may rise to new life with him, who lives and reigns for ever and ever."
           },
           la: {
-            text: "Visita, quaesumus, Domine, habitationem istam, et omnes insidias inimici ab ea longe repelle: angeli tui sancti habitent in ea, qui nos in pace custodiant, et benedictio tua sit super nos semper. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
+            text: "Domine omnipotens, et filio tuo Iesu Christi, cum eius morte et interitu, ut resurrectio eius et vitam nostram habeamus, qui vivis et regnat in saecula saeculorum. Per Dominum nostrum Iesum Christum, Filium tuum, qui tecum vivit et regnat in unitate Spiritus Sancti, Deus, per omnia saecula saeculorum."
           }
         }
       }
