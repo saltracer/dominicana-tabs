@@ -21,6 +21,7 @@ import { PrayerStyles, LiturgyStyles } from '../../../../styles';
 import { useCompline } from '../../../../hooks/useCompline';
 import { LanguageCode } from '../../../../types/compline-types';
 import ErrorBoundary from '../../../../components/ErrorBoundary';
+import { MarianHymnWithChant } from '../../../../components/MarianHymnWithChant';
 
 function ComplineScreenContent() {
   const theme = useTheme();
@@ -336,11 +337,12 @@ function ComplineScreenContent() {
             </Text>
           </View>
           
-          <View style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <Text style={[styles.contentBody, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {complineData.components.marianHymn.content[language]?.text}
-            </Text>
-          </View>
+          <MarianHymnWithChant
+            marianHymn={complineData.components.marianHymn}
+            showChantSelector={false}
+            showChantNotation={true}
+            style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+          />
         </View>
 
         {/* Prayer Navigation Buttons */}

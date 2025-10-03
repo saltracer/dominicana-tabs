@@ -14,6 +14,7 @@ import { useTheme } from '../../components/ThemeProvider';
 import { useAuth } from '../../contexts/AuthContext';
 import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropdown';
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
+import { ChantTypeSelector } from '../../components/ChantTypeSelector';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 
 
@@ -127,26 +128,7 @@ export default function AudioSettingsScreen() {
             Chant Notation
           </Text>
           
-          {liturgyPreferences && (
-            <>
-              <LiturgyPreferencesToggle
-                label="Chant Notation Enabled"
-                description="Show musical notation for chants"
-                value={liturgyPreferences.chant_notation_enabled}
-                onValueChange={(value) => updateLiturgyPreference('chant_notation_enabled', value)}
-                icon="musical-note"
-              />
-
-              <LiturgyPreferencesDropdown
-                label="Chant Notation"
-                description="Type of musical notation to display"
-                value={liturgyPreferences.chant_notation}
-                options={availableOptions.chantNotations}
-                onValueChange={(value) => updateLiturgyPreference('chant_notation', value)}
-                icon="musical-notes"
-              />
-            </>
-          )}
+          <ChantTypeSelector />
         </View>
       </ScrollView>
     </SafeAreaView>

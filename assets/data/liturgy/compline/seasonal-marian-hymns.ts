@@ -6,6 +6,7 @@ import {
   getBaptismOfLordSunday,
   calculateFirstAdventSunday
 } from '../../calendar/liturgical-seasons';
+import { ChantType, getChantTypeDisplayName, getChantTypeDescription } from './chant/gabc-mapping';
 
 // The four seasonal Marian antiphons with their hymn data
 const marianHymnsData = {
@@ -27,6 +28,16 @@ const marianHymnsData = {
       century: "11th century",
       meter: "Irregular",
       tune: "Alma Redemptoris Mater"
+    },
+    // Chant configuration
+    chant: {
+      availableTypes: ['dominican', 'solesmes', 'simple'] as ChantType[],
+      defaultType: 'dominican' as ChantType,
+      descriptions: {
+        dominican: "Traditional Dominican chant from the Order's own books",
+        solesmes: "Solesmes method chant from the Liber Usualis",
+        simple: "Simplified chant suitable for congregational singing"
+      }
     }
   },
   'ave-regina-caelorum': {
@@ -47,6 +58,15 @@ const marianHymnsData = {
       century: "12th century",
       meter: "Irregular",
       tune: "Ave Regina Caelorum"
+    },
+    chant: {
+      availableTypes: ['dominican', 'solesmes', 'simple'] as ChantType[],
+      defaultType: 'dominican' as ChantType,
+      descriptions: {
+        dominican: "Traditional Dominican chant from the Order's own books",
+        solesmes: "Solesmes method chant from the Liber Usualis",
+        simple: "Simplified chant suitable for congregational singing"
+      }
     }
   },
   'regina-caeli': {
@@ -67,6 +87,15 @@ const marianHymnsData = {
       century: "12th century",
       meter: "Irregular",
       tune: "Regina Caeli"
+    },
+    chant: {
+      availableTypes: ['dominican', 'solesmes', 'simple'] as ChantType[],
+      defaultType: 'dominican' as ChantType,
+      descriptions: {
+        dominican: "Traditional Dominican chant from the Order's own books",
+        solesmes: "Solesmes method chant from the Liber Usualis",
+        simple: "Simplified chant suitable for congregational singing"
+      }
     }
   },
   'salve-regina': {
@@ -87,6 +116,15 @@ const marianHymnsData = {
       century: "11th century",
       meter: "Irregular",
       tune: "Salve Regina"
+    },
+    chant: {
+      availableTypes: ['dominican', 'solesmes', 'simple'] as ChantType[],
+      defaultType: 'dominican' as ChantType,
+      descriptions: {
+        dominican: "Traditional Dominican chant from the Order's own books",
+        solesmes: "Solesmes method chant from the Liber Usualis",
+        simple: "Simplified chant suitable for congregational singing"
+      }
     }
   }
 };
@@ -172,8 +210,18 @@ export function getMarianHymnForDate(date: Date): MarianHymnComponent {
     metadata: {
       ...hymnData.metadata,
       season: hymnId
-    }
+    },
+    // Add chant configuration
+    chant: hymnData.chant
   };
+}
+
+/**
+ * Get available chant types for a Marian hymn
+ */
+export function getAvailableChantTypes(marianHymnId: string): ChantType[] {
+  const hymnData = marianHymnsData[marianHymnId as keyof typeof marianHymnsData];
+  return hymnData?.chant?.availableTypes || [];
 }
 
 /**

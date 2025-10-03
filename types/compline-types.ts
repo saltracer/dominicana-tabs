@@ -203,6 +203,11 @@ export interface MarianHymnComponent {
   content: MultiLanguageContent;
   melody?: ChantResource;
   audio?: AudioResource[];
+  chant?: {
+    availableTypes: string[];
+    defaultType: string;
+    descriptions: Record<string, string>;
+  };
   metadata: {
     composer?: string;
     century?: string;

@@ -305,9 +305,9 @@ export class UserLiturgyPreferencesService {
         { value: 'organ', label: 'Organ' },
       ],
       chantNotations: [
-        { value: 'modern', label: 'Modern Notation' },
-        { value: 'gregorian', label: 'Gregorian Notation' },
-        { value: 'solesmes', label: 'Solesmes Notation' },
+        { value: 'dominican', label: 'Dominican Variation' },
+        { value: 'solesmes', label: 'Solesmes Variation' },
+        { value: 'simple', label: 'Simple Variation' },
       ],
       fontSizes: [
         { value: 'small', label: 'Small' },
