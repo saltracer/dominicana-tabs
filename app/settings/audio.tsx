@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropdown';
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
 import { ChantTypeSelector } from '../../components/ChantTypeSelector';
+import { ChantRenderingSettings } from '../../components/ChantRenderingSettings';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 
 
@@ -129,6 +130,8 @@ export default function AudioSettingsScreen() {
           </Text>
           
           <ChantTypeSelector />
+          
+          <ChantRenderingSettings />
         </View>
       </ScrollView>
     </SafeAreaView>

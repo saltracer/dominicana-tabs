@@ -1,19 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ScrollView, Platform } from 'react-native';
 import { ChantResource } from '@/types/compline-types';
+import { GabcWebViewRenderer } from './GabcWebViewRenderer';
 
 interface GabcRendererProps {
   chantResource: ChantResource;
   width?: number;
   height?: number;
   style?: any;
+  theme?: 'light' | 'dark';
+  enableWebView?: boolean;
 }
 
 export const GabcRenderer: React.FC<GabcRendererProps> = ({
   chantResource,
   width,
   height,
-  style
+  style,
+  theme = 'light',
+  enableWebView = true
 }) => {
   const containerRef = useRef<View>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -92,6 +97,21 @@ export const GabcRenderer: React.FC<GabcRendererProps> = ({
     );
   }
 
+  // Use WebView renderer if enabled and supported
+  if (enableWebView && Platform.OS !== 'web') {
+    return (
+      <GabcWebViewRenderer
+        chantResource={chantResource}
+        width={width}
+        height={height}
+        style={style}
+        theme={theme}
+        enableWebView={enableWebView}
+      />
+    );
+  }
+
+  // Fallback to text-based display
   return (
     <View style={[styles.container, style]}>
       <View 

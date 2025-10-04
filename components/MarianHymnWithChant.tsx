@@ -5,6 +5,7 @@ import { ChantType, getChantTypeDisplayName, getChantTypeDescription } from '@/a
 import { GabcRenderer } from './GabcRenderer';
 import { useChantPreferences } from '@/hooks/useChantPreferences';
 import { ChantResource } from '@/types/compline-types';
+import { useTheme } from './ThemeProvider';
 
 interface MarianHymnWithChantProps {
   marianHymn: MarianHymnComponent;
@@ -19,6 +20,7 @@ export const MarianHymnWithChant: React.FC<MarianHymnWithChantProps> = ({
   showChantNotation = true,
   style
 }) => {
+  const { colorScheme } = useTheme();
   const { selectedChantType, chantEnabled, setSelectedChantType, getChantResource, loading, error } = useChantPreferences();
   const [chantResource, setChantResource] = useState<ChantResource | null>(null);
   const [showChant, setShowChant] = useState(false);
@@ -53,7 +55,7 @@ export const MarianHymnWithChant: React.FC<MarianHymnWithChantProps> = ({
   const availableChantTypes = marianHymn.chant?.availableTypes || ['dominican', 'solesmes', 'simple'];
 
   return (
-    <ScrollView style={[styles.container, style]}>
+    <ScrollView testID="marian-hymn-container" style={[styles.container, style]}>
       {/* Marian Hymn Content */}
       <View style={styles.hymnContent}>
         <Text style={styles.hymnTitle}>
@@ -126,6 +128,8 @@ export const MarianHymnWithChant: React.FC<MarianHymnWithChantProps> = ({
                 chantResource={chantResource}
                 width={undefined}
                 height={400}
+                theme={colorScheme === 'dark' ? 'dark' : 'light'}
+                enableWebView={true}
               />
             </View>
           )}
