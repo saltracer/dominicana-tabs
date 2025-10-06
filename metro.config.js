@@ -37,7 +37,7 @@ config.resolver.sourceExts = [...config.resolver.sourceExts, 'svg'];
 // Add Bible file extensions to asset extensions
 config.resolver.assetExts = [
   ...config.resolver.assetExts,
-  'usx', 'xml', 'ldml', 'vrs'
+  'usx', 'xml', 'ldml', 'vrs', 'gabc'
 ];
 
 // Configure watchman for better performance
