@@ -151,16 +151,180 @@ export default function ChantWebView({
   );
 }
 
+// Helper function to generate head scripts
+function generateHeadScripts(exsurgeLib: string): string {
+  return `
+    <script>
+      //t("loading the exsurge library");
+      ${exsurgeLib}
+      //alert("done loading the exsurge library")
+
+      function sendHeight() {
+        const height = document.body.scrollHeight;
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'contentHeight',
+          height: height
+        }));
+      }
+      
+      // Send height when content loads
+      if (document.readyState === 'complete') {
+        //alert('document ready state is complete');
+        sendHeight();
+      } else {
+        //alert('document ready state is not complete');
+        window.addEventListener('load', sendHeight);
+      }
+
+      // Check if exsurge is available
+      if (window.exsurge) {
+        //alert('exsurge library loaded');
+      } else {
+        //alert('exsurge library not loaded');
+      }
+      
+      // Also send height after a short delay to ensure SVG is fully rendered
+      setTimeout(sendHeight, 100);
+      setTimeout(sendHeight, 500);
+    </script>
+  `;
+}
+
+// Helper function to generate styles
+function generateStyles(): string {
+  return `
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        font-family: 'Times New Roman', serif;
+        background-color: transparent;
+        line-height: 1.4;
+        overflow: visible;
+      }
+      
+      #chant-container {
+        width: 100%;
+        overflow-x: auto;
+        margin: 16px 0;
+      }
+      
+      .chant-info {
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+        padding: 8px;
+        border-top: 1px solid #eee;
+        margin-top: 8px;
+      }
+      
+      .file-name {
+        font-family: monospace;
+        background-color: #f5f5f5;
+        padding: 2px 4px;
+        border-radius: 3px;
+        color: #333;
+      }
+      
+      .error-message {
+        color: #d32f2f;
+        padding: 16px;
+        background-color: #ffebee;
+        border-radius: 4px;
+        border: 1px solid #ef5350;
+        margin: 16px 0;
+      }
+    </style>
+  `;
+}
+
+// Helper function to generate body content
+function generateBodyContent(fileName: string): string {
+  return `
+    <body>
+      <!-- Container for the rendered chant SVG -->
+      <div id="chant-container">chant container text</div>
+      
+      ${fileName ? `
+        <div class="chant-info">
+          <span class="file-name">${fileName}</span>
+        </div>
+      ` : ''}
+    </body>
+  `;
+}
+
+// Helper function to generate the chant rendering script
+function generateRenderingScript(gabcContent: string): string {
+  return `
+    <script>
+      //alert('loading the chant container');
+      (function() {
+        // GABC content to render - using JSON.stringify for safe interpolation
+        const gabcContent = ${JSON.stringify(gabcContent)};
+        //alert('gabc content provided: ' + JSON.stringify(gabcContent));
+        
+        if (!gabcContent) {
+          //alert('no gabc content provided');
+          console.error('No GABC content provided');
+          document.getElementById('chant-container').innerHTML = 
+            '<p class="error-message">No chant content available</p>';
+          sendHeight();
+          return;
+        }
+        
+        if (!window.exsurge) {
+          //alert('exsurge library not loaded');
+          console.error('exsurge library not loaded');
+          document.getElementById('chant-container').innerHTML = 
+            '<p class="error-message">Chant rendering library not loaded</p>';
+          sendHeight();
+          return;
+        }
+        
+        try {
+          // 1. Create a ChantContext with rendering settings
+          //alert('creating a chant context');
+          const ctxt = new exsurge.ChantContext();
+          
+          // Optional: Customize the context settings
+          ctxt.lyricTextSize = 16;
+          ctxt.dropCapTextSize = 48;
+          ctxt.annotationTextSize = 12;
+          
+          // 2. Parse GABC and create mappings
+          const mappings = exsurge.Gabc.createMappingsFromSource(ctxt, gabcContent);
+          
+          // 3. Create a ChantScore
+          const score = new exsurge.ChantScore(ctxt, mappings, true);
+          
+          // 4. Get the container width for layout
+          const containerWidth = document.getElementById('chant-container').clientWidth || 800;
+          
+          // 5. Perform layout and render (synchronous operations)
+          score.performLayout(ctxt);
+          score.layoutChantLines(ctxt, containerWidth - 32);
+          
+          // 6. Create SVG and insert into DOM
+          const svgHtml = score.createSvg(ctxt);
+          document.getElementById('chant-container').innerHTML = svgHtml;
+          
+          // 7. Send the new height to React Native
+          sendHeight();
+          
+        } catch (error) {
+          console.error('Error rendering chant:', error);
+          document.getElementById('chant-container').innerHTML = 
+            '<p class="error-message">Error rendering chant: ' + error.message + '</p>';
+          sendHeight();
+        }
+      })();
+    </script>
+  `;
+}
+
 // Generate HTML to display chant preference information
 function generateChantPreferenceHtml(notationType: string, chantName?: string, gabcContent?: string | null, exsurgeLib?: string): string {
-  // const notationLabels: Record<string, string> = {
-  //   'dominican': 'Dominican Variation',
-  //   'solesmes': 'Solesmes Variation', 
-  //   'simple': 'Simple Variation'
-  // };
-
-  // const label = notationLabels[notationType] || 'Dominican Variation';
-  
   // Get GABC file information if chant name is provided
   let fileInfo = null;
   let fileName = '';
@@ -175,130 +339,24 @@ function generateChantPreferenceHtml(notationType: string, chantName?: string, g
     }
   }
 
+  // Generate HTML parts
+  const headScripts = generateHeadScripts(exsurgeLib || '');
+  const styles = generateStyles();
+  const bodyContent = generateBodyContent(fileName);
+  const renderingScript = generateRenderingScript(gabcContent || '');
+
   return `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Chant Preferences</title>
-      <script>
-        ${exsurgeLib || ''}
-        console.warn('exsurge');
-        console.log(exsurgeLib);
-      </script>
-      <style>
-        body {
-          margin: 0;
-          padding: 16px;
-          font-family: 'Times New Roman', serif;
-          background-color: transparent;
-          line-height: 1.4;
-          height: auto;
-          overflow: visible;
-        }
-        
-        .chant-info {
-          text-align: center;
-          color: #666;
-          font-size: 14px;
-          padding: 8px;
-          border-top: 1px solid #eee;
-          margin-top: 8px;
-          min-height: auto;
-          height: auto;
-          overflow: visible;
-        }
-        
-        .notation-label {
-          font-weight: bold;
-          color: #333;
-        }
-        
-        .chant-name {
-          font-style: italic;
-          color: #888;
-          font-size: 12px;
-          display: block;
-          margin-top: 4px;
-        }
-        
-        .content-container {
-          height: auto;
-          min-height: auto;
-          overflow: visible;
-          padding: 8px 0;
-        }
-        
-        .file-info {
-          font-size: 12px;
-          color: #888;
-          margin-top: 4px;
-        }
-        
-        .file-name {
-          font-family: monospace;
-          background-color: #f5f5f5;
-          padding: 2px 4px;
-          border-radius: 3px;
-        }
-        
-        .gabc-content {
-          margin-top: 16px;
-          border-top: 1px solid #eee;
-          padding-top: 12px;
-        }
-        
-        .gabc-header {
-          font-weight: bold;
-          color: #333;
-          margin-bottom: 8px;
-          font-size: 12px;
-        }
-        
-        .gabc-text {
-          font-family: monospace;
-          font-size: 10px;
-          background-color: #f8f8f8;
-          padding: 8px;
-          border-radius: 4px;
-          border: 1px solid #ddd;
-          white-space: pre-wrap;
-          word-wrap: break-word;
-          color: #333;
-          line-height: 1.2;
-          margin: 0;
-          height: auto;
-          overflow: visible;
-        }
-      </style>
+      <title>Chant Rendering</title>
+      ${headScripts}
+      ${styles}
     </head>
-      <body>
-        <div class="content-container">
-          ${gabcContent ? `
-              <pre class="gabc-text">${fileName} - ${gabcContent}</pre>
-          ` : ''}
-        </div>
-        <script>
-          function sendHeight() {
-            const height = document.body.scrollHeight;
-            window.ReactNativeWebView.postMessage(JSON.stringify({
-              type: 'contentHeight',
-              height: height
-            }));
-          }
-          
-          // Send height when content loads
-          if (document.readyState === 'complete') {
-            sendHeight();
-          } else {
-            window.addEventListener('load', sendHeight);
-          }
-          
-          // Also send height after a short delay to ensure content is fully rendered
-          setTimeout(sendHeight, 100);
-        </script>
-      </body>
+    ${bodyContent}
+    ${renderingScript}
     </html>
   `;
 }
