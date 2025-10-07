@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import { useTheme } from '../components/ThemeProvider';
 import { WebView } from 'react-native-webview';
 import { useAuth } from '../contexts/AuthContext';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
@@ -21,6 +22,8 @@ export default function ChantWebView({
   onError 
 }: ChantWebViewProps) {
   const { user } = useAuth();
+  const theme = useTheme();
+  const colorScheme = theme?.colorScheme;
   const [preferences, setPreferences] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [gabcContent, setGabcContent] = React.useState<string | null>(null);
@@ -111,8 +114,8 @@ export default function ChantWebView({
     // Show the user's chant notation preference
     const notationType = preferences.chant_notation || 'dominican';
     
-    return generateChantPreferenceHtml(notationType, chantName, gabcContent, exsurgeLibrary);
-  }, [loading, preferences, gabcLoading, gabcContent, exsurgeLibrary]);
+    return generateChantPreferenceHtml(notationType, chantName, gabcContent, exsurgeLibrary, colorScheme);
+  }, [loading, preferences, gabcLoading, gabcContent, exsurgeLibrary, colorScheme]);
 
   const [webViewHeight, setWebViewHeight] = React.useState(80);
 
@@ -243,23 +246,21 @@ function generateBodyContent(fileName: string): string {
   return `
     <body>
       <!-- Container for the rendered chant SVG -->
-      <div id="chant-container">chant container text</div>
-      
-      ${fileName ? `
-        <div class="chant-info">
-          <span class="file-name">${fileName}</span>
-        </div>
-      ` : ''}
+      <div id="chant-container"></div>
     </body>
   `;
 }
 
 // Helper function to generate the chant rendering script
-function generateRenderingScript(gabcContent: string): string {
+function generateRenderingScript(gabcContent: string, colorScheme: string | null | undefined): string {
   return `
     <script>
       //alert('loading the chant container');
       (function() {
+        // Color scheme detection
+        const colorScheme = ${JSON.stringify(colorScheme)};
+        const isDarkMode = colorScheme === 'dark';
+        
         // GABC content to render - using JSON.stringify for safe interpolation
         const gabcContent = ${JSON.stringify(gabcContent)};
         //alert('gabc content provided: ' + JSON.stringify(gabcContent));
@@ -288,6 +289,29 @@ function generateRenderingScript(gabcContent: string): string {
           const ctxt = new exsurge.ChantContext();
           
           // Optional: Customize the context settings
+          // alert('color scheme: ' + colorScheme);
+          // alert('is dark mode: ' + isDarkMode);
+
+          ctxt.lyricTextFont = "'Crimson Text', serif";
+          
+          //ctxt.setTextColor("#F00");
+          ctxt.setRubricColor((isDarkMode ? "#D00" : "#D00"));
+
+          ctxt.dividerLineColor = isDarkMode ? "#FFFFFF" : "#000000";
+          ctxt.staffLineColor = isDarkMode ? "#FFFFFF" : "#000000";
+          ctxt.neumeLineColor = isDarkMode ? "#FFFFFF" : "#000000"; // White for dark mode, black for light mode
+          ctxt.dropCapTextFont = "'Crimson Text', serif";
+
+          
+          ctxt.textStyles.dropCap.size = 64;
+          ctxt.textStyles.dropCap.color = isDarkMode ? "#FFFFFF" : "#000000"; // White for dark mode, black for light mode
+
+          ctxt.textStyles.lyric.size = 16;
+          ctxt.textStyles.lyric.color = isDarkMode ? "#FFFFFF" : "#000000"; // White for dark mode, black for light mode
+
+          ctxt.autoColoring = false;
+          ctxt.autoColor = false;
+
           ctxt.lyricTextSize = 16;
           ctxt.dropCapTextSize = 48;
           ctxt.annotationTextSize = 12;
@@ -324,7 +348,7 @@ function generateRenderingScript(gabcContent: string): string {
 }
 
 // Generate HTML to display chant preference information
-function generateChantPreferenceHtml(notationType: string, chantName?: string, gabcContent?: string | null, exsurgeLib?: string): string {
+function generateChantPreferenceHtml(notationType: string, chantName?: string, gabcContent?: string | null, exsurgeLib?: string, colorScheme?: string | null): string {
   // Get GABC file information if chant name is provided
   let fileInfo = null;
   let fileName = '';
@@ -343,7 +367,7 @@ function generateChantPreferenceHtml(notationType: string, chantName?: string, g
   const headScripts = generateHeadScripts(exsurgeLib || '');
   const styles = generateStyles();
   const bodyContent = generateBodyContent(fileName);
-  const renderingScript = generateRenderingScript(gabcContent || '');
+  const renderingScript = generateRenderingScript(gabcContent || '', colorScheme);
 
   return `
     <!DOCTYPE html>
