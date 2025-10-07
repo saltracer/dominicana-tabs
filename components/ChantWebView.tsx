@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
 import { getGabcFileInfo, mapUserPreferenceToNotationType } from '../services/GabcMapping';
 import { ChantService } from '../services/ChantService';
+import { loadExsurgeLibrary } from '../lib/exsurge.min';
 
 interface ChantWebViewProps {
   chantName?: string;
@@ -24,6 +25,16 @@ export default function ChantWebView({
   const [loading, setLoading] = React.useState(true);
   const [gabcContent, setGabcContent] = React.useState<string | null>(null);
   const [gabcLoading, setGabcLoading] = React.useState(false);
+  const [exsurgeLibrary, setExsurgeLibrary] = React.useState<string>('');
+
+  // Load the exsurge library on mount
+  React.useEffect(() => {
+    loadExsurgeLibrary()
+      .then(setExsurgeLibrary)
+      .catch((error) => {
+        console.error('Error loading exsurge library:', error);
+      });
+  }, []);
 
   // Load user preferences
   React.useEffect(() => {
@@ -92,11 +103,16 @@ export default function ChantWebView({
       return '<html><body><div style="padding: 20px; text-align: center;">Loading GABC content...</div></body></html>';
     }
 
+    // Wait for exsurge library to load
+    if (!exsurgeLibrary) {
+      return '<html><body><div style="padding: 20px; text-align: center;">Loading chant library...</div></body></html>';
+    }
+
     // Show the user's chant notation preference
     const notationType = preferences.chant_notation || 'dominican';
     
-    return generateChantPreferenceHtml(notationType, chantName, gabcContent);
-  }, [loading, preferences, gabcLoading, gabcContent]);
+    return generateChantPreferenceHtml(notationType, chantName, gabcContent, exsurgeLibrary);
+  }, [loading, preferences, gabcLoading, gabcContent, exsurgeLibrary]);
 
   const [webViewHeight, setWebViewHeight] = React.useState(80);
 
@@ -136,7 +152,7 @@ export default function ChantWebView({
 }
 
 // Generate HTML to display chant preference information
-function generateChantPreferenceHtml(notationType: string, chantName?: string, gabcContent?: string | null): string {
+function generateChantPreferenceHtml(notationType: string, chantName?: string, gabcContent?: string | null, exsurgeLib?: string): string {
   // const notationLabels: Record<string, string> = {
   //   'dominican': 'Dominican Variation',
   //   'solesmes': 'Solesmes Variation', 
@@ -166,6 +182,11 @@ function generateChantPreferenceHtml(notationType: string, chantName?: string, g
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Chant Preferences</title>
+      <script>
+        ${exsurgeLib || ''}
+        console.warn('exsurge');
+        console.log(exsurgeLib);
+      </script>
       <style>
         body {
           margin: 0;
