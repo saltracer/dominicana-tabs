@@ -21,6 +21,7 @@ import { PrayerStyles, LiturgyStyles } from '../../../../styles';
 import { useCompline } from '../../../../hooks/useCompline';
 import { LanguageCode } from '../../../../types/compline-types';
 import ErrorBoundary from '../../../../components/ErrorBoundary';
+import ChantWebView from '../../../../components/ChantWebView';
 
 function ComplineScreenContent() {
   const theme = useTheme();
@@ -113,7 +114,7 @@ function ComplineScreenContent() {
   return (
     <SwipeNavigationWrapper currentHour="compline">
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160 }}>
         {/* Clean Header */}
         <View style={styles.cleanHeader}>
           <TouchableOpacity
@@ -341,6 +342,18 @@ function ComplineScreenContent() {
               {complineData.components.marianHymn.content[language]?.text}
             </Text>
           </View>
+          
+          {/* Chant Preferences */}
+          <ChantWebView 
+            chantName={complineData.components.marianHymn.id}
+            style={[styles.contentCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+            onLoadEnd={() => {
+              console.log('Chant preferences loaded');
+            }}
+            onError={(error) => {
+              console.warn('Chant WebView error:', error);
+            }}
+          />
         </View>
 
         {/* Prayer Navigation Buttons */}
