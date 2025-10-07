@@ -1,7 +1,6 @@
 import { ChantResource, ChantNotation } from '../types/compline-types';
 import { getGabcFileInfo, mapUserPreferenceToNotationType, ChantNotationType } from './GabcMapping';
 import { Asset } from 'expo-asset';
-import { File } from 'expo-file-system';
 
 export class ChantService {
   private static instance: ChantService;
@@ -115,7 +114,7 @@ export class ChantService {
   }
 
   /**
-   * Load a GABC file from the bundled assets
+   * Load a GABC file from the bundled assets (Web optimized)
    */
   private async loadGabcFile(fileName: string): Promise<string | null> {
     try {
@@ -125,19 +124,27 @@ export class ChantService {
       const asset = Asset.fromModule(this.getGabcAsset(fileName));
       console.log(`Asset loaded for ${fileName}:`, asset);
 
-      // Ensure the asset is downloaded (if not already)
-      await asset.downloadAsync();
-      console.log(`Asset downloaded for ${fileName}, localUri:`, asset.localUri);
-
-      // Check if a local URI is available
-      if (asset.localUri) {
-        // Read the content of the file as a string using new File API
-        const file = new File(asset.localUri);
-        const fileContents = await file.text();
-        console.log(`GABC file contents loaded for ${fileName}, length:`, fileContents.length);
-        return fileContents;
+      // For web, we need to handle asset loading differently
+      if (typeof window !== 'undefined') {
+        // Web environment - use fetch instead of File API
+        await asset.downloadAsync();
+        console.log(`Asset downloaded for ${fileName}, localUri:`, asset.localUri);
+        
+        if (asset.localUri) {
+          // Use fetch to read the file content on web
+          const response = await fetch(asset.localUri);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch ${fileName}: ${response.status} ${response.statusText}`);
+          }
+          const fileContents = await response.text();
+          console.log(`GABC file contents loaded for ${fileName}, length:`, fileContents.length);
+          return fileContents;
+        } else {
+          throw new Error(`Local URI not available for ${fileName} on web`);
+        }
       } else {
-        throw new Error(`Local URI not available for ${fileName}`);
+        // Mobile environment - this shouldn't be called in web version
+        throw new Error(`Mobile file system access not available in web environment for ${fileName}`);
       }
     } catch (error) {
       console.error(`Error reading bundled GABC file ${fileName}:`, error);
