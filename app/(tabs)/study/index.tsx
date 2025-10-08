@@ -44,13 +44,13 @@ export default function StudyScreen() {
 
   // Debug reading progress
   useEffect(() => {
-    console.log('📚 Study Screen - Reading Progress Debug:', {
-      user: user?.id,
-      readingProgress: readingProgress,
-      progressLength: readingProgress?.length || 0,
-      progressLoading,
-      books: books?.length || 0
-    });
+    // console.log('📚 Study Screen - Reading Progress Debug:', {
+    //   user: user?.id,
+    //   readingProgress: readingProgress,
+    //   progressLength: readingProgress?.length || 0,
+    //   progressLoading,
+    //   books: books?.length || 0
+    // });
   }, [user, readingProgress, progressLoading, books]);
 
   const filterBooks = () => {
