@@ -12,6 +12,7 @@
 - Bookmarking
 - Notes
 - Highlights
+- Book audio?
 - Redeisgn how the bible is accessed
 
 ## Community
@@ -23,3 +24,5 @@
 
 ## Other
 - Carplay
+- Admin console
+- Look for opportunities to refactor
