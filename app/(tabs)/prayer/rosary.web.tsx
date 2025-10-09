@@ -1,3 +1,8 @@
+/**
+ * Rosary Screen - Web Version with Desktop Optimizations
+ * 3-column layout for desktop, 2-column for tablet, single column for mobile
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -11,398 +16,205 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
-import FeastBanner from '../../../components/FeastBanner';
-import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
-import { LiturgicalDay } from '../../../types';
-import { PrayerStyles } from '../../../styles';
+import { useCalendar } from '../../../components/CalendarContext';
+import BeadCounter from '../../../components/BeadCounter';
+import RosaryDecadeSelector from '../../../components/RosaryDecadeSelector';
+import RosaryMysteryCarousel from '../../../components/RosaryMysteryCarousel';
+import { RosaryBead, RosaryForm, MysterySet, AudioSettings } from '../../../types/rosary-types';
+import { rosaryService } from '../../../services/RosaryService';
+import { bibleService } from '../../../services/BibleService';
+import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryData';
 
 export default function RosaryWebScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
-  const [selectedMystery, setSelectedMystery] = useState<string | null>(null);
-  const [rosaryForm, setRosaryForm] = useState<'dominican' | 'standard'>('dominican');
+  const { liturgicalDay } = useCalendar();
+  
+  // State management
+  const [selectedMystery, setSelectedMystery] = useState<MysterySet>(getTodaysMystery());
+  const [rosaryForm, setRosaryForm] = useState<RosaryForm>('dominican');
   const [isPraying, setIsPraying] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [currentDecade, setCurrentDecade] = useState(0);
-  const [currentHailMary, setCurrentHailMary] = useState(0);
-  const [showInstructions, setShowInstructions] = useState(false);
+  const [beads, setBeads] = useState<RosaryBead[]>([]);
+  const [currentBeadId, setCurrentBeadId] = useState<string>('');
+  const [completedBeadIds, setCompletedBeadIds] = useState<string[]>([]);
+  const [bibleVerse, setBibleVerse] = useState<string>('');
+  const [loadingVerse, setLoadingVerse] = useState(false);
+  
+  // Audio state
+  const [audioSettings, setAudioSettings] = useState<AudioSettings>({
+    isEnabled: false,
+    mode: 'guided',
+    autoAdvance: false,
+    speed: 1.0,
+    volume: 0.8,
+    backgroundMusicVolume: 0.3,
+    pauseDuration: 5,
+    playBellSounds: true,
+  });
 
-  // Get today's mystery based on day of week
-  const getTodaysMystery = () => {
-    const today = new Date().getDay();
-    switch (today) {
-      case 0: // Sunday
-      case 3: // Wednesday
-        return 'Glorious Mysteries';
-      case 1: // Monday
-      case 6: // Saturday
-        return 'Joyful Mysteries';
-      case 2: // Tuesday
-      case 5: // Friday
-        return 'Sorrowful Mysteries';
-      case 4: // Thursday
-        return 'Luminous Mysteries';
-      default:
-        return 'Joyful Mysteries';
-    }
-  };
-
-  // Initialize with today's mystery
+  // Keyboard navigation
   useEffect(() => {
-    if (!selectedMystery) {
-      setSelectedMystery(getTodaysMystery());
-    }
-  }, []);
+    if (!isPraying) return;
 
-  useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
-  }, []);
-
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
-
-  const rosaryMysteries = [
-    { 
-      name: 'Joyful Mysteries', 
-      day: 'Monday & Saturday', 
-      icon: 'happy-outline',
-      description: 'The Annunciation, Visitation, Nativity, Presentation, and Finding in the Temple',
-      mysteries: [
-        'The Annunciation',
-        'The Visitation',
-        'The Nativity',
-        'The Presentation',
-        'The Finding in the Temple'
-      ]
-    },
-    { 
-      name: 'Sorrowful Mysteries', 
-      day: 'Tuesday & Friday', 
-      icon: 'heart-outline',
-      description: 'The Agony in the Garden, Scourging, Crowning with Thorns, Carrying the Cross, and Crucifixion',
-      mysteries: [
-        'The Agony in the Garden',
-        'The Scourging at the Pillar',
-        'The Crowning with Thorns',
-        'The Carrying of the Cross',
-        'The Crucifixion'
-      ]
-    },
-    { 
-      name: 'Glorious Mysteries', 
-      day: 'Wednesday & Sunday', 
-      icon: 'star-outline',
-      description: 'The Resurrection, Ascension, Descent of the Holy Spirit, Assumption, and Coronation',
-      mysteries: [
-        'The Resurrection',
-        'The Ascension',
-        'The Descent of the Holy Spirit',
-        'The Assumption',
-        'The Coronation of Mary'
-      ]
-    },
-    { 
-      name: 'Luminous Mysteries', 
-      day: 'Thursday', 
-      icon: 'flash-outline',
-      description: 'The Baptism, Wedding at Cana, Proclamation of the Kingdom, Transfiguration, and Institution of the Eucharist',
-      mysteries: [
-        'The Baptism of Jesus',
-        'The Wedding at Cana',
-        'The Proclamation of the Kingdom',
-        'The Transfiguration',
-        'The Institution of the Eucharist'
-      ]
-    },
-  ];
-
-  // Prayer content for different forms
-  const prayerContent = {
-    dominican: {
-      title: 'Dominican Rosary',
-      subtitle: 'The prayer of the saints',
-      openingPrayers: [
-        'In the name of the Father, and of the Son, and of the Holy Spirit. Amen.',
-        'V. Hail Mary, full of grace, the Lord is with thee.',
-        'R. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus.',
-        'V. O Lord, open my lips.',
-        'R. And my mouth will proclaim your praise.',
-        'V. O God, come to my assistance.',
-        'R. O Lord, make haste to help me.',
-        'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and ever shall be, world without end. Amen.',
-        'Apostles\' Creed',
-        'Our Father',
-        'Three Hail Marys (for faith, hope, and charity)',
-        'Glory be to the Father...'
-      ],
-      description: 'The traditional Dominican form begins with versicles and responses, following the pattern of the Liturgy of the Hours.'
-    },
-    standard: {
-      title: 'Standard Rosary',
-      subtitle: 'The traditional Catholic rosary',
-      openingPrayers: [
-        'In the name of the Father, and of the Son, and of the Holy Spirit. Amen.',
-        'Apostles\' Creed',
-        'Our Father',
-        'Three Hail Marys (for faith, hope, and charity)',
-        'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and ever shall be, world without end. Amen.'
-      ],
-      description: 'The standard form begins directly with the Creed and opening prayers, followed by the mysteries.'
-    }
-  };
-
-  // Prayer flow logic
-  const startPrayer = () => {
-    if (!selectedMystery) {
-      setSelectedMystery(getTodaysMystery());
-    }
-    setIsPraying(true);
-    setCurrentStep(0);
-    setCurrentDecade(0);
-    setCurrentHailMary(0);
-  };
-
-  const startTodaysMystery = () => {
-    setSelectedMystery(getTodaysMystery());
-    setIsPraying(true);
-    setCurrentStep(0);
-    setCurrentDecade(0);
-    setCurrentHailMary(0);
-  };
-
-  const startSpecificMystery = (mysteryName: string) => {
-    setSelectedMystery(mysteryName);
-    setIsPraying(true);
-    setCurrentStep(0);
-    setCurrentDecade(0);
-    setCurrentHailMary(0);
-  };
-
-  const nextStep = () => {
-    const currentPrayerStep = getCurrentPrayerStep();
-    
-    // If we're at the end of a decade (Glory Be or Fatima Prayer), move to next decade or finish
-    if (currentPrayerStep.type === 'glorybe' || currentPrayerStep.type === 'fatima') {
-      if (currentDecade < 4) {
-        // Move to next decade
-        setCurrentDecade(prev => prev + 1);
-        setCurrentStep(prayerContent[rosaryForm].openingPrayers.length + 1); // Start with Our Father
-      } else {
-        // Finished all decades, add final prayers
-        setCurrentStep(prev => prev + 1);
+    const handleKeyPress = (event: KeyboardEvent) => {
+      switch (event.key) {
+        case 'ArrowRight':
+          event.preventDefault();
+          nextBead();
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          previousBead();
+          break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+          event.preventDefault();
+          jumpToDecade(parseInt(event.key));
+          break;
+        case 'Escape':
+          event.preventDefault();
+          exitRosary();
+          break;
+        case ' ':
+          event.preventDefault();
+          setAudioSettings(prev => ({ ...prev, isEnabled: !prev.isEnabled }));
+          break;
       }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isPraying, currentBeadId, beads]);
+
+  // Generate beads when form or mystery changes
+  useEffect(() => {
+    const generatedBeads = rosaryService.generateRosaryBeads(rosaryForm, selectedMystery);
+    setBeads(generatedBeads);
+    if (generatedBeads.length > 0 && !currentBeadId) {
+      setCurrentBeadId(generatedBeads[0].id);
+    }
+  }, [rosaryForm, selectedMystery]);
+
+  // Load Bible verse for current mystery announcement
+  useEffect(() => {
+    const currentBead = beads.find(b => b.id === currentBeadId);
+    if (currentBead && currentBead.type === 'mystery-announcement' && currentBead.decadeNumber) {
+      loadBibleVerse(currentBead.decadeNumber);
     } else {
-      setCurrentStep(prev => prev + 1);
+      setBibleVerse('');
+    }
+  }, [currentBeadId, beads, selectedMystery]);
+
+  const loadBibleVerse = async (decadeNumber: number) => {
+    setLoadingVerse(true);
+    try {
+      const mysteryData = ROSARY_MYSTERIES.find(m => m.name === selectedMystery);
+      if (mysteryData && mysteryData.mysteries[decadeNumber - 1]) {
+        const mystery = mysteryData.mysteries[decadeNumber - 1];
+        const passage = await bibleService.getPassageByReference(mystery.bibleReference);
+        if (passage && passage.verses.length > 0) {
+          const verseText = passage.verses
+            .map(v => `${v.number}. ${v.text}`)
+            .join('\n');
+          setBibleVerse(verseText);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading Bible verse:', error);
+      setBibleVerse('');
+    } finally {
+      setLoadingVerse(false);
     }
   };
 
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1);
-    }
+  const startRosary = () => {
+    setIsPraying(true);
+    setCurrentBeadId(beads[0].id);
+    setCompletedBeadIds([]);
   };
 
-  const nextDecade = () => {
-    if (currentDecade < 4) {
-      setCurrentDecade(prev => prev + 1);
-      setCurrentHailMary(0);
-    }
-  };
-
-  const prevDecade = () => {
-    if (currentDecade > 0) {
-      setCurrentDecade(prev => prev - 1);
-      setCurrentHailMary(0);
-    }
-  };
-
-  const nextHailMary = () => {
-    if (currentHailMary < 9) {
-      setCurrentHailMary(prev => prev + 1);
-    } else {
-      nextDecade();
-    }
-  };
-
-  const prevHailMary = () => {
-    if (currentHailMary > 0) {
-      setCurrentHailMary(prev => prev - 1);
-    } else if (currentDecade > 0) {
-      prevDecade();
-      setCurrentHailMary(9);
-    }
-  };
-
-  const exitPrayer = () => {
+  const exitRosary = () => {
     setIsPraying(false);
-    setCurrentStep(0);
-    setCurrentDecade(0);
-    setCurrentHailMary(0);
+    setCurrentBeadId('');
+    setCompletedBeadIds([]);
   };
 
-  // Get current prayer step
-  const getCurrentPrayerStep = () => {
-    const selectedMysteryData = rosaryMysteries.find(m => m.name === selectedMystery);
-    
-    // Calculate total steps: opening prayers + (5 decades × prayers per decade) + final prayers
-    const prayersPerDecade = rosaryForm === 'standard' ? 13 : 12; // Standard includes Fatima Prayer, Dominican doesn't
-    const totalSteps = prayerContent[rosaryForm].openingPrayers.length + (5 * prayersPerDecade) + 1; // 1 for final prayer
-    
-    if (currentStep < prayerContent[rosaryForm].openingPrayers.length) {
-      return {
-        type: 'opening',
-        title: 'Opening Prayers',
-        content: prayerContent[rosaryForm].openingPrayers[currentStep],
-        step: currentStep + 1,
-        total: totalSteps,
-        mysteryInfo: null
-      };
-    } else if (currentStep === prayerContent[rosaryForm].openingPrayers.length) {
-      return {
-        type: 'mystery',
-        title: `${selectedMysteryData?.name} - ${selectedMysteryData?.mysteries[currentDecade]}`,
-        content: `Let us contemplate the ${selectedMysteryData?.mysteries[currentDecade]?.toLowerCase()}.`,
-        step: currentStep + 1,
-        total: totalSteps,
-        mysteryInfo: {
-          mysterySet: selectedMysteryData?.name,
-          currentMystery: selectedMysteryData?.mysteries[currentDecade],
-          decade: currentDecade + 1,
-          totalDecades: 5
-        }
-      };
-    } else if (currentStep === prayerContent[rosaryForm].openingPrayers.length + 1) {
-      return {
-        type: 'ourfather',
-        title: 'Our Father',
-        content: 'Our Father, who art in heaven, hallowed be thy name; thy kingdom come; thy will be done on earth as it is in heaven. Give us this day our daily bread; and forgive us our trespasses as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.',
-        step: currentStep + 1,
-        total: totalSteps,
-        mysteryInfo: {
-          mysterySet: selectedMysteryData?.name,
-          currentMystery: selectedMysteryData?.mysteries[currentDecade],
-          decade: currentDecade + 1,
-          totalDecades: 5
-        }
-      };
-    } else if (currentStep < prayerContent[rosaryForm].openingPrayers.length + 2 + 10) {
-      const hailMaryStep = currentStep - prayerContent[rosaryForm].openingPrayers.length - 2;
-      return {
-        type: 'hailmary',
-        title: `Hail Mary ${hailMaryStep + 1}`,
-        content: 'Hail Mary, full of grace, the Lord is with thee; blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.',
-        step: currentStep + 1,
-        total: totalSteps,
-        mysteryInfo: {
-          mysterySet: selectedMysteryData?.name,
-          currentMystery: selectedMysteryData?.mysteries[currentDecade],
-          decade: currentDecade + 1,
-          totalDecades: 5,
-          hailMary: hailMaryStep + 1
-        }
-      };
-    } else if (currentStep === prayerContent[rosaryForm].openingPrayers.length + 2 + 10) {
-      return {
-        type: 'glorybe',
-        title: 'Glory Be',
-        content: 'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and ever shall be, world without end. Amen.',
-        step: currentStep + 1,
-        total: totalSteps,
-        mysteryInfo: {
-          mysterySet: selectedMysteryData?.name,
-          currentMystery: selectedMysteryData?.mysteries[currentDecade],
-          decade: currentDecade + 1,
-          totalDecades: 5
-        }
-      };
-    } else if (currentStep === prayerContent[rosaryForm].openingPrayers.length + 2 + 10 + 1 && rosaryForm === 'standard') {
-      return {
-        type: 'fatima',
-        title: 'Fatima Prayer',
-        content: 'O my Jesus, forgive us our sins, save us from the fires of hell, and lead all souls to heaven, especially those in most need of thy mercy. Amen.',
-        step: currentStep + 1,
-        total: totalSteps,
-        mysteryInfo: {
-          mysterySet: selectedMysteryData?.name,
-          currentMystery: selectedMysteryData?.mysteries[currentDecade],
-          decade: currentDecade + 1,
-          totalDecades: 5
-        }
-      };
-    } else {
-      return {
-        type: 'final',
-        title: 'Rosary Complete',
-        content: 'The rosary is complete. May the Lord bless you and keep you.',
-        step: currentStep + 1,
-        total: totalSteps,
-        mysteryInfo: null
-      };
+  const navigateToBead = (beadId: string) => {
+    setCurrentBeadId(beadId);
+    const currentIndex = beads.findIndex(b => b.id === beadId);
+    const completedIds = beads.slice(0, currentIndex).map(b => b.id);
+    setCompletedBeadIds(completedIds);
+  };
+
+  const nextBead = () => {
+    const nextBead = rosaryService.getNextBead(beads, currentBeadId);
+    if (nextBead) {
+      setCompletedBeadIds([...completedBeadIds, currentBeadId]);
+      setCurrentBeadId(nextBead.id);
     }
   };
+
+  const previousBead = () => {
+    const prevBead = rosaryService.getPreviousBead(beads, currentBeadId);
+    if (prevBead) {
+      setCompletedBeadIds(completedBeadIds.filter(id => id !== currentBeadId && id !== prevBead.id));
+      setCurrentBeadId(prevBead.id);
+    }
+  };
+
+  const jumpToDecade = (decadeNumber: number) => {
+    const firstBead = rosaryService.getFirstBeadOfDecade(beads, decadeNumber);
+    if (firstBead) {
+      navigateToBead(firstBead.id);
+    }
+  };
+
+  const getCurrentBead = (): RosaryBead | undefined => {
+    return beads.find(b => b.id === currentBeadId);
+  };
+
+  const getCurrentDecade = (): number => {
+    const currentBead = getCurrentBead();
+    return currentBead?.decadeNumber || 0;
+  };
+
+  const getProgress = (): number => {
+    return rosaryService.getProgress(beads, currentBeadId);
+  };
+
+  const currentBead = getCurrentBead();
+  const progress = getProgress();
 
   if (!liturgicalDay) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading liturgical information...
+            Loading...
           </Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-            {prayerContent[rosaryForm].title}
-          </Text>
-          <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            {prayerContent[rosaryForm].subtitle}
-          </Text>
-        </View>
-
-        {/* Quick Actions - Moved to top */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={[
-              styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].primary }
-            ]}
-            onPress={startPrayer}
-          >
-            <Ionicons name="play-circle" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              Start Rosary
+  if (!isPraying) {
+    // Welcome screen
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+              The Holy Rosary
             </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.quickActionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].secondary }
-            ]}
-            onPress={startTodaysMystery}
-          >
-            <Ionicons name="rose" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            <Text style={[styles.quickActionText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              Today's Mystery
+            <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              {rosaryForm === 'dominican' ? 'Dominican Form' : 'Standard Form'}
             </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
 
-        {/* Rosary Form Toggle and Info Button */}
-        <View style={styles.toggleAndInfoContainer}>
+          {/* Form Toggle */}
           <View style={styles.toggleContainer}>
             <Text style={[styles.toggleLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
               Dominican
@@ -414,268 +226,270 @@ export default function RosaryWebScreen() {
                 false: Colors[colorScheme ?? 'light'].dominicanGold,
                 true: Colors[colorScheme ?? 'light'].dominicanGold,
               }}
-              thumbColor={
-                rosaryForm === 'standard'
-                  ? Colors[colorScheme ?? 'light'].dominicanRed
-                  : Colors[colorScheme ?? 'light'].dominicanRed
-              }
-              ios_backgroundColor={Colors[colorScheme ?? 'light'].dominicanBlack}
+              thumbColor={Colors[colorScheme ?? 'light'].dominicanRed}
             />
             <Text style={[styles.toggleLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
               Standard
             </Text>
-            <TouchableOpacity
-            style={[
-              styles.infoButton,
-              { /*backgroundColor: Colors[colorScheme ?? 'light'].surface */ }
-            ]}
-            onPress={() => setShowInstructions(true)}
+          </View>
+
+          {/* Mystery Carousel */}
+          <RosaryMysteryCarousel
+            selectedMystery={selectedMystery}
+            onMysteryChange={setSelectedMystery}
+            showDayIndicator={true}
+          />
+
+          {/* Start Button */}
+          <TouchableOpacity
+            style={[styles.startButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+            onPress={startRosary}
           >
-            <Ionicons name="information-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].primary} />
+            <Ionicons name="rose" size={24} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            <Text style={[styles.startButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Begin Rosary
+            </Text>
           </TouchableOpacity>
-          </View>
-          
-          
-        </View>
 
-        {/* Prayer Instructions - Behind Info Button */}
-        {showInstructions && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons 
-                name="book-outline" 
-                size={24} 
-                color={Colors[colorScheme ?? 'light'].primary} 
-              />
-              <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Prayer Instructions
-              </Text>
-              <TouchableOpacity
-                style={styles.closeInstructionsButton}
-                onPress={() => setShowInstructions(false)}
-              >
-                <Ionicons name="close" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={[
-              styles.instructionCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].card }
-            ]}>
-              <Text style={[styles.instructionDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {prayerContent[rosaryForm].description}
-              </Text>
-              
-              <View style={styles.prayerSteps}>
-                {prayerContent[rosaryForm].openingPrayers.map((prayer, index) => (
-                  <View key={index} style={styles.prayerStep}>
-                    <View style={[
-                      styles.stepNumber,
-                      { backgroundColor: Colors[colorScheme ?? 'light'].primary }
-                    ]}>
-                      <Text style={[styles.stepNumberText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                        {index + 1}
-                      </Text>
-                    </View>
-                    <Text style={[styles.prayerText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      {prayer}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-        )}
-
-
-        {/* Prayer Interface */}
-        {isPraying && (
-          <View style={styles.prayerInterface}>
-            <View style={[
-              styles.prayerCard,
-              { backgroundColor: Colors[colorScheme ?? 'light'].card }
-            ]}>
-              {/* Prayer Header */}
-              <View style={styles.prayerHeader}>
-                <TouchableOpacity
-                  style={styles.exitButton}
-                  onPress={exitPrayer}
-                >
-                  <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                </TouchableOpacity>
-                <View style={styles.prayerTitleContainer}>
-                  <Text style={[styles.prayerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {getCurrentPrayerStep().title}
-                  </Text>
-                  {getCurrentPrayerStep().mysteryInfo && (
-                    <View style={styles.mysteryInfoContainer}>
-                      <Text style={[styles.mysterySetName, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                        {getCurrentPrayerStep().mysteryInfo?.mysterySet}
-                      </Text>
-                      <Text style={[styles.currentMystery, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        {getCurrentPrayerStep().mysteryInfo?.currentMystery}
-                      </Text>
-                      <View style={styles.decadeProgress}>
-                        <Text style={[styles.decadeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                          Decade {getCurrentPrayerStep().mysteryInfo?.decade} of {getCurrentPrayerStep().mysteryInfo?.totalDecades}
-                        </Text>
-                        {getCurrentPrayerStep().mysteryInfo?.hailMary && (
-                          <Text style={[styles.hailMaryText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                            • Hail Mary {getCurrentPrayerStep().mysteryInfo?.hailMary} of 10
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.progressContainer}>
-                  <Text style={[styles.progressText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    {getCurrentPrayerStep().step} / {getCurrentPrayerStep().total}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Progress Bar */}
-              <View style={[
-                styles.progressBar,
-                { backgroundColor: Colors[colorScheme ?? 'light'].border }
-              ]}>
-                <View style={[
-                  styles.progressFill,
-                  { 
-                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
-                    width: `${(getCurrentPrayerStep().step / getCurrentPrayerStep().total) * 100}%`
-                  }
-                ]} />
-              </View>
-
-              {/* Prayer Content */}
-              <View style={styles.prayerContent}>
-                <Text style={[styles.prayerText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {getCurrentPrayerStep().content}
+          {/* Mystery Details */}
+          <View style={[styles.card, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+            <Text style={[styles.cardTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Today's Mysteries
+            </Text>
+            {ROSARY_MYSTERIES.find(m => m.name === selectedMystery)?.mysteries.map((mystery, index) => (
+              <View key={index} style={styles.mysteryItem}>
+                <Text style={[styles.mysteryNumber, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                  {index + 1}
                 </Text>
-              </View>
-
-              {/* Prayer Controls */}
-              <View style={styles.prayerControls}>
-                <TouchableOpacity
-                  style={[
-                    styles.controlButton,
-                    styles.prevButton,
-                    { 
-                      backgroundColor: currentStep === 0 ? Colors[colorScheme ?? 'light'].border : Colors[colorScheme ?? 'light'].secondary,
-                      opacity: currentStep === 0 ? 0.5 : 1
-                    }
-                  ]}
-                  onPress={prevStep}
-                  disabled={currentStep === 0}
-                >
-                  <Ionicons name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-                  <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                    Previous
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.controlButton,
-                    styles.nextButton,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].primary }
-                  ]}
-                  onPress={nextStep}
-                >
-                  <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                    Next
-                  </Text>
-                  <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        )}
-        
-        {/* Rosary Mysteries Grid */}
-        <View style={styles.section}>
-          
-          <View style={styles.rosaryGrid}>
-            {rosaryMysteries.map((mystery, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.rosaryCard,
-                  { 
-                    backgroundColor: Colors[colorScheme ?? 'light'].card,
-                    borderColor: selectedMystery === mystery.name 
-                      ? Colors[colorScheme ?? 'light'].primary 
-                      : Colors[colorScheme ?? 'light'].border,
-                    borderWidth: selectedMystery === mystery.name ? 2 : 1,
-                  }
-                ]}
-              >
-                <TouchableOpacity
-                  style={styles.mysteryCardContent}
-                  onPress={() => setSelectedMystery(selectedMystery === mystery.name ? null : mystery.name)}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons 
-                    name={mystery.icon as any} 
-                    size={28} 
-                    color={selectedMystery === mystery.name 
-                      ? Colors[colorScheme ?? 'light'].primary 
-                      : Colors[colorScheme ?? 'light'].textSecondary
-                    } 
-                  />
-                  <Text style={[
-                    styles.rosaryMysteryName,
-                    { color: Colors[colorScheme ?? 'light'].text }
-                  ]}>
+                <View style={styles.mysteryContent}>
+                  <Text style={[styles.mysteryName, { color: Colors[colorScheme ?? 'light'].text }]}>
                     {mystery.name}
                   </Text>
-                  <Text style={[
-                    styles.rosaryMysteryDay,
-                    { color: Colors[colorScheme ?? 'light'].textSecondary }
-                  ]}>
-                    {mystery.day}
+                  <Text style={[styles.mysteryReference, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {mystery.bibleReference}
                   </Text>
-                  
-                  {/* Show mysteries when selected */}
-                  {selectedMystery === mystery.name && (
-                    <View style={styles.mysteriesList}>
-                      {mystery.mysteries.map((mysteryName, idx) => (
-                        <Text key={idx} style={[styles.mysteryItem, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                          {idx + 1}. {mysteryName}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                </TouchableOpacity>
-
-                {/* Play Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.playButton,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].primary }
-                  ]}
-                  onPress={() => startSpecificMystery(mystery.name)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="play" size={16} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-                </TouchableOpacity>
+                </View>
               </View>
             ))}
           </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // 3-column desktop layout for prayer interface
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+      {/* Top Toolbar */}
+      <View style={[styles.toolbar, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <TouchableOpacity onPress={exitRosary} style={styles.toolbarButton}>
+          <Ionicons name="close" size={24} color={Colors[colorScheme ?? 'light'].text} />
+        </TouchableOpacity>
+        
+        <View style={styles.toolbarCenter}>
+          <Text style={[styles.toolbarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            {rosaryForm === 'dominican' ? 'Dominican' : 'Standard'} Rosary
+          </Text>
+          <Text style={[styles.toolbarSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            {selectedMystery} • {progress}% • Use ← → arrow keys
+          </Text>
         </View>
-      </ScrollView>
-      
+
+        <View style={styles.toolbarRight}>
+          <TouchableOpacity 
+            onPress={() => setAudioSettings(prev => ({ ...prev, isEnabled: !prev.isEnabled }))}
+            style={styles.toolbarButton}
+          >
+            <Ionicons 
+              name={audioSettings.isEnabled ? "volume-high" : "volume-mute"} 
+              size={24} 
+              color={Colors[colorScheme ?? 'light'].text} 
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Progress Bar */}
+      <View style={[styles.progressBar, { backgroundColor: Colors[colorScheme ?? 'light'].border }]}>
+        <View 
+          style={[
+            styles.progressFill, 
+            { 
+              backgroundColor: Colors[colorScheme ?? 'light'].primary,
+              width: `${progress}%`
+            }
+          ]} 
+        />
+      </View>
+
+      {/* 3-Column Desktop Layout */}
+      <View style={styles.desktopContainer}>
+        {/* Left Sidebar: Decade Navigation & Progress */}
+        <View style={[styles.leftSidebar, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+          <View style={styles.sidebarSection}>
+            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Decades
+            </Text>
+            <View style={styles.decadeGrid}>
+              {[1, 2, 3, 4, 5].map(decade => (
+                <TouchableOpacity
+                  key={decade}
+                  style={[
+                    styles.decadeGridButton,
+                    {
+                      backgroundColor: getCurrentDecade() === decade
+                        ? Colors[colorScheme ?? 'light'].primary
+                        : Colors[colorScheme ?? 'light'].card,
+                    },
+                  ]}
+                  onPress={() => jumpToDecade(decade)}
+                >
+                  <Text
+                    style={[
+                      styles.decadeGridText,
+                      {
+                        color: getCurrentDecade() === decade
+                          ? Colors[colorScheme ?? 'light'].dominicanWhite
+                          : Colors[colorScheme ?? 'light'].text,
+                      },
+                    ]}
+                  >
+                    {decade}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.sidebarSection}>
+            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Progress
+            </Text>
+            <View style={styles.progressCircle}>
+              <Text style={[styles.progressPercentage, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                {progress}%
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.sidebarSection}>
+            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Shortcuts
+            </Text>
+            <Text style={[styles.shortcutText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              ← → Navigate{'\n'}
+              1-5 Jump Decade{'\n'}
+              Space Audio{'\n'}
+              Esc Exit
+            </Text>
+          </View>
+        </View>
+
+        {/* Center: Prayer Content */}
+        <View style={styles.centerContent}>
+          <ScrollView 
+            style={styles.prayerScroll}
+            contentContainerStyle={styles.prayerScrollContent}
+          >
+            {currentBead && (
+              <>
+                <Text style={[styles.prayerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {currentBead.title}
+                </Text>
+
+                {currentBead.decadeNumber && currentBead.decadeNumber > 0 && currentBead.decadeNumber <= 5 && (
+                  <View style={[styles.mysteryInfoCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+                    <Text style={[styles.mysteryInfoDecade, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      Decade {currentBead.decadeNumber} of 5
+                    </Text>
+                    <Text style={[styles.mysteryInfoName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {ROSARY_MYSTERIES.find(m => m.name === selectedMystery)?.mysteries[currentBead.decadeNumber - 1].name}
+                    </Text>
+                  </View>
+                )}
+
+                <Text style={[styles.prayerText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {currentBead.text}
+                </Text>
+
+                {currentBead.type === 'mystery-announcement' && bibleVerse && (
+                  <View style={[styles.bibleVerseCard, { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }]}>
+                    <View style={styles.bibleVerseHeader}>
+                      <Ionicons name="book-outline" size={20} color={Colors[colorScheme ?? 'light'].primary} />
+                      <Text style={[styles.bibleVerseTitle, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                        Scripture
+                      </Text>
+                    </View>
+                    <Text style={[styles.bibleVerseText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {bibleVerse}
+                    </Text>
+                  </View>
+                )}
+
+                {loadingVerse && (
+                  <Text style={[styles.loadingVerseText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Loading scripture...
+                  </Text>
+                )}
+              </>
+            )}
+          </ScrollView>
+
+          {/* Navigation Controls */}
+          <View style={[styles.controls, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <TouchableOpacity
+              style={[
+                styles.controlButton,
+                { 
+                  backgroundColor: currentBeadId === beads[0]?.id 
+                    ? Colors[colorScheme ?? 'light'].border 
+                    : Colors[colorScheme ?? 'light'].secondary 
+                },
+              ]}
+              onPress={previousBead}
+              disabled={currentBeadId === beads[0]?.id}
+            >
+              <Ionicons name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+              <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                Previous
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.controlButton,
+                { backgroundColor: Colors[colorScheme ?? 'light'].primary },
+              ]}
+              onPress={nextBead}
+              disabled={!rosaryService.getNextBead(beads, currentBeadId)}
+            >
+              <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                Next
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Right Sidebar: Full Bead Visualization */}
+        <View style={[styles.rightSidebar, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+          <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Rosary Beads
+          </Text>
+          <BeadCounter
+            beads={beads}
+            currentBeadId={currentBeadId}
+            completedBeadIds={completedBeadIds}
+            onBeadPress={navigateToBead}
+          />
+        </View>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  scrollView: {
     flex: 1,
   },
   loadingContainer: {
@@ -687,299 +501,289 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
+  },
   header: {
     paddingHorizontal: 16,
-    //paddingVertical: 24,
+    paddingVertical: 24,
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     fontFamily: 'Georgia',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 8,
     fontFamily: 'Georgia',
     textAlign: 'center',
-  },
-  section: {
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 16,
-  },
-  quickActionCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  quickActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-    fontFamily: 'Georgia',
-  },
-  rosaryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  rosaryCard: {
-    width: '48%',
-    borderRadius: 12,
-    marginBottom: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    position: 'relative',
-  },
-  mysteryCardContent: {
-    padding: 16,
-    alignItems: 'center',
-    paddingBottom: 50, // Space for play button
-  },
-  rosaryMysteryName: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginTop: 8,
-    fontFamily: 'Georgia',
-  },
-  rosaryMysteryDay: {
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
-    fontFamily: 'Georgia',
-  },
-  mysteriesList: {
-    marginTop: 12,
-    width: '100%',
-  },
-  mysteryItem: {
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 2,
-    fontFamily: 'Georgia',
-  },
-  toggleAndInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 24,
   },
   toggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    //flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   toggleLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginHorizontal: 8,
+    marginHorizontal: 12,
   },
-  instructionCard: {
-    padding: 20,
-    borderRadius: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  instructionDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-    fontFamily: 'Georgia',
-    fontStyle: 'italic',
-  },
-  prayerSteps: {
-    gap: 12,
-  },
-  prayerStep: {
+  startButton: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  stepNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
-  },
-  stepNumberText: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  prayerText: {
-    fontSize: 14,
-    lineHeight: 20,
-    flex: 1,
-    fontFamily: 'Georgia',
-  },
-  prayerInterface: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  prayerCard: {
-    borderRadius: 16,
+    marginHorizontal: 16,
+    marginVertical: 24,
     padding: 20,
-    elevation: 4,
-    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.15)',
+    borderRadius: 12,
+    gap: 8,
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
   },
-  prayerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  startButtonText: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  card: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 24,
+    borderRadius: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
     marginBottom: 16,
   },
-  exitButton: {
-    padding: 8,
+  mysteryItem: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 12,
   },
-  prayerTitleContainer: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  prayerTitle: {
+  mysteryNumber: {
     fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Georgia',
-    textAlign: 'center',
+    width: 28,
+  },
+  mysteryContent: {
+    flex: 1,
+  },
+  mysteryName: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
     marginBottom: 4,
   },
-  mysteryInfoContainer: {
+  mysteryReference: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
+  },
+  toolbar: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  toolbarButton: {
+    padding: 8,
+  },
+  toolbarCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  toolbarRight: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  toolbarTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  toolbarSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
     marginTop: 4,
   },
-  mysterySetName: {
+  progressBar: {
+    height: 4,
+  },
+  progressFill: {
+    height: '100%',
+    transition: 'width 0.3s ease',
+  },
+  desktopContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  leftSidebar: {
+    width: 200,
+    padding: 16,
+    borderRightWidth: 1,
+    borderRightColor: '#E0E0E0',
+  },
+  rightSidebar: {
+    width: 300,
+    padding: 16,
+    borderLeftWidth: 1,
+    borderLeftColor: '#E0E0E0',
+  },
+  sidebarSection: {
+    marginBottom: 24,
+  },
+  sidebarTitle: {
     fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  decadeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  decadeGridButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+  },
+  decadeGridText: {
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  progressCircle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  progressPercentage: {
+    fontSize: 32,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  shortcutText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    lineHeight: 18,
+  },
+  centerContent: {
+    flex: 1,
+  },
+  prayerScroll: {
+    flex: 1,
+  },
+  prayerScrollContent: {
+    padding: 32,
+    maxWidth: 700,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  prayerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  mysteryInfoCard: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  mysteryInfoDecade: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 6,
+  },
+  mysteryInfoName: {
+    fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Georgia',
     textAlign: 'center',
   },
-  currentMystery: {
-    fontSize: 12,
+  prayerText: {
+    fontSize: 18,
+    lineHeight: 28,
     fontFamily: 'Georgia',
-    textAlign: 'center',
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
-  decadeProgress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  decadeText: {
-    fontSize: 11,
-    fontFamily: 'Georgia',
-    fontWeight: '500',
-  },
-  hailMaryText: {
-    fontSize: 11,
-    fontFamily: 'Georgia',
-    fontWeight: '500',
-    marginLeft: 4,
-  },
-  progressContainer: {
-    minWidth: 60,
-    alignItems: 'flex-end',
-  },
-  progressText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-  },
-  progressBar: {
-    height: 4,
-    borderRadius: 2,
     marginBottom: 20,
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
+  bibleVerseCard: {
+    padding: 20,
+    borderRadius: 8,
+    marginTop: 20,
   },
-  prayerContent: {
-    marginBottom: 24,
-    minHeight: 120,
-    justifyContent: 'center',
-  },
-  prayerControls: {
+  bibleVerseHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  bibleVerseTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  bibleVerseText: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: 'Georgia',
+  },
+  loadingVerseText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  controls: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
   },
   controlButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    elevation: 2,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  prevButton: {
-    flexDirection: 'row',
-  },
-  nextButton: {
-    flexDirection: 'row',
+    padding: 16,
+    borderRadius: 8,
+    gap: 8,
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
   },
   controlButtonText: {
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginHorizontal: 8,
-  },
-  infoButton: {
-    // alignItems: 'center',
-    // justifyContent: 'center',
-    // padding: 12,
-    // borderRadius: 8,
-    // marginLeft: 12,
-    // elevation: 1,
-    // shadowColor: '#000',
-    // shadowOffset: { width: 0, height: 1 },
-    // shadowOpacity: 0.1,
-    // shadowRadius: 2,
-  },
-  closeInstructionsButton: {
-    padding: 4,
-    marginLeft: 'auto',
-  },
-  playButton: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
   },
 });
+
