@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { RosaryBead as RosaryBeadType } from '../types/rosary-types';
@@ -66,20 +66,60 @@ export default function BeadCounter({
       {/* Decades 1-5 */}
       {[1, 2, 3, 4, 5].map(decadeNum => (
         <View key={decadeNum} style={styles.section}>
-          <Text style={[styles.decadeLabel, { color: Colors[colorScheme ?? 'light'].primary }]}>
-            {decadeNum}
-          </Text>
           <View style={styles.beadGroup}>
-            {beadsBySection[decadeNum]?.map(bead => (
-              <RosaryBead
-                key={bead.id}
-                type={bead.type}
-                isActive={bead.id === currentBeadId}
-                isCompleted={completedBeadIds.includes(bead.id)}
-                onPress={() => onBeadPress(bead.id)}
-                size="small"
-              />
-            ))}
+            {beadsBySection[decadeNum]?.map((bead, index) => {
+              // For the mystery announcement (first bead), show the decade number instead
+              if (index === 0 && bead.type === 'mystery-announcement') {
+                const isActive = bead.id === currentBeadId;
+                const isCompleted = completedBeadIds.includes(bead.id);
+                
+                return (
+                  <TouchableOpacity
+                    key={bead.id}
+                    onPress={() => onBeadPress(bead.id)}
+                    style={[
+                      styles.decadeNumberBead,
+                      {
+                        backgroundColor: isActive
+                          ? Colors[colorScheme ?? 'light'].primary
+                          : isCompleted
+                          ? Colors[colorScheme ?? 'light'].dominicanGold
+                          : Colors[colorScheme ?? 'light'].card,
+                        borderColor: isActive || isCompleted
+                          ? 'transparent'
+                          : Colors[colorScheme ?? 'light'].border,
+                      },
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.decadeNumberText,
+                        {
+                          color: isActive || isCompleted
+                            ? Colors[colorScheme ?? 'light'].dominicanWhite
+                            : Colors[colorScheme ?? 'light'].primary,
+                        },
+                      ]}
+                    >
+                      {decadeNum}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }
+              
+              // For all other beads, show normal bead
+              return (
+                <RosaryBead
+                  key={bead.id}
+                  type={bead.type}
+                  isActive={bead.id === currentBeadId}
+                  isCompleted={completedBeadIds.includes(bead.id)}
+                  onPress={() => onBeadPress(bead.id)}
+                  size="small"
+                />
+              );
+            })}
           </View>
           {decadeNum < 5 && (
             <View style={[styles.connector, { backgroundColor: Colors[colorScheme ?? 'light'].border }]} />
@@ -133,19 +173,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
-  decadeLabel: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
-    marginBottom: 4,
-    width: 24,
-    height: 24,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
   beadGroup: {
     alignItems: 'center',
     gap: 4,
+  },
+  decadeNumberBead: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  decadeNumberText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '700',
   },
   connector: {
     width: 2,
