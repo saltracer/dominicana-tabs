@@ -184,6 +184,17 @@ export default function RosaryWebScreen() {
     return rosaryService.getProgress(beads, currentBeadId);
   };
 
+  const isLastBead = (): boolean => {
+    return currentBeadId === beads[beads.length - 1]?.id;
+  };
+
+  const completeRosary = () => {
+    setCompletedBeadIds([...completedBeadIds, currentBeadId]);
+    setIsPraying(false);
+    setCurrentBeadId('');
+    setCompletedBeadIds([]);
+  };
+
   const currentBead = getCurrentBead();
   const progress = getProgress();
 
@@ -451,19 +462,34 @@ export default function RosaryWebScreen() {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.controlButton,
-                { backgroundColor: Colors[colorScheme ?? 'light'].primary },
-              ]}
-              onPress={nextBead}
-              disabled={!rosaryService.getNextBead(beads, currentBeadId)}
-            >
-              <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                Next
-              </Text>
-              <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-            </TouchableOpacity>
+            {isLastBead() ? (
+              <TouchableOpacity
+                style={[
+                  styles.controlButton,
+                  { backgroundColor: Colors[colorScheme ?? 'light'].dominicanGold },
+                ]}
+                onPress={completeRosary}
+              >
+                <Ionicons name="checkmark-circle" size={20} color={Colors[colorScheme ?? 'light'].dominicanBlack} />
+                <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].dominicanBlack }]}>
+                  Complete Rosary
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.controlButton,
+                  { backgroundColor: Colors[colorScheme ?? 'light'].primary },
+                ]}
+                onPress={nextBead}
+                disabled={!rosaryService.getNextBead(beads, currentBeadId)}
+              >
+                <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                  Next
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
