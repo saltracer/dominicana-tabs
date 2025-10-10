@@ -307,31 +307,24 @@ export default function RosaryScreen() {
             contentContainerStyle={styles.prayerScrollContent}
           >
             {currentBead && (
-              <>
-                {/* Prayer Title */}
+              <View>
                 <Text style={[styles.prayerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
                   {currentBead.title}
                 </Text>
-
-                {/* Mystery Info for decade beads */}
-                {currentBead.decadeNumber && currentBead.decadeNumber > 0 && currentBead.decadeNumber <= 5 && (
+                {(currentBead.decadeNumber ?? 0) > 0 && (currentBead.decadeNumber ?? 0) <= 5 && (
                   <View style={[styles.mysteryInfoCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
                     <Text style={[styles.mysteryInfoDecade, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                      Decade {currentBead.decadeNumber} of 5
+                      {`Decade ${currentBead.decadeNumber} of 5`}
                     </Text>
                     <Text style={[styles.mysteryInfoName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      {ROSARY_MYSTERIES.find(m => m.name === selectedMystery)?.mysteries[currentBead.decadeNumber - 1].name}
+                      {ROSARY_MYSTERIES.find(m => m.name === selectedMystery)?.mysteries[(currentBead.decadeNumber ?? 1) - 1]?.name || ''}
                     </Text>
                   </View>
                 )}
-
-                {/* Prayer Text */}
                 <Text style={[styles.prayerText, { color: Colors[colorScheme ?? 'light'].text }]}>
                   {currentBead.text}
                 </Text>
-
-                {/* Bible Verse for mystery announcements */}
-                {currentBead.type === 'mystery-announcement' && bibleVerse && (
+                {currentBead.type === 'mystery-announcement' && bibleVerse !== '' && (
                   <View style={[styles.bibleVerseCard, { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }]}>
                     <View style={styles.bibleVerseHeader}>
                       <Ionicons name="book-outline" size={20} color={Colors[colorScheme ?? 'light'].primary} />
@@ -344,13 +337,12 @@ export default function RosaryScreen() {
                     </Text>
                   </View>
                 )}
-
-                {loadingVerse && (
+                {loadingVerse === true && (
                   <Text style={[styles.loadingVerseText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                     Loading scripture...
                   </Text>
                 )}
-              </>
+              </View>
             )}
           </ScrollView>
 
