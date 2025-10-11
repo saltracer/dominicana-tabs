@@ -7,6 +7,11 @@
 - Vespers or Lauds ... need to prove the design
 - Redesign Rosary
 - Rosary Audio
+  - Fix the Dominican glory be
+  - Script audio creation
+  - create admin only cms front end web only
+  - create a voice for John Henry Newman 
+  
 
 ## Study
 - Bookmarking
