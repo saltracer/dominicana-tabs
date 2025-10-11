@@ -176,12 +176,14 @@ export default function RosaryWebScreen() {
     setIsPraying(true);
     setCurrentBeadId(beads[0].id);
     setCompletedBeadIds([]);
+    setAudioSettings(prev => ({ ...prev, isEnabled: false }));
   };
 
   const exitRosary = () => {
     setIsPraying(false);
     setCurrentBeadId('');
     setCompletedBeadIds([]);
+    setAudioSettings(prev => ({ ...prev, isEnabled: false }));
   };
 
   const navigateToBead = (beadId: string) => {
@@ -236,6 +238,7 @@ export default function RosaryWebScreen() {
     setIsPraying(false);
     setCurrentBeadId('');
     setCompletedBeadIds([]);
+    setAudioSettings(prev => ({ ...prev, isEnabled: false }));
   };
 
   const currentBead = getCurrentBead();
