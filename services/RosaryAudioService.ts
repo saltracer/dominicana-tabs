@@ -1,17 +1,20 @@
 /**
  * Rosary Audio Service
  * Handles audio playback for rosary prayers
- * Supports pre-recorded MP4 files
+ * Supports pre-recorded M4A files
+ * Migrated to expo-audio
  */
 
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 import { AudioSettings } from '../types/rosary-types';
 import { RosaryAudioDownloadService } from './RosaryAudioDownloadService';
 
 export class RosaryAudioService {
-  private currentSound: Audio.Sound | null = null;
-  private backgroundMusic: Audio.Sound | null = null;
+  private currentPlayer: AudioPlayer | null = null;
+  private backgroundMusicPlayer: AudioPlayer | null = null;
   private isInitialized: boolean = false;
+  private onCompleteCallback: (() => void) | null = null;
 
   /**
    * Get audio file URI from Supabase Storage (with caching)
@@ -46,15 +49,16 @@ export class RosaryAudioService {
     if (this.isInitialized) return;
 
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        interruptionMode: 'duckOthers',
+        interruptionModeAndroid: 'duckOthers',
+        allowsRecording: false,
+        shouldPlayInBackground: true,
+        shouldRouteThroughEarpiece: false,
       });
       this.isInitialized = true;
-      console.log('Audio system initialized');
+      console.log('Audio system initialized with expo-audio');
     } catch (error) {
       console.error('Failed to initialize audio:', error);
     }
@@ -98,27 +102,28 @@ export class RosaryAudioService {
           // Stop any currently playing audio
           await this.stopCurrentSound();
 
-          // Create and play audio with expo-av
-          const { sound } = await Audio.Sound.createAsync(
-            { uri: audioUri },
-            {
-              shouldPlay: true,
-              volume: settings.volume,
-              rate: settings.speed,
-            }
-          );
+          // Create and play audio with expo-audio
+          const player = createAudioPlayer({ uri: audioUri });
+          this.currentPlayer = player;
+          this.onCompleteCallback = onComplete || null;
           
-          this.currentSound = sound;
+          // Set volume and playback rate
+          player.volume = settings.volume;
+          player.playbackRate = settings.speed;
           
           // Listen for playback status updates
-          sound.setOnPlaybackStatusUpdate((status) => {
-            if (status.isLoaded && status.didJustFinish) {
+          player.addListener('playbackStatusUpdate', (status) => {
+            if (status.didJustFinish) {
               console.log('Audio playback finished');
-              if (onComplete) {
-                onComplete();
+              if (this.onCompleteCallback) {
+                this.onCompleteCallback();
+                this.onCompleteCallback = null;
               }
             }
           });
+          
+          // Start playback
+          player.play();
         } catch (error) {
           console.error(`Failed to load audio file: ${audioFile}`, error);
           // If audio fails, still call onComplete to not block navigation
@@ -138,20 +143,20 @@ export class RosaryAudioService {
     try {
       // In production, load the actual sound file
       // const soundFile = soundType === 'bell' 
-      //   ? require('../assets/audio/rosary/transitions/bell.mp4')
-      //   : require('../assets/audio/rosary/transitions/chime.mp4');
+      //   ? require('../assets/audio/rosary/transitions/bell.m4a')
+      //   : require('../assets/audio/rosary/transitions/chime.m4a');
       
-      // const { sound } = await Audio.Sound.createAsync(
-      //   soundFile,
-      //   { shouldPlay: true, volume }
-      // );
+      // const player = createAudioPlayer(soundFile);
+      // player.volume = volume;
       
-      // // Auto-unload after playing
-      // sound.setOnPlaybackStatusUpdate((status) => {
-      //   if (status.isLoaded && status.didJustFinish) {
-      //     sound.unloadAsync();
+      // // Auto-remove after playing
+      // player.addListener('playbackStatusUpdate', (status) => {
+      //   if (status.didJustFinish) {
+      //     player.remove();
       //   }
       // });
+      // 
+      // player.play();
 
       // PLACEHOLDER
       console.log(`Would play ${soundType} transition sound`);
@@ -165,22 +170,18 @@ export class RosaryAudioService {
    */
   async startBackgroundMusic(volume: number = 0.3): Promise<void> {
     try {
-      if (this.backgroundMusic) {
-        await this.backgroundMusic.setVolumeAsync(volume);
-        await this.backgroundMusic.playAsync();
+      if (this.backgroundMusicPlayer) {
+        this.backgroundMusicPlayer.volume = volume;
+        this.backgroundMusicPlayer.play();
         return;
       }
 
       // Background music support (implement when files available)
-      // const { sound } = await Audio.Sound.createAsync(
-      //   { uri: backgroundMusicUri },
-      //   {
-      //     shouldPlay: true,
-      //     volume,
-      //     isLooping: true,
-      //   }
-      // );
-      // this.backgroundMusic = sound;
+      // const player = createAudioPlayer({ uri: backgroundMusicUri });
+      // player.loop = true;
+      // player.volume = volume;
+      // this.backgroundMusicPlayer = player;
+      // player.play();
 
       console.log('Background music feature not yet implemented');
     } catch (error) {
@@ -192,9 +193,9 @@ export class RosaryAudioService {
    * Stop background music
    */
   async stopBackgroundMusic(): Promise<void> {
-    if (this.backgroundMusic) {
+    if (this.backgroundMusicPlayer) {
       try {
-        await this.backgroundMusic.stopAsync();
+        this.backgroundMusicPlayer.pause();
       } catch (error) {
         console.error('Error stopping background music:', error);
       }
@@ -205,11 +206,12 @@ export class RosaryAudioService {
    * Stop currently playing sound
    */
   async stopCurrentSound(): Promise<void> {
-    if (this.currentSound) {
+    if (this.currentPlayer) {
       try {
-        await this.currentSound.stopAsync();
-        await this.currentSound.unloadAsync();
-        this.currentSound = null;
+        this.currentPlayer.pause();
+        this.currentPlayer.remove();
+        this.currentPlayer = null;
+        this.onCompleteCallback = null;
       } catch (error) {
         console.error('Error stopping current sound:', error);
       }
@@ -220,9 +222,9 @@ export class RosaryAudioService {
    * Pause current sound
    */
   async pauseCurrentSound(): Promise<void> {
-    if (this.currentSound) {
+    if (this.currentPlayer) {
       try {
-        await this.currentSound.pauseAsync();
+        this.currentPlayer.pause();
       } catch (error) {
         console.error('Error pausing sound:', error);
       }
@@ -233,9 +235,9 @@ export class RosaryAudioService {
    * Resume current sound
    */
   async resumeCurrentSound(): Promise<void> {
-    if (this.currentSound) {
+    if (this.currentPlayer) {
       try {
-        await this.currentSound.playAsync();
+        this.currentPlayer.play();
       } catch (error) {
         console.error('Error resuming sound:', error);
       }
@@ -246,9 +248,9 @@ export class RosaryAudioService {
    * Set playback speed
    */
   async setPlaybackSpeed(speed: number): Promise<void> {
-    if (this.currentSound) {
+    if (this.currentPlayer) {
       try {
-        await this.currentSound.setRateAsync(speed, true);
+        this.currentPlayer.playbackRate = speed;
       } catch (error) {
         console.error('Error setting playback speed:', error);
       }
@@ -259,9 +261,9 @@ export class RosaryAudioService {
    * Set volume
    */
   async setVolume(volume: number): Promise<void> {
-    if (this.currentSound) {
+    if (this.currentPlayer) {
       try {
-        await this.currentSound.setVolumeAsync(volume);
+        this.currentPlayer.volume = volume;
       } catch (error) {
         console.error('Error setting volume:', error);
       }
@@ -293,14 +295,16 @@ export class RosaryAudioService {
     await this.stopCurrentSound();
     await this.stopBackgroundMusic();
     
-    if (this.backgroundMusic) {
+    if (this.backgroundMusicPlayer) {
       try {
-        await this.backgroundMusic.unloadAsync();
-        this.backgroundMusic = null;
+        this.backgroundMusicPlayer.remove();
+        this.backgroundMusicPlayer = null;
       } catch (error) {
-        console.error('Error unloading background music:', error);
+        console.error('Error removing background music player:', error);
       }
     }
+    
+    this.onCompleteCallback = null;
   }
 }
 
