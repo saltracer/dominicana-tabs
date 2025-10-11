@@ -23,6 +23,7 @@
     }
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.18.0",
     "@expo/cli": "^54.0.6",
     "@expo/metro-runtime": "~6.1.2",
     "@expo/vector-icons": "^15.0.2",
