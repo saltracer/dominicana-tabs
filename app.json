@@ -82,7 +82,6 @@
       "expo-router",
       "expo-file-system",
       "expo-document-picker",
-      "expo-av",
       "expo-calendar",
       "expo-location",
       [
