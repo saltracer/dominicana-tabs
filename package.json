@@ -54,6 +54,7 @@
     "expo-web-browser": "~15.0.7",
     "fast-xml-parser": "^5.2.5",
     "leaflet": "^1.9.4",
+    "pdfjs-dist": "^5.4.296",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-leaflet": "^5.0.0",
