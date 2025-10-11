@@ -23,6 +23,7 @@ import RosaryMysteryCarousel from '../../../components/RosaryMysteryCarousel';
 import { RosaryBead, RosaryForm, MysterySet, AudioSettings } from '../../../types/rosary-types';
 import { rosaryService } from '../../../services/RosaryService';
 import { bibleService } from '../../../services/BibleService';
+import { rosaryAudioService } from '../../../services/RosaryAudioService';
 import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryData';
 
 export default function RosaryWebScreen() {
@@ -38,6 +39,7 @@ export default function RosaryWebScreen() {
   const [completedBeadIds, setCompletedBeadIds] = useState<string[]>([]);
   const [bibleVerse, setBibleVerse] = useState<string>('');
   const [loadingVerse, setLoadingVerse] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   
   // Audio state
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
@@ -106,6 +108,47 @@ export default function RosaryWebScreen() {
       setBibleVerse('');
     }
   }, [currentBeadId, beads, selectedMystery]);
+
+  // Play audio when bead changes
+  useEffect(() => {
+    if (!isPraying || !currentBeadId || beads.length === 0) return;
+
+    const currentBead = beads.find(b => b.id === currentBeadId);
+    if (currentBead && currentBead.audioFile && audioSettings.isEnabled) {
+      console.log('[Rosary Audio] Playing:', currentBead.audioFile);
+      setIsAudioPlaying(true);
+      
+      rosaryAudioService.playPrayer(currentBead.audioFile, audioSettings, () => {
+        console.log('[Rosary Audio] Finished playing');
+        setIsAudioPlaying(false);
+        
+        // Auto-advance when audio finishes (if audio is enabled)
+        const hasNextBead = rosaryService.getNextBead(beads, currentBeadId);
+        if (hasNextBead) {
+          setTimeout(() => {
+            nextBead();
+          }, audioSettings.pauseDuration * 1000);
+        }
+      });
+    } else {
+      setIsAudioPlaying(false);
+    }
+
+    // Cleanup function
+    return () => {
+      // Don't stop audio on unmount, let it finish playing
+    };
+  }, [currentBeadId, audioSettings.isEnabled, isPraying]);
+
+  // Initialize audio when starting rosary
+  useEffect(() => {
+    if (isPraying) {
+      rosaryAudioService.initialize();
+    } else {
+      // Cleanup audio when exiting
+      rosaryAudioService.cleanup();
+    }
+  }, [isPraying]);
 
   const loadBibleVerse = async (decadeNumber: number) => {
     setLoadingVerse(true);
@@ -312,9 +355,9 @@ export default function RosaryWebScreen() {
             style={styles.toolbarButton}
           >
             <Ionicons 
-              name={audioSettings.isEnabled ? "volume-high" : "volume-mute"} 
+              name={audioSettings.isEnabled ? (isAudioPlaying ? "musical-notes" : "volume-high") : "volume-mute"} 
               size={24} 
-              color={Colors[colorScheme ?? 'light'].text} 
+              color={audioSettings.isEnabled ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary} 
             />
           </TouchableOpacity>
         </View>

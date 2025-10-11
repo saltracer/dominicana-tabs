@@ -23,7 +23,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.signOfCross,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/sign-of-cross.mp4'
+        audioFile: 'assets/audio/rosary/sign-of-cross.m4a'
       });
 
       beads.push({
@@ -33,7 +33,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.dominicanOpening1,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/dominican-opening-1.mp4'
+        audioFile: 'assets/audio/rosary/dominican-opening-1.m4a'
       });
 
       beads.push({
@@ -43,7 +43,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.dominicanOpening2,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/dominican-opening-2.mp4'
+        audioFile: 'assets/audio/rosary/dominican-opening-2.m4a'
       });
 
       beads.push({
@@ -53,7 +53,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.dominicanOpening3,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/dominican-opening-3.mp4'
+        audioFile: 'assets/audio/rosary/dominican-opening-3.m4a'
       });
 
       beads.push({
@@ -63,7 +63,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.gloryBe,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/glory-be.mp4'
+        audioFile: 'assets/audio/rosary/glory-be.m4a'
       });
     } else {
       // Standard form
@@ -74,7 +74,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.signOfCross,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/sign-of-cross.mp4'
+        audioFile: 'assets/audio/rosary/sign-of-cross.m4a'
       });
     }
 
@@ -86,7 +86,7 @@ export class RosaryService {
       text: PRAYER_TEXTS.apostlesCreed,
       order: order++,
       decadeNumber: 0,
-      audioFile: 'assets/audio/rosary/apostles-creed.mp4'
+        audioFile: 'assets/audio/rosary/apostles-creed.m4a'
     });
 
     // Our Father
@@ -161,7 +161,7 @@ export class RosaryService {
         order: order++,
         decadeNumber: decade,
         beadNumber: 0,
-        audioFile: `assets/audio/rosary/mysteries/${mysterySet.toLowerCase().replace(/ /g, '-')}/decade-${decade}.mp4`
+        audioFile: `assets/audio/rosary/mysteries/${mysterySet.toLowerCase().replace(/ /g, '-')}/decade-${decade}.m4a`
       });
 
       // Our Father
@@ -173,7 +173,7 @@ export class RosaryService {
         order: order++,
         decadeNumber: decade,
         beadNumber: 0,
-        audioFile: 'assets/audio/rosary/our-father.mp4'
+        audioFile: 'assets/audio/rosary/our-father.m4a'
       });
 
       // 10 Hail Marys
@@ -186,7 +186,7 @@ export class RosaryService {
           order: order++,
           decadeNumber: decade,
           beadNumber: hailMary,
-          audioFile: 'assets/audio/rosary/hail-mary.mp4'
+          audioFile: 'assets/audio/rosary/hail-mary.m4a'
         });
       }
 
@@ -199,7 +199,7 @@ export class RosaryService {
         order: order++,
         decadeNumber: decade,
         beadNumber: 11,
-        audioFile: 'assets/audio/rosary/glory-be.mp4'
+        audioFile: 'assets/audio/rosary/glory-be.m4a'
       });
 
       // Fatima Prayer (standard form only)
@@ -212,7 +212,7 @@ export class RosaryService {
           order: order++,
           decadeNumber: decade,
           beadNumber: 12,
-          audioFile: 'assets/audio/rosary/fatima-prayer.mp4'
+          audioFile: 'assets/audio/rosary/fatima-prayer.m4a'
         });
       }
     }
@@ -225,7 +225,7 @@ export class RosaryService {
       text: PRAYER_TEXTS.finalPrayer,
       order: order++,
       decadeNumber: 6,
-      audioFile: 'assets/audio/rosary/final-prayer.mp4'
+        audioFile: 'assets/audio/rosary/final-prayer.m4a'
     });
 
     return beads;

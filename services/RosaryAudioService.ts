@@ -13,6 +13,29 @@ export class RosaryAudioService {
   private isInitialized: boolean = false;
 
   /**
+   * Get audio file asset using require()
+   * Metro bundler requires static require() calls
+   */
+  private getAudioAsset(audioFile: string): any {
+    const audioAssets: Record<string, any> = {
+      'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/sign-of-the-cross.m4a'),
+      'assets/audio/rosary/apostles-creed.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Apostles-Creed.m4a'),
+      'assets/audio/rosary/our-father.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Our-Father.m4a'),
+      'assets/audio/rosary/hail-mary.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Hail-Mary-1.m4a'),
+      'assets/audio/rosary/glory-be.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Glory-Be.m4a'),
+      'assets/audio/rosary/fatima-prayer.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Fatima-Prayer.m4a'),
+      'assets/audio/rosary/final-prayer.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Final-Prayer.m4a'),
+      'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/dominican-opening-1.m4a'),
+      'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/dominican-opening-2.m4a'),
+      'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/dominican-opening-3.m4a'),
+      // Mystery announcements
+      'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_joyful-decade-1.m4a'),
+    };
+
+    return audioAssets[audioFile] || null;
+  }
+
+  /**
    * Initialize audio system
    */
   async initialize() {
@@ -53,31 +76,37 @@ export class RosaryAudioService {
 
       // For 'guided' mode, play the prayer audio
       if (settings.mode === 'guided') {
-        // In production, this would load the actual audio file
-        // For now, we'll create a placeholder that immediately completes
-        // const { sound } = await Audio.Sound.createAsync(
-        //   { uri: audioFile },
-        //   {
-        //     shouldPlay: true,
-        //     volume: settings.volume,
-        //     rate: settings.speed,
-        //   }
-        // );
+        console.log(`Playing audio file: ${audioFile}`);
         
-        // this.currentSound = sound;
-        
-        // sound.setOnPlaybackStatusUpdate((status) => {
-        //   if (status.isLoaded && status.didJustFinish) {
-        //     if (onComplete) onComplete();
-        //   }
-        // });
+        try {
+          const audioAsset = this.getAudioAsset(audioFile);
+          
+          if (!audioAsset) {
+            console.warn(`Audio file not found in asset map: ${audioFile}`);
+            if (onComplete) onComplete();
+            return;
+          }
 
-        // PLACEHOLDER: Immediately call onComplete since audio files are not yet provided
-        console.log(`Would play audio file: ${audioFile}`);
-        if (onComplete) {
-          // Simulate audio duration based on prayer type
-          const simulatedDuration = this.getSimulatedDuration(audioFile);
-          setTimeout(onComplete, simulatedDuration);
+          const { sound } = await Audio.Sound.createAsync(
+            audioAsset,
+            {
+              shouldPlay: true,
+              volume: settings.volume,
+              rate: settings.speed,
+            }
+          );
+          
+          this.currentSound = sound;
+          
+          sound.setOnPlaybackStatusUpdate((status) => {
+            if (status.isLoaded && status.didJustFinish) {
+              if (onComplete) onComplete();
+            }
+          });
+        } catch (error) {
+          console.error(`Failed to load audio file: ${audioFile}`, error);
+          // If audio fails, still call onComplete to not block navigation
+          if (onComplete) onComplete();
         }
       }
     } catch (error) {
