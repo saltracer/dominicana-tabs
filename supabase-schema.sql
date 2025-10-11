@@ -121,8 +121,23 @@ CREATE TABLE IF NOT EXISTS user_liturgy_preferences (
   chant_notation_enabled BOOLEAN NOT NULL DEFAULT true,
   tts_enabled BOOLEAN NOT NULL DEFAULT true,
   tts_voice_id TEXT NOT NULL DEFAULT '',
-  tts_speed INTEGER NOT NULL DEFAULT 2
+  tts_speed INTEGER NOT NULL DEFAULT 2,
+  rosary_voice TEXT DEFAULT 'alphonsus' -- Voice selection for rosary audio playback
 );
+
+-- Add rosary_voice column to existing tables (migration)
+-- Run this if the table already exists without this column
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'user_liturgy_preferences' 
+    AND column_name = 'rosary_voice'
+  ) THEN
+    ALTER TABLE user_liturgy_preferences 
+    ADD COLUMN rosary_voice TEXT DEFAULT 'alphonsus';
+  END IF;
+END $$;
 
 -- Create user_roles table (ACTUAL STRUCTURE)
 CREATE TABLE IF NOT EXISTS user_roles (

@@ -14,6 +14,7 @@ import { useTheme } from '../../components/ThemeProvider';
 import { useAuth } from '../../contexts/AuthContext';
 import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropdown';
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
+import RosaryVoiceSelector from '../../components/RosaryVoiceSelector';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 
 
@@ -122,6 +123,12 @@ export default function AudioSettingsScreen() {
               />
             </>
           )}
+
+          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Rosary Audio
+          </Text>
+          
+          <RosaryVoiceSelector />
 
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Chant Notation

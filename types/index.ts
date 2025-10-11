@@ -225,6 +225,7 @@ export interface UserPreferences {
   notifications: NotificationSettings;
   liturgicalCalendar: CalendarPreferences;
   prayerReminders: PrayerReminder[];
+  rosaryVoice?: string; // Voice for rosary audio (e.g., 'alphonsus', 'clare', etc.)
 }
 
 export interface NotificationSettings {

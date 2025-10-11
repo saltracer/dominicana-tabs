@@ -22,6 +22,7 @@ export interface UserLiturgyPreferencesData {
   tts_enabled: boolean;
   tts_voice_id: string;
   tts_speed: number;
+  rosary_voice?: string; // Voice for rosary audio playback
   created_at?: string;
   updated_at?: string;
 }
@@ -213,6 +214,7 @@ export class UserLiturgyPreferencesService {
       tts_enabled: true,
       tts_voice_id: '',
       tts_speed: 2,
+      rosary_voice: 'alphonsus', // Default rosary voice
     };
 
     try {

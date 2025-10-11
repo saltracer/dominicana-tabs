@@ -13,26 +13,73 @@ export class RosaryAudioService {
   private isInitialized: boolean = false;
 
   /**
-   * Get audio file asset using require()
+   * Get audio file asset using require() based on voice selection
    * Metro bundler requires static require() calls
    */
-  private getAudioAsset(audioFile: string): any {
-    const audioAssets: Record<string, any> = {
-      'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/sign-of-the-cross.m4a'),
+  private getAudioAsset(audioFile: string, voice: string = 'alphonsus'): any {
+    // Alphonsus voice mappings
+    const alphonsusAssets: Record<string, any> = {
+      'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Sign-of-the-Cross.m4a'),
       'assets/audio/rosary/apostles-creed.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Apostles-Creed.m4a'),
       'assets/audio/rosary/our-father.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Our-Father.m4a'),
       'assets/audio/rosary/hail-mary.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Hail-Mary-1.m4a'),
       'assets/audio/rosary/glory-be.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Glory-Be.m4a'),
       'assets/audio/rosary/fatima-prayer.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Fatima-Prayer.m4a'),
       'assets/audio/rosary/final-prayer.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Final-Prayer.m4a'),
-      'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/dominican-opening-1.m4a'),
-      'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/dominican-opening-2.m4a'),
-      'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/dominican-opening-3.m4a'),
-      // Mystery announcements
+      'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_dominican-opening-1.m4a'),
+      'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_dominican-opening-2.m4a'),
+      'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_dominican-opening-3.m4a'),
+      // Mystery announcements - Joyful
       'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_joyful-decade-1.m4a'),
+      // Future mystery mappings will be added as files become available
     };
 
-    return audioAssets[audioFile] || null;
+    // Catherine voice mappings (add audio files to activate)
+    // const catherineAssets: Record<string, any> = {
+    //   'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/catherine/Catherine_Sign-of-the-Cross.m4a'),
+    //   'assets/audio/rosary/apostles-creed.m4a': require('../assets/audio/rosary/catherine/Catherine_Apostles-Creed.m4a'),
+    //   'assets/audio/rosary/our-father.m4a': require('../assets/audio/rosary/catherine/Catherine_Our-Father.m4a'),
+    //   'assets/audio/rosary/hail-mary.m4a': require('../assets/audio/rosary/catherine/Catherine_Hail-Mary-1.m4a'),
+    //   'assets/audio/rosary/glory-be.m4a': require('../assets/audio/rosary/catherine/Catherine_Glory-Be.m4a'),
+    //   'assets/audio/rosary/fatima-prayer.m4a': require('../assets/audio/rosary/catherine/Catherine_Fatima-Prayer.m4a'),
+    //   'assets/audio/rosary/final-prayer.m4a': require('../assets/audio/rosary/catherine/Catherine_Final-Prayer.m4a'),
+    //   'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/catherine/Catherine_dominican-opening-1.m4a'),
+    //   'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/catherine/Catherine_dominican-opening-2.m4a'),
+    //   'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/catherine/Catherine_dominican-opening-3.m4a'),
+    //   'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': require('../assets/audio/rosary/catherine/Catherine_joyful-decade-1.m4a'),
+    // };
+
+    // Teresa voice mappings (add audio files to activate)
+    // const teresaAssets: Record<string, any> = {
+    //   'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/teresa/Teresa_Sign-of-the-Cross.m4a'),
+    //   'assets/audio/rosary/apostles-creed.m4a': require('../assets/audio/rosary/teresa/Teresa_Apostles-Creed.m4a'),
+    //   'assets/audio/rosary/our-father.m4a': require('../assets/audio/rosary/teresa/Teresa_Our-Father.m4a'),
+    //   'assets/audio/rosary/hail-mary.m4a': require('../assets/audio/rosary/teresa/Teresa_Hail-Mary-1.m4a'),
+    //   'assets/audio/rosary/glory-be.m4a': require('../assets/audio/rosary/teresa/Teresa_Glory-Be.m4a'),
+    //   'assets/audio/rosary/fatima-prayer.m4a': require('../assets/audio/rosary/teresa/Teresa_Fatima-Prayer.m4a'),
+    //   'assets/audio/rosary/final-prayer.m4a': require('../assets/audio/rosary/teresa/Teresa_Final-Prayer.m4a'),
+    //   'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/teresa/Teresa_dominican-opening-1.m4a'),
+    //   'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/teresa/Teresa_dominican-opening-2.m4a'),
+    //   'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/teresa/Teresa_dominican-opening-3.m4a'),
+    //   'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': require('../assets/audio/rosary/teresa/Teresa_joyful-decade-1.m4a'),
+    // };
+
+    // Return the appropriate voice's assets
+    if (voice === 'alphonsus') {
+      return alphonsusAssets[audioFile] || null;
+    }
+    // Uncomment when Catherine files are added:
+    // if (voice === 'catherine') {
+    //   return catherineAssets[audioFile] || null;
+    // }
+    // Uncomment when Teresa files are added:
+    // if (voice === 'teresa') {
+    //   return teresaAssets[audioFile] || null;
+    // }
+
+    // Default to alphonsus if voice not recognized or files not available
+    console.warn(`Voice '${voice}' not found or files not available, falling back to alphonsus`);
+    return alphonsusAssets[audioFile] || null;
   }
 
   /**
@@ -58,7 +105,7 @@ export class RosaryAudioService {
   /**
    * Play audio file for a prayer
    */
-  async playPrayer(audioFile: string, settings: AudioSettings, onComplete?: () => void): Promise<void> {
+  async playPrayer(audioFile: string, settings: AudioSettings, voice: string = 'alphonsus', onComplete?: () => void): Promise<void> {
     if (!settings.isEnabled || settings.mode === 'silent') {
       return;
     }
@@ -76,13 +123,13 @@ export class RosaryAudioService {
 
       // For 'guided' mode, play the prayer audio
       if (settings.mode === 'guided') {
-        console.log(`Playing audio file: ${audioFile}`);
+        console.log(`Playing audio file: ${audioFile} with voice: ${voice}`);
         
         try {
-          const audioAsset = this.getAudioAsset(audioFile);
+          const audioAsset = this.getAudioAsset(audioFile, voice);
           
           if (!audioAsset) {
-            console.warn(`Audio file not found in asset map: ${audioFile}`);
+            console.warn(`Audio file not found in asset map: ${audioFile} for voice: ${voice}`);
             if (onComplete) onComplete();
             return;
           }

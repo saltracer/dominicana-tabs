@@ -27,10 +27,13 @@ import { rosaryService } from '../../../services/RosaryService';
 import { bibleService } from '../../../services/BibleService';
 import { rosaryAudioService } from '../../../services/RosaryAudioService';
 import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryData';
+import { UserLiturgyPreferencesService } from '../../../services/UserLiturgyPreferencesService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export default function RosaryScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const { user } = useAuth();
   
   // State management
   const [selectedMystery, setSelectedMystery] = useState<MysterySet>(getTodaysMystery());
@@ -42,6 +45,7 @@ export default function RosaryScreen() {
   const [bibleVerse, setBibleVerse] = useState<string>('');
   const [loadingVerse, setLoadingVerse] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [rosaryVoice, setRosaryVoice] = useState<string>('alphonsus');
   
   // Audio state
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
@@ -80,10 +84,10 @@ export default function RosaryScreen() {
 
     const currentBead = beads.find(b => b.id === currentBeadId);
     if (currentBead && currentBead.audioFile && audioSettings.isEnabled) {
-      console.log('[Rosary Audio] Playing:', currentBead.audioFile);
+      console.log('[Rosary Audio] Playing:', currentBead.audioFile, 'Voice:', rosaryVoice);
       setIsAudioPlaying(true);
       
-      rosaryAudioService.playPrayer(currentBead.audioFile, audioSettings, () => {
+      rosaryAudioService.playPrayer(currentBead.audioFile, audioSettings, rosaryVoice, () => {
         console.log('[Rosary Audio] Finished playing');
         setIsAudioPlaying(false);
         
@@ -114,6 +118,24 @@ export default function RosaryScreen() {
       rosaryAudioService.cleanup();
     }
   }, [isPraying]);
+
+  // Load user's rosary voice preference
+  useEffect(() => {
+    const loadVoicePreference = async () => {
+      if (user?.id) {
+        try {
+          const prefs = await UserLiturgyPreferencesService.getUserPreferences(user.id);
+          if (prefs?.rosary_voice) {
+            setRosaryVoice(prefs.rosary_voice);
+          }
+        } catch (error) {
+          console.error('Error loading rosary voice preference:', error);
+        }
+      }
+    };
+
+    loadVoicePreference();
+  }, [user?.id]);
 
   const loadBibleVerse = async (decadeNumber: number) => {
     setLoadingVerse(true);
