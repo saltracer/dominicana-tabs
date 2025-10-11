@@ -1,0 +1,336 @@
+/**
+ * Rosary Audio Download Service
+ * Downloads and caches rosary audio files from Supabase Storage
+ */
+
+import { File, Directory, Paths } from 'expo-file-system';
+import { supabase } from '../lib/supabase';
+
+export interface DownloadProgress {
+  fileName: string;
+  totalBytes: number;
+  downloadedBytes: number;
+  progress: number; // 0-100
+}
+
+export class RosaryAudioDownloadService {
+  private static readonly BUCKET_NAME = 'rosary-audio';
+  
+  /**
+   * Get the cache directory path (must be accessed at runtime)
+   */
+  private static getAudioCacheDir(): string {
+    // Paths.cache is a Directory object, we need its uri property
+    return `${Paths.cache.uri}rosary-audio`;
+  }
+  
+  /**
+   * Initialize the cache directory
+   */
+  static async initialize(): Promise<void> {
+    try {
+      const cacheDir = this.getAudioCacheDir();
+      console.log('Initializing audio cache directory at:', cacheDir);
+      
+      const directory = new Directory(cacheDir);
+      if (!directory.exists) {
+        // Create directory with intermediates option to create parent directories
+        await directory.create({ intermediates: true });
+        console.log('Created rosary audio cache directory successfully');
+      } else {
+        console.log('Audio cache directory already exists');
+      }
+    } catch (error) {
+      console.error('Error initializing audio cache directory:', error);
+      console.error('Paths.cache value:', Paths.cache);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the Supabase storage path for an audio file
+   */
+  private static getStoragePath(voice: string, fileName: string): string {
+    // Map from app's internal path to actual Supabase storage path
+    const pathMappings: Record<string, string> = {
+      'assets/audio/rosary/sign-of-cross.m4a': 'sign-of-the-cross.m4a',
+      'assets/audio/rosary/apostles-creed.m4a': 'apostles-creed.m4a',
+      'assets/audio/rosary/our-father.m4a': 'our-father.m4a',
+      'assets/audio/rosary/hail-mary.m4a': 'hail-mary-1.m4a', // Maps to hail-mary-1
+      'assets/audio/rosary/glory-be.m4a': 'glory-be.m4a',
+      'assets/audio/rosary/fatima-prayer.m4a': 'fatima-prayer.m4a',
+      'assets/audio/rosary/final-prayer.m4a': 'final-prayer.m4a',
+      'assets/audio/rosary/dominican-opening-1.m4a': 'dominican-opening-1.m4a',
+      'assets/audio/rosary/dominican-opening-2.m4a': 'dominican-opening-2.m4a',
+      'assets/audio/rosary/dominican-opening-3.m4a': 'dominican-opening-3.m4a',
+      'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': 'joyful-decade-1.m4a',
+    };
+
+    const mappedFile = pathMappings[fileName];
+    
+    if (!mappedFile) {
+      // Fallback: try to construct path from fileName
+      const baseName = fileName.replace('assets/audio/rosary/', '').replace(/\//g, '_');
+      console.warn(`No mapping found for ${fileName}, using fallback: ${baseName}`);
+      return `${voice}/${baseName}`;
+    }
+
+    return `${voice}/${mappedFile}`;
+  }
+
+  /**
+   * Get the local cache path for an audio file
+   */
+  private static getCachePath(voice: string, fileName: string): string {
+    const baseName = fileName.replace('assets/audio/rosary/', '').replace(/\//g, '_').replace('.m4a', '');
+    return `${this.getAudioCacheDir()}/${voice}_${baseName}.m4a`;
+  }
+
+  /**
+   * Check if a file is cached locally
+   */
+  static async isCached(voice: string, fileName: string): Promise<boolean> {
+    try {
+      const cachePath = this.getCachePath(voice, fileName);
+      const file = new File(cachePath);
+      return file.exists;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Download audio file from Supabase Storage
+   */
+  static async downloadAudioFile(
+    voice: string,
+    fileName: string,
+    onProgress?: (progress: DownloadProgress) => void
+  ): Promise<string> {
+    try {
+      await this.initialize();
+
+      const cachePath = this.getCachePath(voice, fileName);
+      
+      // Check if already cached
+      if (await this.isCached(voice, fileName)) {
+        console.log(`Audio file already cached: ${cachePath}`);
+        return cachePath;
+      }
+
+      // Get the storage path
+      const storagePath = this.getStoragePath(voice, fileName);
+      console.log(`[Rosary Audio Download] Attempting to download:`);
+      console.log(`  Bucket: ${this.BUCKET_NAME}`);
+      console.log(`  Path: ${storagePath}`);
+      console.log(`  Voice: ${voice}`);
+      console.log(`  Original fileName: ${fileName}`);
+
+      // Check authentication status
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      console.log(`  Auth status: ${user ? `✅ Signed in as ${user.email}` : '❌ NOT signed in'}`);
+      if (authError) {
+        console.error(`  Auth error: ${authError.message}`);
+      }
+
+      // Get signed URL from Supabase Storage
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from(this.BUCKET_NAME)
+        .createSignedUrl(storagePath, 3600); // 1 hour expiry
+
+      if (urlError || !urlData?.signedUrl) {
+        console.error(`[Rosary Audio Download] Failed to get signed URL:`);
+        console.error(`  Error: ${urlError?.message || 'No URL returned'}`);
+        console.error(`  Error details:`, urlError);
+        console.error(`  This usually means:`);
+        console.error(`  - File does not exist at path: ${storagePath}`);
+        console.error(`  - Bucket policies not configured correctly`);
+        console.error(`  - User not authenticated (currently: ${user ? 'authenticated' : 'NOT authenticated'})`);
+        throw new Error(`Failed to get signed URL: ${urlError?.message || 'No URL returned'}`);
+      }
+
+      // Download the file using fetch and new File API
+      console.log(`Downloading from signed URL...`);
+      
+      const response = await fetch(urlData.signedUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get file content as array buffer (React Native compatible)
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      // Write to cache using new File API
+      const cacheFile = new File(cachePath);
+      await cacheFile.create();
+      await cacheFile.write(uint8Array);
+
+      console.log(`Downloaded and cached: ${cachePath}`);
+      console.log(`  Size: ${(arrayBuffer.byteLength / 1024).toFixed(1)} KB`);
+      
+      return cachePath;
+    } catch (error) {
+      console.error(`Error downloading audio file ${fileName}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get audio file URI (download if necessary)
+   */
+  static async getAudioFileUri(
+    voice: string,
+    fileName: string,
+    onProgress?: (progress: DownloadProgress) => void
+  ): Promise<string> {
+    const cachePath = this.getCachePath(voice, fileName);
+    
+    // Return cached file if available
+    if (await this.isCached(voice, fileName)) {
+      return cachePath;
+    }
+
+    // Download if not cached
+    return await this.downloadAudioFile(voice, fileName, onProgress);
+  }
+
+  /**
+   * Download all audio files for a specific voice
+   */
+  static async downloadVoicePack(
+    voice: string,
+    onProgress?: (fileName: string, progress: DownloadProgress) => void
+  ): Promise<{ success: boolean; downloaded: number; failed: number; errors: string[] }> {
+    const audioFiles = [
+      'assets/audio/rosary/sign-of-cross.m4a',
+      'assets/audio/rosary/apostles-creed.m4a',
+      'assets/audio/rosary/our-father.m4a',
+      'assets/audio/rosary/hail-mary.m4a',
+      'assets/audio/rosary/glory-be.m4a',
+      'assets/audio/rosary/fatima-prayer.m4a',
+      'assets/audio/rosary/final-prayer.m4a',
+      'assets/audio/rosary/dominican-opening-1.m4a',
+      'assets/audio/rosary/dominican-opening-2.m4a',
+      'assets/audio/rosary/dominican-opening-3.m4a',
+    ];
+
+    let downloaded = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const fileName of audioFiles) {
+      try {
+        await this.downloadAudioFile(voice, fileName, (progress) => {
+          onProgress?.(fileName, progress);
+        });
+        downloaded++;
+      } catch (error) {
+        failed++;
+        errors.push(`${fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        console.error(`Failed to download ${fileName}:`, error);
+      }
+    }
+
+    return {
+      success: failed === 0,
+      downloaded,
+      failed,
+      errors,
+    };
+  }
+
+  /**
+   * Clear all cached audio files
+   */
+  static async clearCache(): Promise<void> {
+    try {
+      const directory = new Directory(this.getAudioCacheDir());
+      if (directory.exists) {
+        await directory.delete();
+        console.log('Cleared rosary audio cache');
+      }
+    } catch (error) {
+      console.error('Error clearing audio cache:', error);
+    }
+  }
+
+  /**
+   * Clear cached files for a specific voice
+   */
+  static async clearVoiceCache(voice: string): Promise<void> {
+    try {
+      const directory = new Directory(this.getAudioCacheDir());
+      const items = await directory.list();
+      
+      // Filter files (not directories) that start with voice prefix
+      for (const item of items) {
+        if (item instanceof File && item.uri.includes(`${voice}_`)) {
+          await item.delete();
+        }
+      }
+      
+      console.log(`Cleared cached files for voice: ${voice}`);
+    } catch (error) {
+      console.error(`Error clearing cache for voice ${voice}:`, error);
+    }
+  }
+
+  /**
+   * Get cache size in bytes
+   */
+  static async getCacheSize(): Promise<number> {
+    try {
+      const directory = new Directory(this.getAudioCacheDir());
+      
+      if (!directory.exists) {
+        return 0;
+      }
+
+      const items = await directory.list();
+      let totalSize = 0;
+
+      for (const item of items) {
+        if (item instanceof File) {
+          totalSize += item.size;
+        }
+      }
+
+      return totalSize;
+    } catch (error) {
+      console.error('Error calculating cache size:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get list of cached files
+   */
+  static async getCachedFiles(): Promise<string[]> {
+    try {
+      const directory = new Directory(this.getAudioCacheDir());
+      
+      if (!directory.exists) {
+        return [];
+      }
+      
+      const items = await directory.list();
+      const fileNames: string[] = [];
+      
+      for (const item of items) {
+        if (item instanceof File) {
+          // Extract just the filename from the full path
+          const fileName = item.uri.split('/').pop() || '';
+          fileNames.push(fileName);
+        }
+      }
+      
+      return fileNames;
+    } catch (error) {
+      console.error('Error getting cached files:', error);
+      return [];
+    }
+  }
+}
+

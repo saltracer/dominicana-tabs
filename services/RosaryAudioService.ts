@@ -6,6 +6,7 @@
 
 import { Audio } from 'expo-av';
 import { AudioSettings } from '../types/rosary-types';
+import { RosaryAudioDownloadService } from './RosaryAudioDownloadService';
 
 export class RosaryAudioService {
   private currentSound: Audio.Sound | null = null;
@@ -13,73 +14,29 @@ export class RosaryAudioService {
   private isInitialized: boolean = false;
 
   /**
-   * Get audio file asset using require() based on voice selection
-   * Metro bundler requires static require() calls
+   * Get audio file URI from Supabase Storage (with caching)
    */
-  private getAudioAsset(audioFile: string, voice: string = 'alphonsus'): any {
-    // Alphonsus voice mappings
-    const alphonsusAssets: Record<string, any> = {
-      'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Sign-of-the-Cross.m4a'),
-      'assets/audio/rosary/apostles-creed.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Apostles-Creed.m4a'),
-      'assets/audio/rosary/our-father.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Our-Father.m4a'),
-      'assets/audio/rosary/hail-mary.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Hail-Mary-1.m4a'),
-      'assets/audio/rosary/glory-be.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Glory-Be.m4a'),
-      'assets/audio/rosary/fatima-prayer.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Fatima-Prayer.m4a'),
-      'assets/audio/rosary/final-prayer.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_Final-Prayer.m4a'),
-      'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_dominican-opening-1.m4a'),
-      'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_dominican-opening-2.m4a'),
-      'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_dominican-opening-3.m4a'),
-      // Mystery announcements - Joyful
-      'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': require('../assets/audio/rosary/alphonsus/Alphonsus Liguori_joyful-decade-1.m4a'),
-      // Future mystery mappings will be added as files become available
-    };
-
-    // Catherine voice mappings (add audio files to activate)
-    // const catherineAssets: Record<string, any> = {
-    //   'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/catherine/Catherine_Sign-of-the-Cross.m4a'),
-    //   'assets/audio/rosary/apostles-creed.m4a': require('../assets/audio/rosary/catherine/Catherine_Apostles-Creed.m4a'),
-    //   'assets/audio/rosary/our-father.m4a': require('../assets/audio/rosary/catherine/Catherine_Our-Father.m4a'),
-    //   'assets/audio/rosary/hail-mary.m4a': require('../assets/audio/rosary/catherine/Catherine_Hail-Mary-1.m4a'),
-    //   'assets/audio/rosary/glory-be.m4a': require('../assets/audio/rosary/catherine/Catherine_Glory-Be.m4a'),
-    //   'assets/audio/rosary/fatima-prayer.m4a': require('../assets/audio/rosary/catherine/Catherine_Fatima-Prayer.m4a'),
-    //   'assets/audio/rosary/final-prayer.m4a': require('../assets/audio/rosary/catherine/Catherine_Final-Prayer.m4a'),
-    //   'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/catherine/Catherine_dominican-opening-1.m4a'),
-    //   'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/catherine/Catherine_dominican-opening-2.m4a'),
-    //   'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/catherine/Catherine_dominican-opening-3.m4a'),
-    //   'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': require('../assets/audio/rosary/catherine/Catherine_joyful-decade-1.m4a'),
-    // };
-
-    // Teresa voice mappings (add audio files to activate)
-    // const teresaAssets: Record<string, any> = {
-    //   'assets/audio/rosary/sign-of-cross.m4a': require('../assets/audio/rosary/teresa/Teresa_Sign-of-the-Cross.m4a'),
-    //   'assets/audio/rosary/apostles-creed.m4a': require('../assets/audio/rosary/teresa/Teresa_Apostles-Creed.m4a'),
-    //   'assets/audio/rosary/our-father.m4a': require('../assets/audio/rosary/teresa/Teresa_Our-Father.m4a'),
-    //   'assets/audio/rosary/hail-mary.m4a': require('../assets/audio/rosary/teresa/Teresa_Hail-Mary-1.m4a'),
-    //   'assets/audio/rosary/glory-be.m4a': require('../assets/audio/rosary/teresa/Teresa_Glory-Be.m4a'),
-    //   'assets/audio/rosary/fatima-prayer.m4a': require('../assets/audio/rosary/teresa/Teresa_Fatima-Prayer.m4a'),
-    //   'assets/audio/rosary/final-prayer.m4a': require('../assets/audio/rosary/teresa/Teresa_Final-Prayer.m4a'),
-    //   'assets/audio/rosary/dominican-opening-1.m4a': require('../assets/audio/rosary/teresa/Teresa_dominican-opening-1.m4a'),
-    //   'assets/audio/rosary/dominican-opening-2.m4a': require('../assets/audio/rosary/teresa/Teresa_dominican-opening-2.m4a'),
-    //   'assets/audio/rosary/dominican-opening-3.m4a': require('../assets/audio/rosary/teresa/Teresa_dominican-opening-3.m4a'),
-    //   'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': require('../assets/audio/rosary/teresa/Teresa_joyful-decade-1.m4a'),
-    // };
-
-    // Return the appropriate voice's assets
-    if (voice === 'alphonsus') {
-      return alphonsusAssets[audioFile] || null;
+  private async getAudioFileUri(audioFile: string, voice: string = 'alphonsus'): Promise<string | null> {
+    try {
+      const uri = await RosaryAudioDownloadService.getAudioFileUri(voice, audioFile);
+      return uri;
+    } catch (error) {
+      console.error(`Failed to get audio file URI for ${audioFile}:`, error);
+      
+      // Try fallback to alphonsus if different voice was requested
+      if (voice !== 'alphonsus') {
+        console.log(`Falling back to alphonsus voice for ${audioFile}`);
+        try {
+          const fallbackUri = await RosaryAudioDownloadService.getAudioFileUri('alphonsus', audioFile);
+          return fallbackUri;
+        } catch (fallbackError) {
+          console.error('Fallback to alphonsus also failed:', fallbackError);
+          return null;
+        }
+      }
+      
+      return null;
     }
-    // Uncomment when Catherine files are added:
-    // if (voice === 'catherine') {
-    //   return catherineAssets[audioFile] || null;
-    // }
-    // Uncomment when Teresa files are added:
-    // if (voice === 'teresa') {
-    //   return teresaAssets[audioFile] || null;
-    // }
-
-    // Default to alphonsus if voice not recognized or files not available
-    console.warn(`Voice '${voice}' not found or files not available, falling back to alphonsus`);
-    return alphonsusAssets[audioFile] || null;
   }
 
   /**
@@ -97,6 +54,7 @@ export class RosaryAudioService {
         playThroughEarpieceAndroid: false,
       });
       this.isInitialized = true;
+      console.log('Audio system initialized');
     } catch (error) {
       console.error('Failed to initialize audio:', error);
     }
@@ -126,16 +84,23 @@ export class RosaryAudioService {
         console.log(`Playing audio file: ${audioFile} with voice: ${voice}`);
         
         try {
-          const audioAsset = this.getAudioAsset(audioFile, voice);
+          // Get audio file URI from Supabase (downloads if needed, uses cache if available)
+          const audioUri = await this.getAudioFileUri(audioFile, voice);
           
-          if (!audioAsset) {
-            console.warn(`Audio file not found in asset map: ${audioFile} for voice: ${voice}`);
+          if (!audioUri) {
+            console.warn(`Audio file not available: ${audioFile} for voice: ${voice}`);
             if (onComplete) onComplete();
             return;
           }
 
+          console.log(`Loading audio from: ${audioUri}`);
+
+          // Stop any currently playing audio
+          await this.stopCurrentSound();
+
+          // Create and play audio with expo-av
           const { sound } = await Audio.Sound.createAsync(
-            audioAsset,
+            { uri: audioUri },
             {
               shouldPlay: true,
               volume: settings.volume,
@@ -145,9 +110,13 @@ export class RosaryAudioService {
           
           this.currentSound = sound;
           
+          // Listen for playback status updates
           sound.setOnPlaybackStatusUpdate((status) => {
             if (status.isLoaded && status.didJustFinish) {
-              if (onComplete) onComplete();
+              console.log('Audio playback finished');
+              if (onComplete) {
+                onComplete();
+              }
             }
           });
         } catch (error) {
@@ -202,20 +171,18 @@ export class RosaryAudioService {
         return;
       }
 
-      // In production, load the background music file
+      // Background music support (implement when files available)
       // const { sound } = await Audio.Sound.createAsync(
-      //   require('../assets/audio/rosary/background/gregorian-chant.mp4'),
+      //   { uri: backgroundMusicUri },
       //   {
       //     shouldPlay: true,
       //     volume,
       //     isLooping: true,
       //   }
       // );
-      
       // this.backgroundMusic = sound;
 
-      // PLACEHOLDER
-      console.log('Would start background music');
+      console.log('Background music feature not yet implemented');
     } catch (error) {
       console.error('Error starting background music:', error);
     }

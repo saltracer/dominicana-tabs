@@ -43,6 +43,7 @@ export default function RosaryWebScreen() {
   const [bibleVerse, setBibleVerse] = useState<string>('');
   const [loadingVerse, setLoadingVerse] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isAudioPaused, setIsAudioPaused] = useState(false);
   const [rosaryVoice, setRosaryVoice] = useState<string>('alphonsus');
   
   // Audio state
@@ -199,6 +200,7 @@ export default function RosaryWebScreen() {
     setCurrentBeadId(beads[0].id);
     setCompletedBeadIds([]);
     setAudioSettings(prev => ({ ...prev, isEnabled: false }));
+    setIsAudioPaused(false);
   };
 
   const exitRosary = () => {
@@ -206,6 +208,7 @@ export default function RosaryWebScreen() {
     setCurrentBeadId('');
     setCompletedBeadIds([]);
     setAudioSettings(prev => ({ ...prev, isEnabled: false }));
+    setIsAudioPaused(false);
   };
 
   const navigateToBead = (beadId: string) => {
@@ -251,6 +254,26 @@ export default function RosaryWebScreen() {
     return rosaryService.getProgress(beads, currentBeadId);
   };
 
+  const handleAudioToggle = async () => {
+    if (!audioSettings.isEnabled) {
+      // Enable audio
+      setAudioSettings(prev => ({ ...prev, isEnabled: true }));
+      setIsAudioPaused(false);
+    } else if (isAudioPlaying && !isAudioPaused) {
+      // Pause audio
+      await rosaryAudioService.pauseCurrentSound();
+      setIsAudioPaused(true);
+    } else if (isAudioPaused) {
+      // Resume audio
+      await rosaryAudioService.resumeCurrentSound();
+      setIsAudioPaused(false);
+    } else {
+      // Disable audio (when not currently playing)
+      setAudioSettings(prev => ({ ...prev, isEnabled: false }));
+      setIsAudioPaused(false);
+    }
+  };
+
   const isLastBead = (): boolean => {
     return currentBeadId === beads[beads.length - 1]?.id;
   };
@@ -261,6 +284,7 @@ export default function RosaryWebScreen() {
     setCurrentBeadId('');
     setCompletedBeadIds([]);
     setAudioSettings(prev => ({ ...prev, isEnabled: false }));
+    setIsAudioPaused(false);
   };
 
   const currentBead = getCurrentBead();
@@ -376,11 +400,16 @@ export default function RosaryWebScreen() {
 
         <View style={styles.toolbarRight}>
           <TouchableOpacity 
-            onPress={() => setAudioSettings(prev => ({ ...prev, isEnabled: !prev.isEnabled }))}
+            onPress={handleAudioToggle}
             style={styles.toolbarButton}
           >
             <Ionicons 
-              name={audioSettings.isEnabled ? (isAudioPlaying ? "musical-notes" : "volume-high") : "volume-mute"} 
+              name={
+                !audioSettings.isEnabled ? "volume-mute" 
+                : isAudioPaused ? "pause" 
+                : isAudioPlaying ? "musical-notes" 
+                : "volume-high"
+              } 
               size={24} 
               color={audioSettings.isEnabled ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary} 
             />

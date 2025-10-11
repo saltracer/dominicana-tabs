@@ -7,7 +7,11 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "test": "jest --watchAll"
+    "test": "jest --watchAll",
+    "upload-rosary-audio": "node scripts/upload-rosary-audio.js",
+    "test-rosary-bucket": "node scripts/test-rosary-audio-bucket.js",
+    "list-bucket-files": "node scripts/list-bucket-files.js",
+    "check-bucket": "node scripts/list-bucket-files.js"
   },
   "jest": {
     "preset": "jest-expo",
@@ -33,6 +37,7 @@
     "dotenv": "^17.2.2",
     "expo": "~54.0.10",
     "expo-asset": "~12.0.8",
+    "expo-audio": "~1.0.13",
     "expo-av": "~16.0.7",
     "expo-calendar": "~15.0.7",
     "expo-constants": "~18.0.9",
