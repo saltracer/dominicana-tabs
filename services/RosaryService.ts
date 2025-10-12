@@ -5,17 +5,21 @@
 
 import { RosaryBead, RosaryForm, MysterySet } from '../types/rosary-types';
 import { PRAYER_TEXTS, ROSARY_MYSTERIES } from '../constants/rosaryData';
+import { isLent } from '../assets/data/calendar/liturgical-seasons';
 
 export class RosaryService {
   /**
    * Generate all beads for a complete rosary
    */
-  generateRosaryBeads(form: RosaryForm, mysterySet: MysterySet): RosaryBead[] {
+  generateRosaryBeads(form: RosaryForm, mysterySet: MysterySet, isLentSeason?: boolean): RosaryBead[] {
     const beads: RosaryBead[] = [];
     let order = 0;
 
-    // Opening prayers
+    // Opening prayers - DIFFERENT for Dominican vs Standard forms
     if (form === 'dominican') {
+      // DOMINICAN FORM: Liturgical opening from Divine Office
+      // Then goes directly to the decades
+      
       beads.push({
         id: 'opening-sign-of-cross',
         type: 'sign-of-cross',
@@ -56,17 +60,30 @@ export class RosaryService {
         audioFile: 'assets/audio/rosary/dominican-opening-3.m4a'
       });
 
+      // Glory Be + Alleluia (combined, Alleluia omitted during Lent)
+      // Use passed isLentSeason parameter if provided, otherwise check liturgical calendar
+      const isLentPeriod = isLentSeason !== undefined ? isLentSeason : isLent(new Date());
+      const gloryBeText = isLentPeriod 
+        ? PRAYER_TEXTS.dominicanOpeningGloryBe 
+        : `${PRAYER_TEXTS.dominicanOpeningGloryBe}\n\n${PRAYER_TEXTS.alleluia}`;
+      
       beads.push({
-        id: 'opening-glory-be',
+        id: 'dominican-opening-glory-be',
         type: 'glory-be',
         title: 'Glory Be',
-        text: PRAYER_TEXTS.gloryBe,
+        text: gloryBeText,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/glory-be.m4a'
+        audioFile: 'assets/audio/rosary/dominican-opening-glory-be.m4a'
       });
+
+      // Dominican form goes DIRECTLY to the decades now
+      // No Apostles' Creed, no Our Father, no 3 Hail Marys
+      // Alleluia is combined with Glory Be (not a separate bead)
+      
     } else {
-      // Standard form
+      // STANDARD FORM: Traditional preparatory prayers
+      
       beads.push({
         id: 'opening-sign-of-cross',
         type: 'sign-of-cross',
@@ -76,71 +93,71 @@ export class RosaryService {
         decadeNumber: 0,
         audioFile: 'assets/audio/rosary/sign-of-cross.m4a'
       });
-    }
 
-    // Apostles' Creed
-    beads.push({
-      id: 'opening-apostles-creed',
-      type: 'apostles-creed',
-      title: 'Apostles\' Creed',
-      text: PRAYER_TEXTS.apostlesCreed,
-      order: order++,
-      decadeNumber: 0,
+      // Apostles' Creed (ONLY in Standard form)
+      beads.push({
+        id: 'opening-apostles-creed',
+        type: 'apostles-creed',
+        title: 'Apostles\' Creed',
+        text: PRAYER_TEXTS.apostlesCreed,
+        order: order++,
+        decadeNumber: 0,
         audioFile: 'assets/audio/rosary/apostles-creed.m4a'
-    });
+      });
 
-    // Our Father
-    beads.push({
-      id: 'opening-our-father',
-      type: 'our-father',
-      title: 'Our Father',
-      text: PRAYER_TEXTS.ourFather,
-      order: order++,
-      decadeNumber: 0,
-      audioFile: 'assets/audio/rosary/our-father.mp4'
-    });
+      // Our Father (ONLY in Standard form opening)
+      beads.push({
+        id: 'opening-our-father',
+        type: 'our-father',
+        title: 'Our Father',
+        text: PRAYER_TEXTS.ourFather,
+        order: order++,
+        decadeNumber: 0,
+        audioFile: 'assets/audio/rosary/our-father.m4a'
+      });
 
-    // Three Hail Marys
-    beads.push({
-      id: 'opening-hail-mary-faith',
-      type: 'hail-mary',
-      title: 'Hail Mary (Faith)',
-      text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryFaith}`,
-      order: order++,
-      decadeNumber: 0,
-      audioFile: 'assets/audio/rosary/hail-mary.mp4'
-    });
+      // Three Hail Marys (ONLY in Standard form)
+      beads.push({
+        id: 'opening-hail-mary-faith',
+        type: 'hail-mary',
+        title: 'Hail Mary (Faith)',
+        text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryFaith}`,
+        order: order++,
+        decadeNumber: 0,
+        audioFile: 'assets/audio/rosary/hail-mary-1.m4a'
+      });
 
-    beads.push({
-      id: 'opening-hail-mary-hope',
-      type: 'hail-mary',
-      title: 'Hail Mary (Hope)',
-      text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryHope}`,
-      order: order++,
-      decadeNumber: 0,
-      audioFile: 'assets/audio/rosary/hail-mary.mp4'
-    });
+      beads.push({
+        id: 'opening-hail-mary-hope',
+        type: 'hail-mary',
+        title: 'Hail Mary (Hope)',
+        text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryHope}`,
+        order: order++,
+        decadeNumber: 0,
+        audioFile: 'assets/audio/rosary/hail-mary-2.m4a'
+      });
 
-    beads.push({
-      id: 'opening-hail-mary-charity',
-      type: 'hail-mary',
-      title: 'Hail Mary (Charity)',
-      text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryCharity}`,
-      order: order++,
-      decadeNumber: 0,
-      audioFile: 'assets/audio/rosary/hail-mary.mp4'
-    });
+      beads.push({
+        id: 'opening-hail-mary-charity',
+        type: 'hail-mary',
+        title: 'Hail Mary (Charity)',
+        text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryCharity}`,
+        order: order++,
+        decadeNumber: 0,
+        audioFile: 'assets/audio/rosary/hail-mary-3.m4a'
+      });
 
-    // Glory Be after opening
-    beads.push({
-      id: 'opening-glory-be-final',
-      type: 'glory-be',
-      title: 'Glory Be',
-      text: PRAYER_TEXTS.gloryBe,
-      order: order++,
-      decadeNumber: 0,
-      audioFile: 'assets/audio/rosary/glory-be.mp4'
-    });
+      // Glory Be after opening (ONLY in Standard form)
+      beads.push({
+        id: 'opening-glory-be-final',
+        type: 'glory-be',
+        title: 'Glory Be',
+        text: PRAYER_TEXTS.gloryBe,
+        order: order++,
+        decadeNumber: 0,
+        audioFile: 'assets/audio/rosary/glory-be.m4a'
+      });
+    }
 
     // Get the mystery data
     const mysteryData = ROSARY_MYSTERIES.find(m => m.name === mysterySet);

@@ -56,26 +56,41 @@ export class RosaryAudioDownloadService {
       'assets/audio/rosary/sign-of-cross.m4a': 'sign-of-the-cross.m4a',
       'assets/audio/rosary/apostles-creed.m4a': 'apostles-creed.m4a',
       'assets/audio/rosary/our-father.m4a': 'our-father.m4a',
-      'assets/audio/rosary/hail-mary.m4a': 'hail-mary-1.m4a', // Maps to hail-mary-1
+      'assets/audio/rosary/hail-mary-1.m4a': 'hail-mary-1.m4a',
+      'assets/audio/rosary/hail-mary-2.m4a': 'hail-mary-2.m4a',
+      'assets/audio/rosary/hail-mary-3.m4a': 'hail-mary-3.m4a',
       'assets/audio/rosary/glory-be.m4a': 'glory-be.m4a',
       'assets/audio/rosary/fatima-prayer.m4a': 'fatima-prayer.m4a',
       'assets/audio/rosary/final-prayer.m4a': 'final-prayer.m4a',
       'assets/audio/rosary/dominican-opening-1.m4a': 'dominican-opening-1.m4a',
       'assets/audio/rosary/dominican-opening-2.m4a': 'dominican-opening-2.m4a',
       'assets/audio/rosary/dominican-opening-3.m4a': 'dominican-opening-3.m4a',
-      'assets/audio/rosary/mysteries/joyful-mysteries/decade-1.m4a': 'joyful-decade-1.m4a',
+      'assets/audio/rosary/dominican-opening-glory-be.m4a': 'dominican-opening-glory-be.m4a',
+      'assets/audio/rosary/alleluia.m4a': 'alleluia.m4a',
     };
 
     const mappedFile = pathMappings[fileName];
     
-    if (!mappedFile) {
-      // Fallback: try to construct path from fileName
-      const baseName = fileName.replace('assets/audio/rosary/', '').replace(/\//g, '_');
-      console.warn(`No mapping found for ${fileName}, using fallback: ${baseName}`);
-      return `${voice}/${baseName}`;
+    if (mappedFile) {
+      return `${voice}/${mappedFile}`;
     }
-
-    return `${voice}/${mappedFile}`;
+    
+    // Smart fallback for mystery files (both full and short versions)
+    // Pattern: assets/audio/rosary/mysteries/{mystery-set}/decade-{number}.m4a
+    // OR: assets/audio/rosary/mysteries/{mystery-set}/decade-{number}-short.m4a
+    const mysteryMatch = fileName.match(/mysteries\/(.+?)-mysteries\/decade-(\d+)(-short)?\.m4a/);
+    if (mysteryMatch) {
+      const [, mysteryType, decadeNumber, shortSuffix] = mysteryMatch;
+      const shortPart = shortSuffix || '';
+      const supabaseFileName = `${mysteryType}-decade-${decadeNumber}${shortPart}.m4a`;
+      console.log(`[Audio Path] Mystery file detected: ${fileName} -> ${voice}/${supabaseFileName}`);
+      return `${voice}/${supabaseFileName}`;
+    }
+    
+    // Generic fallback for any other files
+    const baseName = fileName.replace('assets/audio/rosary/', '').replace(/\/mysteries\/[^/]+\//g, '').replace(/\//g, '-');
+    console.warn(`No specific mapping found for ${fileName}, using generic fallback: ${baseName}`);
+    return `${voice}/${baseName}`;
   }
 
   /**

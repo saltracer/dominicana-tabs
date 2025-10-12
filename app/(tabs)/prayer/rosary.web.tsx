@@ -99,12 +99,14 @@ export default function RosaryWebScreen() {
 
   // Generate beads when form or mystery changes
   useEffect(() => {
-    const generatedBeads = rosaryService.generateRosaryBeads(rosaryForm, selectedMystery);
+    // Check if current liturgical season is Lent or Holy Week
+    const isLentSeason = liturgicalDay?.season.name === 'Lent' || liturgicalDay?.season.name === 'Holy Week';
+    const generatedBeads = rosaryService.generateRosaryBeads(rosaryForm, selectedMystery, isLentSeason);
     setBeads(generatedBeads);
     if (generatedBeads.length > 0 && !currentBeadId) {
       setCurrentBeadId(generatedBeads[0].id);
     }
-  }, [rosaryForm, selectedMystery]);
+  }, [rosaryForm, selectedMystery, liturgicalDay]);
 
   // Load Bible verse for current mystery announcement (only if meditations enabled)
   useEffect(() => {
@@ -122,23 +124,51 @@ export default function RosaryWebScreen() {
 
     const currentBead = beads.find(b => b.id === currentBeadId);
     
-    // Skip meditation audio if meditations are disabled
-    const shouldSkipAudio = currentBead?.type === 'mystery-announcement' && !showMysteryMeditations;
-    
-    if (currentBead && currentBead.audioFile && audioSettings.isEnabled && !shouldSkipAudio) {
-      console.log('[Rosary Audio] Playing:', currentBead.audioFile, 'Voice:', rosaryVoice);
+    if (currentBead && currentBead.audioFile && audioSettings.isEnabled) {
+      // Use short audio file for mystery announcements when meditations are disabled
+      let audioFile = currentBead.audioFile;
+      if (currentBead.type === 'mystery-announcement' && !showMysteryMeditations) {
+        // Replace the audio file with the short version
+        audioFile = audioFile.replace('.m4a', '-short.m4a');
+      }
+      
+      console.log('[Rosary Audio Web] Playing:', audioFile, 'Voice:', rosaryVoice, 'Short:', !showMysteryMeditations && currentBead.type === 'mystery-announcement');
       setIsAudioPlaying(true);
       
-      rosaryAudioService.playPrayer(currentBead.audioFile, audioSettings, rosaryVoice, () => {
-        console.log('[Rosary Audio] Finished playing');
-        setIsAudioPlaying(false);
+      // Special handling for Dominican opening Glory Be + Alleluia
+      const isDominicanGloryBe = currentBead.id === 'dominican-opening-glory-be';
+      // Check if it's Lent using the liturgical calendar (not system date)
+      const isLentSeason = liturgicalDay?.season.name === 'Lent' || liturgicalDay?.season.name === 'Holy Week';
+      const shouldPlayAlleluia = isDominicanGloryBe && !isLentSeason;
+      
+      rosaryAudioService.playPrayer(audioFile, audioSettings, rosaryVoice, () => {
+        console.log('[Rosary Audio Web] Finished playing');
         
-        // Auto-advance when audio finishes (if audio is enabled)
-        const hasNextBead = rosaryService.getNextBead(beads, currentBeadId);
-        if (hasNextBead) {
-          setTimeout(() => {
-            nextBead();
-          }, audioSettings.pauseDuration * 1000);
+        // If this is the Dominican opening Glory Be and not Lent, play Alleluia next
+        if (shouldPlayAlleluia) {
+          console.log('[Rosary Audio Web] Playing Alleluia after Glory Be');
+          rosaryAudioService.playPrayer('assets/audio/rosary/alleluia.m4a', audioSettings, rosaryVoice, () => {
+            console.log('[Rosary Audio Web] Alleluia finished');
+            setIsAudioPlaying(false);
+            
+            // Auto-advance after both prayers complete
+            const hasNextBead = rosaryService.getNextBead(beads, currentBeadId);
+            if (hasNextBead) {
+              setTimeout(() => {
+                nextBead();
+              }, audioSettings.pauseDuration * 1000);
+            }
+          });
+        } else {
+          setIsAudioPlaying(false);
+          
+          // Auto-advance when audio finishes (if audio is enabled)
+          const hasNextBead = rosaryService.getNextBead(beads, currentBeadId);
+          if (hasNextBead) {
+            setTimeout(() => {
+              nextBead();
+            }, audioSettings.pauseDuration * 1000);
+          }
         }
       });
     } else {
