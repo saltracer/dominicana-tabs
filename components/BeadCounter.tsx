@@ -104,72 +104,94 @@ export default function BeadCounter({
       {renderChainConnector(0)}
 
       {/* Decades 1-5 */}
-      {[1, 2, 3, 4, 5].map(decadeNum => (
-        <View key={decadeNum} style={styles.section}>
-          <View style={styles.beadGroup}>
-            {beadsBySection[decadeNum]?.map((bead, index) => {
-              // Skip Glory Be and Fatima beads - they're shown on the chain
-              if (isChainPrayer(bead)) {
-                return null;
-              }
-              
-              // For the mystery announcement (first bead), show the decade number instead
-              if (index === 0 && bead.type === 'mystery-announcement') {
-                const isActive = bead.id === currentBeadId;
-                const isCompleted = completedBeadIds.includes(bead.id);
+      {[1, 2, 3, 4, 5].map(decadeNum => {
+        // Find mystery announcement and Our Father for this decade
+        const decadeBeads = beadsBySection[decadeNum] || [];
+        const mysteryBead = decadeBeads.find(b => b.type === 'mystery-announcement');
+        const ourFatherBead = decadeBeads.find(b => b.type === 'our-father');
+        
+        // Check if either mystery or Our Father is active (they're the same physical bead)
+        const mysteryOrOurFatherActive = mysteryBead?.id === currentBeadId || ourFatherBead?.id === currentBeadId;
+        const mysteryOrOurFatherCompleted = (mysteryBead && completedBeadIds.includes(mysteryBead.id)) || 
+                                            (ourFatherBead && completedBeadIds.includes(ourFatherBead.id));
+        
+        return (
+          <View key={decadeNum} style={styles.section}>
+            <View style={styles.beadGroup}>
+              {decadeBeads.map((bead, index) => {
+                // Skip Glory Be and Fatima beads - they're shown on the chain
+                if (isChainPrayer(bead)) {
+                  return null;
+                }
                 
-                return (
-                  <TouchableOpacity
-                    key={bead.id}
-                    onPress={() => onBeadPress(bead.id)}
-                    style={[
-                      styles.decadeNumberBead,
-                      {
-                        backgroundColor: isActive
-                          ? Colors[colorScheme ?? 'light'].primary
-                          : isCompleted
-                          ? Colors[colorScheme ?? 'light'].dominicanGold
-                          : Colors[colorScheme ?? 'light'].card,
-                        borderColor: isActive || isCompleted
-                          ? 'transparent'
-                          : Colors[colorScheme ?? 'light'].border,
-                      },
-                    ]}
-                    activeOpacity={0.7}
-                  >
-                    <Text
+                // Skip mystery announcement - it shares the same bead as Our Father
+                if (bead.type === 'mystery-announcement') {
+                  return null;
+                }
+                
+                // For Our Father bead (decade opening), show decade number badge
+                // This bead represents BOTH the mystery announcement AND the Our Father prayer
+                if (bead.type === 'our-father' && bead.beadNumber === 0) {
+                  return (
+                    <TouchableOpacity
+                      key={bead.id}
+                      onPress={() => {
+                        // Navigate to mystery announcement if that hasn't been completed yet
+                        if (mysteryBead && !completedBeadIds.includes(mysteryBead.id)) {
+                          onBeadPress(mysteryBead.id);
+                        } else {
+                          onBeadPress(bead.id);
+                        }
+                      }}
                       style={[
-                        styles.decadeNumberText,
+                        styles.decadeNumberBead,
                         {
-                          color: isActive || isCompleted
-                            ? Colors[colorScheme ?? 'light'].dominicanWhite
-                            : Colors[colorScheme ?? 'light'].primary,
+                          backgroundColor: mysteryOrOurFatherActive
+                            ? Colors[colorScheme ?? 'light'].primary
+                            : mysteryOrOurFatherCompleted
+                            ? Colors[colorScheme ?? 'light'].dominicanGold
+                            : Colors[colorScheme ?? 'light'].card,
+                          borderColor: mysteryOrOurFatherActive || mysteryOrOurFatherCompleted
+                            ? 'transparent'
+                            : Colors[colorScheme ?? 'light'].border,
                         },
                       ]}
+                      activeOpacity={0.7}
                     >
-                      {decadeNum}
-                    </Text>
-                  </TouchableOpacity>
+                      <Text
+                        style={[
+                          styles.decadeNumberText,
+                          {
+                            color: mysteryOrOurFatherActive || mysteryOrOurFatherCompleted
+                              ? Colors[colorScheme ?? 'light'].dominicanWhite
+                              : Colors[colorScheme ?? 'light'].primary,
+                          },
+                        ]}
+                      >
+                        {decadeNum}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }
+                
+                // For all other beads (Hail Marys), show normal bead
+                return (
+                  <RosaryBead
+                    key={bead.id}
+                    type={bead.type}
+                    isActive={bead.id === currentBeadId}
+                    isCompleted={completedBeadIds.includes(bead.id)}
+                    onPress={() => onBeadPress(bead.id)}
+                    size="small"
+                  />
                 );
-              }
-              
-              // For all other beads (Our Father, Hail Marys), show normal bead
-              return (
-                <RosaryBead
-                  key={bead.id}
-                  type={bead.type}
-                  isActive={bead.id === currentBeadId}
-                  isCompleted={completedBeadIds.includes(bead.id)}
-                  onPress={() => onBeadPress(bead.id)}
-                  size="small"
-                />
-              );
-            })}
+              })}
+            </View>
+            {/* Chain connector between decades - highlights when Glory Be/Fatima is active */}
+            {decadeNum < 5 && renderChainConnector(decadeNum)}
           </View>
-          {/* Chain connector between decades - highlights when Glory Be/Fatima is active */}
-          {decadeNum < 5 && renderChainConnector(decadeNum)}
-        </View>
-      ))}
+        );
+      })}
 
       {/* Connector line */}
       <View style={[styles.connector, { backgroundColor: Colors[colorScheme ?? 'light'].border }]} />
