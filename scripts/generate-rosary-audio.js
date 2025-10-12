@@ -91,19 +91,23 @@ async function loadPrayerData() {
     MYSTERIES = {
       joyful: ROSARY_MYSTERIES[0].mysteries.map(m => ({
         name: m.name,
-        audio_text: m.audio_text
+        audio_text: m.audio_text,
+        shortAudio_text: m.shortAudio_text
       })),
       sorrowful: ROSARY_MYSTERIES[1].mysteries.map(m => ({
         name: m.name,
-        audio_text: m.audio_text
+        audio_text: m.audio_text,
+        shortAudio_text: m.shortAudio_text
       })),
       glorious: ROSARY_MYSTERIES[2].mysteries.map(m => ({
         name: m.name,
-        audio_text: m.audio_text
+        audio_text: m.audio_text,
+        shortAudio_text: m.shortAudio_text
       })),
       luminous: ROSARY_MYSTERIES[3].mysteries.map(m => ({
         name: m.name,
-        audio_text: m.audio_text
+        audio_text: m.audio_text,
+        shortAudio_text: m.shortAudio_text
       }))
     };
     
@@ -227,7 +231,7 @@ class RosaryAudioGenerator {
    * Generate audio for a mystery decade announcement
    */
   async generateMysteryDecade(voiceName, mysteryType, decadeNumber, options = {}) {
-    const { overwrite = false, delay = 1000 } = options;
+    const { overwrite = false, delay = 1000, short = false } = options;
 
     // Validate inputs
     if (!VOICES[voiceName]) {
@@ -242,8 +246,12 @@ class RosaryAudioGenerator {
 
     const mystery = MYSTERIES[mysteryType][decadeNumber - 1];
     
-    // Use the pre-written audio_text for better quality narration
-    const text = mystery.audio_text;
+    // Use the appropriate text version
+    const text = short ? mystery.shortAudio_text : mystery.audio_text;
+    
+    if (!text) {
+      throw new Error(`Missing ${short ? 'short' : 'full'} audio text for ${mysteryType} decade ${decadeNumber}`);
+    }
 
     // Setup output
     const voiceDir = path.join(this.outputDir, voiceName);
@@ -251,7 +259,9 @@ class RosaryAudioGenerator {
       fs.mkdirSync(voiceDir, { recursive: true });
     }
 
-    const fileName = `${mysteryType}-decade-${decadeNumber}.m4a`;
+    const fileName = short 
+      ? `${mysteryType}-decade-${decadeNumber}-short.m4a`
+      : `${mysteryType}-decade-${decadeNumber}.m4a`;
     const outputFile = path.join(voiceDir, fileName);
 
     // Check if file exists
@@ -260,7 +270,7 @@ class RosaryAudioGenerator {
       return { success: true, skipped: true, file: outputFile };
     }
 
-    console.log(`🎙️  Generating: ${voiceName}/${fileName}...`);
+    console.log(`🎙️  Generating: ${voiceName}/${fileName}${short ? ' (short)' : ''}...`);
 
     try {
       // Generate audio
@@ -278,7 +288,10 @@ class RosaryAudioGenerator {
       });
 
       // Save temporary MP3
-      const tempMp3 = path.join(voiceDir, `${mysteryType}-decade-${decadeNumber}.mp3`);
+      const tempMp3File = short 
+        ? `${mysteryType}-decade-${decadeNumber}-short.mp3`
+        : `${mysteryType}-decade-${decadeNumber}.mp3`;
+      const tempMp3 = path.join(voiceDir, tempMp3File);
       const chunks = [];
       
       for await (const chunk of audio) {
@@ -339,7 +352,8 @@ class RosaryAudioGenerator {
    * Generate all mysteries for a voice
    */
   async generateAllMysteries(voiceName, options = {}) {
-    console.log(`\n📿 Generating all mysteries for ${voiceName}...\n`);
+    const short = options.short || false;
+    console.log(`\n📿 Generating all ${short ? 'short ' : ''}mysteries for ${voiceName}...\n`);
     
     const results = [];
     const mysteryTypes = ['joyful', 'sorrowful', 'glorious', 'luminous'];
@@ -347,11 +361,18 @@ class RosaryAudioGenerator {
     for (const mysteryType of mysteryTypes) {
       for (let decade = 1; decade <= 5; decade++) {
         const result = await this.generateMysteryDecade(voiceName, mysteryType, decade, options);
-        results.push({ mystery: `${mysteryType}-${decade}`, ...result });
+        results.push({ mystery: `${mysteryType}-${decade}${short ? '-short' : ''}`, ...result });
       }
     }
 
     return results;
+  }
+
+  /**
+   * Generate all short mysteries for a voice
+   */
+  async generateAllShortMysteries(voiceName, options = {}) {
+    return this.generateAllMysteries(voiceName, { ...options, short: true });
   }
 
   /**
@@ -362,8 +383,9 @@ class RosaryAudioGenerator {
     
     const prayerResults = await this.generateAllPrayers(voiceName, options);
     const mysteryResults = await this.generateAllMysteries(voiceName, options);
+    const shortMysteryResults = await this.generateAllShortMysteries(voiceName, options);
     
-    return [...prayerResults, ...mysteryResults];
+    return [...prayerResults, ...mysteryResults, ...shortMysteryResults];
   }
 
   /**
@@ -437,8 +459,10 @@ async function main() {
     decade: null,
     allPrayers: false,
     allMysteries: false,
+    allShortMysteries: false,
     allVoices: false,
     complete: false,
+    short: false,
     overwrite: false,
     delay: 1000
   };
@@ -462,6 +486,12 @@ async function main() {
         break;
       case '--all-mysteries':
         options.allMysteries = true;
+        break;
+      case '--all-short-mysteries':
+        options.allShortMysteries = true;
+        break;
+      case '--short':
+        options.short = true;
         break;
       case '--all-voices':
         options.allVoices = true;
@@ -535,6 +565,12 @@ async function main() {
     } else if (options.allMysteries) {
       results = await generator.generateAllMysteries(options.voice, {
         overwrite: options.overwrite,
+        delay: options.delay,
+        short: options.short
+      });
+    } else if (options.allShortMysteries) {
+      results = await generator.generateAllShortMysteries(options.voice, {
+        overwrite: options.overwrite,
         delay: options.delay
       });
     } else if (options.prayer) {
@@ -547,7 +583,7 @@ async function main() {
         options.voice,
         options.mystery,
         options.decade,
-        { overwrite: options.overwrite, delay: options.delay }
+        { overwrite: options.overwrite, delay: options.delay, short: options.short }
       )];
     } else {
       console.error('❌ Error: Please specify what to generate');
@@ -577,8 +613,10 @@ Options:
   --mystery <type>        Mystery type (joyful, sorrowful, glorious, luminous)
   --decade <number>       Decade number (1-5, use with --mystery)
   --all-prayers           Generate all core prayers
-  --all-mysteries         Generate all mystery decades
-  --complete              Generate all prayers and mysteries
+  --all-mysteries         Generate all mystery decades (full version)
+  --all-short-mysteries   Generate all short mystery decades
+  --short                 Generate short version (use with --mystery or --all-mysteries)
+  --complete              Generate all prayers, full mysteries, and short mysteries
   --all-voices            Generate for all voices
   --overwrite             Overwrite existing files
   --delay <ms>            Delay between requests (default: 1000ms)
@@ -588,13 +626,22 @@ Examples:
   # Generate a single prayer
   node scripts/generate-rosary-audio.js --voice alphonsus --prayer sign-of-the-cross
 
-  # Generate a specific mystery decade
+  # Generate a specific mystery decade (full version)
   node scripts/generate-rosary-audio.js --voice catherine --mystery joyful --decade 1
+
+  # Generate a specific mystery decade (short version)
+  node scripts/generate-rosary-audio.js --voice catherine --mystery joyful --decade 1 --short
 
   # Generate all prayers for one voice
   node scripts/generate-rosary-audio.js --voice teresa --all-prayers
 
-  # Generate everything for one voice
+  # Generate all full mysteries
+  node scripts/generate-rosary-audio.js --voice alphonsus --all-mysteries
+
+  # Generate all short mysteries
+  node scripts/generate-rosary-audio.js --voice alphonsus --all-short-mysteries
+
+  # Generate everything (prayers + full mysteries + short mysteries) for one voice
   node scripts/generate-rosary-audio.js --voice alphonsus --complete
 
   # Generate everything for all voices

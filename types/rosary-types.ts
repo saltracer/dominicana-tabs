@@ -21,8 +21,10 @@ export interface RosaryBead {
 export interface Mystery {
   name: string;
   bibleReference: string; // e.g., "Luke 1:26-38"
-  meditation: string; // Text displayed in the app
-  audio_text?: string; // Text used for audio generation (more conversational)
+  meditation: string; // Full meditation text displayed in the app
+  audio_text?: string; // Full text used for audio generation (more conversational)
+  shortMeditation: string; // Brief meditation text when meditations are disabled
+  shortAudio_text?: string; // Brief audio text when meditations are disabled
 }
 
 export interface MysteryData {

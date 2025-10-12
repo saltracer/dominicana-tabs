@@ -177,9 +177,7 @@ export default function RosaryScreen() {
     const mysteryData = ROSARY_MYSTERIES.find(m => m.name === selectedMystery);
     if (mysteryData && mysteryData.mysteries[bead.decadeNumber - 1]) {
       const mystery = mysteryData.mysteries[bead.decadeNumber - 1];
-      // Extract first sentence from meditation as brief description
-      const firstSentence = mystery.meditation.split('.')[0] + '.';
-      return `${mystery.name}\n\n${firstSentence}`;
+      return `${mystery.name}\n\n${mystery.shortMeditation}`;
     }
     
     return bead.title;
