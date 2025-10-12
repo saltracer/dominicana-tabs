@@ -56,6 +56,7 @@ export class RosaryAudioDownloadService {
       'assets/audio/rosary/sign-of-cross.m4a': 'sign-of-the-cross.m4a',
       'assets/audio/rosary/apostles-creed.m4a': 'apostles-creed.m4a',
       'assets/audio/rosary/our-father.m4a': 'our-father.m4a',
+      'assets/audio/rosary/hail-mary.m4a': 'hail-mary-1.m4a', // Decade Hail Marys use hail-mary-1
       'assets/audio/rosary/hail-mary-1.m4a': 'hail-mary-1.m4a',
       'assets/audio/rosary/hail-mary-2.m4a': 'hail-mary-2.m4a',
       'assets/audio/rosary/hail-mary-3.m4a': 'hail-mary-3.m4a',

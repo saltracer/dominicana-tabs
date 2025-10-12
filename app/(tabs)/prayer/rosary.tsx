@@ -13,7 +13,9 @@ import {
   TouchableOpacity,
   Switch,
   Dimensions,
+  Alert,
 } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
@@ -274,8 +276,24 @@ export default function RosaryScreen() {
   };
 
   const handleAudioToggle = async () => {
+    // Check if user is authenticated before enabling audio
     if (!audioSettings.isEnabled) {
-      // Enable audio
+      if (!user) {
+        Alert.alert(
+          'Sign In Required',
+          'You need to sign in to use audio features. Audio files are stored in your account.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Sign In', 
+              onPress: () => router.push('/auth')
+            }
+          ]
+        );
+        return;
+      }
+      
+      // Enable audio (user is authenticated)
       setAudioSettings(prev => ({ ...prev, isEnabled: true }));
       setIsAudioPaused(false);
     } else if (isAudioPlaying && !isAudioPaused) {

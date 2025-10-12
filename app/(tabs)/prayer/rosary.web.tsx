@@ -12,6 +12,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -308,8 +309,29 @@ export default function RosaryWebScreen() {
   };
 
   const handleAudioToggle = async () => {
+    // Check if user is authenticated before enabling audio
     if (!audioSettings.isEnabled) {
-      // Enable audio
+      if (!user) {
+        Alert.alert(
+          'Sign In Required',
+          'You need to sign in to use audio features. Audio files are stored in your account.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Sign In', 
+              onPress: () => {
+                // On web, navigate to auth page
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/auth';
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+      
+      // Enable audio (user is authenticated)
       setAudioSettings(prev => ({ ...prev, isEnabled: true }));
       setIsAudioPaused(false);
     } else if (isAudioPlaying && !isAudioPaused) {
