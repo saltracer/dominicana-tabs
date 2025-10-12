@@ -122,7 +122,8 @@ CREATE TABLE IF NOT EXISTS user_liturgy_preferences (
   tts_enabled BOOLEAN NOT NULL DEFAULT true,
   tts_voice_id TEXT NOT NULL DEFAULT '',
   tts_speed INTEGER NOT NULL DEFAULT 2,
-  rosary_voice TEXT DEFAULT 'alphonsus' -- Voice selection for rosary audio playback
+  rosary_voice TEXT DEFAULT 'alphonsus', -- Voice selection for rosary audio playback
+  show_mystery_meditations BOOLEAN NOT NULL DEFAULT true -- Show or hide mystery meditations in rosary
 );
 
 -- Add rosary_voice column to existing tables (migration)
@@ -136,6 +137,20 @@ BEGIN
   ) THEN
     ALTER TABLE user_liturgy_preferences 
     ADD COLUMN rosary_voice TEXT DEFAULT 'alphonsus';
+  END IF;
+END $$;
+
+-- Add show_mystery_meditations column to existing tables (migration)
+-- Run this if the table already exists without this column
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'user_liturgy_preferences' 
+    AND column_name = 'show_mystery_meditations'
+  ) THEN
+    ALTER TABLE user_liturgy_preferences 
+    ADD COLUMN show_mystery_meditations BOOLEAN NOT NULL DEFAULT true;
   END IF;
 END $$;
 

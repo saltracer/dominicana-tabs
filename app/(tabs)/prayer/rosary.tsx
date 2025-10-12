@@ -3,7 +3,8 @@
  * Individual bead navigation with Bible verses and meditations
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -47,6 +48,7 @@ export default function RosaryScreen() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [isAudioPaused, setIsAudioPaused] = useState(false);
   const [rosaryVoice, setRosaryVoice] = useState<string>('alphonsus');
+  const [showMysteryMeditations, setShowMysteryMeditations] = useState<boolean>(true);
   
   // Audio state
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
@@ -69,22 +71,26 @@ export default function RosaryScreen() {
     }
   }, [rosaryForm, selectedMystery]);
 
-  // Load Bible verse for current mystery announcement
+  // Load Bible verse for current mystery announcement (only if meditations enabled)
   useEffect(() => {
     const currentBead = beads.find(b => b.id === currentBeadId);
-    if (currentBead && currentBead.type === 'mystery-announcement' && currentBead.decadeNumber) {
+    if (currentBead && currentBead.type === 'mystery-announcement' && currentBead.decadeNumber && showMysteryMeditations) {
       loadBibleVerse(currentBead.decadeNumber);
     } else {
       setBibleVerse('');
     }
-  }, [currentBeadId, beads, selectedMystery]);
+  }, [currentBeadId, beads, selectedMystery, showMysteryMeditations]);
 
   // Play audio when bead changes
   useEffect(() => {
     if (!isPraying || !currentBeadId || beads.length === 0) return;
 
     const currentBead = beads.find(b => b.id === currentBeadId);
-    if (currentBead && currentBead.audioFile && audioSettings.isEnabled) {
+    
+    // Skip meditation audio if meditations are disabled
+    const shouldSkipAudio = currentBead?.type === 'mystery-announcement' && !showMysteryMeditations;
+    
+    if (currentBead && currentBead.audioFile && audioSettings.isEnabled && !shouldSkipAudio) {
       console.log('[Rosary Audio] Playing:', currentBead.audioFile, 'Voice:', rosaryVoice);
       setIsAudioPlaying(true);
       
@@ -108,7 +114,7 @@ export default function RosaryScreen() {
     return () => {
       // Don't stop audio on unmount, let it finish playing
     };
-  }, [currentBeadId, audioSettings.isEnabled, isPraying]);
+  }, [currentBeadId, audioSettings.isEnabled, isPraying, showMysteryMeditations]);
 
   // Initialize audio when starting rosary
   useEffect(() => {
@@ -120,23 +126,28 @@ export default function RosaryScreen() {
     }
   }, [isPraying]);
 
-  // Load user's rosary voice preference
-  useEffect(() => {
-    const loadVoicePreference = async () => {
-      if (user?.id) {
-        try {
-          const prefs = await UserLiturgyPreferencesService.getUserPreferences(user.id);
-          if (prefs?.rosary_voice) {
-            setRosaryVoice(prefs.rosary_voice);
-          }
-        } catch (error) {
-          console.error('Error loading rosary voice preference:', error);
+  // Load user's rosary preferences
+  const loadUserPreferences = useCallback(async () => {
+    if (user?.id) {
+      try {
+        const prefs = await UserLiturgyPreferencesService.getUserPreferences(user.id);
+        if (prefs?.rosary_voice) {
+          setRosaryVoice(prefs.rosary_voice);
         }
+        // Load mystery meditations preference (default to true if not set)
+        setShowMysteryMeditations(prefs?.show_mystery_meditations ?? true);
+      } catch (error) {
+        console.error('Error loading rosary preferences:', error);
       }
-    };
-
-    loadVoicePreference();
+    }
   }, [user?.id]);
+
+  // Load preferences when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadUserPreferences();
+    }, [loadUserPreferences])
+  );
 
   const loadBibleVerse = async (decadeNumber: number) => {
     setLoadingVerse(true);
@@ -158,6 +169,20 @@ export default function RosaryScreen() {
     } finally {
       setLoadingVerse(false);
     }
+  };
+
+  const getBriefMysteryText = (bead: RosaryBead): string => {
+    if (!bead.decadeNumber) return bead.title;
+    
+    const mysteryData = ROSARY_MYSTERIES.find(m => m.name === selectedMystery);
+    if (mysteryData && mysteryData.mysteries[bead.decadeNumber - 1]) {
+      const mystery = mysteryData.mysteries[bead.decadeNumber - 1];
+      // Extract first sentence from meditation as brief description
+      const firstSentence = mystery.meditation.split('.')[0] + '.';
+      return `${mystery.name}\n\n${firstSentence}`;
+    }
+    
+    return bead.title;
   };
 
   const startRosary = () => {
@@ -430,9 +455,11 @@ export default function RosaryScreen() {
                   </View>
                 )}
                 <Text style={[styles.prayerText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  {currentBead.text}
+                  {currentBead.type === 'mystery-announcement' && !showMysteryMeditations
+                    ? getBriefMysteryText(currentBead)
+                    : currentBead.text}
                 </Text>
-                {currentBead.type === 'mystery-announcement' && bibleVerse !== '' && (
+                {currentBead.type === 'mystery-announcement' && showMysteryMeditations && bibleVerse !== '' && (
                   <View style={[styles.bibleVerseCard, { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }]}>
                     <View style={styles.bibleVerseHeader}>
                       <Ionicons name="book-outline" size={20} color={Colors[colorScheme ?? 'light'].primary} />
@@ -445,7 +472,7 @@ export default function RosaryScreen() {
                     </Text>
                   </View>
                 )}
-                {loadingVerse === true && (
+                {showMysteryMeditations && loadingVerse === true && (
                   <Text style={[styles.loadingVerseText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                     Loading scripture...
                   </Text>

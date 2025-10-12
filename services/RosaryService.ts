@@ -157,7 +157,7 @@ export class RosaryService {
         id: `decade-${decade}-mystery`,
         type: 'mystery-announcement',
         title: mystery.name,
-        text: `The ${mystery.name}\n\n${mystery.meditation}\n\nScripture: ${mystery.bibleReference}`,
+        text: `${mystery.name}\n\n${mystery.meditation}\n\nScripture: ${mystery.bibleReference}`,
         order: order++,
         decadeNumber: decade,
         beadNumber: 0,

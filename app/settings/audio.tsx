@@ -130,6 +130,16 @@ export default function AudioSettingsScreen() {
           
           <RosaryVoiceSelector />
 
+          {liturgyPreferences && (
+            <LiturgyPreferencesToggle
+              label="Mystery Meditations"
+              description="Show mystery meditations during rosary prayer"
+              value={liturgyPreferences.show_mystery_meditations ?? true}
+              onValueChange={(value) => updateLiturgyPreference('show_mystery_meditations', value)}
+              icon="book"
+            />
+          )}
+
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Chant Notation
           </Text>
