@@ -35,6 +35,46 @@ export default function BeadCounter({
     beadsBySection[section].push(bead);
   });
 
+  // Helper to check if current prayer is on the chain (Glory Be or Fatima)
+  const isChainPrayer = (bead: RosaryBeadType) => {
+    return bead.type === 'glory-be' || bead.type === 'fatima';
+  };
+
+  // Helper to render chain connector with optional highlight for chain prayers
+  // Glory Be and Fatima Prayer are said on the chain (not on beads)
+  const renderChainConnector = (decadeNum?: number) => {
+    let isActive = false;
+    let chainBead: RosaryBeadType | undefined;
+    
+    if (decadeNum) {
+      // Check if Glory Be or Fatima prayer is active for this decade
+      const decadeBeads = beadsBySection[decadeNum] || [];
+      chainBead = decadeBeads.find(b => isChainPrayer(b) && b.id === currentBeadId);
+      isActive = !!chainBead;
+    }
+    
+    return (
+      <TouchableOpacity
+        onPress={() => chainBead && onBeadPress(chainBead.id)}
+        disabled={!chainBead}
+        activeOpacity={0.7}
+      >
+        <View 
+          style={[
+            styles.connector, 
+            { 
+              backgroundColor: isActive 
+                ? Colors[colorScheme ?? 'light'].primary 
+                : Colors[colorScheme ?? 'light'].border,
+              width: isActive ? 4 : 2,
+              height: isActive ? 20 : 12, // Larger when active to show it's the current prayer
+            }
+          ]} 
+        />
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
@@ -47,7 +87,7 @@ export default function BeadCounter({
           Opening
         </Text>
         <View style={styles.beadGroup}>
-          {beadsBySection[0]?.map(bead => (
+          {beadsBySection[0]?.filter(bead => !isChainPrayer(bead)).map(bead => (
             <RosaryBead
               key={bead.id}
               type={bead.type}
@@ -60,14 +100,19 @@ export default function BeadCounter({
         </View>
       </View>
 
-      {/* Connector line */}
-      <View style={[styles.connector, { backgroundColor: Colors[colorScheme ?? 'light'].border }]} />
+      {/* Connector line - highlights if opening Glory Be is active */}
+      {renderChainConnector(0)}
 
       {/* Decades 1-5 */}
       {[1, 2, 3, 4, 5].map(decadeNum => (
         <View key={decadeNum} style={styles.section}>
           <View style={styles.beadGroup}>
             {beadsBySection[decadeNum]?.map((bead, index) => {
+              // Skip Glory Be and Fatima beads - they're shown on the chain
+              if (isChainPrayer(bead)) {
+                return null;
+              }
+              
               // For the mystery announcement (first bead), show the decade number instead
               if (index === 0 && bead.type === 'mystery-announcement') {
                 const isActive = bead.id === currentBeadId;
@@ -108,7 +153,7 @@ export default function BeadCounter({
                 );
               }
               
-              // For all other beads, show normal bead
+              // For all other beads (Our Father, Hail Marys), show normal bead
               return (
                 <RosaryBead
                   key={bead.id}
@@ -121,9 +166,8 @@ export default function BeadCounter({
               );
             })}
           </View>
-          {decadeNum < 5 && (
-            <View style={[styles.connector, { backgroundColor: Colors[colorScheme ?? 'light'].border }]} />
-          )}
+          {/* Chain connector between decades - highlights when Glory Be/Fatima is active */}
+          {decadeNum < 5 && renderChainConnector(decadeNum)}
         </View>
       ))}
 
@@ -137,7 +181,7 @@ export default function BeadCounter({
             Final
           </Text>
           <View style={styles.beadGroup}>
-            {beadsBySection[6]?.map(bead => (
+            {beadsBySection[6]?.filter(bead => !isChainPrayer(bead)).map(bead => (
               <RosaryBead
                 key={bead.id}
                 type={bead.type}
@@ -148,6 +192,8 @@ export default function BeadCounter({
               />
             ))}
           </View>
+          {/* Chain connector for closing prayers if any chain prayers exist */}
+          {beadsBySection[6]?.some(isChainPrayer) && renderChainConnector(6)}
         </View>
       )}
     </ScrollView>
