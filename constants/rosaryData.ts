@@ -230,17 +230,22 @@ export const PRAYER_TEXTS = {
   fatimaPrayer_audio_text: 'O my Jesus, forgive us our sins, save us from the fires of hell, and lead all souls to heaven, especially those in most need of thy mercy. Amen.',
   
   dominicanOpening1: 'V. Hail Mary, full of grace, the Lord is with thee.\n\nR. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus.',
-  dominicanOpening1_audio_text: 'Hail Mary, full of grace, the Lord is with thee. ...  ... ... ... Blessed art thou among women, and blessed is the fruit of thy womb, Jesus.',
+  dominicanOpening1_audio_text: 'Hail Mary, full of grace, the Lord is with thee. -- -- -- -- Blessed art thou among women, and blessed is the fruit of thy womb, Jesus.',
   
   dominicanOpening2: 'V. O Lord, open my lips.\n\nR. And my mouth will proclaim your praise.',
   dominicanOpening2_audio_text: 'O Lord, open my lips. -- -- -- -- And my mouth will proclaim your praise.',
   
   dominicanOpening3: 'V. O God, come to my assistance.\n\nR. O Lord, make haste to help me.',
-  dominicanOpening3_audio_text: 'O God, come to my assistance. ... ... ... ... O Lord, make haste to help me.',
+  dominicanOpening3_audio_text: 'O God, come to my assistance. -- --- -- O Lord, make haste to help me.',
+
+  dominicanOpeningGloryBe: 'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be forever. Amen.',
+  dominicanOpeningGloryBe_audio_text: 'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be forever. Amen.',
 
   dominicanGloryBe: 'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be forever. Amen.',
   dominicanGloryBe_audio_text: 'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be forever. Amen.',
   
+  alleluia: 'Alleluia',
+  alleluia_audio_text: 'Alleluia.',
   
   hailMaryFaith: 'Hail Mary (for the virtue of Faith)',
   hailMaryHope: 'Hail Mary (for the virtue of Hope)',
