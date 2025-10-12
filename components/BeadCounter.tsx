@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 8,
-    paddingVertical: 16,
+    padding: 4,
+    paddingVertical: 8,
     alignItems: 'center',
   },
   section: {
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 8,
     fontFamily: 'Georgia',
     fontWeight: '600',
     marginBottom: 4,

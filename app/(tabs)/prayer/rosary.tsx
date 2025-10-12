@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   beadCounterContainer: {
-    width: '25%',
+    width: '20%',
     borderRightWidth: 1,
     borderRightColor: '#E0E0E0',
   },

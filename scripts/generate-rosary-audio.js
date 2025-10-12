@@ -83,7 +83,8 @@ async function loadPrayerData() {
       'final-prayer': prayers.finalPrayer_audio_text,
       'dominican-opening-1': prayers.dominicanOpening1_audio_text,
       'dominican-opening-2': prayers.dominicanOpening2_audio_text,
-      'dominican-opening-3': prayers.dominicanOpening3_audio_text
+      'dominican-opening-3': prayers.dominicanOpening3_audio_text,
+      'dominican-glory-be': prayers.dominicanGloryBe_audio_text
     };
     
     // Transform ROSARY_MYSTERIES to script format
@@ -130,7 +131,8 @@ const CORE_PRAYERS = [
   'final-prayer',
   'dominican-opening-1',
   'dominican-opening-2',
-  'dominican-opening-3'
+  'dominican-opening-3',
+  'dominican-glory-be'
 ];
 
 class RosaryAudioGenerator {

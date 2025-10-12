@@ -197,6 +197,10 @@ export const PRAYER_TEXTS = {
   
   dominicanOpening3: 'V. O God, come to my assistance.\n\nR. O Lord, make haste to help me.',
   dominicanOpening3_audio_text: 'O God, come to my assistance. ... ... ... ... O Lord, make haste to help me.',
+
+  dominicanGloryBe: 'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be forever. Amen.',
+  dominicanGloryBe_audio_text: 'Glory be to the Father, and to the Son, and to the Holy Spirit, as it was in the beginning, is now, and will be forever. Amen.',
+  
   
   hailMaryFaith: 'Hail Mary (for the virtue of Faith)',
   hailMaryHope: 'Hail Mary (for the virtue of Hope)',
