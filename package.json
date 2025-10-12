@@ -11,7 +11,10 @@
     "upload-rosary-audio": "node scripts/upload-rosary-audio.js",
     "test-rosary-bucket": "node scripts/test-rosary-audio-bucket.js",
     "list-bucket-files": "node scripts/list-bucket-files.js",
-    "check-bucket": "node scripts/list-bucket-files.js"
+    "check-bucket": "node scripts/list-bucket-files.js",
+    "generate-rosary-audio": "node scripts/generate-rosary-audio.js",
+    "generate-audio:help": "node scripts/generate-rosary-audio.js --help",
+    "generate-audio:all": "node scripts/generate-rosary-audio.js --all-voices"
   },
   "jest": {
     "preset": "jest-expo",
@@ -79,6 +82,7 @@
     "@types/react": "^19.1.13",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.12",
+    "jiti": "^2.6.1",
     "react-test-renderer": "^19.1.0",
     "typescript": "~5.9.2"
   },
