@@ -124,7 +124,7 @@ export class RosaryService {
         text: `${PRAYER_TEXTS.hailMary}`,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/hail-mary-1.m4a'
+        audioFile: 'assets/audio/rosary/hail-mary-01.m4a'
       });
 
       beads.push({
@@ -134,7 +134,7 @@ export class RosaryService {
         text: `${PRAYER_TEXTS.hailMary}`,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/hail-mary-2.m4a'
+        audioFile: 'assets/audio/rosary/hail-mary-02.m4a'
       });
 
       beads.push({
@@ -144,7 +144,7 @@ export class RosaryService {
         text: `${PRAYER_TEXTS.hailMary}`,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/hail-mary-3.m4a'
+        audioFile: 'assets/audio/rosary/hail-mary-03.m4a'
       });
 
       // Glory Be after opening (ONLY in Standard form)
