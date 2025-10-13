@@ -4,7 +4,7 @@
  * Rosary Audio Generation Script
  * 
  * Uses ElevenLabs API to generate high-quality audio files for rosary prayers
- * Supports three voice personas: alphonsus, catherine, and teresa
+ * Supports multiple voice personas: such as alphonsus, catherine, and teresa
  * 
  * DATA SOURCE:
  *   Prayer texts and mystery meditations are imported from constants/rosaryData.ts
@@ -40,7 +40,11 @@ const execAsync = promisify(exec);
 const VOICES = {
   alphonsus: 'VBbvpxjgHBKYsO9HhVc1',
   teresa: '0iOlWyjXD1u9VhyWAEa2',
-  catherine: '96wm98vfpxxhanrSUa6p'
+  catherine: '96wm98vfpxxhanrSUa6p',
+  john: 'IAkaAooe9zCLisP7dVbY',
+  therese: 'GnB82KRqImt6VhXefrEP',
+  francis: 'XgirB9w3B0IkZuq4KbpF',
+  hildegard: 'HZQqp50S2Xu3ac8JRJzW'
 };
 
 // Prayer texts and mysteries will be loaded from rosaryData.ts
