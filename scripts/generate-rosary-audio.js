@@ -20,6 +20,8 @@
  * Usage:
  *   node scripts/generate-rosary-audio.js --voice alphonsus --prayer sign-of-the-cross
  *   node scripts/generate-rosary-audio.js --voice catherine --all-prayers
+ *   node scripts/generate-rosary-audio.js --voice alphonsus --mystery-set joyful
+ *   node scripts/generate-rosary-audio.js --voice alphonsus --mystery-set joyful --both
  *   node scripts/generate-rosary-audio.js --all-voices --mystery joyful
  *   node scripts/generate-rosary-audio.js --batch batch-config.json
  */
@@ -411,6 +413,47 @@ class RosaryAudioGenerator {
   }
 
   /**
+   * Generate all 5 decades of a specific mystery set (e.g., all Joyful mysteries)
+   */
+  async generateMysterySet(voiceName, mysteryType, options = {}) {
+    const short = options.short || false;
+    const both = options.both || true;
+    
+    // Validate mystery type
+    if (!MYSTERIES[mysteryType]) {
+      throw new Error(`Invalid mystery type: ${mysteryType}. Valid types: ${Object.keys(MYSTERIES).join(', ')}`);
+    }
+    
+    const mysteryName = mysteryType.charAt(0).toUpperCase() + mysteryType.slice(1);
+    
+    if (both) {
+      console.log(`\n📿 Generating all 5 decades of ${mysteryName} mysteries for ${voiceName} (both normal and short versions)...\n`);
+    } else {
+      console.log(`\n📿 Generating all 5 decades of ${mysteryName} mysteries for ${voiceName}${short ? ' (short version)' : ''}...\n`);
+    }
+    
+    const results = [];
+    
+    // Generate normal versions if both=true or short=false
+    if (both || !short) {
+      for (let decade = 1; decade <= 5; decade++) {
+        const result = await this.generateMysteryDecade(voiceName, mysteryType, decade, { ...options, short: false });
+        results.push({ mystery: `${mysteryType}-${decade}`, ...result });
+      }
+    }
+    
+    // Generate short versions if both=true or short=true
+    if (both || short) {
+      for (let decade = 1; decade <= 5; decade++) {
+        const result = await this.generateMysteryDecade(voiceName, mysteryType, decade, { ...options, short: true });
+        results.push({ mystery: `${mysteryType}-${decade}-short`, ...result });
+      }
+    }
+
+    return results;
+  }
+
+  /**
    * Generate all mysteries for a voice
    */
   async generateAllMysteries(voiceName, options = {}) {
@@ -540,6 +583,9 @@ async function main() {
       case '--mystery':
         options.mystery = args[++i];
         break;
+      case '--mystery-set':
+        options.mysterySet = args[++i];
+        break;
       case '--decade':
         options.decade = parseInt(args[++i]);
         break;
@@ -554,6 +600,9 @@ async function main() {
         break;
       case '--short':
         options.short = true;
+        break;
+      case '--both':
+        options.both = true;
         break;
       case '--all-voices':
         options.allVoices = true;
@@ -635,6 +684,17 @@ async function main() {
         overwrite: options.overwrite,
         delay: options.delay
       });
+    } else if (options.mysterySet) {
+      results = await generator.generateMysterySet(
+        options.voice,
+        options.mysterySet,
+        { 
+          overwrite: options.overwrite, 
+          delay: options.delay, 
+          short: options.short,
+          both: options.both
+        }
+      );
     } else if (options.prayer) {
       results = [await generator.generatePrayer(options.voice, options.prayer, {
         overwrite: options.overwrite,
@@ -674,10 +734,12 @@ Options:
   --prayer <name>         Generate a single prayer
   --mystery <type>        Mystery type (joyful, sorrowful, glorious, luminous)
   --decade <number>       Decade number (1-5, use with --mystery)
+  --mystery-set <type>    Generate all 5 decades of a mystery set (joyful, sorrowful, glorious, luminous)
   --all-prayers           Generate all core prayers
   --all-mysteries         Generate all mystery decades (full version)
   --all-short-mysteries   Generate all short mystery decades
-  --short                 Generate short version (use with --mystery or --all-mysteries)
+  --short                 Generate short version (use with --mystery, --mystery-set, or --all-mysteries)
+  --both                  Generate both normal and short versions (use with --mystery-set)
   --complete              Generate all prayers, full mysteries, and short mysteries
   --all-voices            Generate for all voices
   --overwrite             Overwrite existing files
@@ -693,6 +755,15 @@ Examples:
 
   # Generate a specific mystery decade (short version)
   node scripts/generate-rosary-audio.js --voice catherine --mystery joyful --decade 1 --short
+
+  # Generate all 5 decades of Joyful mysteries (full version)
+  node scripts/generate-rosary-audio.js --voice alphonsus --mystery-set joyful
+
+  # Generate all 5 decades of Joyful mysteries (short version)
+  node scripts/generate-rosary-audio.js --voice alphonsus --mystery-set joyful --short
+
+  # Generate all 5 decades of Joyful mysteries (both normal and short)
+  node scripts/generate-rosary-audio.js --voice alphonsus --mystery-set joyful --both
 
   # Generate all prayers for one voice
   node scripts/generate-rosary-audio.js --voice teresa --all-prayers
