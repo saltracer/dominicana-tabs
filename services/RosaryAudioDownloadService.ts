@@ -5,6 +5,7 @@
 
 import { File, Directory, Paths } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
+import { AudioVersionService } from './AudioVersionService';
 
 export interface DownloadProgress {
   fileName: string;
@@ -210,11 +211,46 @@ export class RosaryAudioDownloadService {
     
     // Return cached file if available
     if (await this.isCached(voice, fileName)) {
+      // Check for updates in background (non-blocking)
+      this.checkFileVersionInBackground(voice, fileName).catch(err => {
+        // Silently fail - version check is optional
+        console.warn('[Version Check] Background check failed:', err.message);
+      });
+      
       return cachePath;
     }
 
     // Download if not cached
     return await this.downloadAudioFile(voice, fileName, onProgress);
+  }
+
+  /**
+   * Check if file needs update based on manifest (runs in background)
+   */
+  private static async checkFileVersionInBackground(voice: string, fileName: string): Promise<void> {
+    try {
+      const manifest = await AudioVersionService.fetchManifest();
+      
+      if (!manifest) {
+        // No manifest = no updates available
+        return;
+      }
+
+      const cachedManifest = await AudioVersionService.getCachedManifest();
+      const baseFileName = fileName.split('/').pop() || fileName;
+      
+      if (AudioVersionService.shouldUpdateFile(voice, baseFileName, manifest, cachedManifest)) {
+        console.log('[AudioVersion] File needs update, re-downloading in background:', fileName);
+        
+        // Re-download file in background (will replace cached version)
+        await this.downloadAudioFile(voice, fileName);
+        
+        console.log('[AudioVersion] Background update complete:', fileName);
+      }
+    } catch (error) {
+      // Graceful failure - don't interrupt user
+      console.warn('[AudioVersion] Background version check failed:', error);
+    }
   }
 
   /**
@@ -338,9 +374,9 @@ export class RosaryAudioDownloadService {
   }
 
   /**
-   * Get list of cached files
+   * Get list of cached files with voice and fileName parsed
    */
-  static async getCachedFiles(): Promise<string[]> {
+  static async getCachedFiles(): Promise<Array<{ voice: string; fileName: string }>> {
     try {
       const directory = new Directory(this.getAudioCacheDir());
       
@@ -349,17 +385,24 @@ export class RosaryAudioDownloadService {
       }
       
       const items = await directory.list();
-      const fileNames: string[] = [];
+      const cachedFiles: Array<{ voice: string; fileName: string }> = [];
       
       for (const item of items) {
         if (item instanceof File) {
-          // Extract just the filename from the full path
-          const fileName = item.uri.split('/').pop() || '';
-          fileNames.push(fileName);
+          // Extract filename from full path: "voice_filename.m4a"
+          const fullFileName = item.uri.split('/').pop() || '';
+          
+          // Parse format: "voice_filename.m4a" → { voice: "voice", fileName: "filename.m4a" }
+          const match = fullFileName.match(/^([^_]+)_(.+)$/);
+          if (match) {
+            const [, voice, fileName] = match;
+            cachedFiles.push({ voice, fileName });
+          }
         }
       }
       
-      return fileNames;
+      console.log('[RosaryAudio] Found', cachedFiles.length, 'cached files');
+      return cachedFiles;
     } catch (error) {
       console.error('Error getting cached files:', error);
       return [];

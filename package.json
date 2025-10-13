@@ -11,7 +11,10 @@
     "list-bucket-files": "node scripts/list-bucket-files.js",
     "generate-rosary-audio": "node scripts/generate-rosary-audio.js",
     "generate-audio:help": "node scripts/generate-rosary-audio.js --help",
-    "generate-audio:all": "node scripts/generate-rosary-audio.js --all-voices"
+    "generate-audio:all": "node scripts/generate-rosary-audio.js --all-voices",
+    "generate-manifest": "node scripts/generate-audio-manifest.js",
+    "generate-manifest:upload": "node scripts/generate-audio-manifest.js --upload",
+    "generate-manifest:help": "node scripts/generate-audio-manifest.js --help"
   },
   "jest": {
     "preset": "jest-expo",

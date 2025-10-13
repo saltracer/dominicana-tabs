@@ -31,7 +31,7 @@ function ProfileScreenContent() {
   
   // Cache management state
   const [cacheSize, setCacheSize] = useState<number>(0);
-  const [cachedFiles, setCachedFiles] = useState<string[]>([]);
+  const [cachedFiles, setCachedFiles] = useState<Array<{ voice: string; fileName: string }>>([]);
   
   
   const handleLogin = () => {
@@ -433,7 +433,7 @@ function ProfileScreenContent() {
     const currentVoice = liturgyPreferences?.rosary_voice || 'alphonsus';
     
     // Count files for this voice
-    const voiceFiles = cachedFiles.filter(f => f.startsWith(`${currentVoice}_`));
+    const voiceFiles = cachedFiles.filter(f => f.voice === currentVoice);
     
     if (voiceFiles.length === 0) {
       Alert.alert('No Cache', `No cached files found for voice "${currentVoice}".`);

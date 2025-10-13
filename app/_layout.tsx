@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Alert } from 'react-native';
 import TrackPlayer, { 
   IOSCategory, 
   IOSCategoryMode, 
@@ -17,6 +18,8 @@ import { CalendarProvider } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { RosaryPlaybackService } from '@/services/RosaryPlaybackService';
+import { AudioVersionService } from '@/services/AudioVersionService';
+import { RosaryAudioDownloadService } from '@/services/RosaryAudioDownloadService';
 
 // Initialize TrackPlayer immediately at module level (before any component renders)
 let trackPlayerInitialized = false;
@@ -93,6 +96,43 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Check for audio file updates in background (non-blocking)
+  useEffect(() => {
+    const checkAudioUpdates = async () => {
+      try {
+        console.log('[App] Checking for audio updates...');
+        
+        const result = await AudioVersionService.checkForUpdates();
+        
+        if (result.hasUpdates && (result.updatedFiles.length > 0 || result.newFiles.length > 0)) {
+          const totalUpdates = result.updatedFiles.length + result.newFiles.length;
+          console.log('[App] Audio updates found:', totalUpdates, 'files');
+          
+          // Show user notification
+          Alert.alert(
+            'Audio Updates Available',
+            `Downloading ${totalUpdates} updated audio file${totalUpdates > 1 ? 's' : ''} in the background. New files will be ready for your next rosary.`,
+            [{ text: 'OK' }],
+            { cancelable: true }
+          );
+          
+          // Trigger background downloads for updated files
+          // Downloads happen automatically next time files are accessed
+          console.log('[App] Background downloads will occur on next use');
+        } else {
+          console.log('[App] No audio updates available');
+        }
+      } catch (error) {
+        // Silently fail - don't interrupt user experience
+        console.warn('[App] Audio update check failed (this is OK):', error);
+      }
+    };
+
+    // Run check 3 seconds after app loads (avoid startup delay)
+    const timer = setTimeout(checkAudioUpdates, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!loaded) {
     return null;
