@@ -24,6 +24,7 @@ export interface UserLiturgyPreferencesData {
   tts_speed: number;
   rosary_voice?: string; // Voice for rosary audio playback
   show_mystery_meditations?: boolean; // Show or hide mystery meditations in rosary (default: true)
+  audio_playback_speed?: number; // Rosary audio playback speed (0.5 - 2.0, default: 1.0)
   created_at?: string;
   updated_at?: string;
 }
@@ -217,6 +218,7 @@ export class UserLiturgyPreferencesService {
       tts_speed: 2,
       rosary_voice: 'alphonsus', // Default rosary voice
       show_mystery_meditations: true, // Default to showing mystery meditations
+      audio_playback_speed: 1.0, // Default playback speed (normal)
     };
 
     try {

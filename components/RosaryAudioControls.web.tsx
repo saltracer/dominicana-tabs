@@ -205,8 +205,14 @@ export default function RosaryAudioControls({
       </button>
 
       {/* Speed Control */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        <Ionicons name="speedometer" size={18} color={colors.text} />
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        gap: 4,
+        cursor: 'pointer',
+      }}>
+        <Ionicons name="speedometer" size={20} color={colors.text} />
         <select
           value={currentSpeed}
           onChange={handleSpeedChange}
@@ -215,8 +221,8 @@ export default function RosaryAudioControls({
             color: colors.text,
             border: `1px solid ${colors.border}`,
             borderRadius: 4,
-            padding: '4px 8px',
-            fontSize: 13,
+            padding: '2px 6px',
+            fontSize: 11,
             fontWeight: 600,
             cursor: 'pointer',
             outline: 'none',
@@ -224,7 +230,7 @@ export default function RosaryAudioControls({
         >
           {SPEED_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
-              {option.label}
+              {option.value}x
             </option>
           ))}
         </select>

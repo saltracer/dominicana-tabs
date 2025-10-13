@@ -211,6 +211,8 @@ export default function RosaryScreen() {
         }
         // Load mystery meditations preference (default to true if not set)
         setShowMysteryMeditations(prefs?.show_mystery_meditations ?? true);
+        // Load playback speed preference (default to 1.0 if not set)
+        setPlaybackSpeed(prefs?.audio_playback_speed ?? 1.0);
       } catch (error) {
         console.error('Error loading rosary preferences:', error);
       }
@@ -306,8 +308,20 @@ export default function RosaryScreen() {
   const handleSpeedChange = async (speed: number) => {
     console.log('[Rosary] Speed changed to:', speed);
     setPlaybackSpeed(speed);
+    
+    // Apply to current playback if audio is enabled
     if (audioSettings.isEnabled) {
       await rosaryAudio.setSpeed(speed);
+    }
+    
+    // Save to user preferences
+    if (user?.id) {
+      try {
+        await UserLiturgyPreferencesService.updateUserPreferences(user.id, { audio_playback_speed: speed });
+        console.log('[Rosary] Speed preference saved:', speed);
+      } catch (error) {
+        console.error('[Rosary] Failed to save speed preference:', error);
+      }
     }
   };
 

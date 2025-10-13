@@ -137,9 +137,9 @@ export default function RosaryAudioControls({
           style={styles.speedButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="speedometer" size={18} color={colors.text} />
+          <Ionicons name="speedometer" size={20} color={colors.text} />
           <Text style={[styles.speedText, { color: colors.text }]}>
-            {currentSpeed.toFixed(1)}x
+            {currentSpeed}x
           </Text>
         </TouchableOpacity>
       </View>
@@ -243,14 +243,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   speedButton: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 6,
-    gap: 4,
+    gap: 2,
   },
   speedText: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
   },
   modalOverlay: {
