@@ -13,6 +13,36 @@ import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { RosaryPlaybackService } from '@/services/RosaryPlaybackService';
 
+// Initialize TrackPlayer immediately at module level (before any component renders)
+let trackPlayerInitialized = false;
+
+const initializeTrackPlayer = async () => {
+  if (trackPlayerInitialized) return;
+  
+  try {
+    TrackPlayer.registerPlaybackService(() => RosaryPlaybackService);
+    
+    await TrackPlayer.setupPlayer({
+      autoUpdateMetadata: true,
+      autoHandleInterruptions: true,
+    });
+    
+    trackPlayerInitialized = true;
+    console.log('[App] TrackPlayer initialized successfully');
+  } catch (error) {
+    // If already set up, this is fine
+    if (error instanceof Error && error.message.includes('already initialized')) {
+      trackPlayerInitialized = true;
+      console.log('[App] TrackPlayer was already initialized');
+    } else {
+      console.error('[App] Failed to initialize TrackPlayer:', error);
+    }
+  }
+};
+
+// Start initialization immediately
+initializeTrackPlayer();
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -35,11 +65,6 @@ export default function RootLayout() {
     'Georgia-Light': require('../assets/fonts/Neuton/Neuton-Light.ttf'),
     ...FontAwesome.font,
   });
-
-  // Register react-native-track-player playback service
-  useEffect(() => {
-    TrackPlayer.registerPlaybackService(() => RosaryPlaybackService);
-  }, []);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {

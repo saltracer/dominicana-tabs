@@ -49,69 +49,103 @@ interface UseRosaryAudioReturn {
 export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioReturn {
   const { voice, settings, rosaryForm = 'dominican', mysteryName = '', onSkipNext, onSkipPrevious } = options;
   
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const onCompleteCallbackRef = useRef<(() => void) | null>(null);
   const sequenceIndexRef = useRef<number>(0);
   const sequenceFilesRef = useRef<Array<{file: string, title: string}>>([]);
   const isPlayingRef = useRef<boolean>(false);
+  const isInitializedRef = useRef<boolean>(false);
+  const initializationPromiseRef = useRef<Promise<void> | null>(null);
   
-  // Use RNTP hooks for real-time state
-  const progress = useProgress();
-  const playbackState = usePlaybackState();
-  const activeTrack = useActiveTrack();
+  // Manual state management (instead of RNTP hooks to avoid initialization issues)
+  const [manualIsPlaying, setManualIsPlaying] = useState(false);
+  const [manualIsPaused, setManualIsPaused] = useState(false);
+  const [manualProgress, setManualProgress] = useState({ position: 0, duration: 0, buffered: 0 });
   
-  const isPlaying = playbackState.state === State.Playing;
-  const isPaused = playbackState.state === State.Paused;
+  const isPlaying = manualIsPlaying;
+  const isPaused = manualIsPaused;
+  const progress = manualProgress;
 
   /**
-   * Initialize TrackPlayer
+   * Wait for TrackPlayer to be ready and configure capabilities
    */
-  const initializePlayer = useCallback(async () => {
-    if (isInitialized) return;
-    
-    try {
-      // Check if already set up to avoid duplicate setup
-      try {
-        const state = await TrackPlayer.getPlaybackState();
-        if (state) {
-          console.log('[useRosaryAudio] TrackPlayer already initialized');
-          setIsInitialized(true);
-          return;
-        }
-      } catch (e) {
-        // Not initialized, continue with setup
-      }
-      
-      await TrackPlayer.setupPlayer({
-        autoUpdateMetadata: true,
-        autoHandleInterruptions: true,
-      });
-      
-      // Configure capabilities for lock screen/notification controls
-      await TrackPlayer.updateOptions({
-        capabilities: [
-          Capability.Play,
-          Capability.Pause,
-          Capability.Stop,
-          Capability.SkipToNext,
-          Capability.SkipToPrevious,
-        ],
-        compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
-        notificationCapabilities: [Capability.Play, Capability.Pause],
-      });
-      
-      setIsInitialized(true);
-      console.log('[useRosaryAudio] TrackPlayer initialized');
-    } catch (error) {
-      console.error('[useRosaryAudio] Failed to initialize TrackPlayer:', error);
+  const ensurePlayerReady = useCallback(async (): Promise<void> => {
+    if (isInitializedRef.current) {
+      return;
     }
-  }, [isInitialized]);
-
-  // Initialize on mount
-  useEffect(() => {
-    initializePlayer();
+    
+    // Return existing promise if already waiting
+    if (initializationPromiseRef.current) {
+      return initializationPromiseRef.current;
+    }
+    
+    const readyPromise = (async () => {
+      try {
+        console.log('[useRosaryAudio] Waiting for TrackPlayer to be ready...');
+        
+        // Poll until TrackPlayer is ready (max 5 seconds)
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (attempts < maxAttempts) {
+          try {
+            const state = await TrackPlayer.getPlaybackState();
+            if (state) {
+              console.log('[useRosaryAudio] TrackPlayer is ready!');
+              break;
+            }
+          } catch (e) {
+            // Not ready yet, wait and retry
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+        }
+        
+        if (attempts >= maxAttempts) {
+          throw new Error('TrackPlayer did not initialize in time');
+        }
+        
+        // Configure capabilities for lock screen/notification controls
+        await TrackPlayer.updateOptions({
+          capabilities: [
+            Capability.Play,
+            Capability.Pause,
+            Capability.Stop,
+            Capability.SkipToNext,
+            Capability.SkipToPrevious,
+          ],
+          compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
+          notificationCapabilities: [Capability.Play, Capability.Pause],
+        });
+        
+        isInitializedRef.current = true;
+        console.log('[useRosaryAudio] Capabilities configured successfully');
+      } catch (error) {
+        console.error('[useRosaryAudio] Failed to ensure player ready:', error);
+        throw error;
+      } finally {
+        initializationPromiseRef.current = null;
+      }
+    })();
+    
+    initializationPromiseRef.current = readyPromise;
+    return readyPromise;
   }, []);
+
+  // Wait for player on mount
+  useEffect(() => {
+    ensurePlayerReady();
+  }, [ensurePlayerReady]);
+
+  /**
+   * Listen for playback state changes to update manual state
+   */
+  useTrackPlayerEvents([Event.PlaybackState], (event) => {
+    if (event.type === Event.PlaybackState) {
+      setManualIsPlaying(event.state === State.Playing);
+      setManualIsPaused(event.state === State.Paused);
+    }
+  });
 
   /**
    * Listen for track changes and queue end to handle sequential playback
@@ -154,8 +188,9 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
         sequenceIndexRef.current = 0;
       }
       
-      // Reset playing flag
+      // Reset playing flag and state
       isPlayingRef.current = false;
+      setManualIsPlaying(false);
       
       // Call completion callback
       if (onCompleteCallbackRef.current) {
@@ -213,9 +248,9 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
     isPlayingRef.current = true;
     
     try {
-      // Wait for initialization
-      if (!isInitialized) {
-        await initializePlayer();
+      // Ensure player is ready
+      if (!isInitializedRef.current) {
+        await ensurePlayerReady();
       }
       
       setIsLoading(true);
@@ -262,6 +297,8 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
       
       // Start playback
       await TrackPlayer.play();
+      setManualIsPlaying(true);
+      setManualIsPaused(false);
       
       setIsLoading(false);
       
@@ -298,9 +335,9 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
     isPlayingRef.current = true;
     
     try {
-      // Wait for initialization
-      if (!isInitialized) {
-        await initializePlayer();
+      // Ensure player is ready
+      if (!isInitializedRef.current) {
+        await ensurePlayerReady();
       }
       
       setIsLoading(true);
@@ -348,6 +385,8 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
       
       // Start playback
       await TrackPlayer.play();
+      setManualIsPlaying(true);
+      setManualIsPaused(false);
       
       setIsLoading(false);
       
@@ -368,6 +407,8 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
    */
   const play = useCallback(async () => {
     await TrackPlayer.play();
+    setManualIsPlaying(true);
+    setManualIsPaused(false);
   }, []);
 
   /**
@@ -375,6 +416,8 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
    */
   const pause = useCallback(async () => {
     await TrackPlayer.pause();
+    setManualIsPlaying(false);
+    setManualIsPaused(true);
   }, []);
 
   /**
@@ -387,6 +430,8 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
     sequenceFilesRef.current = [];
     sequenceIndexRef.current = 0;
     isPlayingRef.current = false;
+    setManualIsPlaying(false);
+    setManualIsPaused(false);
   }, []);
 
   /**
