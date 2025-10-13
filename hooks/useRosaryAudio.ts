@@ -16,15 +16,22 @@ import TrackPlayer, {
   Track,
 } from 'react-native-track-player';
 import { RosaryAudioDownloadService } from '../services/RosaryAudioDownloadService';
-import { AudioSettings } from '../types/rosary-types';
+import { AudioSettings, RosaryBead } from '../types/rosary-types';
 
 interface UseRosaryAudioOptions {
+  beads: RosaryBead[];
   voice: string;
   settings: AudioSettings;
-  rosaryForm?: 'dominican' | 'standard';
-  mysteryName?: string;
-  onSkipNext?: () => void;
-  onSkipPrevious?: () => void;
+  rosaryForm: 'dominican' | 'standard';
+  mysteryName: string;
+  showMysteryMeditations: boolean;
+  isLentSeason: boolean;
+  onTrackChange?: (beadId: string, trackIndex: number) => void;
+  onQueueComplete?: () => void;
+}
+
+interface QueueTrack extends Track {
+  beadId: string;
 }
 
 interface UseRosaryAudioReturn {
@@ -32,30 +39,44 @@ interface UseRosaryAudioReturn {
   isPlaying: boolean;
   isPaused: boolean;
   isLoading: boolean;
+  currentTrackIndex: number;
   progress: { position: number; duration: number; buffered: number };
+  downloadProgress: { current: number; total: number };
   
   // Controls
-  playPrayer: (audioFile: string, prayerTitle: string, onComplete?: () => void) => Promise<void>;
-  playSequence: (audioFiles: Array<{file: string, title: string}>, onComplete?: () => void) => Promise<void>;
+  initializeQueue: () => Promise<void>;
   play: () => Promise<void>;
   pause: () => Promise<void>;
   stop: () => Promise<void>;
-  skip: () => Promise<void>;
+  skipToNext: () => Promise<void>;
+  skipToPrevious: () => Promise<void>;
+  skipToTrack: (trackIndex: number) => Promise<void>;
+  skipToBead: (beadId: string) => Promise<void>;
   setSpeed: (speed: number) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   cleanup: () => Promise<void>;
 }
 
 export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioReturn {
-  const { voice, settings, rosaryForm = 'dominican', mysteryName = '', onSkipNext, onSkipPrevious } = options;
+  const { 
+    beads, 
+    voice, 
+    settings, 
+    rosaryForm, 
+    mysteryName, 
+    showMysteryMeditations,
+    isLentSeason,
+    onTrackChange,
+    onQueueComplete
+  } = options;
   
   const [isLoading, setIsLoading] = useState(false);
-  const onCompleteCallbackRef = useRef<(() => void) | null>(null);
-  const sequenceIndexRef = useRef<number>(0);
-  const sequenceFilesRef = useRef<Array<{file: string, title: string}>>([]);
-  const isPlayingRef = useRef<boolean>(false);
+  const [downloadProgress, setDownloadProgress] = useState({ current: 0, total: 0 });
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const isInitializedRef = useRef<boolean>(false);
   const initializationPromiseRef = useRef<Promise<void> | null>(null);
+  const beadIdMapRef = useRef<Map<number, string>>(new Map());
+  const beadToTrackMapRef = useRef<Map<string, number>>(new Map());
   
   // Manual state management (instead of RNTP hooks to avoid initialization issues)
   const [manualIsPlaying, setManualIsPlaying] = useState(false);
@@ -113,9 +134,22 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
             Capability.Stop,
             Capability.SkipToNext,
             Capability.SkipToPrevious,
+            Capability.SeekTo, // iOS needs this for proper audio session
           ],
-          compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext],
-          notificationCapabilities: [Capability.Play, Capability.Pause],
+          compactCapabilities: [
+            Capability.Play, 
+            Capability.Pause, 
+            Capability.SkipToNext,
+            Capability.SkipToPrevious,
+          ],
+          notificationCapabilities: [
+            Capability.Play, 
+            Capability.Pause,
+            Capability.SkipToNext,
+            Capability.SkipToPrevious,
+          ],
+          // Explicitly enable progress updates for iOS
+          progressUpdateEventInterval: 1,
         });
         
         isInitializedRef.current = true;
@@ -138,6 +172,166 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
   }, [ensurePlayerReady]);
 
   /**
+   * Build complete queue from all rosary beads
+   */
+  const buildFullQueue = useCallback(async (): Promise<QueueTrack[]> => {
+    const tracks: QueueTrack[] = [];
+    let trackIndex = 0;
+    let downloadCount = 0;
+    const totalBeads = beads.length;
+    
+    console.log('[useRosaryAudio] Building full queue for', totalBeads, 'beads');
+    setDownloadProgress({ current: 0, total: totalBeads });
+    
+    for (const bead of beads) {
+      if (!bead.audioFile) continue;
+      
+      downloadCount++;
+      setDownloadProgress({ current: downloadCount, total: totalBeads });
+      
+      // Get audio file path (handle short meditations)
+      let audioFile = bead.audioFile;
+      if (bead.type === 'mystery-announcement' && !showMysteryMeditations) {
+        audioFile = audioFile.replace('.m4a', '-short.m4a');
+      }
+      
+      // Handle sequential prayers - Faith/Hope/Charity + Hail Mary
+      if (bead.id === 'opening-hail-mary-faith') {
+        console.log('[useRosaryAudio] Adding Faith/Hope/Charity sequence');
+        const fhcUri = await RosaryAudioDownloadService.getAudioFileUri(
+          voice,
+          'assets/audio/rosary/faith-hope-charity.m4a'
+        );
+        
+        if (fhcUri) {
+          tracks.push({
+            url: fhcUri,
+            title: 'Faith, Hope, and Charity',
+            artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
+            album: mysteryName,
+            beadId: bead.id,
+          });
+          beadIdMapRef.current.set(trackIndex, bead.id);
+          if (!beadToTrackMapRef.current.has(bead.id)) {
+            beadToTrackMapRef.current.set(bead.id, trackIndex);
+          }
+          trackIndex++;
+        }
+      }
+      
+      // Handle sequential prayers - Dominican Glory Be + Alleluia
+      if (bead.id === 'dominican-opening-glory-be' && !isLentSeason) {
+        console.log('[useRosaryAudio] Adding Glory Be + Alleluia sequence');
+        
+        // Add Glory Be
+        const gloryBeUri = await RosaryAudioDownloadService.getAudioFileUri(voice, audioFile);
+        if (gloryBeUri) {
+          tracks.push({
+            url: gloryBeUri,
+            title: 'Glory Be',
+            artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
+            album: mysteryName,
+            beadId: bead.id,
+          });
+          beadIdMapRef.current.set(trackIndex, bead.id);
+          if (!beadToTrackMapRef.current.has(bead.id)) {
+            beadToTrackMapRef.current.set(bead.id, trackIndex);
+          }
+          trackIndex++;
+        }
+        
+        // Add Alleluia
+        const alleluiaUri = await RosaryAudioDownloadService.getAudioFileUri(
+          voice,
+          'assets/audio/rosary/alleluia.m4a'
+        );
+        if (alleluiaUri) {
+          tracks.push({
+            url: alleluiaUri,
+            title: 'Alleluia',
+            artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
+            album: mysteryName,
+            beadId: bead.id, // Same bead ID as Glory Be
+          });
+          beadIdMapRef.current.set(trackIndex, bead.id);
+          trackIndex++;
+        }
+        
+        continue; // Skip normal processing for this bead
+      }
+      
+      // Regular prayer - download and add to queue
+      const uri = await RosaryAudioDownloadService.getAudioFileUri(voice, audioFile);
+      
+      if (!uri) {
+        console.warn('[useRosaryAudio] Could not load audio for:', bead.title);
+        continue;
+      }
+      
+      tracks.push({
+        url: uri,
+        title: bead.title,
+        artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
+        album: mysteryName,
+        beadId: bead.id,
+      });
+      
+      beadIdMapRef.current.set(trackIndex, bead.id);
+      if (!beadToTrackMapRef.current.has(bead.id)) {
+        beadToTrackMapRef.current.set(bead.id, trackIndex);
+      }
+      trackIndex++;
+    }
+    
+    console.log(`[useRosaryAudio] Built queue with ${tracks.length} tracks from ${beads.length} beads`);
+    setDownloadProgress({ current: totalBeads, total: totalBeads });
+    
+    return tracks;
+  }, [beads, voice, showMysteryMeditations, isLentSeason, rosaryForm, mysteryName]);
+
+  /**
+   * Initialize complete rosary queue
+   */
+  const initializeQueue = useCallback(async (): Promise<void> => {
+    if (!isInitializedRef.current) {
+      await ensurePlayerReady();
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      console.log('[useRosaryAudio] Initializing full rosary queue...');
+      
+      // Reset player
+      await TrackPlayer.reset();
+      
+      // Clear maps
+      beadIdMapRef.current.clear();
+      beadToTrackMapRef.current.clear();
+      
+      // Build complete queue
+      const tracks = await buildFullQueue();
+      
+      console.log('[useRosaryAudio] Adding', tracks.length, 'tracks to queue');
+      
+      // Add all tracks to player
+      await TrackPlayer.add(tracks);
+      
+      // Set initial settings
+      await TrackPlayer.setVolume(settings.volume);
+      await TrackPlayer.setRate(settings.speed);
+      
+      setIsLoading(false);
+      console.log('[useRosaryAudio] Full rosary queue loaded and ready');
+      
+    } catch (error) {
+      console.error('[useRosaryAudio] Failed to initialize queue:', error);
+      setIsLoading(false);
+      throw error;
+    }
+  }, [ensurePlayerReady, buildFullQueue, settings.volume, settings.speed]);
+
+  /**
    * Listen for playback state changes to update manual state
    */
   useTrackPlayerEvents([Event.PlaybackState], (event) => {
@@ -148,262 +342,55 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
   });
 
   /**
-   * Listen for track changes and queue end to handle sequential playback
+   * Listen for track changes and queue completion
    */
   useTrackPlayerEvents([Event.PlaybackQueueEnded, Event.PlaybackTrackChanged], async (event) => {
     if (event.type === Event.PlaybackQueueEnded) {
-      console.log('[useRosaryAudio] Queue ended');
+      console.log('[useRosaryAudio] Queue ended - Rosary complete!');
       
-      // Check if we're playing a sequence
-      if (sequenceFilesRef.current.length > 0) {
-        sequenceIndexRef.current++;
-        
-        // If there are more files in the sequence, play the next one
-        if (sequenceIndexRef.current < sequenceFilesRef.current.length) {
-          const nextFile = sequenceFilesRef.current[sequenceIndexRef.current];
-          console.log('[useRosaryAudio] Playing next in sequence:', nextFile.title);
-          
-          try {
-            const uri = await RosaryAudioDownloadService.getAudioFileUri(voice, nextFile.file);
-            if (uri) {
-              await TrackPlayer.reset();
-              await TrackPlayer.add({
-                url: uri,
-                title: nextFile.title,
-                artist: `${rosaryForm} Rosary`,
-                album: mysteryName,
-              });
-              await TrackPlayer.play();
-            }
-          } catch (error) {
-            console.error('[useRosaryAudio] Error playing next in sequence:', error);
-            // Continue to completion callback
-            sequenceIndexRef.current = sequenceFilesRef.current.length;
-          }
-          return;
-        }
-        
-        // Sequence complete
-        sequenceFilesRef.current = [];
-        sequenceIndexRef.current = 0;
-      }
-      
-      // Reset playing flag and state
-      isPlayingRef.current = false;
+      // Reset state
       setManualIsPlaying(false);
+      setManualIsPaused(false);
+      setCurrentTrackIndex(0);
       
       // Call completion callback
-      if (onCompleteCallbackRef.current) {
-        const callback = onCompleteCallbackRef.current;
-        onCompleteCallbackRef.current = null;
-        callback();
+      if (onQueueComplete) {
+        onQueueComplete();
       }
     }
     
     if (event.type === Event.PlaybackTrackChanged && event.nextTrack !== undefined) {
-      console.log('[useRosaryAudio] Track changed to:', event.nextTrack);
+      console.log('[useRosaryAudio] Track changed to index:', event.nextTrack);
+      
+      setCurrentTrackIndex(event.nextTrack);
+      
+      // Get bead ID from track index
+      const beadId = beadIdMapRef.current.get(event.nextTrack);
+      
+      if (beadId && onTrackChange) {
+        console.log('[useRosaryAudio] Updating UI to bead:', beadId);
+        onTrackChange(beadId, event.nextTrack);
+      }
     }
   });
 
   /**
-   * Handle remote next/previous events
+   * Handle remote next/previous events (from lock screen/notification)
    */
   useTrackPlayerEvents([Event.RemoteNext, Event.RemotePrevious], (event) => {
     if (event.type === Event.RemoteNext) {
       console.log('[useRosaryAudio] Remote next triggered');
-      // Stop current playback and advance to next prayer
-      isPlayingRef.current = false;
-      TrackPlayer.reset();
-      onSkipNext?.();
+      TrackPlayer.skipToNext();
     }
     
     if (event.type === Event.RemotePrevious) {
       console.log('[useRosaryAudio] Remote previous triggered');
-      // Stop current playback and go to previous prayer
-      isPlayingRef.current = false;
-      TrackPlayer.reset();
-      onSkipPrevious?.();
+      TrackPlayer.skipToPrevious();
     }
   });
 
   /**
-   * Play a single prayer audio file
-   */
-  const playPrayer = useCallback(async (
-    audioFile: string,
-    prayerTitle: string,
-    onComplete?: () => void
-  ): Promise<void> => {
-    if (!settings.isEnabled || settings.mode === 'silent') {
-      onComplete?.();
-      return;
-    }
-    
-    // Prevent multiple simultaneous playback calls
-    if (isPlayingRef.current) {
-      console.log('[useRosaryAudio] Already playing, skipping duplicate call');
-      return;
-    }
-    
-    isPlayingRef.current = true;
-    
-    try {
-      // Ensure player is ready
-      if (!isInitializedRef.current) {
-        await ensurePlayerReady();
-      }
-      
-      setIsLoading(true);
-      
-      // Get audio file URI (download if needed, use cache if available)
-      const uri = await RosaryAudioDownloadService.getAudioFileUri(voice, audioFile);
-      
-      if (!uri) {
-        console.warn('[useRosaryAudio] Audio file not available:', audioFile);
-        onComplete?.();
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('[useRosaryAudio] Playing prayer:', prayerTitle, 'from:', uri);
-      
-      // Reset player and add new track
-      await TrackPlayer.reset();
-      
-      const track: Track = {
-        url: uri,
-        title: prayerTitle,
-        artist: `${rosaryForm} Rosary`,
-        album: mysteryName,
-      };
-      
-      await TrackPlayer.add(track);
-      
-      // Set playback settings
-      await TrackPlayer.setVolume(settings.volume);
-      await TrackPlayer.setRate(settings.speed);
-      
-      // Update Now Playing metadata
-      await TrackPlayer.updateNowPlayingMetadata({
-        title: prayerTitle,
-        artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
-        album: mysteryName || 'Rosary Prayer',
-      });
-      
-      // Store completion callback
-      onCompleteCallbackRef.current = onComplete || null;
-      sequenceFilesRef.current = [];
-      sequenceIndexRef.current = 0;
-      
-      // Start playback
-      await TrackPlayer.play();
-      setManualIsPlaying(true);
-      setManualIsPaused(false);
-      
-      setIsLoading(false);
-      
-      // Reset flag after a short delay to allow playback to start
-      setTimeout(() => {
-        isPlayingRef.current = false;
-      }, 500);
-    } catch (error) {
-      console.error('[useRosaryAudio] Error playing prayer:', error);
-      setIsLoading(false);
-      isPlayingRef.current = false;
-      onComplete?.();
-    }
-  }, [voice, settings, rosaryForm, mysteryName]);
-
-  /**
-   * Play a sequence of prayers (for multi-prayer beads like Mystery + Our Father)
-   */
-  const playSequence = useCallback(async (
-    audioFiles: Array<{file: string, title: string}>,
-    onComplete?: () => void
-  ): Promise<void> => {
-    if (!settings.isEnabled || settings.mode === 'silent' || audioFiles.length === 0) {
-      onComplete?.();
-      return;
-    }
-    
-    // Prevent multiple simultaneous playback calls
-    if (isPlayingRef.current) {
-      console.log('[useRosaryAudio] Already playing sequence, skipping duplicate call');
-      return;
-    }
-    
-    isPlayingRef.current = true;
-    
-    try {
-      // Ensure player is ready
-      if (!isInitializedRef.current) {
-        await ensurePlayerReady();
-      }
-      
-      setIsLoading(true);
-      
-      // Store sequence info for queue ended handler
-      sequenceFilesRef.current = audioFiles;
-      sequenceIndexRef.current = 0;
-      onCompleteCallbackRef.current = onComplete || null;
-      
-      // Play first file in sequence
-      const firstFile = audioFiles[0];
-      const uri = await RosaryAudioDownloadService.getAudioFileUri(voice, firstFile.file);
-      
-      if (!uri) {
-        console.warn('[useRosaryAudio] First audio file not available:', firstFile.file);
-        onComplete?.();
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('[useRosaryAudio] Starting sequence:', audioFiles.map(f => f.title).join(' → '));
-      
-      // Reset player and add first track
-      await TrackPlayer.reset();
-      
-      const track: Track = {
-        url: uri,
-        title: firstFile.title,
-        artist: `${rosaryForm} Rosary`,
-        album: mysteryName,
-      };
-      
-      await TrackPlayer.add(track);
-      
-      // Set playback settings
-      await TrackPlayer.setVolume(settings.volume);
-      await TrackPlayer.setRate(settings.speed);
-      
-      // Update Now Playing metadata with first prayer
-      await TrackPlayer.updateNowPlayingMetadata({
-        title: firstFile.title,
-        artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
-        album: mysteryName || 'Rosary Prayer',
-      });
-      
-      // Start playback
-      await TrackPlayer.play();
-      setManualIsPlaying(true);
-      setManualIsPaused(false);
-      
-      setIsLoading(false);
-      
-      // Reset flag after a short delay
-      setTimeout(() => {
-        isPlayingRef.current = false;
-      }, 500);
-    } catch (error) {
-      console.error('[useRosaryAudio] Error playing sequence:', error);
-      setIsLoading(false);
-      isPlayingRef.current = false;
-      onComplete?.();
-    }
-  }, [voice, settings, rosaryForm, mysteryName]);
-
-  /**
-   * Play
+   * Play (start queue playback)
    */
   const play = useCallback(async () => {
     await TrackPlayer.play();
@@ -421,37 +408,49 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
   }, []);
 
   /**
-   * Stop
+   * Stop and reset
    */
   const stop = useCallback(async () => {
     await TrackPlayer.stop();
     await TrackPlayer.reset();
-    onCompleteCallbackRef.current = null;
-    sequenceFilesRef.current = [];
-    sequenceIndexRef.current = 0;
-    isPlayingRef.current = false;
+    beadIdMapRef.current.clear();
+    beadToTrackMapRef.current.clear();
     setManualIsPlaying(false);
     setManualIsPaused(false);
+    setCurrentTrackIndex(0);
   }, []);
 
   /**
-   * Skip to next (advances queue or completes current prayer)
+   * Skip to next track in queue
    */
-  const skip = useCallback(async () => {
-    // If in a sequence, try to skip to next in sequence
-    if (sequenceFilesRef.current.length > 0 && sequenceIndexRef.current < sequenceFilesRef.current.length - 1) {
-      await TrackPlayer.skipToNext();
+  const skipToNext = useCallback(async () => {
+    await TrackPlayer.skipToNext();
+  }, []);
+
+  /**
+   * Skip to previous track in queue
+   */
+  const skipToPrevious = useCallback(async () => {
+    await TrackPlayer.skipToPrevious();
+  }, []);
+
+  /**
+   * Skip to specific track index
+   */
+  const skipToTrack = useCallback(async (trackIndex: number) => {
+    await TrackPlayer.skip(trackIndex);
+  }, []);
+
+  /**
+   * Skip to specific bead (finds first track for that bead)
+   */
+  const skipToBead = useCallback(async (beadId: string) => {
+    const trackIndex = beadToTrackMapRef.current.get(beadId);
+    if (trackIndex !== undefined) {
+      console.log('[useRosaryAudio] Skipping to bead:', beadId, 'at track index:', trackIndex);
+      await TrackPlayer.skip(trackIndex);
     } else {
-      // Otherwise, stop and trigger completion
-      await TrackPlayer.reset();
-      isPlayingRef.current = false;
-      if (onCompleteCallbackRef.current) {
-        const callback = onCompleteCallbackRef.current;
-        onCompleteCallbackRef.current = null;
-        sequenceFilesRef.current = [];
-        sequenceIndexRef.current = 0;
-        callback();
-      }
+      console.warn('[useRosaryAudio] No track found for bead:', beadId);
     }
   }, []);
 
@@ -488,18 +487,21 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
     isPlaying,
     isPaused,
     isLoading,
+    currentTrackIndex,
     progress,
+    downloadProgress,
     
     // Controls
-    playPrayer,
-    playSequence,
+    initializeQueue,
     play,
     pause,
     stop,
-    skip,
+    skipToNext,
+    skipToPrevious,
+    skipToTrack,
+    skipToBead,
     setSpeed,
     setVolume,
     cleanup,
   };
 }
-

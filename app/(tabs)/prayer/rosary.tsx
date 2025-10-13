@@ -64,32 +64,60 @@ export default function RosaryScreen() {
     playBellSounds: true,
   });
 
-  // Navigation callbacks for system controls
-  const nextBead = useCallback(() => {
-    const next = rosaryService.getNextBead(beads, currentBeadId);
-    if (next) {
-      setCompletedBeadIds([...completedBeadIds, currentBeadId]);
-      setCurrentBeadId(next.id);
-    }
-  }, [beads, currentBeadId, completedBeadIds]);
-
-  const previousBead = useCallback(() => {
-    const prev = rosaryService.getPreviousBead(beads, currentBeadId);
-    if (prev) {
-      setCompletedBeadIds(completedBeadIds.filter(id => id !== currentBeadId && id !== prev.id));
-      setCurrentBeadId(prev.id);
-    }
-  }, [beads, currentBeadId, completedBeadIds]);
-
-  // Initialize rosary audio hook with callbacks
+  // Initialize rosary audio hook with full queue approach
+  const isLentSeason = liturgicalDay?.season.name === 'Lent' || liturgicalDay?.season.name === 'Holy Week';
+  
   const rosaryAudio = useRosaryAudio({
+    beads,
     voice: rosaryVoice,
     settings: audioSettings,
     rosaryForm,
-    mysteryName: ROSARY_MYSTERIES.find(m => m.name === selectedMystery)?.name,
-    onSkipNext: nextBead,
-    onSkipPrevious: previousBead,
+    mysteryName: ROSARY_MYSTERIES.find(m => m.name === selectedMystery)?.name || '',
+    showMysteryMeditations,
+    isLentSeason: isLentSeason || false,
+    onTrackChange: (beadId) => {
+      console.log('[Rosary] Track changed to bead:', beadId);
+      setCurrentBeadId(beadId);
+      
+      // Mark previous beads as complete
+      const beadIndex = beads.findIndex(b => b.id === beadId);
+      if (beadIndex >= 0) {
+        const completed = beads.slice(0, beadIndex).map(b => b.id);
+        setCompletedBeadIds(completed);
+      }
+    },
+    onQueueComplete: () => {
+      console.log('[Rosary] Queue complete - Rosary finished!');
+      setIsPraying(false);
+      setAudioSettings(prev => ({ ...prev, isEnabled: false }));
+      Alert.alert('Rosary Complete', 'You have completed the rosary. May God bless you!');
+    },
   });
+
+  // Navigation callbacks - with audio, skip tracks in queue; without audio, manual navigation
+  const nextBead = useCallback(() => {
+    if (audioSettings.isEnabled) {
+      rosaryAudio.skipToNext();
+    } else {
+      const next = rosaryService.getNextBead(beads, currentBeadId);
+      if (next) {
+        setCompletedBeadIds([...completedBeadIds, currentBeadId]);
+        setCurrentBeadId(next.id);
+      }
+    }
+  }, [beads, currentBeadId, completedBeadIds, audioSettings.isEnabled, rosaryAudio]);
+
+  const previousBead = useCallback(() => {
+    if (audioSettings.isEnabled) {
+      rosaryAudio.skipToPrevious();
+    } else {
+      const prev = rosaryService.getPreviousBead(beads, currentBeadId);
+      if (prev) {
+        setCompletedBeadIds(completedBeadIds.filter(id => id !== currentBeadId && id !== prev.id));
+        setCurrentBeadId(prev.id);
+      }
+    }
+  }, [beads, currentBeadId, completedBeadIds, audioSettings.isEnabled, rosaryAudio]);
 
   // Generate beads when form or mystery changes
   useEffect(() => {
@@ -112,66 +140,8 @@ export default function RosaryScreen() {
     }
   }, [currentBeadId, beads, selectedMystery, showMysteryMeditations]);
 
-  // Play audio when bead changes (using new hook-based approach)
-  useEffect(() => {
-    if (!isPraying || !currentBeadId || beads.length === 0 || !audioSettings.isEnabled) {
-      return;
-    }
-
-    const currentBead = beads.find(b => b.id === currentBeadId);
-    if (!currentBead || !currentBead.audioFile) return;
-
-    // Use short audio file for mystery announcements when meditations are disabled
-    let audioFile = currentBead.audioFile;
-    if (currentBead.type === 'mystery-announcement' && !showMysteryMeditations) {
-      audioFile = audioFile.replace('.m4a', '-short.m4a');
-    }
-    
-    console.log('[Rosary Audio] Playing:', audioFile, 'Voice:', rosaryVoice);
-    
-    // Auto-advance callback
-    const onComplete = () => {
-      console.log('[Rosary Audio] Prayer complete');
-      setIsAudioPlaying(false);
-      
-      // Always auto-advance when audio is enabled (like original behavior)
-      const hasNext = rosaryService.getNextBead(beads, currentBeadId);
-      if (hasNext) {
-        setTimeout(() => {
-          nextBead();
-        }, audioSettings.pauseDuration * 50);
-      }
-    };
-    
-    setIsAudioPlaying(true);
-    
-    // Special handling for Standard form first opening Hail Mary (Faith, Hope, Charity intro)
-    if (currentBead.id === 'opening-hail-mary-faith') {
-      console.log('[Rosary Audio] Playing Faith, Hope, Charity sequence');
-      rosaryAudio.playSequence([
-        { file: 'assets/audio/rosary/faith-hope-charity.m4a', title: 'Faith, Hope, and Charity' },
-        { file: audioFile, title: currentBead.title }
-      ], onComplete);
-      return;
-    }
-    
-    // Special handling for Dominican opening Glory Be + Alleluia
-    const isDominicanGloryBe = currentBead.id === 'dominican-opening-glory-be';
-    const isLentSeason = liturgicalDay?.season.name === 'Lent' || liturgicalDay?.season.name === 'Holy Week';
-    const shouldPlayAlleluia = isDominicanGloryBe && !isLentSeason;
-    
-    if (shouldPlayAlleluia) {
-      console.log('[Rosary Audio] Playing Glory Be + Alleluia sequence');
-      rosaryAudio.playSequence([
-        { file: audioFile, title: 'Glory Be' },
-        { file: 'assets/audio/rosary/alleluia.m4a', title: 'Alleluia' }
-      ], onComplete);
-      return;
-    }
-    
-    // Regular single prayer playback
-    rosaryAudio.playPrayer(audioFile, currentBead.title, onComplete);
-  }, [currentBeadId, audioSettings.isEnabled, audioSettings.pauseDuration, isPraying, showMysteryMeditations, rosaryVoice, beads, nextBead]);
+  // Audio playback is now handled by the full queue approach in useRosaryAudio
+  // TrackPlayer auto-advances through the queue - no per-bead playback logic needed
 
   // Sync hook state with component state
   useEffect(() => {
@@ -306,9 +276,24 @@ export default function RosaryScreen() {
         return;
       }
       
-      // Enable audio (user is authenticated)
-      setAudioSettings(prev => ({ ...prev, isEnabled: true }));
-      setIsAudioPaused(false);
+      // Enable audio and initialize queue
+      try {
+        console.log('[Rosary] Initializing audio queue...');
+        setAudioSettings(prev => ({ ...prev, isEnabled: true }));
+        
+        // Build and load the full queue
+        await rosaryAudio.initializeQueue();
+        
+        // Start playback
+        await rosaryAudio.play();
+        
+        setIsAudioPaused(false);
+        console.log('[Rosary] Audio queue initialized and playing');
+      } catch (error) {
+        console.error('[Rosary] Failed to initialize audio:', error);
+        Alert.alert('Audio Error', 'Failed to load audio files. Please try again.');
+        setAudioSettings(prev => ({ ...prev, isEnabled: false }));
+      }
     } else if (isAudioPlaying && !isAudioPaused) {
       // Pause audio
       await rosaryAudio.pause();
@@ -319,6 +304,7 @@ export default function RosaryScreen() {
       setIsAudioPaused(false);
     } else {
       // Disable audio (when not currently playing)
+      await rosaryAudio.stop();
       setAudioSettings(prev => ({ ...prev, isEnabled: false }));
       setIsAudioPaused(false);
     }
