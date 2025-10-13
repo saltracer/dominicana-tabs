@@ -5,11 +5,13 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import TrackPlayer from 'react-native-track-player';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { RosaryPlaybackService } from '@/services/RosaryPlaybackService';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -33,6 +35,11 @@ export default function RootLayout() {
     'Georgia-Light': require('../assets/fonts/Neuton/Neuton-Light.ttf'),
     ...FontAwesome.font,
   });
+
+  // Register react-native-track-player playback service
+  useEffect(() => {
+    TrackPlayer.registerPlaybackService(() => RosaryPlaybackService);
+  }, []);
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {

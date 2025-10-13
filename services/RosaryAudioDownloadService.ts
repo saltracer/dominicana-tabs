@@ -54,13 +54,7 @@ export class RosaryAudioDownloadService {
     // Map from app's internal path to actual Supabase storage path
     const pathMappings: Record<string, string> = {
       'assets/audio/rosary/sign-of-cross.m4a': 'sign-of-the-cross.m4a',
-      'assets/audio/rosary/apostles-creed.m4a': 'apostles-creed.m4a',
-      'assets/audio/rosary/our-father.m4a': 'our-father.m4a',
-      'assets/audio/rosary/hail-mary.m4a': 'hail-mary-1.m4a', // Decade Hail Marys use hail-mary-1
-      'assets/audio/rosary/hail-mary-1.m4a': 'hail-mary-1.m4a',
-      'assets/audio/rosary/hail-mary-2.m4a': 'hail-mary-2.m4a',
-      'assets/audio/rosary/hail-mary-3.m4a': 'hail-mary-3.m4a',
-      'assets/audio/rosary/glory-be.m4a': 'glory-be.m4a',
+      'assets/audio/rosary/faith-hope-charity.m4a': 'faith-hope-charity.m4a',
       'assets/audio/rosary/fatima-prayer.m4a': 'fatima-prayer.m4a',
       'assets/audio/rosary/final-prayer.m4a': 'final-prayer.m4a',
       'assets/audio/rosary/dominican-opening-1.m4a': 'dominican-opening-1.m4a',
@@ -74,6 +68,17 @@ export class RosaryAudioDownloadService {
     
     if (mappedFile) {
       return `${voice}/${mappedFile}`;
+    }
+    
+    // Handle prayer variations (apostles-creed-1/2, our-father-1/2/3, hail-mary-01 to -20, glory-be-1 to -5, dominican-glory-be-1 to -5)
+    const variationMatch = fileName.match(/assets\/audio\/rosary\/(apostles-creed|our-father|hail-mary|glory-be|dominican-glory-be)-(\d+)\.m4a/);
+    if (variationMatch) {
+      const [, prayerName, number] = variationMatch;
+      // hail-mary already has padding, others don't
+      const paddedNumber = prayerName === 'hail-mary' ? number : number.padStart(1, '0');
+      const supabaseFileName = `${prayerName}-${paddedNumber === number ? number : paddedNumber}.m4a`;
+      console.log(`[Audio Path] Variation detected: ${fileName} -> ${voice}/${supabaseFileName}`);
+      return `${voice}/${supabaseFileName}`;
     }
     
     // Smart fallback for mystery files (both full and short versions)
@@ -221,15 +226,27 @@ export class RosaryAudioDownloadService {
   ): Promise<{ success: boolean; downloaded: number; failed: number; errors: string[] }> {
     const audioFiles = [
       'assets/audio/rosary/sign-of-cross.m4a',
-      'assets/audio/rosary/apostles-creed.m4a',
-      'assets/audio/rosary/our-father.m4a',
-      'assets/audio/rosary/hail-mary.m4a',
-      'assets/audio/rosary/glory-be.m4a',
+      'assets/audio/rosary/faith-hope-charity.m4a',
       'assets/audio/rosary/fatima-prayer.m4a',
       'assets/audio/rosary/final-prayer.m4a',
       'assets/audio/rosary/dominican-opening-1.m4a',
       'assets/audio/rosary/dominican-opening-2.m4a',
       'assets/audio/rosary/dominican-opening-3.m4a',
+      'assets/audio/rosary/dominican-opening-glory-be.m4a',
+      'assets/audio/rosary/alleluia.m4a',
+      // Apostles' Creed variations
+      'assets/audio/rosary/apostles-creed-1.m4a',
+      'assets/audio/rosary/apostles-creed-2.m4a',
+      // Our Father variations
+      'assets/audio/rosary/our-father-1.m4a',
+      'assets/audio/rosary/our-father-2.m4a',
+      'assets/audio/rosary/our-father-3.m4a',
+      // Hail Mary variations (20)
+      ...Array.from({ length: 20 }, (_, i) => `assets/audio/rosary/hail-mary-${(i + 1).toString().padStart(2, '0')}.m4a`),
+      // Glory Be variations (5)
+      ...Array.from({ length: 5 }, (_, i) => `assets/audio/rosary/glory-be-${i + 1}.m4a`),
+      // Dominican Glory Be variations (5)
+      ...Array.from({ length: 5 }, (_, i) => `assets/audio/rosary/dominican-glory-be-${i + 1}.m4a`),
     ];
 
     let downloaded = 0;

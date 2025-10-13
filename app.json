@@ -26,7 +26,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby Dominican provinces and communities.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["audio"]
       },
       "bundleIdentifier": "com.dominicana.dev"
     },

@@ -1,8 +1,16 @@
 /**
  * Rosary Audio Service
- * Handles audio playback for rosary prayers
- * Supports pre-recorded M4A files
- * Migrated to expo-audio
+ * @deprecated This service is deprecated and replaced by the useRosaryAudio hook
+ * with react-native-track-player for better system integration.
+ * 
+ * Use hooks/useRosaryAudio.ts instead for:
+ * - Android support
+ * - iOS/Android lock screen controls
+ * - Background playback
+ * - Now Playing metadata
+ * - Better reliability
+ * 
+ * This file is kept temporarily for reference during migration.
  */
 
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
