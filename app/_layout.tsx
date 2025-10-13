@@ -5,7 +5,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import TrackPlayer from 'react-native-track-player';
+import TrackPlayer, { 
+  IOSCategory, 
+  IOSCategoryMode, 
+  IOSCategoryOptions,
+  AndroidAudioContentType 
+} from 'react-native-track-player';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/CalendarContext';
@@ -25,10 +30,22 @@ const initializeTrackPlayer = async () => {
     await TrackPlayer.setupPlayer({
       autoUpdateMetadata: true,
       autoHandleInterruptions: true,
+      waitForBuffer: true, // Wait for buffering before playing (prevents stops)
+      // iOS-specific configuration for background audio
+      iosCategory: IOSCategory.Playback, // Required for background audio on iOS
+      iosCategoryMode: IOSCategoryMode.SpokenAudio, // Optimized for speech/prayer audio
+      iosCategoryOptions: [
+        IOSCategoryOptions.AllowBluetooth, // Support Bluetooth headphones
+        IOSCategoryOptions.AllowBluetoothA2DP, // High-quality Bluetooth audio
+        IOSCategoryOptions.AllowAirPlay, // Support AirPlay
+        IOSCategoryOptions.DuckOthers, // Lower other audio when playing
+      ],
+      // Android-specific configuration
+      androidAudioContentType: AndroidAudioContentType.Speech, // Optimized for spoken content
     });
     
     trackPlayerInitialized = true;
-    console.log('[App] TrackPlayer initialized successfully');
+    console.log('[App] TrackPlayer initialized successfully with background audio support');
   } catch (error) {
     // If already set up, this is fine
     if (error instanceof Error && error.message.includes('already initialized')) {
