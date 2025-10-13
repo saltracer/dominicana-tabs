@@ -24,6 +24,8 @@ export default function BeadCounter({
   onBeadPress 
 }: BeadCounterProps) {
   const { colorScheme } = useTheme();
+  const scrollViewRef = React.useRef<ScrollView>(null);
+  const beadRefs = React.useRef<{ [key: string]: View | null }>({});
 
   // Group beads by decade for visual separation
   const beadsBySection: { [key: number]: RosaryBeadType[] } = {};
@@ -34,6 +36,23 @@ export default function BeadCounter({
     }
     beadsBySection[section].push(bead);
   });
+
+  // Auto-scroll to keep current bead visible
+  React.useEffect(() => {
+    const currentBeadRef = beadRefs.current[currentBeadId];
+    if (currentBeadRef && scrollViewRef.current) {
+      currentBeadRef.measureLayout(
+        scrollViewRef.current as any,
+        (_left, top) => {
+          scrollViewRef.current?.scrollTo({
+            y: top - 250, // Offset to center in view
+            animated: true,
+          });
+        },
+        () => {} // Error callback
+      );
+    }
+  }, [currentBeadId]);
 
   // Helper to check if current prayer is on the chain (Glory Be or Fatima)
   const isChainPrayer = (bead: RosaryBeadType) => {
@@ -77,6 +96,7 @@ export default function BeadCounter({
 
   return (
     <ScrollView 
+      ref={scrollViewRef}
       style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -96,41 +116,51 @@ export default function BeadCounter({
             // For Sign of Cross (the crucifix), check if either Sign of Cross OR Apostles' Creed is active
             if (bead.type === 'sign-of-cross') {
               const apostlesCreedBead = beadsBySection[0]?.find(b => b.type === 'apostles-creed');
-              const crucifixActive = bead.id === currentBeadId || apostlesCreedBead?.id === currentBeadId;
-              const crucifixCompleted = completedBeadIds.includes(bead.id) || 
-                                       (apostlesCreedBead && completedBeadIds.includes(apostlesCreedBead.id));
+              const crucifixActive = !!(bead.id === currentBeadId || apostlesCreedBead?.id === currentBeadId);
+              const crucifixCompleted = !!(completedBeadIds.includes(bead.id) || 
+                                       (apostlesCreedBead && completedBeadIds.includes(apostlesCreedBead.id)));
               
               return (
-                <RosaryBead
+                <View
                   key={bead.id}
-                  type={bead.type}
-                  isActive={crucifixActive}
-                  isCompleted={crucifixCompleted}
-                  onPress={() => {
-                    // Navigate to Sign of Cross if not completed, otherwise to Apostles' Creed
-                    if (!completedBeadIds.includes(bead.id)) {
-                      onBeadPress(bead.id);
-                    } else if (apostlesCreedBead && !completedBeadIds.includes(apostlesCreedBead.id)) {
-                      onBeadPress(apostlesCreedBead.id);
-                    } else {
-                      onBeadPress(bead.id);
-                    }
-                  }}
-                  size="small"
-                />
+                  ref={(ref) => { beadRefs.current[bead.id] = ref; }}
+                  collapsable={false}
+                >
+                  <RosaryBead
+                    type={bead.type}
+                    isActive={crucifixActive}
+                    isCompleted={crucifixCompleted}
+                    onPress={() => {
+                      // Navigate to Sign of Cross if not completed, otherwise to Apostles' Creed
+                      if (!completedBeadIds.includes(bead.id)) {
+                        onBeadPress(bead.id);
+                      } else if (apostlesCreedBead && !completedBeadIds.includes(apostlesCreedBead.id)) {
+                        onBeadPress(apostlesCreedBead.id);
+                      } else {
+                        onBeadPress(bead.id);
+                      }
+                    }}
+                    size="small"
+                  />
+                </View>
               );
             }
             
             // For all other opening prayers, render normally
             return (
-              <RosaryBead
+              <View
                 key={bead.id}
-                type={bead.type}
-                isActive={bead.id === currentBeadId}
-                isCompleted={completedBeadIds.includes(bead.id)}
-                onPress={() => onBeadPress(bead.id)}
-                size="small"
-              />
+                ref={(ref) => { beadRefs.current[bead.id] = ref; }}
+                collapsable={false}
+              >
+                <RosaryBead
+                  type={bead.type}
+                  isActive={bead.id === currentBeadId}
+                  isCompleted={completedBeadIds.includes(bead.id)}
+                  onPress={() => onBeadPress(bead.id)}
+                  size="small"
+                />
+              </View>
             );
           })}
         </View>
@@ -169,57 +199,67 @@ export default function BeadCounter({
                 // This bead represents BOTH the mystery announcement AND the Our Father prayer
                 if (bead.type === 'our-father' && bead.beadNumber === 0) {
                   return (
-                    <TouchableOpacity
+                    <View
                       key={bead.id}
-                      onPress={() => {
-                        // Navigate to mystery announcement if that hasn't been completed yet
-                        if (mysteryBead && !completedBeadIds.includes(mysteryBead.id)) {
-                          onBeadPress(mysteryBead.id);
-                        } else {
-                          onBeadPress(bead.id);
-                        }
-                      }}
-                      style={[
-                        styles.decadeNumberBead,
-                        {
-                          backgroundColor: mysteryOrOurFatherActive
-                            ? Colors[colorScheme ?? 'light'].primary
-                            : mysteryOrOurFatherCompleted
-                            ? Colors[colorScheme ?? 'light'].dominicanGold
-                            : Colors[colorScheme ?? 'light'].card,
-                          borderColor: mysteryOrOurFatherActive || mysteryOrOurFatherCompleted
-                            ? 'transparent'
-                            : Colors[colorScheme ?? 'light'].border,
-                        },
-                      ]}
-                      activeOpacity={0.7}
+                      ref={(ref) => { beadRefs.current[bead.id] = ref; }}
+                      collapsable={false}
                     >
-                      <Text
+                      <TouchableOpacity
+                        onPress={() => {
+                          // Navigate to mystery announcement if that hasn't been completed yet
+                          if (mysteryBead && !completedBeadIds.includes(mysteryBead.id)) {
+                            onBeadPress(mysteryBead.id);
+                          } else {
+                            onBeadPress(bead.id);
+                          }
+                        }}
                         style={[
-                          styles.decadeNumberText,
+                          styles.decadeNumberBead,
                           {
-                            color: mysteryOrOurFatherActive || mysteryOrOurFatherCompleted
-                              ? Colors[colorScheme ?? 'light'].dominicanWhite
-                              : Colors[colorScheme ?? 'light'].primary,
+                            backgroundColor: mysteryOrOurFatherActive
+                              ? Colors[colorScheme ?? 'light'].primary
+                              : mysteryOrOurFatherCompleted
+                              ? Colors[colorScheme ?? 'light'].dominicanGold
+                              : Colors[colorScheme ?? 'light'].card,
+                            borderColor: mysteryOrOurFatherActive || mysteryOrOurFatherCompleted
+                              ? 'transparent'
+                              : Colors[colorScheme ?? 'light'].border,
                           },
                         ]}
+                        activeOpacity={0.7}
                       >
-                        {decadeNum}
-                      </Text>
-                    </TouchableOpacity>
+                        <Text
+                          style={[
+                            styles.decadeNumberText,
+                            {
+                              color: mysteryOrOurFatherActive || mysteryOrOurFatherCompleted
+                                ? Colors[colorScheme ?? 'light'].dominicanWhite
+                                : Colors[colorScheme ?? 'light'].primary,
+                            },
+                          ]}
+                        >
+                          {decadeNum}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   );
                 }
                 
                 // For all other beads (Hail Marys), show normal bead
                 return (
-                  <RosaryBead
+                  <View
                     key={bead.id}
-                    type={bead.type}
-                    isActive={bead.id === currentBeadId}
-                    isCompleted={completedBeadIds.includes(bead.id)}
-                    onPress={() => onBeadPress(bead.id)}
-                    size="small"
-                  />
+                    ref={(ref) => { beadRefs.current[bead.id] = ref; }}
+                    collapsable={false}
+                  >
+                    <RosaryBead
+                      type={bead.type}
+                      isActive={bead.id === currentBeadId}
+                      isCompleted={completedBeadIds.includes(bead.id)}
+                      onPress={() => onBeadPress(bead.id)}
+                      size="small"
+                    />
+                  </View>
                 );
               })}
             </View>
@@ -240,14 +280,19 @@ export default function BeadCounter({
           </Text>
           <View style={styles.beadGroup}>
             {beadsBySection[6]?.filter(bead => !isChainPrayer(bead)).map(bead => (
-              <RosaryBead
+              <View
                 key={bead.id}
-                type={bead.type}
-                isActive={bead.id === currentBeadId}
-                isCompleted={completedBeadIds.includes(bead.id)}
-                onPress={() => onBeadPress(bead.id)}
-                size="small"
-              />
+                ref={(ref) => { beadRefs.current[bead.id] = ref; }}
+                collapsable={false}
+              >
+                <RosaryBead
+                  type={bead.type}
+                  isActive={bead.id === currentBeadId}
+                  isCompleted={completedBeadIds.includes(bead.id)}
+                  onPress={() => onBeadPress(bead.id)}
+                  size="small"
+                />
+              </View>
             ))}
           </View>
           {/* Chain connector for closing prayers if any chain prayers exist */}
