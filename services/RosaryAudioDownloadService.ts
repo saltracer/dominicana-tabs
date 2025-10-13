@@ -246,6 +246,11 @@ export class RosaryAudioDownloadService {
         await this.downloadAudioFile(voice, fileName);
         
         console.log('[AudioVersion] Background update complete:', fileName);
+        
+        // After successful download, update the cached manifest
+        // This prevents re-checking this file on next access
+        await AudioVersionService.cacheManifest(manifest);
+        console.log('[AudioVersion] Manifest cache updated after successful download');
       }
     } catch (error) {
       // Graceful failure - don't interrupt user

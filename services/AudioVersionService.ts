@@ -255,8 +255,9 @@ export class AudioVersionService {
           voices: result.voicesWithUpdates,
         });
 
-        // Cache the new manifest
-        await this.cacheManifest(newManifest);
+        // DON'T cache new manifest yet - wait until files are downloaded
+        // The new manifest stays in memory only, old manifest stays in AsyncStorage
+        // This allows per-file comparison to work correctly
       }
 
       return result;

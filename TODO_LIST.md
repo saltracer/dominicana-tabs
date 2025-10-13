@@ -4,14 +4,24 @@
 
 ## Prayer
 - More content
+- devotions need to be built. With audio. 
 - Vespers or Lauds ... need to prove the design
 - Redesign Rosary
 - Rosary Audio
-  - Fix the Dominican glory be
-  - Script audio creation
-  - create admin only cms front end web only
-  - create a voice for John Henry Newman 
-  
+ - [] implement cache invalidation and redownload of audio files -testing phase
+ - [x] allow specific voices to be clear, obviously 
+ - [x] reimplement expo-audio for an iOS/android compatible solution 
+ - [x] get audio playback displaying as part of the iOS/android audio experience 
+ - [x] add a setting to explicitly clear the cache
+ - [] create admin only cms front end web only
+ - [x] create a voice for John Henry Newman 
+ - [x] a voice for Therese
+ - [x] a voice for Francis de Sales
+ - [x] a voice for Hildegard
+ - [ ] generate the rosary audio for the different voices
+ - [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
+ - [ ] text highlighting?
+
 
 ## Study
 - Bookmarking
@@ -19,6 +29,8 @@
 - Highlights
 - Book audio?
 - Redeisgn how the bible is accessed
+- keep books downloaded
+- Add a setting to remove the download
 
 ## Community
 - Calendar is ugly
