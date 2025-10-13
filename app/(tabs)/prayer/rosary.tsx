@@ -32,6 +32,7 @@ import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryDat
 import { UserLiturgyPreferencesService } from '../../../services/UserLiturgyPreferencesService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useRosaryAudio } from '../../../hooks/useRosaryAudio';
+import RosaryAudioControls from '../../../components/RosaryAudioControls';
 
 export default function RosaryScreen() {
   const { colorScheme } = useTheme();
@@ -51,6 +52,7 @@ export default function RosaryScreen() {
   const [isAudioPaused, setIsAudioPaused] = useState(false);
   const [rosaryVoice, setRosaryVoice] = useState<string>('alphonsus');
   const [showMysteryMeditations, setShowMysteryMeditations] = useState<boolean>(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   
   // Audio state
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
@@ -156,6 +158,49 @@ export default function RosaryScreen() {
     }
   }, [isPraying, rosaryAudio]);
 
+  // Rebuild queue when key settings change (if audio is enabled)
+  useEffect(() => {
+    const rebuildQueueIfNeeded = async () => {
+      // Only rebuild if audio is currently enabled and playing
+      if (!audioSettings.isEnabled || !isPraying) {
+        return;
+      }
+
+      console.log('[Rosary] Key settings changed, rebuilding audio queue...');
+      
+      try {
+        // Get current track position if possible
+        const currentTrackIndex = rosaryAudio.currentTrackIndex;
+        
+        // Rebuild the queue with new settings
+        await rosaryAudio.initializeQueue();
+        
+        // Try to resume at a similar position (or restart if not possible)
+        if (currentTrackIndex > 0 && currentTrackIndex < beads.length) {
+          console.log('[Rosary] Attempting to resume at track', currentTrackIndex);
+          await rosaryAudio.skipToTrack(currentTrackIndex);
+        }
+        
+        // Resume playback
+        await rosaryAudio.play();
+        
+        console.log('[Rosary] Queue rebuilt successfully');
+      } catch (error) {
+        console.error('[Rosary] Failed to rebuild queue:', error);
+      }
+    };
+
+    rebuildQueueIfNeeded();
+  }, [
+    // Rebuild when these settings change:
+    showMysteryMeditations, // Long vs short meditations
+    rosaryForm, // Dominican vs Standard
+    selectedMystery, // Joyful, Sorrowful, etc.
+    rosaryVoice, // Voice selection
+    isLentSeason, // Affects Alleluia
+    // Note: Don't include audioSettings.isEnabled or isPraying to avoid infinite loop
+  ]);
+
   // Load user's rosary preferences
   const loadUserPreferences = useCallback(async () => {
     if (user?.id) {
@@ -258,6 +303,14 @@ export default function RosaryScreen() {
     return rosaryService.getProgress(beads, currentBeadId);
   };
 
+  const handleSpeedChange = async (speed: number) => {
+    console.log('[Rosary] Speed changed to:', speed);
+    setPlaybackSpeed(speed);
+    if (audioSettings.isEnabled) {
+      await rosaryAudio.setSpeed(speed);
+    }
+  };
+
   const handleAudioToggle = async () => {
     // Check if user is authenticated before enabling audio
     if (!audioSettings.isEnabled) {
@@ -284,11 +337,20 @@ export default function RosaryScreen() {
         // Build and load the full queue
         await rosaryAudio.initializeQueue();
         
-        // Start playback
+        // Apply current playback speed
+        await rosaryAudio.setSpeed(playbackSpeed);
+        
+        // Jump to current bead before starting playback
+        if (currentBeadId) {
+          console.log('[Rosary] Jumping to current bead:', currentBeadId);
+          await rosaryAudio.skipToBead(currentBeadId);
+        }
+        
+        // Start playback from current position
         await rosaryAudio.play();
         
         setIsAudioPaused(false);
-        console.log('[Rosary] Audio queue initialized and playing');
+        console.log('[Rosary] Audio queue initialized and playing from current bead');
       } catch (error) {
         console.error('[Rosary] Failed to initialize audio:', error);
         Alert.alert('Audio Error', 'Failed to load audio files. Please try again.');
@@ -436,21 +498,19 @@ export default function RosaryScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity 
-          onPress={handleAudioToggle}
-          style={styles.toolbarButton}
-        >
-          <Ionicons 
-            name={
-              !audioSettings.isEnabled ? "volume-mute" 
-              : isAudioPaused ? "pause" 
-              : isAudioPlaying ? "musical-notes" 
-              : "volume-high"
-            } 
-            size={24} 
-            color={audioSettings.isEnabled ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary} 
-          />
-        </TouchableOpacity>
+        <RosaryAudioControls
+          isEnabled={audioSettings.isEnabled}
+          isPlaying={isAudioPlaying}
+          isPaused={isAudioPaused}
+          isLoading={rosaryAudio.isLoading}
+          downloadProgress={rosaryAudio.downloadProgress}
+          currentSpeed={playbackSpeed}
+          onToggleAudio={handleAudioToggle}
+          onSkipPrevious={previousBead}
+          onSkipNext={nextBead}
+          onSpeedChange={handleSpeedChange}
+          isAuthenticated={!!user}
+        />
       </View>
 
       {/* Progress Bar */}
@@ -708,6 +768,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    minHeight: 60,
   },
   toolbarButton: {
     padding: 8,
