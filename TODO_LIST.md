@@ -24,13 +24,14 @@
 
 
 ## Study
-- Bookmarking
-- Notes
-- Highlights
-- Book audio?
-- Redeisgn how the bible is accessed
-- keep books downloaded
-- Add a setting to remove the download
+- [ ] Bookmarking
+- [ ] Notes
+- [ ] Highlights
+- [ ] Book audio?
+- [ ] Redeisgn how the bible is accessed
+- [ ] keep books downloaded
+- [ ] Add a setting to remove the download
+- [ ] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 
 ## Community
 - Calendar is ugly
