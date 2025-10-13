@@ -87,16 +87,52 @@ export default function BeadCounter({
           Opening
         </Text>
         <View style={styles.beadGroup}>
-          {beadsBySection[0]?.filter(bead => !isChainPrayer(bead)).map(bead => (
-            <RosaryBead
-              key={bead.id}
-              type={bead.type}
-              isActive={bead.id === currentBeadId}
-              isCompleted={completedBeadIds.includes(bead.id)}
-              onPress={() => onBeadPress(bead.id)}
-              size="small"
-            />
-          ))}
+          {beadsBySection[0]?.filter(bead => !isChainPrayer(bead)).map(bead => {
+            // Skip Apostles' Creed - it shares the same crucifix as Sign of Cross
+            if (bead.type === 'apostles-creed') {
+              return null;
+            }
+            
+            // For Sign of Cross (the crucifix), check if either Sign of Cross OR Apostles' Creed is active
+            if (bead.type === 'sign-of-cross') {
+              const apostlesCreedBead = beadsBySection[0]?.find(b => b.type === 'apostles-creed');
+              const crucifixActive = bead.id === currentBeadId || apostlesCreedBead?.id === currentBeadId;
+              const crucifixCompleted = completedBeadIds.includes(bead.id) || 
+                                       (apostlesCreedBead && completedBeadIds.includes(apostlesCreedBead.id));
+              
+              return (
+                <RosaryBead
+                  key={bead.id}
+                  type={bead.type}
+                  isActive={crucifixActive}
+                  isCompleted={crucifixCompleted}
+                  onPress={() => {
+                    // Navigate to Sign of Cross if not completed, otherwise to Apostles' Creed
+                    if (!completedBeadIds.includes(bead.id)) {
+                      onBeadPress(bead.id);
+                    } else if (apostlesCreedBead && !completedBeadIds.includes(apostlesCreedBead.id)) {
+                      onBeadPress(apostlesCreedBead.id);
+                    } else {
+                      onBeadPress(bead.id);
+                    }
+                  }}
+                  size="small"
+                />
+              );
+            }
+            
+            // For all other opening prayers, render normally
+            return (
+              <RosaryBead
+                key={bead.id}
+                type={bead.type}
+                isActive={bead.id === currentBeadId}
+                isCompleted={completedBeadIds.includes(bead.id)}
+                onPress={() => onBeadPress(bead.id)}
+                size="small"
+              />
+            );
+          })}
         </View>
       </View>
 

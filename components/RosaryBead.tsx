@@ -45,7 +45,11 @@ export default function RosaryBead({
     return Colors[colorScheme ?? 'light'].border;
   };
 
-  const getBeadIcon = (): 'ellipse' | 'ellipse-outline' | 'radio-button-on' => {
+  const getBeadIcon = (): 'ellipse' | 'ellipse-outline' | 'radio-button-on' | 'add' => {
+    // Sign of Cross and Apostles' Creed are prayed on the crucifix
+    if (type === 'sign-of-cross' || type === 'apostles-creed') {
+      return 'add'; // Cross symbol
+    }
     // Our Father beads are larger and filled
     if (type === 'our-father' || type === 'mystery-announcement') {
       return isActive || isCompleted ? 'ellipse' : 'ellipse-outline';
@@ -57,6 +61,7 @@ export default function RosaryBead({
 
   const beadSize = getBeadSize();
   const isLargeBead = type === 'our-father' || type === 'mystery-announcement';
+  const isCrucifix = type === 'sign-of-cross' || type === 'apostles-creed';
 
   return (
     <TouchableOpacity 
@@ -69,7 +74,7 @@ export default function RosaryBead({
     >
       <Ionicons 
         name={getBeadIcon()} 
-        size={isLargeBead ? beadSize * 1.5 : beadSize} 
+        size={isCrucifix ? beadSize * 2 : (isLargeBead ? beadSize * 1.5 : beadSize)} 
         color={getBeadColor()} 
       />
     </TouchableOpacity>
