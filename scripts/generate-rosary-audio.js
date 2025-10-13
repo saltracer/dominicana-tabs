@@ -72,8 +72,11 @@ async function loadPrayerData() {
     // Use _audio_text versions which have no abbreviations and ellipses instead of newlines
     PRAYER_TEXTS = {
       'sign-of-the-cross': prayers.signOfCross_audio_text,
-      'apostles-creed': prayers.apostlesCreed_audio_text,
-      'our-father': prayers.ourFather_audio_text,
+      'apostles-creed-1': prayers.apostlesCreed_audio_text,
+      'apostles-creed-2': prayers.apostlesCreed_audio_text,
+      'our-father-1': prayers.ourFather_audio_text,
+      'our-father-2': prayers.ourFather_audio_text,
+      'our-father-3': prayers.ourFather_audio_text,
       'hail-mary-01': prayers.hailMary_audio_text,
       'hail-mary-02': prayers.hailMary_audio_text,
       'hail-mary-03': prayers.hailMary_audio_text,
@@ -94,7 +97,11 @@ async function loadPrayerData() {
       'hail-mary-18': prayers.hailMary_audio_text,
       'hail-mary-19': prayers.hailMary_audio_text,
       'hail-mary-20': prayers.hailMary_audio_text,
-      'glory-be': prayers.gloryBe_audio_text,
+      'glory-be-1': prayers.gloryBe_audio_text,
+      'glory-be-2': prayers.gloryBe_audio_text,
+      'glory-be-3': prayers.gloryBe_audio_text,
+      'glory-be-4': prayers.gloryBe_audio_text,
+      'glory-be-5': prayers.gloryBe_audio_text,
       'fatima-prayer': prayers.fatimaPrayer_audio_text,
       'hail-holy-queen': prayers.finalPrayer_audio_text.split('...')[0] + '.', // Just the Hail Holy Queen part
       'final-prayer': prayers.finalPrayer_audio_text,
@@ -102,7 +109,11 @@ async function loadPrayerData() {
       'dominican-opening-2': prayers.dominicanOpening2_audio_text,
       'dominican-opening-3': prayers.dominicanOpening3_audio_text,
       'dominican-opening-glory-be': prayers.dominicanOpeningGloryBe_audio_text,
-      'dominican-glory-be': prayers.dominicanGloryBe_audio_text,
+      'dominican-glory-be-1': prayers.dominicanGloryBe_audio_text,
+      'dominican-glory-be-2': prayers.dominicanGloryBe_audio_text,
+      'dominican-glory-be-3': prayers.dominicanGloryBe_audio_text,
+      'dominican-glory-be-4': prayers.dominicanGloryBe_audio_text,
+      'dominican-glory-be-5': prayers.dominicanGloryBe_audio_text,
       'alleluia': prayers.alleluia_audio_text,
       'faith-hope-charity': prayers.faithHopeCharity_audio_text
     };
@@ -144,8 +155,11 @@ async function loadPrayerData() {
 // Core prayer list
 const CORE_PRAYERS = [
   'sign-of-the-cross',
-  'apostles-creed',
-  'our-father',
+  'apostles-creed-1',
+  'apostles-creed-2',
+  'our-father-1',
+  'our-father-2',
+  'our-father-3',
   'hail-mary-01',
   'hail-mary-02',
   'hail-mary-03',
@@ -166,7 +180,11 @@ const CORE_PRAYERS = [
   'hail-mary-18',
   'hail-mary-19',
   'hail-mary-20',
-  'glory-be',
+  'glory-be-1',
+  'glory-be-2',
+  'glory-be-3',
+  'glory-be-4',
+  'glory-be-5',
   'fatima-prayer',
   'hail-holy-queen',
   'final-prayer',
@@ -174,7 +192,11 @@ const CORE_PRAYERS = [
   'dominican-opening-2',
   'dominican-opening-3',
   'dominican-opening-glory-be',
-  'dominican-glory-be',
+  'dominican-glory-be-1',
+  'dominican-glory-be-2',
+  'dominican-glory-be-3',
+  'dominican-glory-be-4',
+  'dominican-glory-be-5',
   'alleluia',
   'faith-hope-charity'
 ];
@@ -590,7 +612,7 @@ async function main() {
       });
     } else if (!options.voice) {
       console.error('❌ Error: --voice is required (or use --all-voices)');
-      console.error('Valid voices: alphonsus, catherine, teresa');
+      console.error(`Valid voices: ${Object.keys(VOICES).join(', ')}`);
       process.exit(1);
     } else if (options.complete) {
       results = await generator.generateComplete(options.voice, {

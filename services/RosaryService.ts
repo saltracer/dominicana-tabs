@@ -94,7 +94,8 @@ export class RosaryService {
         audioFile: 'assets/audio/rosary/sign-of-cross.m4a'
       });
 
-      // Apostles' Creed (ONLY in Standard form)
+      // Apostles' Creed (ONLY in Standard form) - randomly select from 2 variations
+      const apostlesCreedVariation = Math.floor(Math.random() * 2) + 1;
       beads.push({
         id: 'opening-apostles-creed',
         type: 'apostles-creed',
@@ -102,10 +103,11 @@ export class RosaryService {
         text: PRAYER_TEXTS.apostlesCreed,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/apostles-creed.m4a'
+        audioFile: `assets/audio/rosary/apostles-creed-${apostlesCreedVariation}.m4a`
       });
 
-      // Our Father (ONLY in Standard form opening)
+      // Our Father (ONLY in Standard form opening) - randomly select from 3 variations
+      const openingOurFatherVariation = Math.floor(Math.random() * 3) + 1;
       beads.push({
         id: 'opening-our-father',
         type: 'our-father',
@@ -113,7 +115,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.ourFather,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/our-father.m4a'
+        audioFile: `assets/audio/rosary/our-father-${openingOurFatherVariation}.m4a`
       });
 
       // Three Hail Marys (ONLY in Standard form)
@@ -147,7 +149,8 @@ export class RosaryService {
         audioFile: 'assets/audio/rosary/hail-mary-03.m4a'
       });
 
-      // Glory Be after opening (ONLY in Standard form)
+      // Glory Be after opening (ONLY in Standard form) - randomly select from 4 variations
+      const openingGloryBeVariation = Math.floor(Math.random() * 5) + 1;
       beads.push({
         id: 'opening-glory-be-final',
         type: 'glory-be',
@@ -155,7 +158,7 @@ export class RosaryService {
         text: PRAYER_TEXTS.gloryBe,
         order: order++,
         decadeNumber: 0,
-        audioFile: 'assets/audio/rosary/glory-be.m4a'
+        audioFile: `assets/audio/rosary/glory-be-${openingGloryBeVariation}.m4a`
       });
     }
 
@@ -181,7 +184,8 @@ export class RosaryService {
         audioFile: `assets/audio/rosary/mysteries/${mysterySet.toLowerCase().replace(/ /g, '-')}/decade-${decade}.m4a`
       });
 
-      // Our Father
+      // Our Father - randomly select from 3 variations
+      const ourFatherVariation = Math.floor(Math.random() * 3) + 1;
       beads.push({
         id: `decade-${decade}-our-father`,
         type: 'our-father',
@@ -190,7 +194,7 @@ export class RosaryService {
         order: order++,
         decadeNumber: decade,
         beadNumber: 0,
-        audioFile: 'assets/audio/rosary/our-father.m4a'
+        audioFile: `assets/audio/rosary/our-father-${ourFatherVariation}.m4a`
       });
 
       // 10 Hail Marys - randomly select from 20 variations
@@ -210,16 +214,20 @@ export class RosaryService {
         });
       }
 
-      // Glory Be
+      // Glory Be - randomly select from 5 variations
+      // Use dominican-glory-be for Dominican form, regular glory-be for Standard form
+      const gloryBeVariation = Math.floor(Math.random() * 5) + 1;
+      const gloryBePrefix = form === 'dominican' ? 'dominican-glory-be' : 'glory-be';
+      const gloryBeText = form === 'dominican' ? PRAYER_TEXTS.dominicanGloryBe : PRAYER_TEXTS.gloryBe;
       beads.push({
         id: `decade-${decade}-glory-be`,
         type: 'glory-be',
         title: 'Glory Be',
-        text: PRAYER_TEXTS.gloryBe,
+        text: gloryBeText,
         order: order++,
         decadeNumber: decade,
         beadNumber: 11,
-        audioFile: 'assets/audio/rosary/glory-be.m4a'
+        audioFile: `assets/audio/rosary/${gloryBePrefix}-${gloryBeVariation}.m4a`
       });
 
       // Fatima Prayer (standard form only)
