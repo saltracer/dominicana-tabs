@@ -136,6 +136,31 @@ export default function RosaryWebScreen() {
       console.log('[Rosary Audio Web] Playing:', audioFile, 'Voice:', rosaryVoice, 'Short:', !showMysteryMeditations && currentBead.type === 'mystery-announcement');
       setIsAudioPlaying(true);
       
+      // Special handling for Standard form first opening Hail Mary (Faith, Hope, Charity intro)
+      const isFirstOpeningHailMary = currentBead.id === 'opening-hail-mary-faith';
+      
+      if (isFirstOpeningHailMary) {
+        console.log('[Rosary Audio Web] Playing Faith, Hope, Charity intro before first Hail Mary');
+        // Play Faith/Hope/Charity intro first
+        rosaryAudioService.playPrayer('assets/audio/rosary/faith-hope-charity.m4a', audioSettings, rosaryVoice, () => {
+          console.log('[Rosary Audio Web] Faith, Hope, Charity finished, playing Hail Mary');
+          // Then play the Hail Mary
+          rosaryAudioService.playPrayer(audioFile, audioSettings, rosaryVoice, () => {
+            console.log('[Rosary Audio Web] First Hail Mary finished');
+            setIsAudioPlaying(false);
+            
+            // Auto-advance after both complete
+            const hasNextBead = rosaryService.getNextBead(beads, currentBeadId);
+            if (hasNextBead) {
+              setTimeout(() => {
+                nextBead();
+              }, audioSettings.pauseDuration * 1000);
+            }
+          });
+        });
+        return;
+      }
+      
       // Special handling for Dominican opening Glory Be + Alleluia
       const isDominicanGloryBe = currentBead.id === 'dominican-opening-glory-be';
       // Check if it's Lent using the liturgical calendar (not system date)

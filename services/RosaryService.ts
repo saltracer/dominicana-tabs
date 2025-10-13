@@ -121,7 +121,7 @@ export class RosaryService {
         id: 'opening-hail-mary-faith',
         type: 'hail-mary',
         title: 'Hail Mary (Faith)',
-        text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryFaith}`,
+        text: `${PRAYER_TEXTS.hailMary}`,
         order: order++,
         decadeNumber: 0,
         audioFile: 'assets/audio/rosary/hail-mary-1.m4a'
@@ -131,7 +131,7 @@ export class RosaryService {
         id: 'opening-hail-mary-hope',
         type: 'hail-mary',
         title: 'Hail Mary (Hope)',
-        text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryHope}`,
+        text: `${PRAYER_TEXTS.hailMary}`,
         order: order++,
         decadeNumber: 0,
         audioFile: 'assets/audio/rosary/hail-mary-2.m4a'
@@ -141,7 +141,7 @@ export class RosaryService {
         id: 'opening-hail-mary-charity',
         type: 'hail-mary',
         title: 'Hail Mary (Charity)',
-        text: `${PRAYER_TEXTS.hailMary}\n\n${PRAYER_TEXTS.hailMaryCharity}`,
+        text: `${PRAYER_TEXTS.hailMary}`,
         order: order++,
         decadeNumber: 0,
         audioFile: 'assets/audio/rosary/hail-mary-3.m4a'
