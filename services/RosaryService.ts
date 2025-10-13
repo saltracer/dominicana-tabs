@@ -193,8 +193,11 @@ export class RosaryService {
         audioFile: 'assets/audio/rosary/our-father.m4a'
       });
 
-      // 10 Hail Marys
+      // 10 Hail Marys - randomly select from 20 variations
       for (let hailMary = 1; hailMary <= 10; hailMary++) {
+        // Randomly select from 1-20
+        const variation = Math.floor(Math.random() * 20) + 1;
+        const paddedVariation = variation.toString().padStart(2, '0');
         beads.push({
           id: `decade-${decade}-hail-mary-${hailMary}`,
           type: 'hail-mary',
@@ -203,7 +206,7 @@ export class RosaryService {
           order: order++,
           decadeNumber: decade,
           beadNumber: hailMary,
-          audioFile: 'assets/audio/rosary/hail-mary.m4a'
+          audioFile: `assets/audio/rosary/hail-mary-${paddedVariation}.m4a`
         });
       }
 
