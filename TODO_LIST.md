@@ -8,12 +8,12 @@
 - Vespers or Lauds ... need to prove the design
 - Redesign Rosary
 - Rosary Audio
- - [] implement cache invalidation and redownload of audio files -testing phase
+ - [ ] implement cache invalidation and redownload of audio files -testing phase
  - [x] allow specific voices to be clear, obviously 
  - [x] reimplement expo-audio for an iOS/android compatible solution 
  - [x] get audio playback displaying as part of the iOS/android audio experience 
  - [x] add a setting to explicitly clear the cache
- - [] create admin only cms front end web only
+ - [ ] create admin only cms front end web only
  - [x] create a voice for John Henry Newman 
  - [x] a voice for Therese
  - [x] a voice for Francis de Sales
@@ -36,13 +36,14 @@
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
 
 ## Community
-- Calendar is ugly
+- [ ] Calendar is ugly
 
 ## Preaching
-- Subscribe to blogs
-- Subscribe to podcasts
+- [ ] Subscribe to blogs
+- [ ] Subscribe to podcasts
 
 ## Other
-- Carplay
-- Admin console
-- Look for opportunities to refactor
+- [ ] Carplay
+- [ ] Admin console
+- [ ] Look for opportunities to refactor
+- [ ] fix the user profile sub page titling
