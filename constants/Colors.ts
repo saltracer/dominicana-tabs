@@ -31,6 +31,21 @@ export const Colors = {
     border: '#E0E0E0',
     divider: '#BDBDBD',
     
+    // Highlight colors for annotations
+    highlight: {
+      yellow: '#FFEB3B',
+      green: '#4CAF50',
+      blue: '#2196F3',
+      pink: '#E91E63',
+      red: '#F44336',
+      // Background variants with opacity
+      yellowBg: 'rgba(255, 235, 59, 0.3)',
+      greenBg: 'rgba(76, 175, 80, 0.3)',
+      blueBg: 'rgba(33, 150, 243, 0.3)',
+      pinkBg: 'rgba(233, 30, 99, 0.3)',
+      redBg: 'rgba(244, 67, 54, 0.3)',
+    },
+    
     // Liturgical season colors
     advent: '#4B0082', // Purple
     christmas: '#FFFFFF', // White
@@ -83,6 +98,21 @@ export const Colors = {
     // Border and divider colors
     border: '#535353',
     divider: '#616161',
+    
+    // Highlight colors for annotations (same as light mode)
+    highlight: {
+      yellow: '#FFEB3B',
+      green: '#4CAF50',
+      blue: '#2196F3',
+      pink: '#E91E63',
+      red: '#F44336',
+      // Background variants with opacity (slightly higher for dark mode)
+      yellowBg: 'rgba(255, 235, 59, 0.4)',
+      greenBg: 'rgba(76, 175, 80, 0.4)',
+      blueBg: 'rgba(33, 150, 243, 0.4)',
+      pinkBg: 'rgba(233, 30, 99, 0.4)',
+      redBg: 'rgba(244, 67, 54, 0.4)',
+    },
     
     // Liturgical season colors (adjusted for dark mode)
     advent: '#9C27B0', // Lighter purple

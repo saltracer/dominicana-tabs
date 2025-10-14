@@ -23,9 +23,14 @@ import { useBible } from '../../../../contexts/BibleContext';
 import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import { bibleService } from '../../../../services/BibleService';
 import BibleVersionSelectorModal from '../../../../components/BibleVersionSelectorModal';
-import { BibleChapter, BibleVerse } from '../../../../types';
+import { BibleChapter, BibleVerse, Annotation, HighlightColor, BibleBookmark, BibleHighlight } from '../../../../types';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
 import { getBookInfo, getTestamentColor } from '../../../../constants/bibleBookOrder';
+import { useBibleAnnotations } from '../../../../hooks/useBibleAnnotations';
+import { ReadingAnnotationOverlay } from '../../../../components/ReadingAnnotationOverlay';
+import { HighlightColorPicker } from '../../../../components/HighlightColorPicker';
+import { AnnotationNoteEditor } from '../../../../components/AnnotationNoteEditor';
+import { AnnotationsListView } from '../../../../components/AnnotationsListView';
 
 export default function BibleBookScreen() {
   const { bookCode, chapter, version } = useLocalSearchParams();
@@ -43,9 +48,35 @@ export default function BibleBookScreen() {
   const [fontSize, setFontSize] = useState(16);
   const [showVersionSelector, setShowVersionSelector] = useState(false);
 
+  // Annotation state
+  const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showNoteEditor, setShowNoteEditor] = useState(false);
+  const [showAnnotationsList, setShowAnnotationsList] = useState(false);
+  const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(null);
+
   // Determine mode: chapter grid or chapter reader
   const showChapterGrid = chapterParam === null;
   const currentChapter = chapterParam || 1;
+
+  // Bible annotations hook (only load when in chapter reader mode)
+  const {
+    bookmarks,
+    highlights,
+    annotations,
+    isVerseBookmarked,
+    getHighlightForVerse,
+    addBookmark,
+    removeBookmark,
+    updateBookmarkNote,
+    addHighlight,
+    removeHighlight,
+    updateHighlight,
+  } = useBibleAnnotations(
+    bookCodeStr || '',
+    currentChapter,
+    currentVersion
+  );
 
   useEffect(() => {
     if (bookCodeStr) {
@@ -139,6 +170,113 @@ export default function BibleBookScreen() {
     if (currentChapter < maxChapter) {
       router.push(`/(tabs)/study/bible/${bookCodeStr}?chapter=${currentChapter + 1}&version=${currentVersion}`);
     }
+  };
+
+  // Annotation handlers
+  const handleVersePress = (verse: number) => {
+    setSelectedVerse(verse);
+    setShowColorPicker(true);
+  };
+
+  const handleAddBookmark = async () => {
+    if (!chapterData || !chapterData.verses.length) return;
+    // Use first verse of chapter as default or current scroll position
+    const verse = selectedVerse || 1;
+    const success = await addBookmark(verse);
+    if (success) {
+      // Alert.alert('Success', 'Bookmark added');
+    }
+  };
+
+  const handleRemoveBookmark = async () => {
+    if (!chapterData || !chapterData.verses.length) return;
+    const verse = selectedVerse || 1;
+    const bookmark = bookmarks.find(b => b.verse === verse);
+    if (bookmark) {
+      const success = await removeBookmark(bookmark.id);
+      if (success) {
+        Alert.alert('Success', 'Bookmark removed');
+      }
+    }
+  };
+
+  const handleAddHighlight = () => {
+    if (selectedVerse === null) {
+      // No specific verse selected, prompt user to tap a verse
+      Alert.alert('Select a Verse', 'Please tap on a verse to highlight it');
+      return;
+    }
+    setShowColorPicker(true);
+  };
+
+  const handleColorSelect = async (color: HighlightColor) => {
+    if (selectedVerse === null || !chapterData) return;
+    
+    const verse = chapterData.verses.find(v => v.number === selectedVerse);
+    if (!verse) return;
+
+    const success = await addHighlight(
+      selectedVerse,
+      selectedVerse,
+      verse.text,
+      color
+    );
+    
+    if (success) {
+      Alert.alert('Success', 'Highlight added');
+      setSelectedVerse(null);
+    }
+  };
+
+  const handleNavigateToAnnotation = (annotation: Annotation) => {
+    setShowAnnotationsList(false);
+    const data = annotation.data as BibleBookmark | BibleHighlight;
+    
+    // Navigate to the chapter if different
+    if (data.chapter !== currentChapter) {
+      router.push(`/(tabs)/study/bible/${bookCodeStr}?chapter=${data.chapter}&version=${currentVersion}`);
+    }
+    // Could add scrolling to specific verse here if needed
+  };
+
+  const handleDeleteAnnotation = async (annotation: Annotation) => {
+    let success = false;
+    if (annotation.type === 'bookmark') {
+      success = await removeBookmark(annotation.id);
+    } else {
+      success = await removeHighlight(annotation.id);
+    }
+    
+    if (success) {
+      Alert.alert('Success', 'Annotation deleted');
+    }
+  };
+
+  const handleEditNote = (annotation: Annotation) => {
+    setEditingAnnotation(annotation);
+    setShowAnnotationsList(false);
+    setShowNoteEditor(true);
+  };
+
+  const handleSaveNote = async (note: string) => {
+    if (!editingAnnotation) return;
+    
+    let success = false;
+    if (editingAnnotation.type === 'bookmark') {
+      success = await updateBookmarkNote(editingAnnotation.id, note);
+    } else {
+      success = await updateHighlight(editingAnnotation.id, undefined, note);
+    }
+    
+    if (success) {
+      setEditingAnnotation(null);
+      Alert.alert('Success', 'Note saved');
+    }
+  };
+
+  const isCurrentLocationBookmarked = () => {
+    // Check if any verse in current chapter is bookmarked
+    return bookmarks.length > 0;
   };
 
   // Get chapter count
@@ -313,16 +451,49 @@ export default function BibleBookScreen() {
             <Text style={[styles.chapterTitle, { color: colors.text }]}>
               Chapter {chapterData.number}
             </Text>
-            {chapterData.verses.map((verse) => (
-              <View key={verse.number} style={styles.verseContainer}>
-                <Text style={[styles.verseNumber, { color: colors.textSecondary }]}>
-                  {verse.number}
-                </Text>
-                <Text style={[styles.verseText, { color: colors.text, fontSize }]}>
-                  {verse.text}
-                </Text>
-              </View>
-            ))}
+            {chapterData.verses.map((verse) => {
+              const highlight = getHighlightForVerse(verse.number);
+              const bookmarked = isVerseBookmarked(verse.number);
+              const highlightBgColor = highlight 
+                ? colors.highlight[`${highlight.color}Bg` as keyof typeof colors.highlight]
+                : undefined;
+
+              return (
+                <TouchableOpacity
+                  key={verse.number}
+                  style={[
+                    styles.verseContainer,
+                    highlight && { backgroundColor: highlightBgColor as string, borderRadius: 4, paddingVertical: 6 }
+                  ]}
+                  onLongPress={() => handleVersePress(verse.number)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.verseNumberContainer}>
+                    <Text style={[styles.verseNumber, { color: colors.textSecondary }]}>
+                      {verse.number}
+                    </Text>
+                    {bookmarked && (
+                      <Ionicons 
+                        name="bookmark" 
+                        size={14} 
+                        color={colors.primary} 
+                        style={styles.bookmarkIcon}
+                      />
+                    )}
+                  </View>
+                  <View style={styles.verseTextContainer}>
+                    <Text style={[styles.verseText, { color: colors.text, fontSize }]}>
+                      {verse.text}
+                    </Text>
+                    {highlight?.note && (
+                      <View style={styles.verseNoteIndicator}>
+                        <Ionicons name="document-text" size={14} color={colors.textSecondary} />
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -364,12 +535,55 @@ export default function BibleBookScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Annotation Overlay */}
+      {!showChapterGrid && (
+        <ReadingAnnotationOverlay
+          isBookmarked={isCurrentLocationBookmarked()}
+          onAddBookmark={handleAddBookmark}
+          onRemoveBookmark={handleRemoveBookmark}
+          onAddHighlight={handleAddHighlight}
+          onViewAnnotations={() => setShowAnnotationsList(true)}
+        />
+      )}
+
       {/* Version Selector Modal */}
       <BibleVersionSelectorModal
         visible={showVersionSelector}
         currentVersion={currentVersion}
         onVersionChange={setCurrentVersion}
         onClose={() => setShowVersionSelector(false)}
+      />
+
+      {/* Highlight Color Picker */}
+      <HighlightColorPicker
+        visible={showColorPicker}
+        onSelectColor={handleColorSelect}
+        onClose={() => {
+          setShowColorPicker(false);
+          setSelectedVerse(null);
+        }}
+      />
+
+      {/* Note Editor */}
+      <AnnotationNoteEditor
+        visible={showNoteEditor}
+        initialNote={editingAnnotation?.note || ''}
+        context={editingAnnotation?.text || editingAnnotation?.location}
+        onSave={handleSaveNote}
+        onClose={() => {
+          setShowNoteEditor(false);
+          setEditingAnnotation(null);
+        }}
+      />
+
+      {/* Annotations List */}
+      <AnnotationsListView
+        visible={showAnnotationsList}
+        annotations={annotations}
+        onClose={() => setShowAnnotationsList(false)}
+        onNavigateToAnnotation={handleNavigateToAnnotation}
+        onDeleteAnnotation={handleDeleteAnnotation}
+        onEditNote={handleEditNote}
       />
     </SafeAreaView>
   );
@@ -527,19 +741,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 12,
     paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  verseNumberContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginRight: 12,
+    minWidth: 32,
   },
   verseNumber: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginRight: 12,
-    minWidth: 24,
     textAlign: 'right',
+    flex: 1,
+  },
+  bookmarkIcon: {
+    marginLeft: 4,
+    marginTop: 2,
+  },
+  verseTextContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   verseText: {
     flex: 1,
     lineHeight: 24,
     fontFamily: 'Georgia',
+  },
+  verseNoteIndicator: {
+    marginLeft: 8,
+    marginTop: 2,
   },
   navigation: {
     flexDirection: 'row',

@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
-import { Book } from '../../../../types';
+import { Book, Annotation } from '../../../../types';
 import { StudyStyles } from '../../../../styles';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useReading } from '../../../../contexts/ReadingContext';
@@ -26,6 +26,9 @@ import { useBookCache } from '../../../../hooks/useCache';
 import { supabase } from '../../../../lib/supabase';
 import { EpubReader } from '../../../../components/EpubReader';
 import { getTabBarStyle } from '../../../../utils/tabBarStyles';
+import { useBookAnnotations } from '../../../../hooks/useBookAnnotations';
+import { AnnotationsListView } from '../../../../components/AnnotationsListView';
+import { AnnotationNoteEditor } from '../../../../components/AnnotationNoteEditor';
 
 export default function BookDetailScreen() {
   const { colorScheme } = useTheme();
@@ -40,6 +43,32 @@ export default function BookDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [showReader, setShowReader] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showAnnotationsList, setShowAnnotationsList] = useState(false);
+  const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(null);
+  const [showNoteEditor, setShowNoteEditor] = useState(false);
+
+  // Book annotations hook (only if book is loaded)
+  const {
+    bookmarks,
+    highlights,
+    annotations,
+    removeBookmark,
+    removeHighlight,
+    updateBookmarkNote,
+    updateHighlight,
+  } = useBookAnnotations(book?.id || 0);
+
+  // Debug annotations
+  useEffect(() => {
+    if (book) {
+      console.log('📕 Book details page - Annotations:', {
+        bookId: book.id,
+        bookmarks: bookmarks.length,
+        highlights: highlights.length,
+        annotations: annotations.length,
+      });
+    }
+  }, [book, bookmarks, highlights, annotations]);
   
   // Cache hook
   const {
@@ -233,6 +262,54 @@ export default function BookDetailScreen() {
     );
   };
 
+  const handleViewAnnotations = () => {
+    console.log('Opening annotations list from book details, annotations:', annotations.length);
+    setShowAnnotationsList(true);
+  };
+
+  const handleNavigateToAnnotation = (annotation: Annotation) => {
+    console.log('🎯 Navigating to annotation from book details');
+    setShowAnnotationsList(false);
+    // Open the book reader - it will automatically navigate to the saved location
+    // since the hook loads the most recent position
+    setShowReader(true);
+  };
+
+  const handleDeleteAnnotation = async (annotation: Annotation) => {
+    let success = false;
+    if (annotation.type === 'bookmark') {
+      success = await removeBookmark(annotation.id);
+    } else {
+      success = await removeHighlight(annotation.id);
+    }
+    
+    if (success) {
+      Alert.alert('Success', 'Annotation deleted');
+    }
+  };
+
+  const handleEditNote = (annotation: Annotation) => {
+    setEditingAnnotation(annotation);
+    setShowAnnotationsList(false);
+    setShowNoteEditor(true);
+  };
+
+  const handleSaveNote = async (note: string) => {
+    if (!editingAnnotation) return;
+    
+    let success = false;
+    if (editingAnnotation.type === 'bookmark') {
+      success = await updateBookmarkNote(editingAnnotation.id, note);
+    } else {
+      success = await updateHighlight(editingAnnotation.id, undefined, note);
+    }
+    
+    if (success) {
+      setEditingAnnotation(null);
+      Alert.alert('Success', 'Note saved');
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -400,6 +477,33 @@ export default function BookDetailScreen() {
                   {book.epubPath ? (isDownloaded ? 'Read Book (Downloaded)' : 'Read Book') : 'Reading Unavailable'}
                 </Text>
               </TouchableOpacity>
+
+              {/* View Annotations Button */}
+              {annotations.length > 0 && (
+                <TouchableOpacity 
+                  style={[
+                    styles.annotationsButton, 
+                    { 
+                      backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                      borderColor: Colors[colorScheme ?? 'light'].primary,
+                      borderWidth: 1,
+                    }
+                  ]}
+                  onPress={handleViewAnnotations}
+                >
+                  <Ionicons 
+                    name="bookmarks" 
+                    size={18} 
+                    color={Colors[colorScheme ?? 'light'].primary} 
+                  />
+                  <Text style={[
+                    styles.annotationsButtonText, 
+                    { color: Colors[colorScheme ?? 'light'].primary }
+                  ]}>
+                    View Annotations ({annotations.length})
+                  </Text>
+                </TouchableOpacity>
+              )}
               
               {/* Secondary Buttons Row */}
               {(book.epubPath && Platform.OS !== 'web') || isBookInProgress(book.id) ? (
@@ -560,6 +664,28 @@ export default function BookDetailScreen() {
         <View style={[styles.bottomPadding, { height: 80 + Math.max(insets.bottom, 10) }]} />
 
       </ScrollView>
+
+      {/* Note Editor Modal */}
+      <AnnotationNoteEditor
+        visible={showNoteEditor}
+        initialNote={editingAnnotation?.note || ''}
+        context={editingAnnotation?.text || editingAnnotation?.location}
+        onSave={handleSaveNote}
+        onClose={() => {
+          setShowNoteEditor(false);
+          setEditingAnnotation(null);
+        }}
+      />
+
+      {/* Annotations List Modal */}
+      <AnnotationsListView
+        visible={showAnnotationsList}
+        annotations={annotations}
+        onClose={() => setShowAnnotationsList(false)}
+        onNavigateToAnnotation={handleNavigateToAnnotation}
+        onDeleteAnnotation={handleDeleteAnnotation}
+        onEditNote={handleEditNote}
+      />
     </SafeAreaView>
   );
 }
@@ -737,6 +863,23 @@ const styles = StyleSheet.create({
   
   readButtonText: {
     fontSize: 16,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  
+  annotationsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  
+  annotationsButtonText: {
+    fontSize: 15,
     fontFamily: 'Georgia',
     fontWeight: '600',
     marginLeft: 8,

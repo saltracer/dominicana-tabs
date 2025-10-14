@@ -189,12 +189,80 @@ export interface Book {
 
 export type BookCategory = 'Philosophy' | 'Theology' | 'Mysticism' | 'Science' | 'Natural History' | 'Spiritual';
 
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'red';
+
 export interface Bookmark {
   id: string;
   bookId: number; // Updated to match your database (number instead of string)
   position: number;
   note?: string;
   createdAt: string;
+}
+
+// Book annotation types (for EPUB books)
+export interface BookBookmark {
+  id: string;
+  user_id: string;
+  book_id: number;
+  location: string; // JSON string of Readium locator
+  cfi?: string | null;
+  note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookHighlight {
+  id: string;
+  user_id: string;
+  book_id: number;
+  location: string;
+  cfi_range?: string | null;
+  highlighted_text: string;
+  color: HighlightColor;
+  note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Bible annotation types
+export interface BibleBookmark {
+  id: string;
+  user_id: string;
+  book_code: string;
+  chapter: number;
+  verse: number;
+  version: string;
+  note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BibleHighlight {
+  id: string;
+  user_id: string;
+  book_code: string;
+  chapter: number;
+  verse_start: number;
+  verse_end: number;
+  version: string;
+  highlighted_text: string;
+  color: HighlightColor;
+  note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Combined annotation type for display
+export interface Annotation {
+  id: string;
+  type: 'bookmark' | 'highlight';
+  text?: string;
+  note?: string | null;
+  color?: HighlightColor;
+  location: string; // Display location (e.g., "Chapter 3" or "Genesis 1:1")
+  created_at: string;
+  // Original data for navigation
+  data: BookBookmark | BookHighlight | BibleBookmark | BibleHighlight;
 }
 
 export interface ReadingProgress {
@@ -404,15 +472,7 @@ export interface BibleReadingSession {
   bookmarks?: BibleBookmark[];
 }
 
-export interface BibleBookmark {
-  id: string;
-  bookCode: string;
-  chapter: number;
-  verse: number;
-  note?: string;
-  createdAt: string;
-  tags?: string[];
-}
+// Note: BibleBookmark interface moved earlier in file (line ~228) with database-aligned structure
 
 export interface BibleReadingPlan {
   id: string;

@@ -125,6 +125,155 @@ export interface Database {
           created_at?: string;
         };
       };
+      book_bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          book_id: number;
+          location: string;
+          cfi: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          book_id: number;
+          location: string;
+          cfi?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          book_id?: number;
+          location?: string;
+          cfi?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      book_highlights: {
+        Row: {
+          id: string;
+          user_id: string;
+          book_id: number;
+          location: string;
+          cfi_range: string | null;
+          highlighted_text: string;
+          color: string;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          book_id: number;
+          location: string;
+          cfi_range?: string | null;
+          highlighted_text: string;
+          color: string;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          book_id?: number;
+          location?: string;
+          cfi_range?: string | null;
+          highlighted_text?: string;
+          color?: string;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      bible_bookmarks: {
+        Row: {
+          id: string;
+          user_id: string;
+          book_code: string;
+          chapter: number;
+          verse: number;
+          version: string;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          book_code: string;
+          chapter: number;
+          verse: number;
+          version: string;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          book_code?: string;
+          chapter?: number;
+          verse?: number;
+          version?: string;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      bible_highlights: {
+        Row: {
+          id: string;
+          user_id: string;
+          book_code: string;
+          chapter: number;
+          verse_start: number;
+          verse_end: number;
+          version: string;
+          highlighted_text: string;
+          color: string;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          book_code: string;
+          chapter: number;
+          verse_start: number;
+          verse_end: number;
+          version: string;
+          highlighted_text: string;
+          color: string;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          book_code?: string;
+          chapter?: number;
+          verse_start?: number;
+          verse_end?: number;
+          version?: string;
+          highlighted_text?: string;
+          color?: string;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       reading_progress: {
         Row: {
           id: string;

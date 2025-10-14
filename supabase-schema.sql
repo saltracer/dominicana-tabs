@@ -333,6 +333,138 @@ CREATE TABLE IF NOT EXISTS reading_progress (
 CREATE TRIGGER update_reading_progress_updated_at BEFORE UPDATE ON reading_progress
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Create book_bookmarks table for EPUB book annotations
+CREATE TABLE IF NOT EXISTS book_bookmarks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  location TEXT NOT NULL, -- Readium locator JSON string
+  cfi TEXT, -- Optional CFI for compatibility
+  note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create book_highlights table for EPUB book highlights
+CREATE TABLE IF NOT EXISTS book_highlights (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+  location TEXT NOT NULL, -- Readium locator JSON string
+  cfi_range TEXT, -- Start and end CFI for text range
+  highlighted_text TEXT NOT NULL,
+  color TEXT NOT NULL CHECK (color IN ('yellow', 'green', 'blue', 'pink', 'red')),
+  note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create bible_bookmarks table for Bible verse annotations
+CREATE TABLE IF NOT EXISTS bible_bookmarks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  book_code TEXT NOT NULL, -- e.g., 'GEN', 'MAT'
+  chapter INTEGER NOT NULL,
+  verse INTEGER NOT NULL,
+  version TEXT NOT NULL, -- e.g., 'douay-rheims'
+  note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create bible_highlights table for Bible verse highlights
+CREATE TABLE IF NOT EXISTS bible_highlights (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  book_code TEXT NOT NULL,
+  chapter INTEGER NOT NULL,
+  verse_start INTEGER NOT NULL,
+  verse_end INTEGER NOT NULL, -- For multi-verse highlights
+  version TEXT NOT NULL,
+  highlighted_text TEXT NOT NULL,
+  color TEXT NOT NULL CHECK (color IN ('yellow', 'green', 'blue', 'pink', 'red')),
+  note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS on annotation tables
+ALTER TABLE book_bookmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE book_highlights ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bible_bookmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bible_highlights ENABLE ROW LEVEL SECURITY;
+
+-- Create indexes for annotation tables
+CREATE INDEX IF NOT EXISTS idx_book_bookmarks_user_book ON book_bookmarks(user_id, book_id);
+CREATE INDEX IF NOT EXISTS idx_book_highlights_user_book ON book_highlights(user_id, book_id);
+CREATE INDEX IF NOT EXISTS idx_bible_bookmarks_user_location ON bible_bookmarks(user_id, book_code, chapter, version);
+CREATE INDEX IF NOT EXISTS idx_bible_highlights_user_location ON bible_highlights(user_id, book_code, chapter, version);
+
+-- RLS Policies for book_bookmarks
+CREATE POLICY "Users can view their own book bookmarks" ON book_bookmarks
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own book bookmarks" ON book_bookmarks
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own book bookmarks" ON book_bookmarks
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own book bookmarks" ON book_bookmarks
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for book_highlights
+CREATE POLICY "Users can view their own book highlights" ON book_highlights
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own book highlights" ON book_highlights
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own book highlights" ON book_highlights
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own book highlights" ON book_highlights
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for bible_bookmarks
+CREATE POLICY "Users can view their own bible bookmarks" ON bible_bookmarks
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own bible bookmarks" ON bible_bookmarks
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own bible bookmarks" ON bible_bookmarks
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own bible bookmarks" ON bible_bookmarks
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- RLS Policies for bible_highlights
+CREATE POLICY "Users can view their own bible highlights" ON bible_highlights
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own bible highlights" ON bible_highlights
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own bible highlights" ON bible_highlights
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own bible highlights" ON bible_highlights
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Create triggers for annotation tables updated_at
+CREATE TRIGGER update_book_bookmarks_updated_at BEFORE UPDATE ON book_bookmarks
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_book_highlights_updated_at BEFORE UPDATE ON book_highlights
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_bible_bookmarks_updated_at BEFORE UPDATE ON bible_bookmarks
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_bible_highlights_updated_at BEFORE UPDATE ON bible_highlights
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Function to handle new user registration (UPDATED FOR ACTUAL STRUCTURE)
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
