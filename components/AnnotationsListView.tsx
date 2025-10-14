@@ -84,11 +84,27 @@ export const AnnotationsListView: React.FC<AnnotationsListViewProps> = ({
   const renderAnnotation = (annotation: Annotation) => {
     const isBookmark = annotation.type === 'bookmark';
     const highlightColor = annotation.color ? getHighlightColor(annotation.color) : undefined;
+    
+    // Extract more details from bookmark data
+    const bookmarkData = annotation.data as any;
+    let chapterInfo = '';
+    try {
+      const locData = JSON.parse(bookmarkData.location);
+      if (locData.title) {
+        chapterInfo = locData.title;
+      }
+      const progress = locData.locations?.totalProgression;
+      if (progress) {
+        chapterInfo += ` • ${Math.round(progress * 100)}%`;
+      }
+    } catch (e) {
+      chapterInfo = annotation.location;
+    }
 
     return (
       <View
         key={annotation.id}
-        style={[styles.annotationCard, { backgroundColor: colors.surface }]}
+        style={[styles.annotationCard, { backgroundColor: colors.surface, borderLeftWidth: 3, borderLeftColor: highlightColor || colors.primary }]}
       >
         <TouchableOpacity
           style={styles.annotationContent}
@@ -108,26 +124,27 @@ export const AnnotationsListView: React.FC<AnnotationsListViewProps> = ({
                   color={highlightColor || colors.primary}
                 />
               </View>
-              <Text style={[styles.location, { color: colors.textSecondary }]}>
-                {annotation.location}
-              </Text>
+              <View style={styles.locationInfo}>
+                <Text style={[styles.location, { color: colors.text }]}>
+                  {chapterInfo || annotation.location}
+                </Text>
+                <Text style={[styles.date, { color: colors.textMuted }]}>
+                  {new Date(annotation.created_at).toLocaleDateString()}
+                </Text>
+              </View>
             </View>
-            <Text style={[styles.date, { color: colors.textMuted }]}>
-              {new Date(annotation.created_at).toLocaleDateString()}
-            </Text>
           </View>
 
           {/* Highlighted Text */}
           {annotation.text && (
-            <Text style={[styles.highlightedText, { color: colors.text }]} numberOfLines={3}>
-              {annotation.text}
+            <Text style={[styles.highlightedText, { color: colors.text }]} numberOfLines={2}>
+              "{annotation.text}"
             </Text>
           )}
 
-          {/* Note */}
+          {/* Note Preview */}
           {annotation.note && (
             <View style={[styles.noteContainer, { backgroundColor: colors.card }]}>
-              <Ionicons name="document-text" size={14} color={colors.textSecondary} />
               <Text style={[styles.noteText, { color: colors.textSecondary }]} numberOfLines={2}>
                 {annotation.note}
               </Text>
@@ -165,9 +182,16 @@ export const AnnotationsListView: React.FC<AnnotationsListViewProps> = ({
       visible={visible}
       animationType="slide"
       onRequestClose={onClose}
-      presentationStyle="fullScreen"
+      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
     >
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top || (Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 24) }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: Platform.OS === 'android' ? (insets.top || StatusBar.currentHeight || 24) : 0 }]}>
+        {/* Pull indicator for swipe to dismiss */}
+        {Platform.OS === 'ios' && (
+          <View style={styles.pullIndicatorContainer}>
+            <View style={[styles.pullIndicator, { backgroundColor: colors.textMuted }]} />
+          </View>
+        )}
+        
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -197,30 +221,32 @@ export const AnnotationsListView: React.FC<AnnotationsListViewProps> = ({
         </View>
 
         {/* Filter Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-          {(['all', 'bookmarks', 'highlights', 'notes'] as FilterType[]).map(filterType => (
-            <TouchableOpacity
-              key={filterType}
-              style={[
-                styles.filterTab,
-                {
-                  backgroundColor: filter === filterType ? colors.primary : colors.surface,
-                  borderColor: colors.border,
-                }
-              ]}
-              onPress={() => setFilter(filterType)}
-            >
-              <Text
+        <View style={styles.filterContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScrollContent}>
+            {(['all', 'bookmarks', 'highlights', 'notes'] as FilterType[]).map(filterType => (
+              <TouchableOpacity
+                key={filterType}
                 style={[
-                  styles.filterText,
-                  { color: filter === filterType ? colors.dominicanWhite : colors.text }
+                  styles.filterTab,
+                  {
+                    backgroundColor: filter === filterType ? colors.primary : colors.surface,
+                    borderColor: filter === filterType ? colors.primary : colors.border,
+                  }
                 ]}
+                onPress={() => setFilter(filterType)}
               >
-                {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+                <Text
+                  style={[
+                    styles.filterText,
+                    { color: filter === filterType ? colors.dominicanWhite : colors.text }
+                  ]}
+                >
+                  {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         {/* Annotations List */}
         <ScrollView
@@ -254,6 +280,15 @@ export const AnnotationsListView: React.FC<AnnotationsListViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  pullIndicatorContainer: {
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  pullIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
   },
   header: {
     flexDirection: 'row',
@@ -292,18 +327,22 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  filterScrollContent: {
+    gap: 8,
   },
   filterTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
     borderWidth: 1,
   },
   filterText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
     fontFamily: 'Georgia',
   },
   list: {
@@ -314,85 +353,91 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   annotationCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   annotationContent: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   annotationHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 8,
   },
   typeInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 10,
     flex: 1,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 2,
+  },
+  locationInfo: {
+    flex: 1,
   },
   location: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     fontFamily: 'Georgia',
-    flex: 1,
+    marginBottom: 2,
   },
   date: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Georgia',
+    marginTop: 2,
   },
   highlightedText: {
-    fontSize: 15,
-    fontFamily: 'Georgia',
-    lineHeight: 22,
-    marginTop: 8,
-  },
-  noteContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  noteText: {
-    flex: 1,
     fontSize: 14,
     fontFamily: 'Georgia',
-    fontStyle: 'italic',
     lineHeight: 20,
+    marginTop: 6,
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  noteContainer: {
+    padding: 10,
+    borderRadius: 6,
+    marginTop: 6,
+    borderLeftWidth: 2,
+    borderLeftColor: '#DAA520',
+  },
+  noteText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
+    lineHeight: 18,
+    color: '#666',
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
   },
   actionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
   },
   actionText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     fontFamily: 'Georgia',
   },
   emptyState: {
