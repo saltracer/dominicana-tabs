@@ -20,6 +20,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { useBible } from '../../../../contexts/BibleContext';
 import { bibleService } from '../../../../services/BibleService.web';
 import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
+import BibleVersionSelectorModal from '../../../../components/BibleVersionSelectorModal';
 import { BibleChapter, BibleVerse } from '../../../../types';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
 import { getBookInfo, getTestamentColor } from '../../../../constants/bibleBookOrder';
@@ -37,6 +38,7 @@ export default function BibleBookWebScreen() {
   const [currentChapter, setCurrentChapter] = useState<BibleChapter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showVersionSelector, setShowVersionSelector] = useState(false);
 
   const showChapterGrid = chapterParam === null;
   const chapterNumber = chapterParam || 1;
@@ -183,10 +185,10 @@ export default function BibleBookWebScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.primary }]}
+            style={[styles.retryButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary }]}
             onPress={() => router.back()}
           >
-            <Text style={[styles.backButtonText, { color: colors.primary }]}>
+            <Text style={[styles.retryButtonText, { color: colors.primary }]}>
               Go Back
             </Text>
           </TouchableOpacity>
@@ -271,14 +273,24 @@ export default function BibleBookWebScreen() {
           />
         </TouchableOpacity>
         
-        <View style={styles.headerCenter}>
+        <TouchableOpacity 
+          style={styles.headerCenter}
+          onPress={() => setShowVersionSelector(true)}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.bookTitle, { color: colors.text }]}>
             {book?.title || bookCodeStr}
           </Text>
-          <Text style={[styles.chapterTitle, { color: colors.textSecondary }]}>
+          <View style={styles.versionBadge}>
+            <Text style={[styles.versionBadgeText, { color: colors.textSecondary }]}>
+              {getCurrentVersionInfo()?.shortName || currentVersion}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={colors.textSecondary} />
+          </View>
+          <Text style={[styles.chapterTitle, { color: colors.primary }]}>
             Chapter {chapterNumber}
           </Text>
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.headerSpacer} />
       </View>
@@ -353,6 +365,14 @@ export default function BibleBookWebScreen() {
           ))}
         </View>
       </ScrollView>
+
+      {/* Version Selector Modal */}
+      <BibleVersionSelectorModal
+        visible={showVersionSelector}
+        currentVersion={currentVersion}
+        onVersionChange={setCurrentVersion}
+        onClose={() => setShowVersionSelector(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -375,6 +395,7 @@ const styles = StyleSheet.create({
   headerCenter: {
     alignItems: 'center',
     flex: 1,
+    paddingVertical: 4,
   },
   headerSpacer: {
     width: 40,
@@ -388,6 +409,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
     marginTop: 2,
+  },
+  versionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  versionBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
   },
   chapterTitle: {
     fontSize: 14,
@@ -433,17 +464,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   retryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  backButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  backButtonText: {
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',

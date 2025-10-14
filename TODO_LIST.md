@@ -30,6 +30,7 @@
 - [ ] Book audio?
 - [ ] Redeisgn how the bible is accessed
 - [ ] keep books downloaded
+- [ ] cache the book covers
 - [ ] Add a setting to remove the download
 - [ ] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?

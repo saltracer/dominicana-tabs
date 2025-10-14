@@ -22,6 +22,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { useBible } from '../../../../contexts/BibleContext';
 import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import { bibleService } from '../../../../services/BibleService';
+import BibleVersionSelectorModal from '../../../../components/BibleVersionSelectorModal';
 import { BibleChapter, BibleVerse } from '../../../../types';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
 import { getBookInfo, getTestamentColor } from '../../../../constants/bibleBookOrder';
@@ -40,6 +41,7 @@ export default function BibleBookScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState(16);
+  const [showVersionSelector, setShowVersionSelector] = useState(false);
 
   // Determine mode: chapter grid or chapter reader
   const showChapterGrid = chapterParam === null;
@@ -175,10 +177,10 @@ export default function BibleBookScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.backButton, { borderColor: colors.primary }]}
+            style={[styles.retryButton, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.primary }]}
             onPress={() => router.back()}
           >
-            <Text style={[styles.backButtonText, { color: colors.primary }]}>
+            <Text style={[styles.retryButtonText, { color: colors.primary }]}>
               Go Back
             </Text>
           </TouchableOpacity>
@@ -207,7 +209,7 @@ export default function BibleBookScreen() {
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={styles.headerButton}
             onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -271,17 +273,24 @@ export default function BibleBookScreen() {
           <Ionicons name="arrow-back" size={20} color={colors.primary} />
         </TouchableOpacity>
         
-        <View style={styles.headerCenter}>
+        <TouchableOpacity 
+          style={styles.headerCenter}
+          onPress={() => setShowVersionSelector(true)}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.bookTitle, { color: colors.text }]}>
             {book?.title}
           </Text>
-          <Text style={[styles.versionText, { color: colors.textSecondary }]}>
-            {getCurrentVersionInfo()?.shortName || currentVersion}
-          </Text>
+          <View style={styles.versionBadge}>
+            <Text style={[styles.versionBadgeText, { color: colors.textSecondary }]}>
+              {getCurrentVersionInfo()?.shortName || currentVersion}
+            </Text>
+            <Ionicons name="chevron-down" size={12} color={colors.textSecondary} />
+          </View>
           <Text style={[styles.chapterText, { color: colors.primary }]}>
             Chapter {currentChapter}
           </Text>
-        </View>
+        </TouchableOpacity>
         
         <View style={styles.headerRight}>
           <TouchableOpacity
@@ -354,6 +363,14 @@ export default function BibleBookScreen() {
           />
         </TouchableOpacity>
       </View>
+
+      {/* Version Selector Modal */}
+      <BibleVersionSelectorModal
+        visible={showVersionSelector}
+        currentVersion={currentVersion}
+        onVersionChange={setCurrentVersion}
+        onClose={() => setShowVersionSelector(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -404,17 +421,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: 'Georgia',
   },
-  backButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -428,6 +434,7 @@ const styles = StyleSheet.create({
   headerCenter: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: 4,
   },
   headerRight: {
     flexDirection: 'row',
@@ -441,7 +448,17 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 12,
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    marginTop: 2,
+  },
+  versionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  versionBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
   },
   chapterText: {
     fontSize: 14,
