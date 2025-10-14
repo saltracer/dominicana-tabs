@@ -56,13 +56,15 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
   };
 
   const cardBg = colorScheme === 'dark' ? 'rgba(32, 29, 29, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+  // Primary color with opacity for bookmarked state
+  const primaryWithOpacity = colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.95)' : 'rgba(140, 21, 21, 0.95)';
   
   const actionButtons = [
     {
       icon: isBookmarked ? 'bookmark' : 'bookmark-outline',
       action: isBookmarked ? onRemoveBookmark : onAddBookmark,
       color: isBookmarked ? colors.dominicanWhite : colors.primary,
-      backgroundColor: isBookmarked ? colors.primary : cardBg,
+      backgroundColor: isBookmarked ? primaryWithOpacity : cardBg,
       label: isBookmarked ? 'Remove Bookmark' : 'Add Bookmark',
     },
     {
@@ -138,7 +140,7 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
         style={[
           styles.fab,
           { 
-            backgroundColor: `${colors.primary}F0`, // 94% opacity (F0 in hex)
+            backgroundColor: colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.94)' : 'rgba(140, 21, 21, 0.94)',
             shadowColor: colors.primary,
           }
         ]}
@@ -193,7 +195,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 5, // Reduced to allow transparency
     zIndex: 20, // Highest z-index
   },
   actionButton: {
@@ -210,9 +212,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 10, // Higher elevation for Android to be above backdrop
+    elevation: 3, // Reduced to allow transparency while maintaining layering
   },
 });
 

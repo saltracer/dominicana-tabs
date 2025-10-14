@@ -40,13 +40,15 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
   };
 
   const cardBg = colorScheme === 'dark' ? 'rgba(32, 29, 29, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+  // Primary color with opacity for bookmarked state
+  const primaryWithOpacity = colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.95)' : 'rgba(140, 21, 21, 0.95)';
   
   const actionButtons = [
     {
       icon: isBookmarked ? 'bookmark' : 'bookmark-outline',
       action: isBookmarked ? onRemoveBookmark : onAddBookmark,
       color: isBookmarked ? colors.dominicanWhite : colors.primary,
-      backgroundColor: isBookmarked ? colors.primary : cardBg,
+      backgroundColor: isBookmarked ? primaryWithOpacity : cardBg,
     },
     {
       icon: 'color-fill-outline',
@@ -84,7 +86,7 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
         style={[
           styles.fab,
           { 
-            backgroundColor: `${colors.primary}F0`, // 94% opacity (F0 in hex)
+            backgroundColor: colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.94)' : 'rgba(140, 21, 21, 0.94)',
           }
         ]}
         onPress={toggleExpanded}
@@ -139,7 +141,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
     cursor: 'pointer',
   },
   actionButton: {
@@ -148,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
     cursor: 'pointer',
   },
 });

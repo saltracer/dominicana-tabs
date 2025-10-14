@@ -105,35 +105,12 @@ function TabLayoutContent() {
         name="study"
         options={{
           title: 'Study',
-          headerShown: !isInBookReader, // Hide header when in book reader
+          headerShown: false, // Stack navigator handles headers for study screens
           tabBarIcon: ({ color, focused }) => (
             <IoniconsTabBarIcon 
               name={focused ? "library" : "library-outline"} 
               color={color} 
             />
-          ),
-          headerLeft: () => (
-            <View style={styles.headerLogoContainer}>
-              <Image 
-                source={require('../../assets/images/dominicana_logo.png')} 
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
-            </View>
-          ),
-          headerRight: () => (
-            <Link href="/profile" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <Ionicons
-                    name="person-circle"
-                    size={28}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
           ),
         }}
       />

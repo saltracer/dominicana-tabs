@@ -14,6 +14,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
+import { usePreventRemove } from '@react-navigation/native';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { Book, Annotation } from '../../../../types';
@@ -90,10 +91,17 @@ export default function BookDetailScreen() {
     if (book) {
       navigation.setOptions({
         title: book.title,
-        headerBackButtonDisplayMode: 'minimal', // Show only back arrow, no text
+        headerBackTitle: '', // Ensure back button has no text
       });
     }
   }, [book, navigation]);
+
+  // Intercept back navigation when reader is shown
+  usePreventRemove(showReader, () => {
+    // Close the reader instead of navigating back
+    console.log('⬅️ Back navigation intercepted - closing reader');
+    setShowReader(false);
+  });
 
   // Hide header/tab bar when reader is shown
   useFocusEffect(
@@ -103,6 +111,8 @@ export default function BookDetailScreen() {
       
       navigation.setOptions({
         headerShown: !showReader, // Hide header when reader is shown
+        // Control back button menu based on reader state
+        headerBackButtonMenuEnabled: !showReader, // Enabled when reader is hidden, disabled when shown
       });
       
       // Hide tab bar when reader is shown
