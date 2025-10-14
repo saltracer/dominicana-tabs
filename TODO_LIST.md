@@ -28,7 +28,7 @@
 - [ ] Notes
 - [ ] Highlights
 - [ ] Book audio?
-- [ ] Redeisgn how the bible is accessed
+- [x] Redeisgn how the bible is accessed
 - [ ] keep books downloaded
 - [ ] cache the book covers
 - [ ] Add a setting to remove the download
