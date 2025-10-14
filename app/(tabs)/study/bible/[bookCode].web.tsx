@@ -459,27 +459,34 @@ const styles = StyleSheet.create({
   chapterGridLabel: {
     fontSize: 20,
     fontFamily: 'Georgia',
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 20,
+    textAlign: 'center',
   },
   chapterGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 12,
   },
   chapterButton: {
-    width: 52,
-    height: 48,
+    width: 56,
+    height: 56,
     borderRadius: 8,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     cursor: 'pointer',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   chapterButtonText: {
     fontSize: 16,
     fontFamily: 'Georgia',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   
   // Chapter Reader Styles

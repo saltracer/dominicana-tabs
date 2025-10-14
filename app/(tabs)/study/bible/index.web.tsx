@@ -31,7 +31,6 @@ export default function BibleIndexWebScreen() {
   const [books, setBooks] = useState<VersionBibleBook[]>([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadBooks();
@@ -111,18 +110,6 @@ export default function BibleIndexWebScreen() {
     router.push(`/(tabs)/study/bible/${book.code}?version=${currentVersion}`);
   };
 
-  const toggleSection = (section: string) => {
-    setCollapsedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
-    });
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -184,102 +171,78 @@ export default function BibleIndexWebScreen() {
       >
         {/* Old Testament Section */}
         {oldTestamentBooks.length > 0 && (
-          <View style={styles.testamentSection}>
-            <TouchableOpacity
-              style={[styles.testamentHeader, { backgroundColor: colors.surface, borderLeftColor: getTestamentColor('old-testament') }]}
-              onPress={() => toggleSection('old-testament')}
-            >
-              <Ionicons
-                name={collapsedSections.has('old-testament') ? 'chevron-forward' : 'chevron-down'}
-                size={20}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.testamentTitle, { color: colors.primary }]}>
-                Old Testament ({oldTestamentBooks.length} books)
-              </Text>
-            </TouchableOpacity>
-
-            {!collapsedSections.has('old-testament') && (
-              <View style={styles.bookGrid}>
-                {oldTestamentBooks.map((book) => {
-                  const bookInfo = OLD_TESTAMENT_BOOKS.find(b => b.code === book.code);
-                  const chapters = bookInfo?.chapters || 50;
-                  const isDeutero = bookInfo?.isDeuterocanonical || false;
-                  
-                  return (
-                    <TouchableOpacity
-                      key={book.code}
-                      style={[
-                        styles.bookCard,
-                        {
-                          backgroundColor: colors.card,
-                          borderColor: isDeutero ? '#DAA520' : getTestamentColor('old-testament'),
-                        },
-                      ]}
-                      onPress={() => handleBookPress(book)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.bookAbbreviation, { color: colors.text }]}>
-                        {book.abbreviation}
-                      </Text>
-                      <Text style={[styles.chapterCount, { color: colors.textSecondary }]}>
-                        {chapters} ch
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Old Testament
+            </Text>
+            
+            <View style={styles.bookGrid}>
+              {oldTestamentBooks.map((book) => {
+                const bookInfo = OLD_TESTAMENT_BOOKS.find(b => b.code === book.code);
+                const chapters = bookInfo?.chapters || 50;
+                const isDeutero = bookInfo?.isDeuterocanonical || false;
+                
+                return (
+                  <TouchableOpacity
+                    key={book.code}
+                    style={[
+                      styles.bookCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: isDeutero ? '#DAA520' : getTestamentColor('old-testament'),
+                      },
+                    ]}
+                    onPress={() => handleBookPress(book)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.bookAbbreviation, { color: colors.text }]} numberOfLines={1}>
+                      {book.abbreviation}
+                    </Text>
+                    <Text style={[styles.chapterCount, { color: colors.textSecondary }]}>
+                      {chapters} ch
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         )}
 
         {/* New Testament Section */}
         {newTestamentBooks.length > 0 && (
-          <View style={styles.testamentSection}>
-            <TouchableOpacity
-              style={[styles.testamentHeader, { backgroundColor: colors.surface, borderLeftColor: getTestamentColor('new-testament') }]}
-              onPress={() => toggleSection('new-testament')}
-            >
-              <Ionicons
-                name={collapsedSections.has('new-testament') ? 'chevron-forward' : 'chevron-down'}
-                size={20}
-                color={colors.textSecondary}
-              />
-              <Text style={[styles.testamentTitle, { color: colors.primary }]}>
-                New Testament ({newTestamentBooks.length} books)
-              </Text>
-            </TouchableOpacity>
-
-            {!collapsedSections.has('new-testament') && (
-              <View style={styles.bookGrid}>
-                {newTestamentBooks.map((book) => {
-                  const bookInfo = NEW_TESTAMENT_BOOKS.find(b => b.code === book.code);
-                  const chapters = bookInfo?.chapters || 28;
-                  
-                  return (
-                    <TouchableOpacity
-                      key={book.code}
-                      style={[
-                        styles.bookCard,
-                        {
-                          backgroundColor: colors.card,
-                          borderColor: getTestamentColor('new-testament'),
-                        },
-                      ]}
-                      onPress={() => handleBookPress(book)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={[styles.bookAbbreviation, { color: colors.text }]}>
-                        {book.abbreviation}
-                      </Text>
-                      <Text style={[styles.chapterCount, { color: colors.textSecondary }]}>
-                        {chapters} ch
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              New Testament
+            </Text>
+            
+            <View style={styles.bookGrid}>
+              {newTestamentBooks.map((book) => {
+                const bookInfo = NEW_TESTAMENT_BOOKS.find(b => b.code === book.code);
+                const chapters = bookInfo?.chapters || 28;
+                
+                return (
+                  <TouchableOpacity
+                    key={book.code}
+                    style={[
+                      styles.bookCard,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: getTestamentColor('new-testament'),
+                      },
+                    ]}
+                    onPress={() => handleBookPress(book)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.bookAbbreviation, { color: colors.text }]} numberOfLines={1}>
+                      {book.abbreviation}
+                    </Text>
+                    <Text style={[styles.chapterCount, { color: colors.textSecondary }]}>
+                      {chapters} ch
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -363,47 +326,45 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  testamentSection: {
-    marginTop: 16,
-  },
-  testamentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+  section: {
+    marginTop: 24,
+    marginBottom: 16,
     paddingHorizontal: 20,
-    borderLeftWidth: 4,
-    gap: 8,
   },
-  testamentTitle: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 20,
     fontFamily: 'Georgia',
     fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    marginBottom: 16,
+    textAlign: 'center',
   },
   bookGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    justifyContent: 'center',
     gap: 12,
   },
   bookCard: {
-    width: 70,
-    height: 90,
+    width: 90,
+    height: 110,
     borderRadius: 8,
     borderWidth: 2,
-    padding: 8,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
     cursor: 'pointer',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   bookAbbreviation: {
     fontSize: 16,
     fontFamily: 'Georgia',
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   chapterCount: {
     fontSize: 12,
