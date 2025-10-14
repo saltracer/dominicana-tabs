@@ -24,6 +24,8 @@ import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useReadingProgress } from '../../../contexts/ReadingProgressContext';
 import { useBooks } from '../../../hooks/useBooks';
+import { useCacheStats } from '../../../hooks/useCache';
+import { BookCacheService } from '../../../services/BookCacheService';
 import FloatingBibleButton from '../../../components/FloatingBibleButton';
 
 export default function StudyScreen() {
@@ -38,10 +40,29 @@ export default function StudyScreen() {
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | 'all'>('all');
   const [filteredBooks, setFilteredBooks] = useState<Book[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [downloadedBookIds, setDownloadedBookIds] = useState<string[]>([]);
+  
+  // Get cache stats
+  const { stats: cacheStats, refresh: refreshCacheStats } = useCacheStats();
 
   useEffect(() => {
     filterBooks();
   }, [books, searchQuery, selectedCategory]);
+
+  // Load downloaded book IDs
+  useEffect(() => {
+    loadDownloadedBooks();
+  }, [cacheStats]);
+
+  const loadDownloadedBooks = async () => {
+    if (Platform.OS === 'web') return;
+    try {
+      const bookIds = await BookCacheService.getDownloadedBooks();
+      setDownloadedBookIds(bookIds);
+    } catch (error) {
+      console.error('Error loading downloaded books:', error);
+    }
+  };
 
   // Debug reading progress
   useEffect(() => {
@@ -70,6 +91,10 @@ export default function StudyScreen() {
     try {
       // Refresh reading progress data
       await refreshProgress();
+      // Refresh cache stats
+      await refreshCacheStats();
+      // Load downloaded books
+      await loadDownloadedBooks();
       // The books data will be refreshed automatically by the useBooks hook
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -130,6 +155,16 @@ export default function StudyScreen() {
   });
 
   const showContinueReading = user && filteredContinueReading.length > 0;
+
+  // Filter downloaded books by selected category
+  const downloadedBooks = books.filter(book => {
+    const bookIdStr = String(book.id);
+    const isDownloaded = downloadedBookIds.includes(bookIdStr);
+    const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
+    return isDownloaded && matchesCategory;
+  });
+
+  const showDownloadedBooks = user && Platform.OS !== 'web' && downloadedBooks.length > 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
@@ -336,6 +371,64 @@ export default function StudyScreen() {
           </View>
         )}
 
+        {/* Downloaded Books - Show downloaded books */}
+        {showDownloadedBooks && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Downloaded Books
+              </Text>
+              <View style={[styles.downloadBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                <Ionicons name="download" size={12} color={Colors[colorScheme ?? 'light'].primary} />
+                <Text style={[styles.downloadBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                  {downloadedBooks.length}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.booksGrid}>
+              {downloadedBooks.map((book) => (
+                <TouchableOpacity
+                  key={`downloaded-${book.id}`}
+                  style={[
+                    platformStyles.bookCardGrid,
+                    { backgroundColor: Colors[colorScheme ?? 'light'].card }
+                  ]}
+                  onPress={() => handleBookPress(book)}
+                >
+                  <View style={styles.bookCover}>
+                    {book.coverImage ? (
+                      <Image 
+                        source={{ uri: book.coverImage }} 
+                        style={styles.bookCoverImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Ionicons 
+                        name="book" 
+                        size={40} 
+                        color={Colors[colorScheme ?? 'light'].primary} 
+                      />
+                    )}
+                    <View style={[styles.downloadIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+                      <Ionicons name="download" size={12} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+                    </View>
+                  </View>
+                  <View style={styles.bookInfo}>
+                    <Text style={[styles.bookTitleGrid, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
+                      {book.title}
+                    </Text>
+                    <Text style={[styles.bookAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      {book.author}
+                    </Text>
+                    <Text style={[styles.bookDescription, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={2}>
+                      {book.description}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
         
         {/* Books Grid */}
         <View style={styles.section}>
@@ -416,6 +509,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  downloadBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  downloadBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+  },
+  downloadIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 5,
   },
 });
 
