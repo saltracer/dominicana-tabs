@@ -305,8 +305,12 @@ export default function BookDetailScreen() {
     }
     
     if (success) {
+      // Close note editor and reopen annotations list
+      setShowNoteEditor(false);
       setEditingAnnotation(null);
-      Alert.alert('Success', 'Note saved');
+      setShowAnnotationsList(true);
+    } else {
+      Alert.alert('Error', 'Failed to save note');
     }
   };
 
@@ -669,11 +673,30 @@ export default function BookDetailScreen() {
       <AnnotationNoteEditor
         visible={showNoteEditor}
         initialNote={editingAnnotation?.note || ''}
-        context={editingAnnotation?.text || editingAnnotation?.location}
+        context={editingAnnotation ? (() => {
+          // Extract rich context from bookmark/highlight data
+          try {
+            const data = editingAnnotation.data as any;
+            const locData = JSON.parse(data.location);
+            let context = '';
+            if (locData.title) {
+              context = locData.title;
+            }
+            const progress = locData.locations?.totalProgression;
+            if (progress) {
+              context += ` • ${Math.round(progress * 100)}% through book`;
+            }
+            return context || editingAnnotation.location;
+          } catch (e) {
+            return editingAnnotation.text || editingAnnotation.location;
+          }
+        })() : ''}
         onSave={handleSaveNote}
         onClose={() => {
           setShowNoteEditor(false);
           setEditingAnnotation(null);
+          // Return to annotations list
+          setShowAnnotationsList(true);
         }}
       />
 

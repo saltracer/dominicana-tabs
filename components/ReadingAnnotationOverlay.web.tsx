@@ -39,24 +39,26 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
     setIsExpanded(false);
   };
 
+  const cardBg = colorScheme === 'dark' ? 'rgba(32, 29, 29, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+  
   const actionButtons = [
     {
       icon: isBookmarked ? 'bookmark' : 'bookmark-outline',
       action: isBookmarked ? onRemoveBookmark : onAddBookmark,
-      color: isBookmarked ? colors.dominicanWhite : colors.textSecondary,
-      backgroundColor: isBookmarked ? colors.primary : colors.card,
+      color: isBookmarked ? colors.dominicanWhite : colors.primary,
+      backgroundColor: isBookmarked ? colors.primary : cardBg,
     },
     {
       icon: 'color-fill-outline',
       action: onAddHighlight,
       color: colors.accent,
-      backgroundColor: colors.card,
+      backgroundColor: cardBg,
     },
     {
       icon: 'list',
       action: onViewAnnotations,
       color: colors.info,
-      backgroundColor: colors.card,
+      backgroundColor: cardBg,
     },
   ];
 
@@ -82,7 +84,7 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
         style={[
           styles.fab,
           { 
-            backgroundColor: colors.primary,
+            backgroundColor: `${colors.primary}F0`, // 94% opacity (F0 in hex)
           }
         ]}
         onPress={toggleExpanded}

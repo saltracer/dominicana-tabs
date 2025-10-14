@@ -469,6 +469,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   };
 
   const handleEditNote = (annotation: Annotation) => {
+    console.log('✏️ Opening note editor for annotation:', annotation.id);
     setEditingAnnotation(annotation);
     setShowAnnotationsList(false);
     setShowNoteEditor(true);
@@ -477,6 +478,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   const handleSaveNote = async (note: string) => {
     if (!editingAnnotation) return;
     
+    console.log('💾 Saving note for annotation:', editingAnnotation.id);
     let success = false;
     if (editingAnnotation.type === 'bookmark') {
       success = await updateBookmarkNote(editingAnnotation.id, note);
@@ -485,8 +487,14 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
     }
     
     if (success) {
+      console.log('✅ Note saved, returning to annotations list');
+      // Close note editor and reopen annotations list
+      setShowNoteEditor(false);
       setEditingAnnotation(null);
-      Alert.alert('Success', 'Note saved');
+      // Return to annotations list
+      setShowAnnotationsList(true);
+    } else {
+      Alert.alert('Error', 'Failed to save note');
     }
   };
 
@@ -621,7 +629,9 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
           onLocationChange={(locator) => {
           const newHref = locator?.href;
           const oldHref = currentLocation?.href;
-          const direction = locator?.locations?.totalProgression > (currentLocation?.locations?.totalProgression || 0) ? 'forward' : 'backward';
+          const newProgression = locator?.locations?.totalProgression || 0;
+          const oldProgression = currentLocation?.locations?.totalProgression || 0;
+          const direction = newProgression > oldProgression ? 'forward' : 'backward';
           
           console.log('🔄 Location changed:', {
             direction,
@@ -684,11 +694,30 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       <AnnotationNoteEditor
         visible={showNoteEditor}
         initialNote={editingAnnotation?.note || ''}
-        context={editingAnnotation?.text || editingAnnotation?.location}
+        context={editingAnnotation ? (() => {
+          // Extract rich context from bookmark/highlight data
+          try {
+            const data = editingAnnotation.data as any;
+            const locData = JSON.parse(data.location);
+            let context = '';
+            if (locData.title) {
+              context = locData.title;
+            }
+            const progress = locData.locations?.totalProgression;
+            if (progress) {
+              context += ` • ${Math.round(progress * 100)}% through book`;
+            }
+            return context || editingAnnotation.location;
+          } catch (e) {
+            return editingAnnotation.text || editingAnnotation.location;
+          }
+        })() : ''}
         onSave={handleSaveNote}
         onClose={() => {
           setShowNoteEditor(false);
           setEditingAnnotation(null);
+          // Return to annotations list instead of dismissing everything
+          setShowAnnotationsList(true);
         }}
       />
 

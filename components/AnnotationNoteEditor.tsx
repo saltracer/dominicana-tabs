@@ -42,7 +42,7 @@ export const AnnotationNoteEditor: React.FC<AnnotationNoteEditorProps> = ({
 
   const handleSave = () => {
     onSave(note.trim());
-    onClose();
+    // Don't close here - let parent handle it
   };
 
   const handleCancel = () => {
@@ -99,11 +99,16 @@ export const AnnotationNoteEditor: React.FC<AnnotationNoteEditorProps> = ({
 
             {/* Context */}
             {context && (
-              <View style={[styles.contextContainer, { backgroundColor: colors.surface }]}>
-                <Ionicons name="quote" size={16} color={colors.textSecondary} />
+              <View style={[styles.contextContainer, { backgroundColor: colors.surface, borderLeftColor: colors.primary }]}>
+                <View style={styles.contextHeader}>
+                  <Ionicons name="bookmark" size={16} color={colors.primary} />
+                  <Text style={[styles.contextLabel, { color: colors.textSecondary }]}>
+                    Location
+                  </Text>
+                </View>
                 <Text 
-                  style={[styles.contextText, { color: colors.textSecondary }]} 
-                  numberOfLines={2}
+                  style={[styles.contextText, { color: colors.text }]} 
+                  numberOfLines={3}
                 >
                   {context}
                 </Text>
@@ -193,27 +198,36 @@ const styles = StyleSheet.create({
   headerButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Georgia',
+    // fontFamily: 'Georgia',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    fontFamily: 'Georgia',
+    // fontFamily: 'Georgia',
   },
   contextContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    padding: 16,
+    padding: 12,
     marginHorizontal: 20,
     marginTop: 16,
     borderRadius: 8,
+    borderLeftWidth: 3,
+  },
+  contextHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  contextLabel: {
+    fontSize: 12,
+    // fontFamily: 'Georgia',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   contextText: {
-    flex: 1,
     fontSize: 14,
     fontFamily: 'Georgia',
-    fontStyle: 'italic',
     lineHeight: 20,
   },
   inputContainer: {
@@ -223,14 +237,15 @@ const styles = StyleSheet.create({
     maxHeight: 400,
   },
   input: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Georgia',
-    lineHeight: 24,
+    lineHeight: 22,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderRadius: 8,
-    minHeight: 150,
+    minHeight: 120,
+    maxHeight: 300,
   },
   footer: {
     paddingHorizontal: 20,
