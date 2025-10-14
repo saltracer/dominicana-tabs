@@ -32,6 +32,7 @@
 - [ ] keep books downloaded
 - [ ] Add a setting to remove the download
 - [ ] Add a admin only, web only, CMS to manage the books and their covers and other metadata
+- [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
 
 ## Community
 - Calendar is ugly

@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * Bible Index Web - Grid-based Navigation
+ * Shows all Bible books in canonical order with testament sections
+ */
+
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,34 +22,20 @@ import { bibleService } from '../../../../services/BibleService.web';
 import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import BibleVersionSelector from '../../../../components/BibleVersionSelector';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
-import { StudyStyles, getStudyPlatformStyles } from '../../../../styles';
+import { OLD_TESTAMENT_BOOKS, NEW_TESTAMENT_BOOKS, getTestamentColor } from '../../../../constants/bibleBookOrder';
 
 export default function BibleIndexWebScreen() {
   const { colorScheme } = useTheme();
-  const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
-  const isWeb = true;
-  const platformStyles = getStudyPlatformStyles(isWeb);
+  const colors = Colors[colorScheme ?? 'light'];
+  const { currentVersion, setCurrentVersion } = useBible();
   const [books, setBooks] = useState<VersionBibleBook[]>([]);
-  const [filteredBooks, setFilteredBooks] = useState<VersionBibleBook[]>([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadBooks();
   }, [currentVersion]);
-
-  useEffect(() => {
-    if (searchText.trim() === '') {
-      setFilteredBooks(books);
-    } else {
-      const filtered = books.filter(book =>
-        book.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        book.shortTitle.toLowerCase().includes(searchText.toLowerCase()) ||
-        book.abbreviation.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredBooks(filtered);
-    }
-  }, [searchText, books]);
 
   const loadBooks = async () => {
     try {
@@ -52,7 +43,6 @@ export default function BibleIndexWebScreen() {
       let bibleBooks: VersionBibleBook[];
       
       if (currentVersion === 'douay-rheims') {
-        // Use original BibleService for Douay-Rheims (has all 73 books)
         const originalBooks = await bibleService.getAvailableBooks();
         bibleBooks = originalBooks.map(book => ({
           code: book.code,
@@ -63,15 +53,13 @@ export default function BibleIndexWebScreen() {
           order: book.order,
           chapters: book.chapters,
           versionId: 'douay-rheims',
-          available: true
+          available: true,
         }));
       } else {
-        // Use MultiVersionBibleService for other versions (like Vulgate)
         bibleBooks = await multiVersionBibleService.getAvailableBooks();
       }
       
       setBooks(bibleBooks);
-      setFilteredBooks(bibleBooks);
     } catch (error) {
       console.error('Error loading Bible books:', error);
     } finally {
@@ -79,48 +67,67 @@ export default function BibleIndexWebScreen() {
     }
   };
 
+  // Sort books by canonical order
+  const sortedBooks = useMemo(() => {
+    const bookMap = new Map(books.map(b => [b.code, b]));
+    const sorted: VersionBibleBook[] = [];
+
+    // Add OT books in canonical order
+    OLD_TESTAMENT_BOOKS.forEach(canonicalBook => {
+      const book = bookMap.get(canonicalBook.code);
+      if (book) {
+        sorted.push(book);
+      }
+    });
+
+    // Add NT books in canonical order
+    NEW_TESTAMENT_BOOKS.forEach(canonicalBook => {
+      const book = bookMap.get(canonicalBook.code);
+      if (book) {
+        sorted.push(book);
+      }
+    });
+
+    return sorted;
+  }, [books]);
+
+  // Filter books by search
+  const filteredBooks = useMemo(() => {
+    if (!searchText.trim()) return sortedBooks;
+
+    const query = searchText.toLowerCase();
+    return sortedBooks.filter(book =>
+      book.title.toLowerCase().includes(query) ||
+      book.shortTitle.toLowerCase().includes(query) ||
+      book.abbreviation.toLowerCase().includes(query)
+    );
+  }, [sortedBooks, searchText]);
+
+  // Group by testament
+  const oldTestamentBooks = filteredBooks.filter(b => b.category === 'old-testament' || b.category === 'deuterocanonical');
+  const newTestamentBooks = filteredBooks.filter(b => b.category === 'new-testament');
+
   const handleBookPress = (book: VersionBibleBook) => {
     router.push(`/(tabs)/study/bible/${book.code}?version=${currentVersion}`);
   };
 
-  const handleSearchPress = () => {
-    router.push('/(tabs)/study/bible/search');
+  const toggleSection = (section: string) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
   };
-
-  const renderBookSection = (title: string, books: VersionBibleBook[]) => (
-    <View key={title} style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-        {title}
-      </Text>
-      <View style={styles.booksGrid}>
-        {books.map((book) => (
-          <TouchableOpacity
-            key={book.code}
-            style={[styles.bookCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-            onPress={() => handleBookPress(book)}
-          >
-            <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {book.title}
-            </Text>
-            <Text style={[styles.bookSubtitle, { color: Colors[colorScheme ?? 'light'].secondaryText }]}>
-              {book.shortTitle}
-            </Text>
-            {book.chapters && (
-              <Text style={[styles.chapterCount, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                {book.chapters} chapters
-              </Text>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
             Loading Bible books...
           </Text>
         </View>
@@ -128,79 +135,163 @@ export default function BibleIndexWebScreen() {
     );
   }
 
-  const oldTestamentBooks = filteredBooks.filter(book => book.category === 'old-testament');
-  const newTestamentBooks = filteredBooks.filter(book => book.category === 'new-testament');
-  const deuterocanonicalBooks = filteredBooks.filter(book => book.category === 'deuterocanonical');
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons 
-            name="arrow-back" 
-            size={24} 
-            color={Colors[colorScheme ?? 'light'].text} 
-          />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
           Sacred Scripture
         </Text>
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={handleSearchPress}
-        >
-          <Ionicons 
-            name="search" 
-            size={24} 
-            color={Colors[colorScheme ?? 'light'].primary} 
-          />
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
       </View>
 
       {/* Version Selector */}
-      <BibleVersionSelector
-        currentVersion={currentVersion}
-        onVersionChange={setCurrentVersion}
-        style={styles.versionSelector}
-      />
-
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={[styles.searchInput, { 
-            backgroundColor: Colors[colorScheme ?? 'light'].card,
-            color: Colors[colorScheme ?? 'light'].text,
-            borderColor: Colors[colorScheme ?? 'light'].border
-          }]}
-          placeholder="Search books..."
-          placeholderTextColor={Colors[colorScheme ?? 'light'].secondaryText}
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-        <Ionicons 
-          name="search" 
-          size={20} 
-          color={Colors[colorScheme ?? 'light'].secondaryText} 
-          style={styles.searchIcon}
+      <View style={styles.versionContainer}>
+        <BibleVersionSelector
+          currentVersion={currentVersion}
+          onVersionChange={setCurrentVersion}
+          style={styles.versionSelector}
         />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {oldTestamentBooks.length > 0 && renderBookSection('Old Testament', oldTestamentBooks)}
-        {newTestamentBooks.length > 0 && renderBookSection('New Testament', newTestamentBooks)}
-        {deuterocanonicalBooks.length > 0 && renderBookSection('Deuterocanonical', deuterocanonicalBooks)}
-        
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Ionicons name="search" size={20} color={colors.textSecondary} />
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search Bible books..."
+          placeholderTextColor={colors.textMuted}
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchText('')}>
+            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        {/* Old Testament Section */}
+        {oldTestamentBooks.length > 0 && (
+          <View style={styles.testamentSection}>
+            <TouchableOpacity
+              style={[styles.testamentHeader, { backgroundColor: colors.surface, borderLeftColor: getTestamentColor('old-testament') }]}
+              onPress={() => toggleSection('old-testament')}
+            >
+              <Ionicons
+                name={collapsedSections.has('old-testament') ? 'chevron-forward' : 'chevron-down'}
+                size={20}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.testamentTitle, { color: colors.primary }]}>
+                Old Testament ({oldTestamentBooks.length} books)
+              </Text>
+            </TouchableOpacity>
+
+            {!collapsedSections.has('old-testament') && (
+              <View style={styles.bookGrid}>
+                {oldTestamentBooks.map((book) => {
+                  const bookInfo = OLD_TESTAMENT_BOOKS.find(b => b.code === book.code);
+                  const chapters = bookInfo?.chapters || 50;
+                  const isDeutero = bookInfo?.isDeuterocanonical || false;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={book.code}
+                      style={[
+                        styles.bookCard,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: isDeutero ? '#DAA520' : getTestamentColor('old-testament'),
+                        },
+                      ]}
+                      onPress={() => handleBookPress(book)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.bookAbbreviation, { color: colors.text }]}>
+                        {book.abbreviation}
+                      </Text>
+                      <Text style={[styles.chapterCount, { color: colors.textSecondary }]}>
+                        {chapters} ch
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* New Testament Section */}
+        {newTestamentBooks.length > 0 && (
+          <View style={styles.testamentSection}>
+            <TouchableOpacity
+              style={[styles.testamentHeader, { backgroundColor: colors.surface, borderLeftColor: getTestamentColor('new-testament') }]}
+              onPress={() => toggleSection('new-testament')}
+            >
+              <Ionicons
+                name={collapsedSections.has('new-testament') ? 'chevron-forward' : 'chevron-down'}
+                size={20}
+                color={colors.textSecondary}
+              />
+              <Text style={[styles.testamentTitle, { color: colors.primary }]}>
+                New Testament ({newTestamentBooks.length} books)
+              </Text>
+            </TouchableOpacity>
+
+            {!collapsedSections.has('new-testament') && (
+              <View style={styles.bookGrid}>
+                {newTestamentBooks.map((book) => {
+                  const bookInfo = NEW_TESTAMENT_BOOKS.find(b => b.code === book.code);
+                  const chapters = bookInfo?.chapters || 28;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={book.code}
+                      style={[
+                        styles.bookCard,
+                        {
+                          backgroundColor: colors.card,
+                          borderColor: getTestamentColor('new-testament'),
+                        },
+                      ]}
+                      onPress={() => handleBookPress(book)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.bookAbbreviation, { color: colors.text }]}>
+                        {book.abbreviation}
+                      </Text>
+                      <Text style={[styles.chapterCount, { color: colors.textSecondary }]}>
+                        {chapters} ch
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Empty State */}
         {filteredBooks.length === 0 && (
           <View style={styles.emptyState}>
-            <Ionicons 
-              name="book-outline" 
-              size={64} 
-              color={Colors[colorScheme ?? 'light'].secondaryText} 
-            />
-            <Text style={[styles.emptyText, { color: Colors[colorScheme ?? 'light'].secondaryText }]}>
+            <Ionicons name="book-outline" size={64} color={colors.textMuted} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>
               No books found
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+              Try a different search term
             </Text>
           </View>
         )}
@@ -210,12 +301,130 @@ export default function BibleIndexWebScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Include all shared styles
-  ...StudyStyles,
-  
-  // Add/override with unique local styles
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    padding: 8,
+    width: 40,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  versionContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  versionSelector: {
+    marginVertical: 0,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 22,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Georgia',
+  },
   scrollView: {
     flex: 1,
+  },
+  testamentSection: {
+    marginTop: 16,
+  },
+  testamentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
     paddingHorizontal: 20,
+    borderLeftWidth: 4,
+    gap: 8,
+  },
+  testamentTitle: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  bookGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  bookCard: {
+    width: 70,
+    height: 90,
+    borderRadius: 8,
+    borderWidth: 2,
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  bookAbbreviation: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  chapterCount: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginTop: 8,
   },
 });

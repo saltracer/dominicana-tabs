@@ -1,3 +1,8 @@
+/**
+ * Bible Book Page (Web)
+ * Shows chapter grid if no chapter specified, or chapter reader if chapter specified
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -17,26 +22,26 @@ import { bibleService } from '../../../../services/BibleService.web';
 import { multiVersionBibleService } from '../../../../services/MultiVersionBibleService';
 import { BibleChapter, BibleVerse } from '../../../../types';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
-import { StudyStyles, getStudyPlatformStyles } from '../../../../styles';
+import { getBookInfo, getTestamentColor } from '../../../../constants/bibleBookOrder';
 
-export default function BibleReaderWebScreen() {
+export default function BibleBookWebScreen() {
   const { bookCode, chapter, version } = useLocalSearchParams();
   const bookCodeStr = bookCode as string;
   const versionStr = version as string;
-  const initialChapterNum = chapter ? parseInt(chapter as string, 10) : 1;
+  const chapterParam = chapter ? parseInt(chapter as string, 10) : null;
 
   const { colorScheme } = useTheme();
-  const isWeb = true;
-  const platformStyles = getStudyPlatformStyles(isWeb);
+  const colors = Colors[colorScheme ?? 'light'];
   const { currentVersion, setCurrentVersion, getCurrentVersionInfo } = useBible();
   const [book, setBook] = useState<VersionBibleBook | null>(null);
   const [currentChapter, setCurrentChapter] = useState<BibleChapter | null>(null);
-  const [chapterNumber, setChapterNumber] = useState(initialChapterNum);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const showChapterGrid = chapterParam === null;
+  const chapterNumber = chapterParam || 1;
+
   useEffect(() => {
-    // Set version from URL params if provided
     if (versionStr && versionStr !== currentVersion) {
       setCurrentVersion(versionStr);
     }
@@ -44,10 +49,10 @@ export default function BibleReaderWebScreen() {
   }, [bookCodeStr, versionStr]);
 
   useEffect(() => {
-    if (book) {
+    if (book && !showChapterGrid) {
       loadChapter(chapterNumber);
     }
-  }, [book, chapterNumber, currentVersion]);
+  }, [book, chapterNumber, currentVersion, showChapterGrid]);
 
   const loadBook = async () => {
     try {
@@ -56,7 +61,6 @@ export default function BibleReaderWebScreen() {
       let bookData: VersionBibleBook;
       
       if (currentVersion === 'douay-rheims') {
-        // Use original BibleService for Douay-Rheims
         const originalBook = await bibleService.getBookByCode(bookCodeStr);
         bookData = {
           code: originalBook.code,
@@ -67,10 +71,9 @@ export default function BibleReaderWebScreen() {
           order: originalBook.order,
           chapters: originalBook.chapters,
           versionId: 'douay-rheims',
-          available: true
+          available: true,
         };
       } else {
-        // Use MultiVersionBibleService for other versions
         const availableBooks = await multiVersionBibleService.getAvailableBooks();
         const foundBook = availableBooks.find(b => b.code === bookCodeStr);
         if (!foundBook) {
@@ -95,10 +98,8 @@ export default function BibleReaderWebScreen() {
       let chapterData: BibleChapter | null;
       
       if (currentVersion === 'douay-rheims') {
-        // Use original BibleService for Douay-Rheims
         chapterData = await bibleService.getChapter(bookCodeStr, chapterNum);
       } else {
-        // Use MultiVersionBibleService for other versions
         chapterData = await multiVersionBibleService.getChapter(bookCodeStr, chapterNum, currentVersion);
       }
       
@@ -115,46 +116,36 @@ export default function BibleReaderWebScreen() {
     }
   };
 
+  const handleChapterPress = (chapterNum: number) => {
+    router.push(`/(tabs)/study/bible/${bookCodeStr}?chapter=${chapterNum}&version=${currentVersion}`);
+  };
+
   const handlePreviousChapter = () => {
     if (chapterNumber > 1) {
-      setChapterNumber(chapterNumber - 1);
+      router.push(`/(tabs)/study/bible/${bookCodeStr}?chapter=${chapterNumber - 1}&version=${currentVersion}`);
     }
   };
 
   const handleNextChapter = () => {
-    if (book && chapterNumber < book.chapters!) {
-      setChapterNumber(chapterNumber + 1);
+    const bookInfo = getBookInfo(bookCodeStr);
+    const maxChapter = bookInfo?.chapters || book?.chapters || 50;
+    if (chapterNumber < maxChapter) {
+      router.push(`/(tabs)/study/bible/${bookCodeStr}?chapter=${chapterNumber + 1}&version=${currentVersion}`);
     }
   };
 
-  const handleVersePress = (verse: BibleVerse) => {
-    // Could add verse highlighting or note-taking functionality here
-    console.log('Verse pressed:', verse.reference);
-  };
+  const bookInfo = getBookInfo(bookCodeStr);
+  const chapterCount = bookInfo?.chapters || book?.chapters || 50;
+  const testament = book?.category === 'new-testament' ? 'new-testament' : 'old-testament';
+  const chapters = Array.from({ length: chapterCount }, (_, i) => i + 1);
 
-  const renderVerse = (verse: BibleVerse) => (
-    <View key={verse.number} style={styles.verseContainer}>
-      <TouchableOpacity
-        style={styles.verseContent}
-        onPress={() => handleVersePress(verse)}
-      >
-        <Text style={[styles.verseNumber, { color: Colors[colorScheme ?? 'light'].primary }]}>
-          {verse.number}
-        </Text>
-        <Text style={[styles.verseText, { color: Colors[colorScheme ?? 'light'].text }]}>
-          {verse.text}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  if (loading && !currentChapter) {
+  if (loading && !showChapterGrid && !currentChapter) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Loading {bookCodeStr}...
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            Loading...
           </Text>
         </View>
       </SafeAreaView>
@@ -163,32 +154,39 @@ export default function BibleReaderWebScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
           <Ionicons 
             name="alert-circle-outline" 
             size={64} 
-            color={Colors[colorScheme ?? 'light'].error || '#ff6b6b'} 
+            color={colors.error || '#ff6b6b'} 
           />
-          <Text style={[styles.errorTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+          <Text style={[styles.errorTitle, { color: colors.text }]}>
             Error Loading Content
           </Text>
-          <Text style={[styles.errorMessage, { color: Colors[colorScheme ?? 'light'].secondaryText }]}>
+          <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>
             {error}
           </Text>
           <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-            onPress={() => loadChapter(chapterNumber)}
+            style={[styles.retryButton, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              setError(null);
+              if (!showChapterGrid) {
+                loadChapter(chapterNumber);
+              } else {
+                loadBook();
+              }
+            }}
           >
-            <Text style={[styles.retryButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+            <Text style={[styles.retryButtonText, { color: colors.dominicanWhite }]}>
               Try Again
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.backButton, { borderColor: Colors[colorScheme ?? 'light'].primary }]}
+            style={[styles.backButton, { borderColor: colors.primary }]}
             onPress={() => router.back()}
           >
-            <Text style={[styles.backButtonText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>
               Go Back
             </Text>
           </TouchableOpacity>
@@ -197,10 +195,71 @@ export default function BibleReaderWebScreen() {
     );
   }
 
+  // CHAPTER GRID MODE
+  if (showChapterGrid) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          
+          <View style={styles.headerCenter}>
+            <Text style={[styles.bookTitle, { color: colors.text }]}>
+              {book?.title || bookCodeStr}
+            </Text>
+            <Text style={[styles.versionText, { color: colors.textSecondary }]}>
+              {getCurrentVersionInfo()?.shortName || currentVersion}
+            </Text>
+          </View>
+
+          <View style={styles.headerSpacer} />
+        </View>
+
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
+          <View style={styles.chapterGridContainer}>
+            <Text style={[styles.chapterGridLabel, { color: colors.text }]}>
+              Chapters ({chapterCount}):
+            </Text>
+            
+            <View style={styles.chapterGrid}>
+              {chapters.map((chapterNum) => (
+                <TouchableOpacity
+                  key={chapterNum}
+                  style={[
+                    styles.chapterButton,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => handleChapterPress(chapterNum)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chapterButtonText, { color: colors.text }]}>
+                    {chapterNum}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // CHAPTER READER MODE
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => router.back()}
@@ -208,39 +267,30 @@ export default function BibleReaderWebScreen() {
           <Ionicons 
             name="arrow-back" 
             size={24} 
-            color={Colors[colorScheme ?? 'light'].text} 
+            color={colors.text} 
           />
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
-          <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+          <Text style={[styles.bookTitle, { color: colors.text }]}>
             {book?.title || bookCodeStr}
           </Text>
-          <Text style={[styles.chapterTitle, { color: Colors[colorScheme ?? 'light'].secondaryText }]}>
+          <Text style={[styles.chapterTitle, { color: colors.textSecondary }]}>
             Chapter {chapterNumber}
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.push(`/(tabs)/study/bible/search?bookCode=${bookCodeStr}`)}
-        >
-          <Ionicons 
-            name="search" 
-            size={24} 
-            color={Colors[colorScheme ?? 'light'].primary} 
-          />
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
       </View>
 
       {/* Navigation Controls */}
-      <View style={styles.navigationContainer}>
+      <View style={[styles.navigationContainer, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={[
             styles.navButton,
             { 
-              backgroundColor: chapterNumber > 1 ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].disabled,
-              opacity: chapterNumber > 1 ? 1 : 0.5
+              backgroundColor: chapterNumber > 1 ? colors.primary : colors.surface,
+              opacity: chapterNumber > 1 ? 1 : 0.5,
             }
           ]}
           onPress={handlePreviousChapter}
@@ -249,16 +299,16 @@ export default function BibleReaderWebScreen() {
           <Ionicons 
             name="chevron-back" 
             size={20} 
-            color={Colors[colorScheme ?? 'light'].dominicanWhite} 
+            color={colors.dominicanWhite} 
           />
-          <Text style={[styles.navButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+          <Text style={[styles.navButtonText, { color: colors.dominicanWhite }]}>
             Previous
           </Text>
         </TouchableOpacity>
 
         <View style={styles.chapterInfo}>
-          <Text style={[styles.chapterInfoText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            {chapterNumber} of {book?.chapters || '?'}
+          <Text style={[styles.chapterInfoText, { color: colors.text }]}>
+            {chapterNumber} of {chapterCount}
           </Text>
         </View>
 
@@ -266,34 +316,41 @@ export default function BibleReaderWebScreen() {
           style={[
             styles.navButton,
             { 
-              backgroundColor: (book && chapterNumber < book.chapters!) ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].disabled,
-              opacity: (book && chapterNumber < book.chapters!) ? 1 : 0.5
+              backgroundColor: chapterNumber < chapterCount ? colors.primary : colors.surface,
+              opacity: chapterNumber < chapterCount ? 1 : 0.5,
             }
           ]}
           onPress={handleNextChapter}
-          disabled={!book || chapterNumber >= book.chapters!}
+          disabled={chapterNumber >= chapterCount}
         >
-          <Text style={[styles.navButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+          <Text style={[styles.navButtonText, { color: colors.dominicanWhite }]}>
             Next
           </Text>
           <Ionicons 
             name="chevron-forward" 
             size={20} 
-            color={Colors[colorScheme ?? 'light'].dominicanWhite} 
+            color={colors.dominicanWhite} 
           />
         </TouchableOpacity>
       </View>
 
       {/* Chapter Content */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
-          </View>
-        )}
-        
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         <View style={styles.chapterContainer}>
-          {currentChapter?.verses.map(renderVerse)}
+          {currentChapter?.verses.map((verse) => (
+            <View key={verse.number} style={styles.verseContainer}>
+              <Text style={[styles.verseNumber, { color: colors.primary }]}>
+                {verse.number}
+              </Text>
+              <Text style={[styles.verseText, { color: colors.text }]}>
+                {verse.text}
+              </Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -301,10 +358,6 @@ export default function BibleReaderWebScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Include all shared styles
-  ...StudyStyles,
-  
-  // Add/override with unique local styles for Bible reader web
   container: {
     flex: 1,
   },
@@ -315,87 +368,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   headerButton: {
     padding: 8,
   },
   headerCenter: {
     alignItems: 'center',
+    flex: 1,
+  },
+  headerSpacer: {
+    width: 40,
   },
   bookTitle: {
     fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Georgia',
   },
+  versionText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginTop: 2,
+  },
   chapterTitle: {
     fontSize: 14,
     fontFamily: 'Georgia',
     marginTop: 2,
   },
-  navigationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  navButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginHorizontal: 4,
-  },
-  chapterInfo: {
-    alignItems: 'center',
-  },
-  chapterInfoText: {
-    fontSize: 14,
-    fontWeight: '500',
-    fontFamily: 'Georgia',
-  },
   scrollView: {
-    flex: 1,
-  },
-  loadingOverlay: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  chapterContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    maxWidth: 800,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  verseContainer: {
-    marginBottom: 16,
-  },
-  verseContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  verseNumber: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginRight: 8,
-    marginTop: 2,
-    minWidth: 20,
-  },
-  verseText: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: 'Georgia',
     flex: 1,
   },
   loadingContainer: {
@@ -448,5 +447,95 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',
+  },
+  
+  // Chapter Grid Styles
+  chapterGridContainer: {
+    padding: 24,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  chapterGridLabel: {
+    fontSize: 20,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginBottom: 20,
+  },
+  chapterGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  chapterButton: {
+    width: 52,
+    height: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+  },
+  chapterButtonText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
+  },
+  
+  // Chapter Reader Styles
+  navigationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  navButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginHorizontal: 4,
+  },
+  chapterInfo: {
+    alignItems: 'center',
+  },
+  chapterInfoText: {
+    fontSize: 14,
+    fontWeight: '500',
+    fontFamily: 'Georgia',
+  },
+  chapterContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  verseContainer: {
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  verseNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginRight: 8,
+    marginTop: 2,
+    minWidth: 20,
+  },
+  verseText: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: 'Georgia',
+    flex: 1,
   },
 });

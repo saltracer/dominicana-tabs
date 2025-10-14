@@ -24,6 +24,7 @@ import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useReadingProgress } from '../../../contexts/ReadingProgressContext';
 import { useBooks } from '../../../hooks/useBooks';
+import FloatingBibleButton from '../../../components/FloatingBibleButton';
 
 export default function StudyScreen() {
   const { colorScheme } = useTheme();
@@ -117,6 +118,19 @@ export default function StudyScreen() {
     );
   }
 
+  // Filter continue reading by selected category
+  const filteredContinueReading = readingProgress.filter(progress => {
+    if (selectedCategory === 'all') return true;
+    const book = books.find(b => {
+      const bookIdNum = typeof b.id === 'string' ? parseInt(b.id, 10) : b.id;
+      return bookIdNum === progress.book_id;
+    });
+    if (!book) return false;
+    return book.category === selectedCategory;
+  });
+
+  const showContinueReading = user && filteredContinueReading.length > 0;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <ScrollView 
@@ -148,7 +162,7 @@ export default function StudyScreen() {
           </View>
         )}
 
-        {/* Categories */}
+        {/* Categories - MOVED ABOVE CONTINUE READING */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Categories
@@ -201,44 +215,9 @@ export default function StudyScreen() {
             />
           </View>
         </View>
-
-
         
-
-        {/* Bible Reading */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Sacred Scripture
-          </Text>
-          
-          <TouchableOpacity
-            style={[styles.bibleCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-            onPress={() => {
-              router.push('/(tabs)/study/bible');
-            }}
-          >
-            <View style={styles.bibleCardContent}>
-              <View style={styles.bibleIcon}>
-                <Ionicons name="book" size={32} color={Colors[colorScheme ?? 'light'].primary} />
-              </View>
-              <View style={styles.bibleInfo}>
-                <Text style={[styles.bibleTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Holy Bible
-                </Text>
-                <Text style={[styles.bibleSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Douay-Rheims Version
-                </Text>
-                <Text style={[styles.bibleDescription, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                  Read the complete Catholic Bible with search and navigation features
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-            </View>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Reading Progress */}
-        {user && (
+        {/* Reading Progress - NOW FILTERED BY CATEGORY */}
+        {showContinueReading && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               Continue Reading
@@ -249,9 +228,9 @@ export default function StudyScreen() {
                   Loading reading progress...
                 </Text>
               </View>
-            ) : readingProgress.length > 0 ? (
+            ) : filteredContinueReading.length > 0 ? (
               <View style={styles.booksGrid}>
-                {readingProgress
+                {filteredContinueReading
                   .filter((progress, index, self) => 
                     // Remove duplicates by keeping only the most recent entry for each book
                     index === self.findIndex(p => p.book_id === progress.book_id)
@@ -408,10 +387,12 @@ export default function StudyScreen() {
         
       </ScrollView>
 
+      {/* Floating Bible Button */}
+      <FloatingBibleButton onPress={() => router.push('/(tabs)/study/bible')} />
+
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   // Include all shared styles
   ...StudyStyles,
@@ -437,3 +418,4 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
 });
+
