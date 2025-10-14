@@ -19,7 +19,6 @@ import LiturgyPreferencesDropdown from '../components/LiturgyPreferencesDropdown
 import LiturgyPreferencesToggle from '../components/LiturgyPreferencesToggle';
 import SettingsCard from '../components/SettingsCard';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../services/UserLiturgyPreferencesService';
-import { RosaryAudioDownloadService } from '../services/RosaryAudioDownloadService';
 
 function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
@@ -28,10 +27,6 @@ function ProfileScreenContent() {
   // Liturgy preferences state
   const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
   const [preferencesLoading, setPreferencesLoading] = useState(false);
-  
-  // Cache management state
-  const [cacheSize, setCacheSize] = useState<number>(0);
-  const [cachedFiles, setCachedFiles] = useState<Array<{ voice: string; fileName: string }>>([]);
   
   
   const handleLogin = () => {
@@ -49,10 +44,6 @@ function ProfileScreenContent() {
     }
   }, [user, liturgyPreferences, preferencesLoading]);
 
-  // Load cache info when component mounts
-  useEffect(() => {
-    loadCacheInfo();
-  }, []);
 
   // Debug auth state changes
   useEffect(() => {
@@ -393,75 +384,6 @@ function ProfileScreenContent() {
     }
   };
 
-  const loadCacheInfo = async () => {
-    try {
-      const size = await RosaryAudioDownloadService.getCacheSize();
-      const files = await RosaryAudioDownloadService.getCachedFiles();
-      setCacheSize(size);
-      setCachedFiles(files);
-    } catch (error) {
-      console.error('Error loading cache info:', error);
-    }
-  };
-
-  const handleClearAllCache = async () => {
-    Alert.alert(
-      'Clear All Audio Cache',
-      `This will delete all cached rosary audio files (${(cacheSize / 1024 / 1024).toFixed(2)} MB). They will be downloaded again when needed. Continue?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await RosaryAudioDownloadService.clearCache();
-              await loadCacheInfo();
-              Alert.alert('Success', 'All audio cache cleared successfully.');
-            } catch (error) {
-              console.error('Error clearing cache:', error);
-              Alert.alert('Error', 'Failed to clear cache.');
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleClearVoiceCache = async () => {
-    // Get current voice from preferences
-    const currentVoice = liturgyPreferences?.rosary_voice || 'alphonsus';
-    
-    // Count files for this voice
-    const voiceFiles = cachedFiles.filter(f => f.voice === currentVoice);
-    
-    if (voiceFiles.length === 0) {
-      Alert.alert('No Cache', `No cached files found for voice "${currentVoice}".`);
-      return;
-    }
-
-    Alert.alert(
-      'Clear Voice Cache',
-      `This will delete ${voiceFiles.length} cached file(s) for voice "${currentVoice}". They will be downloaded again when needed. Continue?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear Voice',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await RosaryAudioDownloadService.clearVoiceCache(currentVoice);
-              await loadCacheInfo();
-              Alert.alert('Success', `Cache cleared for voice "${currentVoice}".`);
-            } catch (error) {
-              console.error('Error clearing voice cache:', error);
-              Alert.alert('Error', 'Failed to clear voice cache.');
-            }
-          },
-        },
-      ]
-    );
-  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} testID="profile-container">
@@ -619,7 +541,7 @@ function ProfileScreenContent() {
 
           <SettingsCard
             title="App Settings"
-            description="Font size and display options"
+            description="Display options and storage"
             preview={liturgyPreferences ? 
               `Font: ${availableOptions.fontSizes.find(f => f.value === liturgyPreferences.font_size)?.label || 'Medium'}, Rubrics: ${liturgyPreferences.show_rubrics ? 'On' : 'Off'}` 
               : preferencesLoading ? 'Loading...' : 'Not available'
@@ -627,46 +549,6 @@ function ProfileScreenContent() {
             icon="phone-portrait"
             onPress={() => router.push('/settings/app')}
           />
-        </View>
-
-        {/* Storage Management */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Storage
-          </Text>
-          
-          <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <View style={styles.settingInfo}>
-              <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Audio Cache
-              </Text>
-              <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {cachedFiles.length} file(s) • {(cacheSize / 1024 / 1024).toFixed(2)} MB
-              </Text>
-            </View>
-            
-            <View style={styles.cacheButtons}>
-              <TouchableOpacity
-                style={[styles.cacheButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-                onPress={handleClearVoiceCache}
-              >
-                <Ionicons name="person" size={16} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-                <Text style={[styles.cacheButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                  Clear Voice
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.cacheButton, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}
-                onPress={handleClearAllCache}
-              >
-                <Ionicons name="trash" size={16} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-                <Text style={[styles.cacheButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                  Clear All
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
 
         {/* About Section */}

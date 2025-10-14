@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Book, BookCategory, Bookmark, ReadingProgress } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { CoverArtCacheService } from '../services/CoverArtCacheService';
 
 export const useBooks = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -24,27 +26,46 @@ export const useBooks = () => {
       }
 
       // Transform database format to app format
-      const transformedBooks: Book[] = data.map(book => ({
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        year: book.year,
-        category: book.category,
-        coverImage: book.cover_image,
-        description: book.description,
-        longDescription: book.long_description, // Map long_description from database
-        epubPath: book.epub_path,
-        epubSamplePath: book.epub_sample_path,
-        createdAt: book.created_at,
-        updatedAt: book.updated_at,
-        bookmarks: [], // Will be fetched separately
-        readingProgress: {
-          bookId: book.id,
-          currentPosition: 0,
-          totalPages: 0,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0,
-        },
+      const transformedBooks: Book[] = await Promise.all(data.map(async book => {
+        // Cache cover art for mobile (on web, just use original URL)
+        let coverImageUrl = book.cover_image;
+        if (Platform.OS !== 'web' && book.cover_image) {
+          try {
+            const cachedUrl = await CoverArtCacheService.cacheCoverArt(
+              String(book.id),
+              book.cover_image
+            );
+            if (cachedUrl) {
+              coverImageUrl = cachedUrl;
+            }
+          } catch (error) {
+            console.error('Error caching cover art for book:', book.id, error);
+            // Fall back to original URL if caching fails
+          }
+        }
+
+        return {
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          year: book.year,
+          category: book.category,
+          coverImage: coverImageUrl,
+          description: book.description,
+          longDescription: book.long_description, // Map long_description from database
+          epubPath: book.epub_path,
+          epubSamplePath: book.epub_sample_path,
+          createdAt: book.created_at,
+          updatedAt: book.updated_at,
+          bookmarks: [], // Will be fetched separately
+          readingProgress: {
+            bookId: book.id,
+            currentPosition: 0,
+            totalPages: 0,
+            lastRead: new Date().toISOString(),
+            timeSpent: 0,
+          },
+        };
       }));
 
       setBooks(transformedBooks);
@@ -79,27 +100,46 @@ export const useBooks = () => {
         throw error;
       }
 
-      const transformedBooks: Book[] = data.map(book => ({
-        id: book.id,
-        title: book.title,
-        author: book.author,
-        year: book.year,
-        category: book.category,
-        coverImage: book.cover_image,
-        description: book.description,
-        longDescription: book.long_description, // Map long_description from database
-        epubPath: book.epub_path,
-        epubSamplePath: book.epub_sample_path,
-        createdAt: book.created_at,
-        updatedAt: book.updated_at,
-        bookmarks: [],
-        readingProgress: {
-          bookId: book.id,
-          currentPosition: 0,
-          totalPages: 0,
-          lastRead: new Date().toISOString(),
-          timeSpent: 0,
-        },
+      const transformedBooks: Book[] = await Promise.all(data.map(async book => {
+        // Cache cover art for mobile (on web, just use original URL)
+        let coverImageUrl = book.cover_image;
+        if (Platform.OS !== 'web' && book.cover_image) {
+          try {
+            const cachedUrl = await CoverArtCacheService.cacheCoverArt(
+              String(book.id),
+              book.cover_image
+            );
+            if (cachedUrl) {
+              coverImageUrl = cachedUrl;
+            }
+          } catch (error) {
+            console.error('Error caching cover art for book:', book.id, error);
+            // Fall back to original URL if caching fails
+          }
+        }
+
+        return {
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          year: book.year,
+          category: book.category,
+          coverImage: coverImageUrl,
+          description: book.description,
+          longDescription: book.long_description, // Map long_description from database
+          epubPath: book.epub_path,
+          epubSamplePath: book.epub_sample_path,
+          createdAt: book.created_at,
+          updatedAt: book.updated_at,
+          bookmarks: [],
+          readingProgress: {
+            bookId: book.id,
+            currentPosition: 0,
+            totalPages: 0,
+            lastRead: new Date().toISOString(),
+            timeSpent: 0,
+          },
+        };
       }));
 
       setBooks(transformedBooks);
@@ -123,13 +163,30 @@ export const useBooks = () => {
         throw error;
       }
 
+      // Cache cover art for mobile (on web, just use original URL)
+      let coverImageUrl = data.cover_image;
+      if (Platform.OS !== 'web' && data.cover_image) {
+        try {
+          const cachedUrl = await CoverArtCacheService.cacheCoverArt(
+            String(data.id),
+            data.cover_image
+          );
+          if (cachedUrl) {
+            coverImageUrl = cachedUrl;
+          }
+        } catch (error) {
+          console.error('Error caching cover art for book:', data.id, error);
+          // Fall back to original URL if caching fails
+        }
+      }
+
       return {
         id: data.id,
         title: data.title,
         author: data.author,
         year: data.year,
         category: data.category,
-        coverImage: data.cover_image,
+        coverImage: coverImageUrl,
         description: data.description,
         longDescription: data.long_description, // Map long_description from database
         epubPath: data.epub_path,

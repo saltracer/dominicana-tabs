@@ -22,6 +22,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useReading } from '../../../../contexts/ReadingContext';
 import { useReadingProgress } from '../../../../contexts/ReadingProgressContext';
 import { useBooks } from '../../../../hooks/useBooks';
+import { useBookCache } from '../../../../hooks/useCache';
 import { supabase } from '../../../../lib/supabase';
 import { EpubReader } from '../../../../components/EpubReader';
 import { getTabBarStyle } from '../../../../utils/tabBarStyles';
@@ -39,6 +40,17 @@ export default function BookDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [showReader, setShowReader] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Cache hook
+  const {
+    isDownloaded,
+    isDownloading,
+    downloadProgress,
+    downloadBook,
+    removeDownload,
+    getCachedPath,
+    refresh: refreshCacheStatus,
+  } = useBookCache(id as string);
 
   useEffect(() => {
     loadBook();
@@ -108,7 +120,7 @@ export default function BookDetailScreen() {
     }
   };
 
-  const handleRead = () => {
+  const handleRead = async () => {
     if (!book?.epubPath) {
       Alert.alert('Reading Unavailable', 'This book is not available for reading.');
       return;
@@ -117,6 +129,12 @@ export default function BookDetailScreen() {
     if (!user) {
       Alert.alert('Authentication Required', 'Please log in to read books.');
       return;
+    }
+
+    // Check if we have cached version
+    const cachedPath = await getCachedPath();
+    if (cachedPath) {
+      console.log('Using cached EPUB:', cachedPath);
     }
 
     setShowReader(true);
@@ -134,62 +152,38 @@ export default function BookDetailScreen() {
     }
 
     try {
-      // Extract file path from the URL
-      const urlPath = book.epubPath;
-      let filePath = '';
-      
-      if (urlPath.includes('/storage/v1/object/')) {
-        const parts = urlPath.split('/storage/v1/object/');
-        if (parts.length > 1) {
-          const pathParts = parts[1].split('/');
-          if (pathParts.length > 2) {
-            filePath = pathParts.slice(2).join('/'); // Remove 'public' and bucket name
-          }
-        }
-      }
-
-      console.log('Original URL:', urlPath);
-      console.log('Extracted file path:', filePath);
-
-      // Generate signed URL for private storage access
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from('epub_files')
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
-
-      if (signedUrlError) {
-        console.error('Error generating signed URL:', signedUrlError);
-        return;
-      }
-
-      if (!signedUrlData?.signedUrl) {
-        return;
-      }
-
-      const downloadUrl = signedUrlData.signedUrl;
-      const fileName = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.epub`;
-
-      console.log('Generated signed URL:', downloadUrl);
-
-      if (Platform.OS === 'web') {
-        // For web, create a proper download link
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = fileName;
-        link.target = '_blank';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        // For mobile, use Linking to open the download URL
-        const canOpen = await Linking.canOpenURL(downloadUrl);
-        if (canOpen) {
-          await Linking.openURL(downloadUrl);
-        }
-      }
+      await downloadBook(book);
+      Alert.alert('Success', 'Book downloaded successfully!');
     } catch (error) {
       console.error('Error downloading book:', error);
+      Alert.alert('Download Failed', 'Unable to download book. Please try again.');
     }
+  };
+
+  const handleRemoveDownload = () => {
+    Alert.alert(
+      'Remove Download',
+      'Remove this book from your device? Your reading progress will be kept.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeDownload();
+              Alert.alert('Success', 'Book removed from device.');
+            } catch (error) {
+              console.error('Error removing download:', error);
+              Alert.alert('Error', 'Failed to remove download. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleLogin = () => {
@@ -341,9 +335,6 @@ export default function BookDetailScreen() {
             {/* Reading Progress Section */}
             {user && isBookInProgress(book.id) && (
             <View style={styles.section}>
-              {/* <Text style={[styles.categoryLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Reading Progress
-              </Text> */}
               <View style={styles.progressContainer}>
                 <View style={styles.progressBarContainer}>
                   <View 
@@ -369,24 +360,6 @@ export default function BookDetailScreen() {
                     {Math.round(getBookProgressPercentage(book.id))}% Complete
                   </Text>
                 </View>
-                
-                {/* Clear Progress Button */}
-                <TouchableOpacity 
-                  style={[styles.clearProgressButton, { 
-                    backgroundColor: Colors[colorScheme ?? 'light'].surface,
-                    borderColor: Colors[colorScheme ?? 'light'].border 
-                  }]}
-                  onPress={handleClearProgress}
-                >
-                  <Ionicons 
-                    name="trash-outline" 
-                    size={16} 
-                    color={Colors[colorScheme ?? 'light'].textMuted} 
-                  />
-                  <Text style={[styles.clearProgressText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                    Clear Progress
-                  </Text>
-                </TouchableOpacity>
               </View>
             </View>
             )}
@@ -401,6 +374,7 @@ export default function BookDetailScreen() {
               Reading Options
             </Text>
             <View style={styles.buttonContainer}>
+              {/* Primary Read Button */}
               <TouchableOpacity 
                 style={[
                   styles.readButton, 
@@ -423,37 +397,116 @@ export default function BookDetailScreen() {
                     color: book.epubPath ? Colors[colorScheme ?? 'light'].dominicanWhite : Colors[colorScheme ?? 'light'].textMuted 
                   }
                 ]}>
-                  {book.epubPath ? 'Read Book' : 'Reading Unavailable'}
+                  {book.epubPath ? (isDownloaded ? 'Read Book (Downloaded)' : 'Read Book') : 'Reading Unavailable'}
                 </Text>
               </TouchableOpacity>
               
-              {/* <TouchableOpacity 
-                style={[
-                  styles.downloadButton, 
-                  { 
-                    backgroundColor: book.epubPath ? Colors[colorScheme ?? 'light'].surface : Colors[colorScheme ?? 'light'].surface,
-                    borderColor: Colors[colorScheme ?? 'light'].primary,
-                    borderWidth: 1,
-                    opacity: book.epubPath ? 1 : 0.5
-                  }
-                ]}
-                onPress={handleDownload}
-                disabled={!book.epubPath}
-              >
-                <Ionicons 
-                  name="download" 
-                  size={20} 
-                  color={book.epubPath ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textMuted} 
-                />
-                <Text style={[
-                  styles.downloadButtonText, 
-                  { 
-                    color: book.epubPath ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textMuted 
-                  }
-                ]}>
-                  {book.epubPath ? 'Download EPUB' : 'Download Unavailable'}
-                </Text>
-              </TouchableOpacity> */}
+              {/* Secondary Buttons Row */}
+              {(book.epubPath && Platform.OS !== 'web') || isBookInProgress(book.id) ? (
+                <View style={styles.secondaryButtonsRow}>
+                  {/* Download or Remove Download Button */}
+                  {book.epubPath && Platform.OS !== 'web' && (
+                    !isDownloaded ? (
+                      <TouchableOpacity 
+                        style={[
+                          styles.secondaryButton,
+                          isBookInProgress(book.id) ? styles.secondaryButtonHalf : styles.secondaryButtonFull,
+                          { 
+                            backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                            borderColor: Colors[colorScheme ?? 'light'].border,
+                            borderWidth: 1,
+                          }
+                        ]}
+                        onPress={handleDownload}
+                        disabled={isDownloading}
+                      >
+                        {isDownloading ? (
+                          <>
+                            <Ionicons 
+                              name="hourglass" 
+                              size={16} 
+                              color={Colors[colorScheme ?? 'light'].textSecondary} 
+                            />
+                            <Text style={[
+                              styles.secondaryButtonText, 
+                              { color: Colors[colorScheme ?? 'light'].textSecondary }
+                            ]}>
+                              {Math.round(downloadProgress * 100)}%
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <Ionicons 
+                              name="download-outline" 
+                              size={16} 
+                              color={Colors[colorScheme ?? 'light'].textSecondary} 
+                            />
+                            <Text style={[
+                              styles.secondaryButtonText, 
+                              { color: Colors[colorScheme ?? 'light'].textSecondary }
+                            ]}>
+                              Download
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity 
+                        style={[
+                          styles.secondaryButton,
+                          isBookInProgress(book.id) ? styles.secondaryButtonHalf : styles.secondaryButtonFull,
+                          { 
+                            backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                            borderColor: Colors[colorScheme ?? 'light'].border,
+                            borderWidth: 1,
+                          }
+                        ]}
+                        onPress={handleRemoveDownload}
+                      >
+                        <Ionicons 
+                          name="trash-outline" 
+                          size={16} 
+                          color={Colors[colorScheme ?? 'light'].textSecondary} 
+                        />
+                        <Text style={[
+                          styles.secondaryButtonText, 
+                          { color: Colors[colorScheme ?? 'light'].textSecondary }
+                        ]}>
+                          Remove
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  )}
+
+                  {/* Clear Progress Button */}
+                  {isBookInProgress(book.id) && (
+                    <TouchableOpacity 
+                      style={[
+                        styles.secondaryButton,
+                        (book.epubPath && Platform.OS !== 'web') ? styles.secondaryButtonHalf : styles.secondaryButtonFull,
+                        { 
+                          backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                          borderColor: Colors[colorScheme ?? 'light'].border,
+                          borderWidth: 1,
+                        }
+                      ]}
+                      onPress={handleClearProgress}
+                    >
+                      <Ionicons 
+                        name="close-circle-outline" 
+                        size={16} 
+                        color={Colors[colorScheme ?? 'light'].textSecondary} 
+                      />
+                      <Text style={[
+                        styles.secondaryButtonText, 
+                        { color: Colors[colorScheme ?? 'light'].textSecondary }
+                      ]}>
+                        Clear Progress
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ) : null}
             </View>
             {!book.epubPath && (
               <Text style={[styles.downloadNote, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
@@ -687,6 +740,35 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     fontWeight: '600',
     marginLeft: 8,
+  },
+  
+  secondaryButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  
+  secondaryButtonHalf: {
+    flex: 1,
+  },
+  
+  secondaryButtonFull: {
+    flex: 1,
+  },
+  
+  secondaryButtonText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
+    marginLeft: 6,
   },
   
   downloadButton: {
