@@ -1,13 +1,48 @@
-import { Stack } from 'expo-router';
-import { View, Image, Pressable } from 'react-native';
-import { Link } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import { View, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo } from 'react';
 import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { ReadingProgressProvider } from '../../../contexts/ReadingProgressContext';
 
 export default function StudyLayout() {
   const { colorScheme } = useTheme();
+  
+  // Memoize header components to prevent re-renders
+  const headerLeftComponent = useMemo(() => (
+    <View style={{ 
+      // marginLeft: 15, 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+    }}>
+      <Image 
+        source={require('../../../assets/images/dominicana_logo.png')} 
+        style={{ 
+          width: 32, 
+          height: 32,
+          backgroundColor: 'transparent',
+        }}
+        resizeMode="contain"
+      />
+    </View>
+  ), []);
+
+  const headerRightComponent = useMemo(() => (
+    <TouchableOpacity 
+      onPress={() => router.push('/profile')}
+      style={{ /* marginRight: 15 */ }}
+      activeOpacity={0.6}
+    >
+      <Ionicons
+        name="person-circle"
+        size={28}
+        color={Colors[colorScheme ?? 'light'].text}
+      />
+    </TouchableOpacity>
+  ), [colorScheme]);
   
   return (
     <ReadingProgressProvider>
@@ -31,29 +66,8 @@ export default function StudyLayout() {
           options={{
             headerTitle: 'Study', // Use headerTitle for the actual display
             headerBackButtonDisplayMode: "minimal",
-            headerLeft: () => (
-              <View style={{ marginLeft: 15, flexDirection: 'row', alignItems: 'center' }}>
-                <Image 
-                  source={require('../../../assets/images/dominicana_logo.png')} 
-                  style={{ width: 32, height: 32 }}
-                  resizeMode="contain"
-                />
-              </View>
-            ),
-            headerRight: () => (
-              <Link href="/profile" asChild>
-                <Pressable>
-                  {({ pressed }) => (
-                    <Ionicons
-                      name="person-circle"
-                      size={28}
-                      color={Colors[colorScheme ?? 'light'].text}
-                      style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                    />
-                  )}
-                </Pressable>
-              </Link>
-            ),
+            headerLeft: () => headerLeftComponent,
+            headerRight: () => headerRightComponent,
           }}
         />
         <Stack.Screen 
