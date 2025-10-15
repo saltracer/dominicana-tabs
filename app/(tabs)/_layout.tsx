@@ -70,34 +70,12 @@ function TabLayoutContent() {
         name="prayer"
         options={{
           title: 'Prayer',
+          headerShown: false, // Stack navigator handles headers for prayer screens
           tabBarIcon: ({ color, focused }) => (
             <IoniconsTabBarIcon 
               name={focused ? "heart" : "heart-outline"} 
               color={color} 
             />
-          ),
-          headerLeft: () => (
-            <View style={styles.headerLogoContainer}>
-              <Image 
-                source={require('../../assets/images/dominicana_logo.png')} 
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
-            </View>
-          ),
-          headerRight: () => (
-            <Link href="/profile" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <Ionicons
-                    name="person-circle"
-                    size={28}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
           ),
         }}
       />
@@ -118,34 +96,12 @@ function TabLayoutContent() {
         name="community"
         options={{
           title: 'Community',
+          headerShown: false, // Stack navigator handles headers for community screens
           tabBarIcon: ({ color, focused }) => (
             <IoniconsTabBarIcon 
               name={focused ? "people" : "people-outline"} 
               color={color} 
             />
-          ),
-          headerLeft: () => (
-            <View style={styles.headerLogoContainer}>
-              <Image 
-                source={require('../../assets/images/dominicana_logo.png')} 
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
-            </View>
-          ),
-          headerRight: () => (
-            <Link href="/profile" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <Ionicons
-                    name="person-circle"
-                    size={28}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
           ),
         }}
       />
@@ -153,34 +109,12 @@ function TabLayoutContent() {
         name="preaching"
         options={{
           title: 'Preaching',
+          headerShown: false, // Stack navigator handles headers for preaching screens
           tabBarIcon: ({ color, focused }) => (
             <IoniconsTabBarIcon 
               name={focused ? "chatbubble" : "chatbubble-outline"} 
               color={color} 
             />
-          ),
-          headerLeft: () => (
-            <View style={styles.headerLogoContainer}>
-              <Image 
-                source={require('../../assets/images/dominicana_logo.png')} 
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
-            </View>
-          ),
-          headerRight: () => (
-            <Link href="/profile" asChild>
-              <Pressable>
-                {({ pressed }) => (
-                  <Ionicons
-                    name="person-circle"
-                    size={28}
-                    color={Colors[colorScheme ?? 'light'].text}
-                    style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
           ),
         }}
       />

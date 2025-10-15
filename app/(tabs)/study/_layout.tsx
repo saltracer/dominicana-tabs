@@ -12,17 +12,15 @@ export default function StudyLayout() {
   // Memoize header components to prevent re-renders
   const headerLeftComponent = useMemo(() => (
     <View style={{ 
-      // marginLeft: 15, 
-      flexDirection: 'row', 
+      marginLeft: 15,
       alignItems: 'center', 
       backgroundColor: 'transparent',
-      borderWidth: 0,
     }}>
       <Image 
         source={require('../../../assets/images/dominicana_logo.png')} 
         style={{ 
-          width: 32, 
-          height: 32,
+          width: 24, 
+          height: 24,
           backgroundColor: 'transparent',
         }}
         resizeMode="contain"
@@ -33,7 +31,7 @@ export default function StudyLayout() {
   const headerRightComponent = useMemo(() => (
     <TouchableOpacity 
       onPress={() => router.push('/profile')}
-      style={{ /* marginRight: 15 */ }}
+      style={{ marginRight: 15 }}
       activeOpacity={0.6}
     >
       <Ionicons
@@ -64,8 +62,7 @@ export default function StudyLayout() {
         <Stack.Screen 
           name="index" 
           options={{
-            headerTitle: 'Study', // Use headerTitle for the actual display
-            headerBackButtonDisplayMode: "minimal",
+            headerTitle: 'Study',
             headerLeft: () => headerLeftComponent,
             headerRight: () => headerRightComponent,
           }}

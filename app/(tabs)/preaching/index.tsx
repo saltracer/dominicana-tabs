@@ -10,16 +10,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { useTheme } from '../../components/ThemeProvider';
-import FeastBanner from '../../components/FeastBanner';
-import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
-import { LiturgicalDay, Reflection, BlogPost } from '../../types';
-import { PreachingStyles } from '../../styles';
+import { Colors } from '../../../constants/Colors';
+import { useTheme } from '../../../components/ThemeProvider';
+import { useCalendar } from '../../../components/CalendarContext';
+import FeastBanner from '../../../components/FeastBanner';
+import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
+import { LiturgicalDay, Reflection, BlogPost } from '../../../types';
+import { PreachingStyles } from '../../../styles';
 
 export default function PreachingScreen() {
   const { colorScheme } = useTheme();
-  const [liturgicalDay, setLiturgicalDay] = useState<LiturgicalDay | null>(null);
+  const { liturgicalDay } = useCalendar();
   const [activeTab, setActiveTab] = useState<'reflections' | 'blog' | 'audio'>('reflections');
   const [searchQuery, setSearchQuery] = useState('');
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -27,19 +28,9 @@ export default function PreachingScreen() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
 
   useEffect(() => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const today = new Date();
-    const day = calendarService.getLiturgicalDay(today);
-    setLiturgicalDay(day);
     loadReflections();
     loadBlogPosts();
   }, []);
-
-  const handleDateChange = (date: Date) => {
-    const calendarService = LiturgicalCalendarService.getInstance();
-    const day = calendarService.getLiturgicalDay(date);
-    setLiturgicalDay(day);
-  };
 
   const loadReflections = () => {
     const sampleReflections: Reflection[] = [
@@ -222,7 +213,7 @@ export default function PreachingScreen() {
               name="bookmark" 
               size={20} 
               color={activeTab === 'reflections' 
-                ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                ? Colors[colorScheme ?? 'light'].textOnRed 
                 : Colors[colorScheme ?? 'light'].textSecondary
               } 
             />
@@ -230,7 +221,7 @@ export default function PreachingScreen() {
               styles.tabText,
               { 
                 color: activeTab === 'reflections' 
-                  ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                  ? Colors[colorScheme ?? 'light'].textOnRed 
                   : Colors[colorScheme ?? 'light'].text
               }
             ]}>
@@ -253,7 +244,7 @@ export default function PreachingScreen() {
               name="document-text" 
               size={20} 
               color={activeTab === 'blog' 
-                ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                ? Colors[colorScheme ?? 'light'].textOnRed 
                 : Colors[colorScheme ?? 'light'].textSecondary
               } 
             />
@@ -261,7 +252,7 @@ export default function PreachingScreen() {
               styles.tabText,
               { 
                 color: activeTab === 'blog' 
-                  ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                  ? Colors[colorScheme ?? 'light'].textOnRed 
                   : Colors[colorScheme ?? 'light'].text
               }
             ]}>
@@ -284,7 +275,7 @@ export default function PreachingScreen() {
               name="headset" 
               size={20} 
               color={activeTab === 'audio' 
-                ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                ? Colors[colorScheme ?? 'light'].textOnRed 
                 : Colors[colorScheme ?? 'light'].textSecondary
               } 
             />
@@ -292,7 +283,7 @@ export default function PreachingScreen() {
               styles.tabText,
               { 
                 color: activeTab === 'audio' 
-                  ? Colors[colorScheme ?? 'light'].dominicanWhite 
+                  ? Colors[colorScheme ?? 'light'].textOnRed 
                   : Colors[colorScheme ?? 'light'].text
               }
             ]}>
@@ -451,7 +442,7 @@ export default function PreachingScreen() {
           </View>
         )}
       </ScrollView>
-      
+
     </SafeAreaView>
   );
 }
@@ -459,6 +450,6 @@ export default function PreachingScreen() {
 // Import shared styles
 //const sharedStyles = PreachingStyles;
 const styles = StyleSheet.create({
-  ...PreachingStyles,
   // No unique local styles needed for this component
+  ...PreachingStyles,
 });

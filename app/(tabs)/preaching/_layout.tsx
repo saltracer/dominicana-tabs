@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 
-export default function CommunityLayout() {
+export default function PreachingLayout() {
   const { colorScheme } = useTheme();
   
   // Memoize header components to prevent re-renders
@@ -59,34 +59,7 @@ export default function CommunityLayout() {
       <Stack.Screen 
         name="index" 
         options={{
-          headerTitle: 'Community',
-          headerLeft: () => headerLeftComponent,
-          headerRight: () => headerRightComponent,
-        }}
-      />
-      <Stack.Screen 
-        name="calendar" 
-        options={{
-          headerTitle: 'Calendar',
-          headerBackTitle: '',
-          headerLeft: () => headerLeftComponent,
-          headerRight: () => headerRightComponent,
-        }}
-      />
-      <Stack.Screen 
-        name="saints" 
-        options={{
-          headerTitle: 'Saints',
-          headerBackTitle: '',
-          headerLeft: () => headerLeftComponent,
-          headerRight: () => headerRightComponent,
-        }}
-      />
-      <Stack.Screen 
-        name="provinces" 
-        options={{
-          headerTitle: 'Provinces',
-          headerBackTitle: '',
+          headerTitle: 'Preaching',
           headerLeft: () => headerLeftComponent,
           headerRight: () => headerRightComponent,
         }}
@@ -94,3 +67,4 @@ export default function CommunityLayout() {
     </Stack>
   );
 }
+
