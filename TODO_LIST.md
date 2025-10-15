@@ -24,9 +24,11 @@
 
 
 ## Study
-- [ ] Bookmarking
-- [ ] Notes
-- [ ] Highlights
+- [x] Bookmarking
+- [x] Notes
+- [x] Highlights
+  - [x] Highlight the bible
+  - [ ] Highlight epubs
 - [ ] Book audio?
 - [x] Redeisgn how the bible is accessed
 - [x] keep books downloaded
