@@ -264,7 +264,11 @@ export default function StudyScreen() {
                 </Text>
               </View>
             ) : filteredContinueReading.length > 0 ? (
-              <View style={styles.booksGrid}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScrollContent}
+              >
                 {filteredContinueReading
                   .filter((progress, index, self) => 
                     // Remove duplicates by keeping only the most recent entry for each book
@@ -359,7 +363,7 @@ export default function StudyScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </View>
+              </ScrollView>
             ) : (
               <View style={[styles.progressCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
                 <Ionicons name="bookmark" size={24} color={Colors[colorScheme ?? 'light'].primary} />
@@ -385,7 +389,11 @@ export default function StudyScreen() {
                 </Text>
               </View>
             </View>
-            <View style={styles.booksGrid}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+            >
               {downloadedBooks.map((book) => (
                 <TouchableOpacity
                   key={`downloaded-${book.id}`}
@@ -426,7 +434,7 @@ export default function StudyScreen() {
                   </View>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           </View>
         )}
         
@@ -543,6 +551,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3,
     elevation: 5,
+  },
+  horizontalScrollContent: {
+    paddingHorizontal: 16,
+    gap: 12,
   },
 });
 
