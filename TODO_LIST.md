@@ -11,6 +11,8 @@
 - Redesign Rosary
 - Rosary Audio
  - [ ] implement cache invalidation and redownload of audio files -testing phase
+ - [ ] Rosary final prayer needs to be split into individual prayers and combined 
+ - [ ] Add preferences for final prayers
  - [x] allow specific voices to be clear, obviously 
  - [x] reimplement expo-audio for an iOS/android compatible solution 
  - [x] get audio playback displaying as part of the iOS/android audio experience 
