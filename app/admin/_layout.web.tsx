@@ -68,7 +68,7 @@ export default function AdminLayoutWeb() {
                       borderLeftColor: Colors[colorScheme ?? 'light'].primary,
                     },
                   ]}
-                  onPress={() => router.push(item.path)}
+                  onPress={() => router.push(item.path as any)}
                 >
                   <Ionicons
                     name={item.icon}

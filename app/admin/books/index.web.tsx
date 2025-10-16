@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../components/ThemeProvider';
@@ -25,7 +24,7 @@ const CATEGORIES: BookCategory[] = [
   'Natural History',
 ];
 
-export default function BooksListScreen() {
+export default function BooksListScreenWeb() {
   const { colorScheme } = useTheme();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,12 +80,17 @@ export default function BooksListScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-        <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-          Manage Books
-        </Text>
+        <View>
+          <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Manage Books
+          </Text>
+          <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            {books.length} {books.length === 1 ? 'book' : 'books'}
+          </Text>
+        </View>
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
           onPress={() => router.push('/admin/books/new')}
@@ -111,7 +115,7 @@ export default function BooksListScreen() {
           />
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+        <View style={styles.categoryRow}>
           <TouchableOpacity
             style={[
               styles.categoryChip,
@@ -160,10 +164,10 @@ export default function BooksListScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </ScrollView>
+        </View>
       </View>
 
-      {/* Books List */}
+      {/* Books Table */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
@@ -178,67 +182,93 @@ export default function BooksListScreen() {
               </Text>
             </View>
           ) : (
-            books.map((book) => (
-              <View
-                key={book.id}
-                style={[styles.bookCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-              >
-                <View style={styles.bookInfo}>
-                  <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {book.title}
-                  </Text>
-                  <Text style={[styles.bookAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            <View style={[styles.table, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+              {/* Table Header */}
+              <View style={[styles.tableHeader, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}>
+                <Text style={[styles.headerCell, styles.titleColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Title
+                </Text>
+                <Text style={[styles.headerCell, styles.authorColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Author
+                </Text>
+                <Text style={[styles.headerCell, styles.categoryColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Category
+                </Text>
+                <Text style={[styles.headerCell, styles.filesColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Files
+                </Text>
+                <Text style={[styles.headerCell, styles.actionsColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Actions
+                </Text>
+              </View>
+
+              {/* Table Rows */}
+              {books.map((book) => (
+                <TouchableOpacity
+                  key={book.id}
+                  style={[styles.tableRow, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}
+                  onPress={() => router.push(`/admin/books/${book.id}`)}
+                >
+                  <View style={[styles.tableCell, styles.titleColumn]}>
+                    <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {book.title}
+                    </Text>
+                    {book.year && (
+                      <Text style={[styles.bookYear, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        {book.year}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={[styles.tableCell, styles.authorColumn, { color: Colors[colorScheme ?? 'light'].text }]}>
                     {book.author}
-                    {book.year && ` (${book.year})`}
                   </Text>
-                  <View style={styles.bookMeta}>
+                  <View style={[styles.tableCell, styles.categoryColumn]}>
                     <View style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
                       <Text style={[styles.categoryBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
                         {book.category}
                       </Text>
                     </View>
+                  </View>
+                  <View style={[styles.tableCell, styles.filesColumn, styles.filesBadges]}>
                     {book.coverImage && (
-                      <View style={[styles.badge, { backgroundColor: Colors[colorScheme ?? 'light'].success + '10' }]}>
+                      <View style={[styles.fileBadge, { backgroundColor: Colors[colorScheme ?? 'light'].success + '10' }]}>
                         <Ionicons name="image" size={12} color={Colors[colorScheme ?? 'light'].success} />
-                        <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].success }]}>
-                          Cover
-                        </Text>
                       </View>
                     )}
                     {book.epubPath && (
-                      <View style={[styles.badge, { backgroundColor: Colors[colorScheme ?? 'light'].accent + '10' }]}>
+                      <View style={[styles.fileBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent + '10' }]}>
                         <Ionicons name="document" size={12} color={Colors[colorScheme ?? 'light'].accent} />
-                        <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].accent }]}>
-                          EPUB
-                        </Text>
                       </View>
                     )}
                     {book.epubSamplePath && (
-                      <View style={[styles.badge, { backgroundColor: Colors[colorScheme ?? 'light'].info + '10' }]}>
+                      <View style={[styles.fileBadge, { backgroundColor: Colors[colorScheme ?? 'light'].info + '10' }]}>
                         <Ionicons name="document-text" size={12} color={Colors[colorScheme ?? 'light'].info} />
-                        <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].info }]}>
-                          Sample
-                        </Text>
                       </View>
                     )}
                   </View>
-                </View>
-                <View style={styles.bookActions}>
-                  <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => router.push(`/admin/books/${book.id}`)}
-                  >
-                    <Ionicons name="create-outline" size={20} color={Colors[colorScheme ?? 'light'].primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => handleDeleteBook(book)}
-                  >
-                    <Ionicons name="trash-outline" size={20} color={Colors[colorScheme ?? 'light'].error} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
+                  <View style={[styles.tableCell, styles.actionsColumn, styles.actions]}>
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '10' }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        router.push(`/admin/books/${book.id}`);
+                      }}
+                    >
+                      <Ionicons name="create" size={16} color={Colors[colorScheme ?? 'light'].primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: Colors[colorScheme ?? 'light'].error + '10' }]}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleDeleteBook(book);
+                      }}
+                    >
+                      <Ionicons name="trash" size={16} color={Colors[colorScheme ?? 'light'].error} />
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           )}
 
           {/* Pagination */}
@@ -285,7 +315,7 @@ export default function BooksListScreen() {
           )}
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -297,61 +327,68 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: 24,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
     fontFamily: 'Georgia',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
     gap: 8,
   },
   addButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',
   },
   filters: {
-    padding: 16,
-    gap: 12,
+    padding: 24,
+    gap: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderRadius: 8,
-    gap: 8,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     fontFamily: 'Georgia',
   },
-  categoryScroll: {
-    flexGrow: 0,
+  categoryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   categoryChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    marginRight: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
   categoryChipText: {
     fontSize: 14,
     fontFamily: 'Georgia',
+    fontWeight: '500',
   },
   scrollView: {
     flex: 1,
@@ -365,73 +402,101 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 48,
+    paddingVertical: 64,
   },
   emptyText: {
     fontSize: 16,
     fontFamily: 'Georgia',
     marginTop: 16,
   },
-  bookCard: {
-    flexDirection: 'row',
-    padding: 16,
-    marginHorizontal: 16,
-    marginVertical: 8,
+  table: {
+    margin: 24,
     borderRadius: 12,
+    overflow: 'hidden',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
   },
-  bookInfo: {
-    flex: 1,
+  tableHeader: {
+    flexDirection: 'row',
+    padding: 16,
+    borderBottomWidth: 2,
+    backgroundColor: '#F5F5F5',
+  },
+  headerCell: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    padding: 16,
+    borderBottomWidth: 1,
+    cursor: 'pointer',
+  },
+  tableCell: {
+    justifyContent: 'center',
+  },
+  titleColumn: {
+    flex: 3,
+  },
+  authorColumn: {
+    flex: 2,
+  },
+  categoryColumn: {
+    flex: 2,
+  },
+  filesColumn: {
+    flex: 1.5,
+  },
+  actionsColumn: {
+    flex: 1.5,
   },
   bookTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  bookAuthor: {
-    fontSize: 14,
+  bookYear: {
+    fontSize: 13,
     fontFamily: 'Georgia',
-    marginBottom: 8,
-  },
-  bookMeta: {
-    flexDirection: 'row',
-    gap: 8,
   },
   categoryBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
   },
   categoryBadgeText: {
     fontSize: 12,
     fontFamily: 'Georgia',
     fontWeight: '600',
   },
-  badge: {
+  filesBadges: {
     flexDirection: 'row',
+    gap: 6,
+  },
+  fileBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
   },
-  badgeText: {
-    fontSize: 11,
-    fontFamily: 'Georgia',
-    fontWeight: '600',
-  },
-  bookActions: {
+  actions: {
     flexDirection: 'row',
     gap: 8,
-    marginLeft: 12,
   },
-  iconButton: {
-    padding: 8,
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pagination: {
     flexDirection: 'row',
@@ -441,7 +506,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   pageButton: {
-    padding: 8,
+    padding: 12,
     borderRadius: 8,
   },
   pageButtonDisabled: {
@@ -450,6 +515,7 @@ const styles = StyleSheet.create({
   pageText: {
     fontSize: 14,
     fontFamily: 'Georgia',
+    fontWeight: '500',
   },
 });
 
