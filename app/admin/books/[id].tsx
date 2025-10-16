@@ -41,8 +41,12 @@ export default function EditBookScreen() {
     year: '',
     category: 'Theology',
     description: '',
-    long_description: [''],
+    long_description: [],
   });
+  
+  // Single long description text
+  const [longDescriptionText, setLongDescriptionText] = useState('');
+  
   const [uploadProgress, setUploadProgress] = useState<{
     cover?: number;
     epub?: number;
@@ -64,8 +68,13 @@ export default function EditBookScreen() {
         year: bookData.year || '',
         category: bookData.category,
         description: bookData.description,
-        long_description: bookData.longDescription || [''],
+        long_description: bookData.longDescription || [],
       });
+      
+      // Convert long_description array to text with double line breaks
+      if (bookData.longDescription && bookData.longDescription.length > 0) {
+        setLongDescriptionText(bookData.longDescription.join('\n\n'));
+      }
     } catch (error) {
       console.error('Error loading book:', error);
       Alert.alert('Error', 'Failed to load book details');
@@ -91,9 +100,16 @@ export default function EditBookScreen() {
 
     try {
       setSaving(true);
+      
+      // Parse long description into paragraphs (split by double line breaks)
+      const paragraphs = longDescriptionText
+        .split(/\n\n+/)
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+      
       await AdminBookService.updateBook(Number(id), {
         ...formData,
-        long_description: formData.long_description?.filter(p => p.trim()) || undefined,
+        long_description: paragraphs.length > 0 ? paragraphs : undefined,
       });
       
       Alert.alert('Success', 'Book updated successfully');
@@ -243,26 +259,6 @@ export default function EditBookScreen() {
     );
   };
 
-  const addParagraph = () => {
-    setFormData({
-      ...formData,
-      long_description: [...(formData.long_description || ['']), ''],
-    });
-  };
-
-  const removeParagraph = (index: number) => {
-    const paragraphs = formData.long_description || [];
-    setFormData({
-      ...formData,
-      long_description: paragraphs.filter((_, i) => i !== index),
-    });
-  };
-
-  const updateParagraph = (index: number, text: string) => {
-    const paragraphs = [...(formData.long_description || [''])];
-    paragraphs[index] = text;
-    setFormData({ ...formData, long_description: paragraphs });
-  };
 
   if (loading) {
     return (
@@ -392,45 +388,24 @@ export default function EditBookScreen() {
 
           {/* Long Description */}
           <View style={styles.field}>
-            <View style={styles.labelRow}>
-              <Text style={[styles.label, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Long Description
-              </Text>
-              <TouchableOpacity
-                style={[styles.addParagraphButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}
-                onPress={addParagraph}
-              >
-                <Ionicons name="add" size={16} color={Colors[colorScheme ?? 'light'].primary} />
-                <Text style={[styles.addParagraphText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  Add Paragraph
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {formData.long_description?.map((paragraph, index) => (
-              <View key={index} style={styles.paragraphContainer}>
-                <TextInput
-                  style={[styles.textArea, { 
-                    backgroundColor: Colors[colorScheme ?? 'light'].card,
-                    color: Colors[colorScheme ?? 'light'].text,
-                    flex: 1,
-                  }]}
-                  value={paragraph}
-                  onChangeText={(text) => updateParagraph(index, text)}
-                  placeholder={`Paragraph ${index + 1}`}
-                  placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
-                  multiline
-                  numberOfLines={3}
-                />
-                {formData.long_description && formData.long_description.length > 1 && (
-                  <TouchableOpacity
-                    style={styles.removeParagraphButton}
-                    onPress={() => removeParagraph(index)}
-                  >
-                    <Ionicons name="close-circle" size={24} color={Colors[colorScheme ?? 'light'].error} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
+            <Text style={[styles.label, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Long Description (Optional)
+            </Text>
+            <TextInput
+              style={[styles.longTextArea, { 
+                backgroundColor: Colors[colorScheme ?? 'light'].card,
+                color: Colors[colorScheme ?? 'light'].text,
+              }]}
+              value={longDescriptionText}
+              onChangeText={setLongDescriptionText}
+              placeholder="Enter detailed description. Separate paragraphs with a blank line."
+              placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+              multiline
+              numberOfLines={8}
+            />
+            <Text style={[styles.hint, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              Tip: Use double line breaks to create paragraphs
+            </Text>
           </View>
 
           {/* Cover Image */}
@@ -697,27 +672,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     fontWeight: '500',
   },
-  addParagraphButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-  },
-  addParagraphText: {
-    fontSize: 14,
+  longTextArea: {
+    padding: 12,
+    borderRadius: 8,
+    fontSize: 16,
     fontFamily: 'Georgia',
-    fontWeight: '500',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    minHeight: 160,
+    textAlignVertical: 'top',
   },
-  paragraphContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-    alignItems: 'flex-start',
-  },
-  removeParagraphButton: {
-    padding: 4,
+  hint: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    marginTop: 6,
+    fontStyle: 'italic',
   },
   uploadButton: {
     padding: 24,

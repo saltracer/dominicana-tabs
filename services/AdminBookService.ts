@@ -101,9 +101,17 @@ export class AdminBookService {
   }
 
   /**
-   * Create a new book
+   * Create a new book with optional files
    */
-  static async createBook(bookData: CreateBookData): Promise<Book> {
+  static async createBook(
+    bookData: CreateBookData,
+    files?: {
+      cover?: File | Blob;
+      epub?: File | Blob;
+      epubSample?: File | Blob;
+    }
+  ): Promise<Book> {
+    // First create the book record
     const { data, error } = await supabase
       .from('books')
       .insert({
@@ -125,7 +133,27 @@ export class AdminBookService {
       throw new Error(`Failed to create book: ${error.message}`);
     }
 
-    return this.transformBook(data);
+    const bookId = data.id;
+
+    // Upload files if provided
+    try {
+      if (files?.cover) {
+        await this.uploadCoverImage(files.cover, bookId);
+      }
+      if (files?.epub) {
+        await this.uploadEpubFile(files.epub, bookId, false);
+      }
+      if (files?.epubSample) {
+        await this.uploadEpubFile(files.epubSample, bookId, true);
+      }
+    } catch (uploadError) {
+      console.error('Error uploading files:', uploadError);
+      // Book is created, but files failed - don't throw, just warn
+      console.warn('Book created but some files failed to upload');
+    }
+
+    // Fetch the updated book with file URLs
+    return this.getBook(bookId);
   }
 
   /**
