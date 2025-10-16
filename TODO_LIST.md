@@ -2,6 +2,7 @@
 
 ## Profiles
 - [] Redesign the prefences page, as the organization doesn't make sense and not all of them are used. The initial idea is that they would be organized by "section"of the app (eg prayer, study, etc)
+- [] On the web, the profile page should be a menu dropdown, not a page modal
 
 ## Prayer
 - More content
@@ -14,7 +15,7 @@
  - [x] reimplement expo-audio for an iOS/android compatible solution 
  - [x] get audio playback displaying as part of the iOS/android audio experience 
  - [x] add a setting to explicitly clear the cache
- - [ ] create admin only cms front end web only
+ - [x] create admin only cms front end web only
  - [x] create a voice for John Henry Newman 
  - [x] a voice for Therese
  - [x] a voice for Francis de Sales
@@ -35,7 +36,7 @@
 - [x] keep books downloaded
 - [x] cache the book covers
 - [x] Add a setting to remove the download
-- [ ] Add a admin only, web only, CMS to manage the books and their covers and other metadata
+- [x] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
 
 ## Community
@@ -51,7 +52,12 @@
 - [ ] Look for opportunities to refactor
 - [ ] fix the user profile sub page titling
 
-## Books to add
+## Admin
+- [] Allow the Rosary Audio to be renamed
+- [] Test book uploads. All aspects of CRUD
+- [] Text user creation and signup workflows. All aspects of CRUD for users. From admin and user perspective.
+
+### Books to add
  - st Patrick’s autobiography 
  - st Benedict’s biography by st Gregory 
 
