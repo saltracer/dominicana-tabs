@@ -19,10 +19,12 @@ import LiturgyPreferencesDropdown from '../components/LiturgyPreferencesDropdown
 import LiturgyPreferencesToggle from '../components/LiturgyPreferencesToggle';
 import SettingsCard from '../components/SettingsCard';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../services/UserLiturgyPreferencesService';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 
 function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
   const { user, profile, signOut, updateProfile, loading, profileLoading, clearAllAuthData } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminAuth();
   
   // Liturgy preferences state
   const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
@@ -549,6 +551,16 @@ function ProfileScreenContent() {
             icon="phone-portrait"
             onPress={() => router.push('/settings/app')}
           />
+
+          {/* Admin Console (only for admins) */}
+          {isAdmin && !adminLoading && (
+            <SettingsCard
+              title="Admin Console"
+              description="Manage books, users, and app content"
+              icon="shield-checkmark"
+              onPress={() => router.push('/admin')}
+            />
+          )}
         </View>
 
         {/* About Section */}

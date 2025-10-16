@@ -18,10 +18,12 @@ import AuthGuard from '../components/AuthGuard';
 import LiturgyPreferencesDropdown from '../components/LiturgyPreferencesDropdown.web';
 import LiturgyPreferencesToggle from '../components/LiturgyPreferencesToggle.web';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../services/UserLiturgyPreferencesService';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 
 function ProfileScreenContent() {
   const { colorScheme, themeMode, setThemeMode } = useTheme();
   const { user, profile, signOut, updateProfile, loading, clearAllAuthData } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminAuth();
   
   // Liturgy preferences state
   const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
@@ -592,6 +594,27 @@ function ProfileScreenContent() {
                   onValueChange={(value) => updateLiturgyPreference('calendar_type', value)}
                   icon="calendar-outline"
                 />
+
+                {/* Admin Console (only for admins) */}
+                {isAdmin && !adminLoading && (
+                  <TouchableOpacity
+                    style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+                    onPress={() => router.push('/admin')}
+                  >
+                    <View style={styles.settingRow}>
+                      <Ionicons name="shield-checkmark" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                      <View style={styles.settingInfo}>
+                        <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                          Admin Console
+                        </Text>
+                        <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                          Manage books, users, and app content
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </View>
+                  </TouchableOpacity>
+                )}
               </>
             ) : (
               <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>

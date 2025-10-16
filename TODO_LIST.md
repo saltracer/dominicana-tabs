@@ -50,3 +50,26 @@
 - [ ] Admin console
 - [ ] Look for opportunities to refactor
 - [ ] fix the user profile sub page titling
+
+## Books to add
+ - st Patrick’s autobiography 
+ - st Benedict’s biography by st Gregory 
+
+
+## Future Extensibility of Admin Section
+
+The admin console is designed to easily add new management areas:
+
+- **Blog Posts** - CRUD for blog_posts table
+- **Podcasts** - New table + storage bucket
+- **Liturgy Components** - Manage liturgy_components and liturgy_templates
+- **Daily Offices** - Content management for daily_offices
+- **Notifications** - Send push notifications to users
+- **Analytics Export** - Download usage reports
+
+Each new area follows the same pattern:
+
+1. Add route under `app/admin/{area}/`
+2. Create service in `services/Admin{Area}Service.ts`
+3. Add navigation item in admin layout
+4. Use shared components (AdminTable, AdminForm, etc.)
