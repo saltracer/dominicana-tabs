@@ -52,7 +52,7 @@ export class AdminUserService {
 
     let query = supabase
       .from('profiles')
-      .select('*, user_roles!left(role)', { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     // Apply search filter
     if (filters.search) {
@@ -73,13 +73,26 @@ export class AdminUserService {
       throw new Error(`Failed to list users: ${error.message}`);
     }
 
-    // Transform and filter by role if needed
+    // Get all user roles separately
+    const userIds = (data || []).map(p => p.id);
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('user_id, role')
+      .in('user_id', userIds);
+
+    // Create a map of user_id to role
+    const roleMap = new Map<string, string>();
+    roles?.forEach(r => {
+      roleMap.set(r.user_id, r.role);
+    });
+
+    // Transform and merge with roles
     let users = (data || []).map((profile: any) => ({
       id: profile.id,
       email: profile.username, // username is email in profiles
       name: profile.full_name || profile.username,
       username: profile.username,
-      role: profile.user_roles?.role || 'authenticated',
+      role: roleMap.get(profile.id) || 'authenticated',
       avatar_url: profile.avatar_url,
       created_at: profile.created_at,
       updated_at: profile.updated_at,
@@ -107,7 +120,7 @@ export class AdminUserService {
   static async getUser(id: string): Promise<AdminUser> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*, user_roles!left(role)')
+      .select('*')
       .eq('id', id)
       .single();
 
@@ -116,12 +129,19 @@ export class AdminUserService {
       throw new Error(`Failed to get user: ${error.message}`);
     }
 
+    // Get user role separately
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', id)
+      .single();
+
     return {
       id: data.id,
       email: data.username,
       name: data.full_name || data.username,
       username: data.username,
-      role: data.user_roles?.role || 'authenticated',
+      role: roleData?.role || 'authenticated',
       avatar_url: data.avatar_url,
       created_at: data.created_at,
       updated_at: data.updated_at,
