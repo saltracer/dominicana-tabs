@@ -1,6 +1,7 @@
 # TODO LIST
 
 ## Profiles
+- [] Redesign the prefences page, as the organization doesn't make sense and not all of them are used. The initial idea is that they would be organized by "section"of the app (eg prayer, study, etc)
 
 ## Prayer
 - More content

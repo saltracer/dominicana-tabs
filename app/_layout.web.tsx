@@ -10,6 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider, useCalendar } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/Colors';
 import Footer from '@/components/Footer.web';
 import FeastBanner from '@/components/FeastBanner.web';
@@ -56,11 +57,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <CalendarProvider>
-        <BibleProvider>
-          <RootLayoutNav />
-        </BibleProvider>
-      </CalendarProvider>
+      <AuthProvider>
+        <CalendarProvider>
+          <BibleProvider>
+            <RootLayoutNav />
+          </BibleProvider>
+        </CalendarProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
@@ -68,6 +71,7 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const { user, profile } = useAuth();
   const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
   const [preachingDropdownOpen, setPreachingDropdownOpen] = useState(false);
   const [studyDropdownOpen, setStudyDropdownOpen] = useState(false);
@@ -484,9 +488,22 @@ function RootLayoutNav() {
               <TouchableOpacity style={styles.actionIcon}>
                 <Ionicons name="chatbubble-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.signInButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-                <Text style={[styles.signInText, { color: Colors[colorScheme ?? 'light'].text }]}>Sign In</Text>
-              </TouchableOpacity>
+              {user ? (
+                <Link href="/profile">
+                  <View style={[styles.signInButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+                    <Ionicons name="person-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
+                    <Text style={[styles.signInText, styles.profileButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      {profile?.name || user.email?.split('@')[0] || 'Profile'}
+                    </Text>
+                  </View>
+                </Link>
+              ) : (
+                <Link href="/auth">
+                  <View style={[styles.signInButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+                    <Text style={[styles.signInText, { color: Colors[colorScheme ?? 'light'].text }]}>Sign In</Text>
+                  </View>
+                </Link>
+              )}
             </View>
           </View>
         </View>
@@ -589,6 +606,8 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   signInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
@@ -598,6 +617,9 @@ const styles = StyleSheet.create({
   signInText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  profileButtonText: {
+    marginLeft: 8,
   },
   dateBar: {
     flexDirection: 'row',
