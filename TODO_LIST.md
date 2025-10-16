@@ -40,6 +40,7 @@
 - [x] Add a setting to remove the download
 - [x] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
+- [ ] Book categories should be tags not single optionsS
 
 ## Community
 - [ ] Calendar is ugly
@@ -57,13 +58,13 @@
 - [ ] fix the user profile sub page titling
 
 ## Admin
-- [] Allow the Rosary Audio to be renamed
-- [] Test book uploads. All aspects of CRUD
-- [] Text user creation and signup workflows. All aspects of CRUD for users. From admin and user perspective.
+- [ ] Allow the Rosary Audio to be renamed
+- [ ] Test book uploads. All aspects of CRUD
+- [ ] Text user creation and signup workflows. All aspects of CRUD for users. From admin and user perspective.
 
 ### Books to add
- - st Patrick’s autobiography 
- - st Benedict’s biography by st Gregory 
+ - [x] st Patrick’s autobiography 
+ - [x] st Benedict’s biography by st Gregory 
 
 
 ## Future Extensibility of Admin Section
@@ -76,10 +77,3 @@ The admin console is designed to easily add new management areas:
 - **Daily Offices** - Content management for daily_offices
 - **Notifications** - Send push notifications to users
 - **Analytics Export** - Download usage reports
-
-Each new area follows the same pattern:
-
-1. Add route under `app/admin/{area}/`
-2. Create service in `services/Admin{Area}Service.ts`
-3. Add navigation item in admin layout
-4. Use shared components (AdminTable, AdminForm, etc.)
