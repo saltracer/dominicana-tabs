@@ -43,6 +43,8 @@
 
 ## Community
 - [ ] Calendar is ugly
+- [ ] Saints don't list all, the scrolling stops?
+- [ ] The province map doesn't show the continent filters on mobile. Appears to be behind the feast banner.
 
 ## Preaching
 - [ ] Subscribe to blogs
