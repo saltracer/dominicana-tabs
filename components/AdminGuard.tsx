@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useAdminAuth } from '../hooks/useAdminAuth';
@@ -13,11 +13,13 @@ interface AdminGuardProps {
 /**
  * Component to protect admin routes
  * Redirects non-admin users to profile page
+ * Only shows loading screen on initial verification
  */
 export default function AdminGuard({ children }: AdminGuardProps) {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading, error } = useAdminAuth();
   const { colorScheme } = useTheme();
+  const hasRenderedContentRef = useRef(false);
 
   const loading = authLoading || adminLoading;
 
@@ -30,12 +32,16 @@ export default function AdminGuard({ children }: AdminGuardProps) {
       } else if (!isAdmin) {
         // Logged in but not admin - redirect to profile
         router.replace('/profile');
+      } else {
+        // User is admin - mark that we've rendered content
+        hasRenderedContentRef.current = true;
       }
     }
   }, [user, isAdmin, loading]);
 
-  // Show loading state
-  if (loading) {
+  // Show loading state ONLY on initial load
+  // Once content has been rendered, keep showing it even during re-verification
+  if (loading && !hasRenderedContentRef.current) {
     return (
       <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
@@ -46,8 +52,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  // Show error state
-  if (error) {
+  // Show error state only if we haven't rendered content yet
+  if (error && !hasRenderedContentRef.current) {
     return (
       <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].error }]}>
@@ -58,7 +64,8 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   }
 
   // User is admin - render children
-  if (user && isAdmin) {
+  // Keep rendering even if re-verifying to prevent form data loss
+  if (user && (isAdmin || hasRenderedContentRef.current)) {
     return <>{children}</>;
   }
 
