@@ -14,8 +14,8 @@ export default function AdminLayoutWeb() {
 
   const navItems = [
     { path: '/admin', label: 'Dashboard', icon: 'grid' as const },
-    { path: '/admin/books', label: 'Books', icon: 'book' as const },
     { path: '/admin/users', label: 'Users', icon: 'people' as const },
+    { path: '/admin/books', label: 'Books', icon: 'book' as const },
     { path: '/admin/rosary', label: 'Rosary Audio', icon: 'musical-notes' as const },
   ];
 
@@ -26,6 +26,16 @@ export default function AdminLayoutWeb() {
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  // Check if nav item is active, with special handling for dashboard
+  const isNavItemActive = (itemPath: string): boolean => {
+    // Exact match for dashboard
+    if (itemPath === '/admin') {
+      return pathname === '/admin';
+    }
+    // For other routes, check if pathname starts with the path
+    return pathname === itemPath || pathname?.startsWith(itemPath + '/');
   };
 
   return (
@@ -46,7 +56,7 @@ export default function AdminLayoutWeb() {
           {/* Navigation Items */}
           <View style={styles.navItems}>
             {navItems.map((item) => {
-              const isActive = pathname === item.path || pathname?.startsWith(item.path + '/');
+              const isActive = isNavItemActive(item.path);
               return (
                 <TouchableOpacity
                   key={item.path}
