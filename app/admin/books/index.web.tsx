@@ -24,12 +24,15 @@ export default function BooksListScreenWeb() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | undefined>();
+  const [publishedFilter, setPublishedFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [sortBy, setSortBy] = useState<'title' | 'author' | 'year' | 'created_at' | 'published_at'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     loadBooks();
-  }, [searchQuery, selectedCategory, page]);
+  }, [searchQuery, selectedCategory, publishedFilter, sortBy, sortOrder, page]);
 
   const loadBooks = async () => {
     try {
@@ -38,6 +41,9 @@ export default function BooksListScreenWeb() {
       
       if (searchQuery) filters.search = searchQuery;
       if (selectedCategory) filters.category = selectedCategory;
+      if (publishedFilter !== 'all') filters.publishedStatus = publishedFilter;
+      filters.sortBy = sortBy;
+      filters.sortOrder = sortOrder;
 
       const result = await AdminBookService.listBooks(filters, { page, limit: 20 });
       setBooks(result.books);
@@ -48,6 +54,18 @@ export default function BooksListScreenWeb() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSort = (column: 'title' | 'author' | 'year' | 'created_at' | 'published_at') => {
+    if (sortBy === column) {
+      // Toggle sort order
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending for text, descending for dates
+      setSortBy(column);
+      setSortOrder(column === 'created_at' || column === 'published_at' ? 'desc' : 'asc');
+    }
+    setPage(1); // Reset to first page when sorting changes
   };
 
   const handleDeleteBook = async (book: Book) => {
@@ -120,6 +138,39 @@ export default function BooksListScreenWeb() {
           )}
         </View>
 
+        {/* Published Status Filter */}
+        <View style={styles.filterRow}>
+          {(['all Status', 'published', 'draft'] as const).map((status) => (
+            <TouchableOpacity
+              key={status}
+              style={[
+                styles.filterChip,
+                publishedFilter === status && {
+                  backgroundColor: Colors[colorScheme ?? 'light'].primary,
+                },
+              ]}
+              onPress={() => {
+                setPublishedFilter(status);
+                setPage(1);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  {
+                    color: publishedFilter === status
+                      ? Colors[colorScheme ?? 'light'].dominicanWhite
+                      : Colors[colorScheme ?? 'light'].text,
+                  },
+                ]}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Category Filter */}
         <View style={styles.categoryRow}>
           <TouchableOpacity
             style={[
@@ -128,7 +179,10 @@ export default function BooksListScreenWeb() {
                 backgroundColor: Colors[colorScheme ?? 'light'].primary,
               },
             ]}
-            onPress={() => setSelectedCategory(undefined)}
+            onPress={() => {
+              setSelectedCategory(undefined);
+              setPage(1);
+            }}
           >
             <Text
               style={[
@@ -140,7 +194,7 @@ export default function BooksListScreenWeb() {
                 },
               ]}
             >
-              All
+              All Categories
             </Text>
           </TouchableOpacity>
           {categoriesLoading ? (
@@ -155,7 +209,10 @@ export default function BooksListScreenWeb() {
                     backgroundColor: Colors[colorScheme ?? 'light'].primary,
                   },
                 ]}
-                onPress={() => setSelectedCategory(category)}
+                onPress={() => {
+                  setSelectedCategory(category);
+                  setPage(1);
+                }}
               >
                 <Text
                   style={[
@@ -194,24 +251,52 @@ export default function BooksListScreenWeb() {
             <View style={[styles.table, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
               {/* Table Header */}
               <View style={[styles.tableHeader, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}>
-                <Text style={[styles.headerCell, styles.titleColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Title
-                </Text>
-                <Text style={[styles.headerCell, styles.authorColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Author
-                </Text>
-                <Text style={[styles.headerCell, styles.categoryColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Category
-                </Text>
-                <Text style={[styles.headerCell, styles.statusColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Status
-                </Text>
-                <Text style={[styles.headerCell, styles.filesColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Files
-                </Text>
-                <Text style={[styles.headerCell, styles.actionsColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Actions
-                </Text>
+                <TouchableOpacity 
+                  style={[styles.headerCell, styles.titleColumn, styles.sortableHeader]}
+                  onPress={() => handleSort('title')}
+                >
+                  <Text style={[styles.headerCellText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>Title</Text>
+                  {sortBy === 'title' && (
+                    <Ionicons 
+                      name={sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'} 
+                      size={14} 
+                      color={Colors[colorScheme ?? 'light'].primary} 
+                    />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.headerCell, styles.authorColumn, styles.sortableHeader]}
+                  onPress={() => handleSort('author')}
+                >
+                  <Text style={[styles.headerCellText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>Author</Text>
+                  {sortBy === 'author' && (
+                    <Ionicons 
+                      name={sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'} 
+                      size={14} 
+                      color={Colors[colorScheme ?? 'light'].primary} 
+                    />
+                  )}
+                </TouchableOpacity>
+                <View style={[styles.headerCell, styles.categoryColumn]}>
+                  <Text style={[styles.headerCellText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Category
+                  </Text>
+                </View>
+                <View style={[styles.headerCell, styles.statusColumn]}>
+                  <Text style={[styles.headerCellText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Status
+                  </Text>
+                </View>
+                <View style={[styles.headerCell, styles.filesColumn]}>
+                  <Text style={[styles.headerCellText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Files
+                  </Text>
+                </View>
+                <View style={[styles.headerCell, styles.actionsColumn]}>
+                  <Text style={[styles.headerCellText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Actions
+                  </Text>
+                </View>
               </View>
 
               {/* Table Rows */}
@@ -428,6 +513,31 @@ const styles = StyleSheet.create({
     padding: 4,
     cursor: 'pointer',
   },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    cursor: 'pointer',
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
+  },
   categoryRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -439,6 +549,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    cursor: 'pointer',
   },
   categoryChipText: {
     fontSize: 14,
@@ -481,10 +592,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   headerCell: {
+    justifyContent: 'center',
+  },
+  headerCellText: {
     fontSize: 13,
     fontFamily: 'Georgia',
     fontWeight: '700',
     textTransform: 'uppercase',
+  },
+  sortableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    cursor: 'pointer',
   },
   tableRow: {
     flexDirection: 'row',

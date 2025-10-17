@@ -25,12 +25,15 @@ export default function BooksListScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BookCategory | undefined>();
+  const [publishedFilter, setPublishedFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [sortBy, setSortBy] = useState<'title' | 'author' | 'year' | 'created_at' | 'published_at'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     loadBooks();
-  }, [searchQuery, selectedCategory, page]);
+  }, [searchQuery, selectedCategory, publishedFilter, sortBy, sortOrder, page]);
 
   const loadBooks = async () => {
     try {
@@ -39,6 +42,9 @@ export default function BooksListScreen() {
       
       if (searchQuery) filters.search = searchQuery;
       if (selectedCategory) filters.category = selectedCategory;
+      if (publishedFilter !== 'all') filters.publishedStatus = publishedFilter;
+      filters.sortBy = sortBy;
+      filters.sortOrder = sortOrder;
 
       const result = await AdminBookService.listBooks(filters, { page, limit: 20 });
       setBooks(result.books);
@@ -49,6 +55,20 @@ export default function BooksListScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const sortOptions = [
+    { value: 'title', label: 'Title (A-Z)', icon: 'text' },
+    { value: 'author', label: 'Author (A-Z)', icon: 'person' },
+    { value: 'year', label: 'Year', icon: 'calendar' },
+    { value: 'created_at', label: 'Recently Added', icon: 'time' },
+    { value: 'published_at', label: 'Recently Published', icon: 'checkmark-circle' },
+  ] as const;
+
+  const getCurrentSortLabel = () => {
+    const option = sortOptions.find(opt => opt.value === sortBy);
+    const directionLabel = sortOrder === 'asc' ? '↑' : '↓';
+    return option ? `${option.label} ${directionLabel}` : 'Sort';
   };
 
   const handleDeleteBook = async (book: Book) => {
@@ -105,6 +125,85 @@ export default function BooksListScreen() {
           />
         </View>
 
+        {/* Sort Selector */}
+        <View style={styles.sortContainer}>
+          <Ionicons name="swap-vertical" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+          <Text style={[styles.sortLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            Sort:
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortScroll}>
+            {sortOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.sortChip,
+                  sortBy === option.value && {
+                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
+                  },
+                ]}
+                onPress={() => {
+                  if (sortBy === option.value) {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                  } else {
+                    setSortBy(option.value);
+                    setSortOrder(option.value === 'created_at' || option.value === 'published_at' ? 'desc' : 'asc');
+                  }
+                  setPage(1);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.sortChipText,
+                    {
+                      color: sortBy === option.value
+                        ? Colors[colorScheme ?? 'light'].dominicanWhite
+                        : Colors[colorScheme ?? 'light'].text,
+                    },
+                  ]}
+                >
+                  {option.label} {sortBy === option.value && (sortOrder === 'asc' ? '↑' : '↓')}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Published Status Filter */}
+        <View style={styles.filterRow}>
+          <Text style={[styles.filterLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            Status:
+          </Text>
+          {(['all', 'published', 'draft'] as const).map((status) => (
+            <TouchableOpacity
+              key={status}
+              style={[
+                styles.filterChip,
+                publishedFilter === status && {
+                  backgroundColor: Colors[colorScheme ?? 'light'].primary,
+                },
+              ]}
+              onPress={() => {
+                setPublishedFilter(status);
+                setPage(1);
+              }}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  {
+                    color: publishedFilter === status
+                      ? Colors[colorScheme ?? 'light'].dominicanWhite
+                      : Colors[colorScheme ?? 'light'].text,
+                  },
+                ]}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Category Filter */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
           <TouchableOpacity
             style={[
@@ -113,7 +212,10 @@ export default function BooksListScreen() {
                 backgroundColor: Colors[colorScheme ?? 'light'].primary,
               },
             ]}
-            onPress={() => setSelectedCategory(undefined)}
+            onPress={() => {
+              setSelectedCategory(undefined);
+              setPage(1);
+            }}
           >
             <Text
               style={[
@@ -140,7 +242,10 @@ export default function BooksListScreen() {
                     backgroundColor: Colors[colorScheme ?? 'light'].primary,
                   },
                 ]}
-                onPress={() => setSelectedCategory(category)}
+                onPress={() => {
+                  setSelectedCategory(category);
+                  setPage(1);
+                }}
               >
                 <Text
                   style={[
@@ -369,6 +474,54 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: 'Georgia',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sortLabel: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+  },
+  sortScroll: {
+    flexGrow: 0,
+  },
+  sortChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  sortChipText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterLabel: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
   },
   categoryScroll: {
     flexGrow: 0,

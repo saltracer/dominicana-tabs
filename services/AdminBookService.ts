@@ -4,6 +4,9 @@ import { Book, BookCategory } from '../types';
 export interface BookFilters {
   search?: string;
   category?: BookCategory;
+  sortBy?: 'title' | 'author' | 'year' | 'created_at' | 'published_at';
+  sortOrder?: 'asc' | 'desc';
+  publishedStatus?: 'all' | 'published' | 'draft';
 }
 
 export interface BookPagination {
@@ -59,10 +62,31 @@ export class AdminBookService {
       query = query.eq('category', filters.category);
     }
 
+    // Apply published status filter
+    if (filters.publishedStatus && filters.publishedStatus !== 'all') {
+      if (filters.publishedStatus === 'published') {
+        query = query.eq('published', true);
+      } else if (filters.publishedStatus === 'draft') {
+        query = query.eq('published', false);
+      }
+    }
+
+    // Apply sorting
+    const sortBy = filters.sortBy || 'created_at';
+    const sortOrder = filters.sortOrder || 'desc';
+    const ascending = sortOrder === 'asc';
+
+    // For year sorting, handle nulls
+    if (sortBy === 'year') {
+      query = query.order('year', { ascending, nullsFirst: !ascending });
+    } else if (sortBy === 'published_at') {
+      query = query.order('published_at', { ascending, nullsFirst: !ascending });
+    } else {
+      query = query.order(sortBy, { ascending });
+    }
+
     // Apply pagination
-    query = query
-      .range(offset, offset + limit - 1)
-      .order('created_at', { ascending: false });
+    query = query.range(offset, offset + limit - 1);
 
     const { data, error, count } = await query;
 
