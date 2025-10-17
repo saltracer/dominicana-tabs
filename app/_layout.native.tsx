@@ -88,7 +88,6 @@ function RootLayoutNav() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false,
             headerBackButtonDisplayMode: "minimal", }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
         </Stack>
       </NavigationThemeProvider>
