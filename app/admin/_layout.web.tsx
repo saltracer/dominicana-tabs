@@ -16,6 +16,7 @@ export default function AdminLayoutWeb() {
     { path: '/admin', label: 'Dashboard', icon: 'grid' as const },
     { path: '/admin/users', label: 'Users', icon: 'people' as const },
     { path: '/admin/books', label: 'Books', icon: 'book' as const },
+    { path: '/admin/lists', label: 'Lists', icon: 'list' as const },
     { path: '/admin/rosary', label: 'Rosary Audio', icon: 'musical-notes' as const },
   ];
 

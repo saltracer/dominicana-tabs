@@ -15,17 +15,11 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { AdminBookService, BookFilters } from '../../../services/AdminBookService';
 import { Book, BookCategory } from '../../../types';
-
-const CATEGORIES: BookCategory[] = [
-  'Philosophy',
-  'Theology',
-  'Mysticism',
-  'Science',
-  'Natural History',
-];
+import { useBookCategories } from '../../../hooks/useBookCategories';
 
 export default function BooksListScreenWeb() {
   const { colorScheme } = useTheme();
+  const { categories, loading: categoriesLoading } = useBookCategories();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,6 +107,17 @@ export default function BooksListScreenWeb() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {(searchQuery.length > 0 || selectedCategory) && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => {
+                setSearchQuery('');
+                setSelectedCategory(undefined);
+              }}
+            >
+              <Ionicons name="close-circle" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.categoryRow}>
@@ -138,32 +143,36 @@ export default function BooksListScreenWeb() {
               All
             </Text>
           </TouchableOpacity>
-          {CATEGORIES.map((category) => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryChip,
-                selectedCategory === category && {
-                  backgroundColor: Colors[colorScheme ?? 'light'].primary,
-                },
-              ]}
-              onPress={() => setSelectedCategory(category)}
-            >
-              <Text
+          {categoriesLoading ? (
+            <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+          ) : (
+            categories.map((category) => (
+              <TouchableOpacity
+                key={category}
                 style={[
-                  styles.categoryChipText,
-                  {
-                    color:
-                      selectedCategory === category
-                        ? Colors[colorScheme ?? 'light'].dominicanWhite
-                        : Colors[colorScheme ?? 'light'].text,
+                  styles.categoryChip,
+                  selectedCategory === category && {
+                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
                   },
                 ]}
+                onPress={() => setSelectedCategory(category)}
               >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    {
+                      color:
+                        selectedCategory === category
+                          ? Colors[colorScheme ?? 'light'].dominicanWhite
+                          : Colors[colorScheme ?? 'light'].text,
+                    },
+                  ]}
+                >
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </View>
 
@@ -194,6 +203,9 @@ export default function BooksListScreenWeb() {
                 <Text style={[styles.headerCell, styles.categoryColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                   Category
                 </Text>
+                <Text style={[styles.headerCell, styles.statusColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Status
+                </Text>
                 <Text style={[styles.headerCell, styles.filesColumn, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                   Files
                 </Text>
@@ -208,9 +220,10 @@ export default function BooksListScreenWeb() {
                   key={book.id}
                   style={[styles.tableRow, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}
                   onPress={() => router.push(`/admin/books/${book.id}`)}
+                  activeOpacity={0.7}
                 >
                   <View style={[styles.tableCell, styles.titleColumn]}>
-                    <Text style={[styles.bookTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                    <Text style={[styles.bookTitle, styles.clickableTitle, { color: Colors[colorScheme ?? 'light'].primary }]}>
                       {book.title}
                     </Text>
                     {book.year && (
@@ -219,13 +232,51 @@ export default function BooksListScreenWeb() {
                       </Text>
                     )}
                   </View>
-                  <Text style={[styles.tableCell, styles.authorColumn, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    {book.author}
-                  </Text>
+                  <TouchableOpacity
+                    style={[styles.tableCell, styles.authorColumn]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setSearchQuery(book.author);
+                    }}
+                  >
+                    <Text style={[styles.authorName, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      {book.author}
+                    </Text>
+                  </TouchableOpacity>
                   <View style={[styles.tableCell, styles.categoryColumn]}>
                     <View style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
                       <Text style={[styles.categoryBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
                         {book.category}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.tableCell, styles.statusColumn]}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: book.published
+                            ? Colors[colorScheme ?? 'light'].success + '15'
+                            : Colors[colorScheme ?? 'light'].textMuted + '15',
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={book.published ? 'checkmark-circle' : 'eye-off'}
+                        size={14}
+                        color={book.published ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.statusBadgeText,
+                          {
+                            color: book.published
+                              ? Colors[colorScheme ?? 'light'].success
+                              : Colors[colorScheme ?? 'light'].textMuted,
+                          },
+                        ]}
+                      >
+                        {book.published ? 'Published' : 'Draft'}
                       </Text>
                     </View>
                   </View>
@@ -373,6 +424,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
   },
+  clearButton: {
+    padding: 4,
+    cursor: 'pointer',
+  },
   categoryRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -449,6 +504,9 @@ const styles = StyleSheet.create({
   categoryColumn: {
     flex: 2,
   },
+  statusColumn: {
+    flex: 2,
+  },
   filesColumn: {
     flex: 1.5,
   },
@@ -475,6 +533,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Georgia',
     fontWeight: '600',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 6,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+  },
+  clickableTitle: {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'dotted',
+    cursor: 'pointer',
+  },
+  authorName: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    cursor: 'pointer',
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'dotted',
   },
   filesBadges: {
     flexDirection: 'row',

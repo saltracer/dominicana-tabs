@@ -20,17 +20,11 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { AdminBookService, CreateBookData } from '../../../services/AdminBookService';
 import { Book, BookCategory } from '../../../types';
-
-const CATEGORIES: BookCategory[] = [
-  'Philosophy',
-  'Theology',
-  'Mysticism',
-  'Science',
-  'Natural History',
-];
+import { useBookCategories } from '../../../hooks/useBookCategories';
 
 export default function EditBookScreen() {
   const { colorScheme } = useTheme();
+  const { categories, loading: categoriesLoading } = useBookCategories();
   const { id } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -69,6 +63,7 @@ export default function EditBookScreen() {
         category: bookData.category,
         description: bookData.description,
         long_description: bookData.longDescription || [],
+        published: bookData.published,
       });
       
       // Convert long_description array to text with double line breaks
@@ -144,6 +139,41 @@ export default function EditBookScreen() {
         },
       ]
     );
+  };
+
+  const handleTogglePublished = async () => {
+    if (!book) return;
+
+    // If unpublishing, show confirmation
+    if (book.published) {
+      Alert.alert(
+        'Unpublish Book',
+        'This will hide the book from the public library. Users will no longer be able to see or access it. Continue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Unpublish',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await AdminBookService.unpublishBook(book.id);
+                loadBook();
+              } catch (error) {
+                Alert.alert('Error', 'Failed to unpublish book');
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      // Publishing - just do it
+      try {
+        await AdminBookService.publishBook(book.id);
+        loadBook();
+      } catch (error) {
+        Alert.alert('Error', 'Failed to publish book');
+      }
+    }
   };
 
   const handlePickCover = async () => {
@@ -334,36 +364,40 @@ export default function EditBookScreen() {
               Category *
             </Text>
             <View style={styles.categoryGrid}>
-              {CATEGORIES.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.categoryButton,
-                    {
-                      backgroundColor:
-                        formData.category === category
-                          ? Colors[colorScheme ?? 'light'].primary
-                          : Colors[colorScheme ?? 'light'].card,
-                      borderColor: Colors[colorScheme ?? 'light'].border,
-                    },
-                  ]}
-                  onPress={() => setFormData({ ...formData, category })}
-                >
-                  <Text
+              {categoriesLoading ? (
+                <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+              ) : (
+                categories.map((category) => (
+                  <TouchableOpacity
+                    key={category}
                     style={[
-                      styles.categoryButtonText,
+                      styles.categoryButton,
                       {
-                        color:
+                        backgroundColor:
                           formData.category === category
-                            ? Colors[colorScheme ?? 'light'].dominicanWhite
-                            : Colors[colorScheme ?? 'light'].text,
+                            ? Colors[colorScheme ?? 'light'].primary
+                            : Colors[colorScheme ?? 'light'].card,
+                        borderColor: Colors[colorScheme ?? 'light'].border,
                       },
                     ]}
+                    onPress={() => setFormData({ ...formData, category })}
                   >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.categoryButtonText,
+                        {
+                          color:
+                            formData.category === category
+                              ? Colors[colorScheme ?? 'light'].dominicanWhite
+                              : Colors[colorScheme ?? 'light'].text,
+                        },
+                      ]}
+                    >
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
           </View>
 
@@ -406,6 +440,74 @@ export default function EditBookScreen() {
             <Text style={[styles.hint, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
               Tip: Use double line breaks to create paragraphs
             </Text>
+          </View>
+
+          {/* Published Status */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Publication Status
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.publishToggle,
+                {
+                  backgroundColor: book?.published
+                    ? Colors[colorScheme ?? 'light'].success + '10'
+                    : Colors[colorScheme ?? 'light'].card,
+                  borderColor: book?.published
+                    ? Colors[colorScheme ?? 'light'].success
+                    : Colors[colorScheme ?? 'light'].border,
+                },
+              ]}
+              onPress={handleTogglePublished}
+            >
+              <View style={styles.publishToggleLeft}>
+                <Ionicons
+                  name={book?.published ? 'checkmark-circle' : 'eye-off-outline'}
+                  size={24}
+                  color={book?.published ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].textSecondary}
+                />
+                <View style={styles.publishToggleInfo}>
+                  <Text
+                    style={[
+                      styles.publishToggleTitle,
+                      {
+                        color: book?.published
+                          ? Colors[colorScheme ?? 'light'].success
+                          : Colors[colorScheme ?? 'light'].text,
+                      },
+                    ]}
+                  >
+                    {book?.published ? 'Published' : 'Draft'}
+                  </Text>
+                  <Text style={[styles.publishToggleHint, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {book?.published
+                      ? 'Visible in library'
+                      : 'Hidden from library'}
+                  </Text>
+                </View>
+              </View>
+              <View
+                style={[
+                  styles.toggleSwitch,
+                  {
+                    backgroundColor: book?.published
+                      ? Colors[colorScheme ?? 'light'].success
+                      : Colors[colorScheme ?? 'light'].border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleKnob,
+                    {
+                      backgroundColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+                      transform: [{ translateX: book?.published ? 22 : 2 }],
+                    },
+                  ]}
+                />
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Cover Image */}
@@ -687,6 +789,44 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     marginTop: 6,
     fontStyle: 'italic',
+  },
+  publishToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 2,
+  },
+  publishToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  publishToggleInfo: {
+    flex: 1,
+  },
+  publishToggleTitle: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  publishToggleHint: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+  },
+  toggleSwitch: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   uploadButton: {
     padding: 24,

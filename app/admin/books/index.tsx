@@ -16,17 +16,11 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { AdminBookService, BookFilters } from '../../../services/AdminBookService';
 import { Book, BookCategory } from '../../../types';
-
-const CATEGORIES: BookCategory[] = [
-  'Philosophy',
-  'Theology',
-  'Mysticism',
-  'Science',
-  'Natural History',
-];
+import { useBookCategories } from '../../../hooks/useBookCategories';
 
 export default function BooksListScreen() {
   const { colorScheme } = useTheme();
+  const { categories, loading: categoriesLoading } = useBookCategories();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -134,32 +128,36 @@ export default function BooksListScreen() {
               All
             </Text>
           </TouchableOpacity>
-          {CATEGORIES.map((category) => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryChip,
-                selectedCategory === category && {
-                  backgroundColor: Colors[colorScheme ?? 'light'].primary,
-                },
-              ]}
-              onPress={() => setSelectedCategory(category)}
-            >
-              <Text
+          {categoriesLoading ? (
+            <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+          ) : (
+            categories.map((category) => (
+              <TouchableOpacity
+                key={category}
                 style={[
-                  styles.categoryChipText,
-                  {
-                    color:
-                      selectedCategory === category
-                        ? Colors[colorScheme ?? 'light'].dominicanWhite
-                        : Colors[colorScheme ?? 'light'].text,
+                  styles.categoryChip,
+                  selectedCategory === category && {
+                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
                   },
                 ]}
+                onPress={() => setSelectedCategory(category)}
               >
-                {category}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    {
+                      color:
+                        selectedCategory === category
+                          ? Colors[colorScheme ?? 'light'].dominicanWhite
+                          : Colors[colorScheme ?? 'light'].text,
+                    },
+                  ]}
+                >
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       </View>
 
@@ -191,10 +189,44 @@ export default function BooksListScreen() {
                     {book.author}
                     {book.year && ` (${book.year})`}
                   </Text>
+                  {book.publishedAt && (
+                    <Text style={[styles.publishedDate, { color: Colors[colorScheme ?? 'light'].success }]}>
+                      Published: {new Date(book.publishedAt).toLocaleDateString()}
+                    </Text>
+                  )}
                   <View style={styles.bookMeta}>
                     <View style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
                       <Text style={[styles.categoryBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
                         {book.category}
+                      </Text>
+                    </View>
+                    {/* Published Status Badge */}
+                    <View
+                      style={[
+                        styles.badge,
+                        {
+                          backgroundColor: book.published
+                            ? Colors[colorScheme ?? 'light'].success + '10'
+                            : Colors[colorScheme ?? 'light'].textMuted + '10',
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name={book.published ? 'checkmark-circle' : 'eye-off'}
+                        size={12}
+                        color={book.published ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.badgeText,
+                          {
+                            color: book.published
+                              ? Colors[colorScheme ?? 'light'].success
+                              : Colors[colorScheme ?? 'light'].textMuted,
+                          },
+                        ]}
+                      >
+                        {book.published ? 'Published' : 'Draft'}
                       </Text>
                     </View>
                     {book.coverImage && (
@@ -396,7 +428,13 @@ const styles = StyleSheet.create({
   bookAuthor: {
     fontSize: 14,
     fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  publishedDate: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
     marginBottom: 8,
+    fontStyle: 'italic',
   },
   bookMeta: {
     flexDirection: 'row',

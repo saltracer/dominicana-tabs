@@ -19,7 +19,7 @@ export class BookRepository extends BaseRepository<Book> {
   constructor() {
     super({
       tableName: 'books',
-      cacheKey: 'books',
+      cacheKey: 'books:v2', // v2 to invalidate old cache with unpublished books
       cacheTtl: 5 * 60 * 1000, // 5 minutes
     });
   }
@@ -36,6 +36,9 @@ export class BookRepository extends BaseRepository<Book> {
       }
 
       let query = supabase.from(this.config.tableName).select('*');
+
+      // Only show published books in public library
+      query = query.eq('published', true);
 
       // Apply category filter
       if (params.category && params.category !== 'all') {
@@ -107,6 +110,8 @@ export class BookRepository extends BaseRepository<Book> {
       description: dbBook.description,
       epubPath: dbBook.epub_path,
       epubSamplePath: dbBook.epub_sample_path,
+      published: dbBook.published || false,
+      publishedAt: dbBook.published_at,
       createdAt: dbBook.created_at,
       updatedAt: dbBook.updated_at,
       bookmarks: [], // Will be fetched separately

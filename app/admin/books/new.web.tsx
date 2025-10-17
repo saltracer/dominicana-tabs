@@ -16,17 +16,11 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { AdminBookService, CreateBookData } from '../../../services/AdminBookService';
 import { BookCategory } from '../../../types';
-
-const CATEGORIES: BookCategory[] = [
-  'Philosophy',
-  'Theology',
-  'Mysticism',
-  'Science',
-  'Natural History',
-];
+import { useBookCategories } from '../../../hooks/useBookCategories';
 
 export default function NewBookScreenWeb() {
   const { colorScheme } = useTheme();
+  const { categories, loading: categoriesLoading } = useBookCategories();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<CreateBookData>({
     title: '',
@@ -39,6 +33,9 @@ export default function NewBookScreenWeb() {
   
   // Single long description text
   const [longDescriptionText, setLongDescriptionText] = useState('');
+  
+  // Published status
+  const [publishImmediately, setPublishImmediately] = useState(false);
   
   // File state
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -75,6 +72,7 @@ export default function NewBookScreenWeb() {
         {
           ...formData,
           long_description: paragraphs.length > 0 ? paragraphs : undefined,
+          published: publishImmediately,
         },
         {
           cover: coverFile || undefined,
@@ -223,36 +221,40 @@ export default function NewBookScreenWeb() {
                     Category *
                   </Text>
                   <View style={styles.categoryRow}>
-                    {CATEGORIES.map((category) => (
-                      <TouchableOpacity
-                        key={category}
-                        style={[
-                          styles.categoryChip,
-                          {
-                            backgroundColor:
-                              formData.category === category
-                                ? Colors[colorScheme ?? 'light'].primary
-                                : Colors[colorScheme ?? 'light'].card,
-                            borderColor: Colors[colorScheme ?? 'light'].border,
-                          },
-                        ]}
-                        onPress={() => setFormData({ ...formData, category })}
-                      >
-                        <Text
+                    {categoriesLoading ? (
+                      <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+                    ) : (
+                      categories.map((category) => (
+                        <TouchableOpacity
+                          key={category}
                           style={[
-                            styles.categoryChipText,
+                            styles.categoryChip,
                             {
-                              color:
+                              backgroundColor:
                                 formData.category === category
-                                  ? Colors[colorScheme ?? 'light'].dominicanWhite
-                                  : Colors[colorScheme ?? 'light'].text,
+                                  ? Colors[colorScheme ?? 'light'].primary
+                                  : Colors[colorScheme ?? 'light'].card,
+                              borderColor: Colors[colorScheme ?? 'light'].border,
                             },
                           ]}
+                          onPress={() => setFormData({ ...formData, category })}
                         >
-                          {category}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={[
+                              styles.categoryChipText,
+                              {
+                                color:
+                                  formData.category === category
+                                    ? Colors[colorScheme ?? 'light'].dominicanWhite
+                                    : Colors[colorScheme ?? 'light'].text,
+                              },
+                            ]}
+                          >
+                            {category}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
                   </View>
                 </View>
               </View>
@@ -427,6 +429,74 @@ export default function NewBookScreenWeb() {
                     </Text>
                   </TouchableOpacity>
                 )}
+              </View>
+
+              {/* Published Status */}
+              <View style={styles.fileSection}>
+                <Text style={[styles.fileLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Publication Status
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.publishCard,
+                    {
+                      backgroundColor: publishImmediately
+                        ? Colors[colorScheme ?? 'light'].success + '10'
+                        : Colors[colorScheme ?? 'light'].card,
+                      borderColor: publishImmediately
+                        ? Colors[colorScheme ?? 'light'].success
+                        : Colors[colorScheme ?? 'light'].border,
+                    },
+                  ]}
+                  onPress={() => setPublishImmediately(!publishImmediately)}
+                >
+                  <View style={styles.publishCardLeft}>
+                    <Ionicons
+                      name={publishImmediately ? 'checkmark-circle' : 'eye-off-outline'}
+                      size={24}
+                      color={publishImmediately ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].textSecondary}
+                    />
+                    <View style={styles.publishCardInfo}>
+                      <Text
+                        style={[
+                          styles.publishCardTitle,
+                          {
+                            color: publishImmediately
+                              ? Colors[colorScheme ?? 'light'].success
+                              : Colors[colorScheme ?? 'light'].text,
+                          },
+                        ]}
+                      >
+                        {publishImmediately ? 'Publish Immediately' : 'Save as Draft'}
+                      </Text>
+                      <Text style={[styles.publishCardHint, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        {publishImmediately
+                          ? 'Book will be visible in library'
+                          : 'Book will be hidden until published'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.toggle,
+                      {
+                        backgroundColor: publishImmediately
+                          ? Colors[colorScheme ?? 'light'].success
+                          : Colors[colorScheme ?? 'light'].border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleKnob,
+                        {
+                          backgroundColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+                          transform: [{ translateX: publishImmediately ? 22 : 2 }],
+                        },
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
               </View>
 
               {/* Info Box */}
@@ -705,6 +775,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Georgia',
     lineHeight: 18,
+  },
+  publishCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 2,
+    cursor: 'pointer',
+  },
+  publishCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  publishCardInfo: {
+    flex: 1,
+  },
+  publishCardTitle: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  publishCardHint: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+  },
+  toggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   footer: {
     flexDirection: 'row',

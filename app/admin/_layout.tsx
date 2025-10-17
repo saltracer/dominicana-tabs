@@ -54,6 +54,14 @@ export default function AdminLayout() {
           options={{ title: 'Manage Roles' }} 
         />
         <Stack.Screen 
+          name="lists/index" 
+          options={{ title: 'Manage Lists' }} 
+        />
+        <Stack.Screen 
+          name="lists/[listTypeId]" 
+          options={{ title: 'List Items' }} 
+        />
+        <Stack.Screen 
           name="rosary/index" 
           options={{ title: 'Rosary Audio' }} 
         />

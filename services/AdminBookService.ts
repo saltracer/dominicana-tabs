@@ -25,6 +25,7 @@ export interface CreateBookData {
   category: string;
   description: string;
   long_description?: string[];
+  published?: boolean;
 }
 
 /**
@@ -121,6 +122,8 @@ export class AdminBookService {
         category: bookData.category,
         description: bookData.description,
         long_description: bookData.long_description || null,
+        published: bookData.published || false, // Default to draft
+        published_at: bookData.published ? new Date().toISOString() : null, // Set timestamp if publishing immediately
         cover_image: null,
         epub_path: null,
         epub_sample_path: null,
@@ -318,6 +321,44 @@ export class AdminBookService {
   }
 
   /**
+   * Publish a book (make it visible in library)
+   */
+  static async publishBook(id: number): Promise<void> {
+    const { error } = await supabase
+      .from('books')
+      .update({ 
+        published: true,
+        published_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error publishing book:', error);
+      throw new Error(`Failed to publish book: ${error.message}`);
+    }
+  }
+
+  /**
+   * Unpublish a book (hide from library and clear published date)
+   */
+  static async unpublishBook(id: number): Promise<void> {
+    const { error } = await supabase
+      .from('books')
+      .update({ 
+        published: false,
+        published_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error unpublishing book:', error);
+      throw new Error(`Failed to unpublish book: ${error.message}`);
+    }
+  }
+
+  /**
    * Transform database book to app book format
    */
   private static transformBook(dbBook: any): Book {
@@ -332,9 +373,12 @@ export class AdminBookService {
       longDescription: dbBook.long_description,
       epubPath: dbBook.epub_path,
       epubSamplePath: dbBook.epub_sample_path,
+      published: dbBook.published || false,
+      publishedAt: dbBook.published_at,
       createdAt: dbBook.created_at,
       updatedAt: dbBook.updated_at,
     };
   }
 }
+
 

@@ -19,6 +19,7 @@ export const useBooks = () => {
       const { data, error } = await supabase
         .from('books')
         .select('*')
+        .eq('published', true) // Only show published books in public library
         .order('title');
 
       if (error) {
@@ -84,7 +85,8 @@ export const useBooks = () => {
 
       let queryBuilder = supabase
         .from('books')
-        .select('*');
+        .select('*')
+        .eq('published', true); // Only show published books in public library
 
       if (category && category !== 'all') {
         queryBuilder = queryBuilder.eq('category', category);

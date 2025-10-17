@@ -16,17 +16,11 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { AdminBookService, CreateBookData } from '../../../services/AdminBookService';
 import { Book, BookCategory } from '../../../types';
-
-const CATEGORIES: BookCategory[] = [
-  'Philosophy',
-  'Theology',
-  'Mysticism',
-  'Science',
-  'Natural History',
-];
+import { useBookCategories } from '../../../hooks/useBookCategories';
 
 export default function EditBookScreenWeb() {
   const { colorScheme } = useTheme();
+  const { categories, loading: categoriesLoading } = useBookCategories();
   const { id } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,6 +36,9 @@ export default function EditBookScreenWeb() {
   
   // Single long description text
   const [longDescriptionText, setLongDescriptionText] = useState('');
+  
+  // Unpublish confirmation modal
+  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
 
   useEffect(() => {
     loadBook();
@@ -59,6 +56,7 @@ export default function EditBookScreenWeb() {
         category: bookData.category,
         description: bookData.description,
         long_description: bookData.longDescription || [],
+        published: bookData.published,
       });
       
       // Convert long_description array to text with double line breaks
@@ -134,6 +132,41 @@ export default function EditBookScreenWeb() {
         },
       ]
     );
+  };
+
+  const handleTogglePublished = async () => {
+    if (!book) return;
+
+    // If unpublishing, show in-app confirmation
+    if (book.published) {
+      setShowUnpublishConfirm(true);
+    } else {
+      // Publishing - just do it
+      try {
+        await AdminBookService.publishBook(book.id);
+        await loadBook();
+      } catch (error) {
+        console.error('Publish error:', error);
+        alert('Error: Failed to publish book');
+      }
+    }
+  };
+
+  const confirmUnpublish = async () => {
+    if (!book) return;
+    
+    try {
+      setShowUnpublishConfirm(false);
+      await AdminBookService.unpublishBook(book.id);
+      await loadBook();
+    } catch (error) {
+      console.error('❌ Unpublish error:', error);
+      alert('Error: Failed to unpublish book');
+    }
+  };
+
+  const cancelUnpublish = () => {
+    setShowUnpublishConfirm(false);
   };
 
   const handlePickCover = () => {
@@ -234,7 +267,42 @@ export default function EditBookScreenWeb() {
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      {/* Header with Back Button */}
+      {/* Unpublish Confirmation Modal */}
+      {showUnpublishConfirm && (
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Unpublish Book
+            </Text>
+            <Text style={[styles.modalMessage, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              This will hide the book from the public library. Users will no longer be able to see or access it.
+            </Text>
+            <Text style={[styles.modalMessage, { color: Colors[colorScheme ?? 'light'].textSecondary, marginTop: 8 }]}>
+              Continue?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel, { borderColor: Colors[colorScheme ?? 'light'].border }]}
+                onPress={cancelUnpublish}
+              >
+                <Text style={[styles.modalButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm, { backgroundColor: Colors[colorScheme ?? 'light'].error }]}
+                onPress={confirmUnpublish}
+              >
+                <Text style={[styles.modalButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                  Unpublish
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Header with Back Button and Status */}
       <View style={[styles.header, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
         <TouchableOpacity
           style={styles.backButton}
@@ -249,6 +317,35 @@ export default function EditBookScreenWeb() {
           Edit Book
         </Text>
         <View style={styles.headerSpacer} />
+        {/* Status Badge */}
+        <View
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: book?.published
+                ? Colors[colorScheme ?? 'light'].success + '20'
+                : Colors[colorScheme ?? 'light'].textMuted + '20',
+            },
+          ]}
+        >
+          <Ionicons
+            name={book?.published ? 'checkmark-circle' : 'eye-off'}
+            size={16}
+            color={book?.published ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].textMuted}
+          />
+          <Text
+            style={[
+              styles.statusBadgeText,
+              {
+                color: book?.published
+                  ? Colors[colorScheme ?? 'light'].success
+                  : Colors[colorScheme ?? 'light'].textMuted,
+              },
+            ]}
+          >
+            {book?.published ? 'Published' : 'Draft'}
+          </Text>
+        </View>
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -318,36 +415,40 @@ export default function EditBookScreenWeb() {
                     Category *
                   </Text>
                   <View style={styles.categoryRow}>
-                    {CATEGORIES.map((category) => (
-                      <TouchableOpacity
-                        key={category}
-                        style={[
-                          styles.categoryChip,
-                          {
-                            backgroundColor:
-                              formData.category === category
-                                ? Colors[colorScheme ?? 'light'].primary
-                                : Colors[colorScheme ?? 'light'].card,
-                            borderColor: Colors[colorScheme ?? 'light'].border,
-                          },
-                        ]}
-                        onPress={() => setFormData({ ...formData, category })}
-                      >
-                        <Text
+                    {categoriesLoading ? (
+                      <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+                    ) : (
+                      categories.map((category) => (
+                        <TouchableOpacity
+                          key={category}
                           style={[
-                            styles.categoryChipText,
+                            styles.categoryChip,
                             {
-                              color:
+                              backgroundColor:
                                 formData.category === category
-                                  ? Colors[colorScheme ?? 'light'].dominicanWhite
-                                  : Colors[colorScheme ?? 'light'].text,
+                                  ? Colors[colorScheme ?? 'light'].primary
+                                  : Colors[colorScheme ?? 'light'].card,
+                              borderColor: Colors[colorScheme ?? 'light'].border,
                             },
                           ]}
+                          onPress={() => setFormData({ ...formData, category })}
                         >
-                          {category}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
+                          <Text
+                            style={[
+                              styles.categoryChipText,
+                              {
+                                color:
+                                  formData.category === category
+                                    ? Colors[colorScheme ?? 'light'].dominicanWhite
+                                    : Colors[colorScheme ?? 'light'].text,
+                              },
+                            ]}
+                          >
+                            {category}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
                   </View>
                 </View>
               </View>
@@ -537,6 +638,76 @@ export default function EditBookScreenWeb() {
                 )}
               </View>
 
+              {/* Published Status Toggle */}
+              <View style={styles.fileSection}>
+                <Text style={[styles.fileLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Publication Status
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.publishCard,
+                    {
+                      backgroundColor: book?.published
+                        ? Colors[colorScheme ?? 'light'].success + '10'
+                        : Colors[colorScheme ?? 'light'].card,
+                      borderColor: book?.published
+                        ? Colors[colorScheme ?? 'light'].success
+                        : Colors[colorScheme ?? 'light'].border,
+                    },
+                  ]}
+                  onPress={handleTogglePublished}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.publishCardLeft} pointerEvents="none">
+                    <Ionicons
+                      name={book?.published ? 'checkmark-circle' : 'eye-off-outline'}
+                      size={24}
+                      color={book?.published ? Colors[colorScheme ?? 'light'].success : Colors[colorScheme ?? 'light'].textSecondary}
+                    />
+                    <View style={styles.publishCardInfo}>
+                      <Text
+                        style={[
+                          styles.publishCardTitle,
+                          {
+                            color: book?.published
+                              ? Colors[colorScheme ?? 'light'].success
+                              : Colors[colorScheme ?? 'light'].text,
+                          },
+                        ]}
+                      >
+                        {book?.published ? 'Published' : 'Draft'}
+                      </Text>
+                      <Text style={[styles.publishCardHint, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        {book?.published
+                          ? 'Visible in library'
+                          : 'Hidden from library'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.toggle,
+                      {
+                        backgroundColor: book?.published
+                          ? Colors[colorScheme ?? 'light'].success
+                          : Colors[colorScheme ?? 'light'].border,
+                      },
+                    ]}
+                    pointerEvents="none"
+                  >
+                    <View
+                      style={[
+                        styles.toggleKnob,
+                        {
+                          backgroundColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+                          transform: [{ translateX: book?.published ? 22 : 2 }],
+                        },
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+
               {/* Book ID and Dates */}
               <View style={[styles.metaCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
                 <View style={styles.metaRow}>
@@ -555,6 +726,16 @@ export default function EditBookScreenWeb() {
                     {new Date(book?.createdAt || '').toLocaleDateString()}
                   </Text>
                 </View>
+                {book?.publishedAt && (
+                  <View style={styles.metaRow}>
+                    <Text style={[styles.metaLabel, { color: Colors[colorScheme ?? 'light'].success }]}>
+                      Published
+                    </Text>
+                    <Text style={[styles.metaValue, { color: Colors[colorScheme ?? 'light'].success }]}>
+                      {new Date(book.publishedAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.metaRow}>
                   <Text style={[styles.metaLabel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                     Last Updated
@@ -633,6 +814,20 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     flex: 1,
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  statusBadgeText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   scrollView: {
     flex: 1,
@@ -878,6 +1073,45 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     fontWeight: '600',
   },
+  publishCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 2,
+    cursor: 'pointer',
+  },
+  publishCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  publishCardInfo: {
+    flex: 1,
+  },
+  publishCardTitle: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  publishCardHint: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+  },
+  toggle: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -914,6 +1148,61 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 500,
+    padding: 24,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 16,
+  },
+  modalMessage: {
+    fontSize: 15,
+    fontFamily: 'Georgia',
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    borderWidth: 1,
+  },
+  modalButtonConfirm: {
+    // backgroundColor set inline
+  },
+  modalButtonText: {
     fontSize: 15,
     fontWeight: '600',
     fontFamily: 'Georgia',

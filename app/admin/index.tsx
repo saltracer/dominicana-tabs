@@ -138,6 +138,18 @@ export default function AdminDashboard() {
 
             <TouchableOpacity
               style={[styles.actionCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+              onPress={() => router.push('/admin/lists')}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                <Ionicons name="list" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+              </View>
+              <Text style={[styles.actionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Manage Lists
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
               onPress={() => router.push('/admin/rosary/upload')}
             >
               <View style={[styles.actionIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>

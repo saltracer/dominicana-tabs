@@ -180,6 +180,8 @@ export interface Book {
   longDescription?: string[]; // Array of paragraphs for detailed description
   epubPath?: string | null;
   epubSamplePath?: string | null;
+  published: boolean; // Whether the book is visible in the public library
+  publishedAt?: string | null; // When the book was published (null if draft)
   createdAt: string;
   updatedAt: string;
   // App-specific fields (not in database)
@@ -187,7 +189,18 @@ export interface Book {
   readingProgress?: ReadingProgress;
 }
 
-export type BookCategory = 'Philosophy' | 'Theology' | 'Mysticism' | 'Science' | 'Natural History' | 'Spiritual';
+// BookCategory is now a string to support dynamic categories from database
+export type BookCategory = string;
+
+// Common book categories for reference
+export const COMMON_BOOK_CATEGORIES = [
+  'Philosophy',
+  'Theology',
+  'Mysticism',
+  'Science',
+  'Natural History',
+  'Spiritual',
+] as const;
 
 export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink' | 'red';
 
