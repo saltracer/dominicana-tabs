@@ -9,7 +9,7 @@ import { Colors } from '../../constants/Colors';
 
 export default function AdminLayoutWeb() {
   const { colorScheme } = useTheme();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname();
 
   const navItems = [
@@ -19,15 +19,6 @@ export default function AdminLayoutWeb() {
     { path: '/admin/lists', label: 'Lists', icon: 'list' as const },
     { path: '/admin/rosary', label: 'Rosary Audio', icon: 'musical-notes' as const },
   ];
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      router.replace('/auth');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   // Check if nav item is active, with special handling for dashboard
   const isNavItemActive = (itemPath: string): boolean => {
@@ -107,8 +98,8 @@ export default function AdminLayoutWeb() {
                 {user?.email}
               </Text>
             </View>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            <TouchableOpacity style={styles.logoutButton} onPress={() => router.push('/profile/account' as any)}>
+              <Ionicons name="arrow-back" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
             </TouchableOpacity>
           </View>
         </View>

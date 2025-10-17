@@ -517,7 +517,11 @@ export default function EditBookScreen() {
             </Text>
             {book?.coverImage ? (
               <View style={styles.filePreview}>
-                <Image source={{ uri: book.coverImage }} style={styles.coverPreview} />
+                <Image 
+                  source={{ uri: `${book.coverImage}?t=${Date.now()}` }} 
+                  style={styles.coverPreview} 
+                  key={book.coverImage}
+                />
                 <View style={styles.fileActions}>
                   <TouchableOpacity
                     style={[styles.fileButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}

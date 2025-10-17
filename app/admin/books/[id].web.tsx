@@ -509,9 +509,10 @@ export default function EditBookScreenWeb() {
                 {book?.coverImage ? (
                   <View style={styles.imagePreviewContainer}>
                     <Image 
-                      source={{ uri: book.coverImage }} 
+                      source={{ uri: `${book.coverImage}?t=${Date.now()}` }} 
                       style={styles.imagePreview}
                       resizeMode="contain"
+                      key={book.coverImage}
                     />
                     <View style={styles.imageOverlay}>
                       <TouchableOpacity
