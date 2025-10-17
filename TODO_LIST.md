@@ -56,6 +56,7 @@
 - [x] Admin console
 - [ ] Look for opportunities to refactor
 - [ ] fix the user profile sub page titling
+- [ ] scrolling footer
 
 ## Admin
 - [ ] Allow the Rosary Audio to be renamed
