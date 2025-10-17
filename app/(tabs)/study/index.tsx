@@ -24,6 +24,7 @@ import { StudyStyles, getStudyPlatformStyles } from '../../../styles';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useReadingProgress } from '../../../contexts/ReadingProgressContext';
 import { useBooks } from '../../../hooks/useBooks';
+import { useBookCategories } from '../../../hooks/useBookCategories';
 import { useCacheStats } from '../../../hooks/useCache';
 import { BookCacheService } from '../../../services/BookCacheService';
 import FloatingBibleButton from '../../../components/FloatingBibleButton';
@@ -34,6 +35,7 @@ export default function StudyScreen() {
   const { user, loading: authLoading } = useAuth();
   const { progress: readingProgress, getBookProgressPercentage, loading: progressLoading, refreshProgress } = useReadingProgress();
   const { books, loading: booksLoading, searchBooks } = useBooks();
+  const { categories: bookCategories, loading: categoriesLoading } = useBookCategories();
   const isWeb = Platform.OS === 'web';
   const platformStyles = getStudyPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,7 +79,7 @@ export default function StudyScreen() {
 
   const filterBooks = () => {
     const filtered = books.filter(book => {
-      const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
+      const matchesCategory = selectedCategory === 'all' || book.categories.includes(selectedCategory);
       const matchesSearch = searchQuery === '' || 
         book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         book.author.toLowerCase().includes(searchQuery.toLowerCase());
@@ -111,14 +113,33 @@ export default function StudyScreen() {
     }
   };
 
+  // Icon mapping for categories
+  const getCategoryIcon = (category: string): string => {
+    const iconMap: Record<string, string> = {
+      'Philosophy': 'school',
+      'Theology': 'book',
+      'Mysticism': 'heart',
+      'Science': 'flask',
+      'Natural History': 'leaf',
+      'Spiritual': 'flower',
+      'History': 'time',
+      'Biography': 'person',
+      'Liturgy': 'calendar',
+      'Scripture': 'book-outline',
+      'Saints': 'star',
+      'Apologetics': 'shield',
+    };
+    return iconMap[category] || 'book'; // Default to 'book' icon
+  };
+
+  // Build categories list from database with "All Books" first
   const categories: { type: BookCategory | 'all'; name: string; icon: string }[] = [
     { type: 'all', name: 'All Books', icon: 'library' },
-    { type: 'Philosophy', name: 'Philosophy', icon: 'school' },
-    { type: 'Theology', name: 'Theology', icon: 'book' },
-    { type: 'Mysticism', name: 'Mysticism', icon: 'heart' },
-    { type: 'Science', name: 'Science', icon: 'flask' },
-    { type: 'Natural History', name: 'Natural History', icon: 'leaf' },
-    { type: 'Spiritual', name: 'Spiritual', icon: 'flower' },
+    ...bookCategories.map(cat => ({
+      type: cat as BookCategory,
+      name: cat,
+      icon: getCategoryIcon(cat),
+    })),
   ];
 
 
@@ -151,7 +172,7 @@ export default function StudyScreen() {
       return bookIdNum === progress.book_id;
     });
     if (!book) return false;
-    return book.category === selectedCategory;
+    return book.categories.includes(selectedCategory);
   });
 
   const showContinueReading = user && filteredContinueReading.length > 0;
@@ -160,7 +181,7 @@ export default function StudyScreen() {
   const downloadedBooks = books.filter(book => {
     const bookIdStr = String(book.id);
     const isDownloaded = downloadedBookIds.includes(bookIdStr);
-    const matchesCategory = selectedCategory === 'all' || book.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || book.categories.includes(selectedCategory);
     return isDownloaded && matchesCategory;
   });
 
@@ -203,7 +224,12 @@ export default function StudyScreen() {
             Categories
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-            {categories.map((category) => (
+            {categoriesLoading ? (
+              <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                Loading categories...
+              </Text>
+            ) : (
+              categories.map((category) => (
               <TouchableOpacity
                 key={category.type}
                 style={[
@@ -235,7 +261,8 @@ export default function StudyScreen() {
                   {category.name}
                 </Text>
               </TouchableOpacity>
-            ))}
+              ))
+            )}
           </ScrollView>
           
           {/* Search Bar */}
@@ -292,7 +319,9 @@ export default function StudyScreen() {
                     description: 'Continue reading this book',
                     coverImage: null,
                     epubPath: null, // We'll need to handle this
-                    category: 'Unknown',
+                    categories: [],
+                    published: false,
+                    publishedAt: null,
                     year: null,
                     createdAt: progress.created_at || new Date().toISOString(),
                     updatedAt: progress.updated_at || new Date().toISOString()

@@ -416,11 +416,17 @@ export default function BookDetailScreen() {
             )}
             <View style={styles.categoryContainer}>
               <Text style={[styles.categoryLabel, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                Category:
+                {book.categories.length > 1 ? 'Categories:' : 'Category:'}
               </Text>
-              <Text style={[styles.categoryValue, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                {book.category}
-              </Text>
+              <View style={styles.categoriesRow}>
+                {book.categories.map((category, index) => (
+                  <View key={index} style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                    <Text style={[styles.categoryValue, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      {category}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
 
             {/* Reading Progress Section */}
@@ -841,6 +847,7 @@ const styles = StyleSheet.create({
   categoryContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
   },
   
   categoryLabel: {
@@ -849,8 +856,21 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   
+  categoriesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    flex: 1,
+  },
+  
+  categoryBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  
   categoryValue: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Georgia',
     fontWeight: '600',
   },

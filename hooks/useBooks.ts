@@ -50,12 +50,14 @@ export const useBooks = () => {
           title: book.title,
           author: book.author,
           year: book.year,
-          category: book.category,
+          categories: book.categories || [],
           coverImage: coverImageUrl,
           description: book.description,
           longDescription: book.long_description, // Map long_description from database
           epubPath: book.epub_path,
           epubSamplePath: book.epub_sample_path,
+          published: book.published || false,
+          publishedAt: book.published_at,
           createdAt: book.created_at,
           updatedAt: book.updated_at,
           bookmarks: [], // Will be fetched separately
@@ -89,7 +91,7 @@ export const useBooks = () => {
         .eq('published', true); // Only show published books in public library
 
       if (category && category !== 'all') {
-        queryBuilder = queryBuilder.eq('category', category);
+        queryBuilder = queryBuilder.contains('categories', [category]);
       }
 
       if (query.trim()) {
@@ -125,12 +127,14 @@ export const useBooks = () => {
           title: book.title,
           author: book.author,
           year: book.year,
-          category: book.category,
+          categories: book.categories || [],
           coverImage: coverImageUrl,
           description: book.description,
           longDescription: book.long_description, // Map long_description from database
           epubPath: book.epub_path,
           epubSamplePath: book.epub_sample_path,
+          published: book.published || false,
+          publishedAt: book.published_at,
           createdAt: book.created_at,
           updatedAt: book.updated_at,
           bookmarks: [],
@@ -187,12 +191,14 @@ export const useBooks = () => {
         title: data.title,
         author: data.author,
         year: data.year,
-        category: data.category,
+        categories: data.categories || [],
         coverImage: coverImageUrl,
         description: data.description,
         longDescription: data.long_description, // Map long_description from database
         epubPath: data.epub_path,
         epubSamplePath: data.epub_sample_path,
+        published: data.published || false,
+        publishedAt: data.published_at,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
         bookmarks: [],
