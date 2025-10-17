@@ -16,6 +16,7 @@ import Footer from '@/components/Footer.web';
 import FeastBanner from '@/components/FeastBanner.web';
 import LiturgicalCalendarService from '@/services/LiturgicalCalendar';
 import { LiturgicalDay } from '@/types';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -71,15 +72,18 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const { isAdmin } = useAdminAuth();
   const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
   const [preachingDropdownOpen, setPreachingDropdownOpen] = useState(false);
   const [studyDropdownOpen, setStudyDropdownOpen] = useState(false);
   const [prayerDropdownOpen, setPrayerDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const communityDropdownRef = useRef<View>(null);
   const preachingDropdownRef = useRef<View>(null);
   const studyDropdownRef = useRef<View>(null);
   const prayerDropdownRef = useRef<View>(null);
+  const userDropdownRef = useRef<View>(null);
 
 
 
@@ -89,9 +93,10 @@ function RootLayoutNav() {
       setPreachingDropdownOpen(false);
       setStudyDropdownOpen(false);
       setPrayerDropdownOpen(false);
+      setUserDropdownOpen(false);
     };
 
-    if (communityDropdownOpen || preachingDropdownOpen || studyDropdownOpen || prayerDropdownOpen) {
+    if (communityDropdownOpen || preachingDropdownOpen || studyDropdownOpen || prayerDropdownOpen || userDropdownOpen) {
       // Add a small delay to prevent immediate closure
       const timer = setTimeout(() => {
         document.addEventListener('click', handleGlobalClick);
@@ -102,7 +107,7 @@ function RootLayoutNav() {
         document.removeEventListener('click', handleGlobalClick);
       };
     }
-  }, [communityDropdownOpen, preachingDropdownOpen, studyDropdownOpen, prayerDropdownOpen]);
+  }, [communityDropdownOpen, preachingDropdownOpen, studyDropdownOpen, prayerDropdownOpen, userDropdownOpen]);
 
 
 
@@ -113,6 +118,7 @@ function RootLayoutNav() {
       setPreachingDropdownOpen(false);
       setStudyDropdownOpen(false);
       setPrayerDropdownOpen(false);
+      setUserDropdownOpen(false);
     }
   };
 
@@ -127,6 +133,7 @@ function RootLayoutNav() {
       setCommunityDropdownOpen(false);
       setStudyDropdownOpen(false);
       setPrayerDropdownOpen(false);
+      setUserDropdownOpen(false);
     }
   };
 
@@ -141,6 +148,7 @@ function RootLayoutNav() {
       setCommunityDropdownOpen(false);
       setPreachingDropdownOpen(false);
       setPrayerDropdownOpen(false);
+      setUserDropdownOpen(false);
     }
   };
 
@@ -155,11 +163,37 @@ function RootLayoutNav() {
       setCommunityDropdownOpen(false);
       setPreachingDropdownOpen(false);
       setStudyDropdownOpen(false);
+      setUserDropdownOpen(false);
     }
   };
 
   const closePrayerDropdown = () => {
     setPrayerDropdownOpen(false);
+  };
+
+  const toggleUserDropdown = () => {
+    setUserDropdownOpen(!userDropdownOpen);
+    // Close other dropdowns
+    if (!userDropdownOpen) {
+      setCommunityDropdownOpen(false);
+      setPreachingDropdownOpen(false);
+      setStudyDropdownOpen(false);
+      setPrayerDropdownOpen(false);
+    }
+  };
+
+  const closeUserDropdown = () => {
+    setUserDropdownOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      closeUserDropdown();
+      // Navigation will happen automatically via auth state change
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   return (
@@ -489,14 +523,126 @@ function RootLayoutNav() {
                 <Ionicons name="chatbubble-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
               </TouchableOpacity>
               {user ? (
-                <Link href="/profile">
-                  <View style={[styles.signInButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+                <View style={styles.dropdownContainer} ref={userDropdownRef}>
+                  <TouchableOpacity 
+                    style={[styles.signInButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+                    onPress={toggleUserDropdown}
+                  >
                     <Ionicons name="person-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
                     <Text style={[styles.signInText, styles.profileButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
                       {profile?.name || user.email?.split('@')[0] || 'Profile'}
                     </Text>
-                  </View>
-                </Link>
+                    <Ionicons 
+                      name={userDropdownOpen ? "chevron-up" : "chevron-down"} 
+                      size={12} 
+                      color={Colors[colorScheme ?? 'light'].text} 
+                    />
+                  </TouchableOpacity>
+                  
+                  {userDropdownOpen && (
+                    <View style={[styles.dropdownMenu, styles.userDropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
+                      <Link href="/settings/quick" asChild>
+                        <div 
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: '1px solid #F0F0F0',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s ease',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: '10px',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#F5F5F5';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                          onClick={closeUserDropdown}
+                        >
+                          <Ionicons name="settings-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
+                          <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Quick Settings</Text>
+                        </div>
+                      </Link>
+                      <Link href="/profile" asChild>
+                        <div 
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: '1px solid #F0F0F0',
+                            backgroundColor: 'transparent',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s ease',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: '10px',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#F5F5F5';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                          onClick={closeUserDropdown}
+                        >
+                          <Ionicons name="person-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
+                          <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>View Profile</Text>
+                        </div>
+                      </Link>
+                      {isAdmin && (
+                        <Link href="/admin" asChild>
+                          <div 
+                            style={{
+                              padding: '12px 16px',
+                              borderBottom: '2px solid #E0E0E0',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              transition: 'background-color 0.15s ease',
+                              display: 'flex',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: '10px',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#F5F5F5';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                            onClick={closeUserDropdown}
+                          >
+                            <Ionicons name="shield-checkmark-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
+                            <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Admin</Text>
+                          </div>
+                        </Link>
+                      )}
+                      <div 
+                        style={{
+                          padding: '12px 16px',
+                          backgroundColor: 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F5F5F5';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        onClick={handleLogout}
+                      >
+                        <Ionicons name="log-out-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Logout</Text>
+                      </div>
+                    </View>
+                  )}
+                </View>
               ) : (
                 <Link href="/auth">
                   <View style={[styles.signInButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
@@ -526,6 +672,7 @@ function RootLayoutNav() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
             <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
           </Stack>
         </View>
 
@@ -686,6 +833,11 @@ const styles = StyleSheet.create({
     elevation: 3,
     zIndex: 9999,
     marginTop: 4,
+  },
+  userDropdownMenu: {
+    right: 0,
+    left: 'auto',
+    minWidth: 200,
   },
   dropdownItem: {
     paddingVertical: 12,
