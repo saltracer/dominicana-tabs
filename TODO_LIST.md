@@ -40,7 +40,8 @@
 - [x] Add a setting to remove the download
 - [x] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
-- [x] Book categories should be tags not single optionsS
+- [x] Book categories should be tags not single options
+- [ ] Books need to have versions (for when epubs are updated and users are already reading an other epub) and for when books are pulled from the library but as still "owned" by users.
 
 ## Community
 - [ ] Calendar is ugly
