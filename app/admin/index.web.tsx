@@ -48,7 +48,7 @@ export default function AdminDashboardWeb() {
       // Load book stats with most read
       const { data: books, error: booksError } = await supabase
         .from('books')
-        .select('id, title, author, category, epub_path');
+        .select('id, title, author, categories, epub_path');
 
       if (booksError) throw booksError;
 
@@ -62,7 +62,12 @@ export default function AdminDashboardWeb() {
       const bookReaderCounts: Record<number, number> = {};
 
       books?.forEach(book => {
-        by_category[book.category] = (by_category[book.category] || 0) + 1;
+        // Handle categories array - count each book under each of its categories
+        if (book.categories && Array.isArray(book.categories)) {
+          book.categories.forEach((category: string) => {
+            by_category[category] = (by_category[category] || 0) + 1;
+          });
+        }
         if (book.epub_path) with_epub++;
         bookReaderCounts[book.id] = 0;
       });

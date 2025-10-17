@@ -1,5 +1,7 @@
 import React from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import AdminGuard from '../../components/AdminGuard';
 import { useTheme } from '../../components/ThemeProvider';
 import { Colors } from '../../constants/Colors';
@@ -11,15 +13,16 @@ export default function AdminLayout() {
     <AdminGuard>
       <Stack
         screenOptions={{
+          headerShown: true,
           headerStyle: {
             backgroundColor: Colors[colorScheme ?? 'light'].surface,
           },
           headerTintColor: Colors[colorScheme ?? 'light'].text,
-          headerTitleStyle: {
-            fontFamily: 'Georgia',
-            fontWeight: '600',
-          },
-          headerBackTitle: 'Back',
+          // headerTitleStyle: {
+          //   fontFamily: 'System',
+          //   fontWeight: '700',
+          // },
+          //headerBackTitle: 'Back',
         }}
       >
         <Stack.Screen 
@@ -27,6 +30,15 @@ export default function AdminLayout() {
           options={{ 
             title: 'Admin Dashboard',
             headerLargeTitle: false,
+            headerLeft: () => (
+              <TouchableOpacity 
+                onPress={() => router.back()}
+                style={{ marginLeft: 15 }}
+                activeOpacity={0.6}
+              >
+                <Ionicons name="chevron-back" size={28} color={Colors[colorScheme ?? 'light'].text} />
+              </TouchableOpacity>
+            ),
           }} 
         />
         <Stack.Screen 

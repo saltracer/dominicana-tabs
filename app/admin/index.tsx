@@ -43,7 +43,7 @@ export default function AdminDashboard() {
       // Load book stats
       const { data: books, error: booksError } = await supabase
         .from('books')
-        .select('id, category, epub_path');
+        .select('id, categories, epub_path');
 
       if (booksError) throw booksError;
 
@@ -51,7 +51,12 @@ export default function AdminDashboard() {
       let with_epub = 0;
 
       books?.forEach(book => {
-        by_category[book.category] = (by_category[book.category] || 0) + 1;
+        // Handle categories array - count each book under each of its categories
+        if (book.categories && Array.isArray(book.categories)) {
+          book.categories.forEach((category: string) => {
+            by_category[category] = (by_category[category] || 0) + 1;
+          });
+        }
         if (book.epub_path) with_epub++;
       });
 

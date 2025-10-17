@@ -58,6 +58,7 @@
 - [ ] Look for opportunities to refactor
 - [ ] fix the user profile sub page titling
 - [ ] scrolling footer
+- [ ] support text resizing
 
 ## Admin
 - [ ] Allow the Rosary Audio to be renamed
