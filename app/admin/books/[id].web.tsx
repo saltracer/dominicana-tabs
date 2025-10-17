@@ -29,7 +29,7 @@ export default function EditBookScreenWeb() {
     title: '',
     author: '',
     year: '',
-    category: 'Theology',
+    categories: [],
     description: '',
     long_description: [],
   });
@@ -53,7 +53,7 @@ export default function EditBookScreenWeb() {
         title: bookData.title,
         author: bookData.author,
         year: bookData.year || '',
-        category: bookData.category,
+        categories: bookData.categories || [],
         description: bookData.description,
         long_description: bookData.longDescription || [],
         published: bookData.published,
@@ -83,6 +83,14 @@ export default function EditBookScreenWeb() {
     }
     if (!formData.description.trim()) {
       Alert.alert('Error', 'Please enter a description');
+      return;
+    }
+    if (!formData.categories || formData.categories.length === 0) {
+      Alert.alert('Error', 'Please select at least one category');
+      return;
+    }
+    if (formData.categories.length > 10) {
+      Alert.alert('Error', 'Maximum 10 categories allowed');
       return;
     }
 
@@ -412,42 +420,119 @@ export default function EditBookScreenWeb() {
 
                 <View style={[styles.field, { flex: 2 }]}>
                   <Text style={[styles.label, { color: Colors[colorScheme ?? 'light'].text }]}>
-                    Category *
+                    Categories * ({formData.categories.length}/10)
                   </Text>
-                  <View style={styles.categoryRow}>
+                  <Text style={[styles.hint, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Select 1-10 categories. Click to add/remove, drag to reorder.
+                  </Text>
+                  
+                  {/* Selected Categories with Reordering */}
+                  {formData.categories.length > 0 && (
+                    <View style={styles.selectedCategoriesContainer}>
+                      {formData.categories.map((cat, index) => (
+                        <View key={`selected-${cat}`} style={[styles.selectedCategoryChip, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+                          <Text style={[styles.selectedCategoryText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                            {cat}
+                          </Text>
+                          <View style={styles.categoryActions}>
+                            {index > 0 && (
+                              <TouchableOpacity
+                                onPress={() => {
+                                  const newCategories = [...formData.categories];
+                                  [newCategories[index - 1], newCategories[index]] = [newCategories[index], newCategories[index - 1]];
+                                  setFormData({ ...formData, categories: newCategories });
+                                }}
+                                style={styles.reorderButton}
+                              >
+                                <Ionicons name="arrow-up" size={14} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+                              </TouchableOpacity>
+                            )}
+                            {index < formData.categories.length - 1 && (
+                              <TouchableOpacity
+                                onPress={() => {
+                                  const newCategories = [...formData.categories];
+                                  [newCategories[index], newCategories[index + 1]] = [newCategories[index + 1], newCategories[index]];
+                                  setFormData({ ...formData, categories: newCategories });
+                                }}
+                                style={styles.reorderButton}
+                              >
+                                <Ionicons name="arrow-down" size={14} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+                              </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                              onPress={() => {
+                                const newCategories = formData.categories.filter(c => c !== cat);
+                                setFormData({ ...formData, categories: newCategories });
+                              }}
+                              style={styles.removeButton}
+                            >
+                              <Ionicons name="close" size={14} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Available Categories (checkboxes) */}
+                  <View style={styles.categoryGrid}>
                     {categoriesLoading ? (
                       <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
                     ) : (
-                      categories.map((category) => (
-                        <TouchableOpacity
-                          key={category}
-                          style={[
-                            styles.categoryChip,
-                            {
-                              backgroundColor:
-                                formData.category === category
-                                  ? Colors[colorScheme ?? 'light'].primary
-                                  : Colors[colorScheme ?? 'light'].card,
-                              borderColor: Colors[colorScheme ?? 'light'].border,
-                            },
-                          ]}
-                          onPress={() => setFormData({ ...formData, category })}
-                        >
-                          <Text
+                      categories.map((category) => {
+                        const isSelected = formData.categories.includes(category);
+                        const isMaxReached = formData.categories.length >= 10 && !isSelected;
+                        return (
+                          <TouchableOpacity
+                            key={category}
                             style={[
-                              styles.categoryChipText,
+                              styles.categoryCheckbox,
                               {
-                                color:
-                                  formData.category === category
-                                    ? Colors[colorScheme ?? 'light'].dominicanWhite
-                                    : Colors[colorScheme ?? 'light'].text,
+                                backgroundColor: isSelected
+                                  ? Colors[colorScheme ?? 'light'].primary + '15'
+                                  : Colors[colorScheme ?? 'light'].card,
+                                borderColor: isSelected
+                                  ? Colors[colorScheme ?? 'light'].primary
+                                  : Colors[colorScheme ?? 'light'].border,
+                                opacity: isMaxReached ? 0.5 : 1,
                               },
                             ]}
+                            onPress={() => {
+                              if (isMaxReached) return;
+                              if (isSelected) {
+                                setFormData({
+                                  ...formData,
+                                  categories: formData.categories.filter(c => c !== category),
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  categories: [...formData.categories, category],
+                                });
+                              }
+                            }}
+                            disabled={isMaxReached}
                           >
-                            {category}
-                          </Text>
-                        </TouchableOpacity>
-                      ))
+                            <Ionicons
+                              name={isSelected ? 'checkbox' : 'square-outline'}
+                              size={20}
+                              color={isSelected ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+                            />
+                            <Text
+                              style={[
+                                styles.categoryCheckboxText,
+                                {
+                                  color: isSelected
+                                    ? Colors[colorScheme ?? 'light'].primary
+                                    : Colors[colorScheme ?? 'light'].text,
+                                },
+                              ]}
+                            >
+                              {category}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })
                     )}
                   </View>
                 </View>
@@ -909,19 +994,62 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  categoryRow: {
+  hint: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  selectedCategoriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  selectedCategoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 12,
+    paddingRight: 6,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 8,
+  },
+  selectedCategoryText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+  },
+  categoryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  reorderButton: {
+    padding: 2,
+  },
+  removeButton: {
+    padding: 2,
+    marginLeft: 2,
+  },
+  categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  categoryChip: {
+  categoryCheckbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
+    gap: 8,
+    cursor: 'pointer',
   },
-  categoryChipText: {
-    fontSize: 13,
+  categoryCheckboxText: {
+    fontSize: 14,
     fontFamily: 'Georgia',
     fontWeight: '500',
   },
@@ -934,12 +1062,6 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     minHeight: 200,
     textAlignVertical: 'top',
-  },
-  hint: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    marginTop: 6,
-    fontStyle: 'italic',
   },
   fileSection: {
     marginBottom: 24,

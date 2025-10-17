@@ -25,7 +25,7 @@ export interface CreateBookData {
   title: string;
   author: string;
   year?: string;
-  category: string;
+  categories: string[]; // Changed to array - must have 1-10 categories
   description: string;
   long_description?: string[];
   published?: boolean;
@@ -57,9 +57,9 @@ export class AdminBookService {
       );
     }
 
-    // Apply category filter
+    // Apply category filter - check if book's categories array contains this category
     if (filters.category) {
-      query = query.eq('category', filters.category);
+      query = query.contains('categories', [filters.category]);
     }
 
     // Apply published status filter
@@ -136,6 +136,16 @@ export class AdminBookService {
       epubSample?: File | Blob;
     }
   ): Promise<Book> {
+    // Validate categories
+    if (!bookData.categories || bookData.categories.length === 0) {
+      throw new Error('At least one category is required');
+    }
+    if (bookData.categories.length > 10) {
+      throw new Error('Maximum 10 categories allowed');
+    }
+    // Remove duplicates while preserving order
+    const uniqueCategories = Array.from(new Set(bookData.categories));
+
     // First create the book record
     const { data, error } = await supabase
       .from('books')
@@ -143,7 +153,7 @@ export class AdminBookService {
         title: bookData.title,
         author: bookData.author,
         year: bookData.year || null,
-        category: bookData.category,
+        categories: uniqueCategories,
         description: bookData.description,
         long_description: bookData.long_description || null,
         published: bookData.published || false, // Default to draft
@@ -190,6 +200,18 @@ export class AdminBookService {
     id: number,
     updates: Partial<CreateBookData>
   ): Promise<Book> {
+    // Validate categories if provided
+    if (updates.categories !== undefined) {
+      if (!updates.categories || updates.categories.length === 0) {
+        throw new Error('At least one category is required');
+      }
+      if (updates.categories.length > 10) {
+        throw new Error('Maximum 10 categories allowed');
+      }
+      // Remove duplicates while preserving order
+      updates.categories = Array.from(new Set(updates.categories));
+    }
+
     const { data, error } = await supabase
       .from('books')
       .update({
@@ -391,7 +413,7 @@ export class AdminBookService {
       title: dbBook.title,
       author: dbBook.author,
       year: dbBook.year,
-      category: dbBook.category,
+      categories: dbBook.categories || [], // Array of categories
       coverImage: dbBook.cover_image,
       description: dbBook.description,
       longDescription: dbBook.long_description,

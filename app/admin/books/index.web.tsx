@@ -329,10 +329,19 @@ export default function BooksListScreenWeb() {
                     </Text>
                   </TouchableOpacity>
                   <View style={[styles.tableCell, styles.categoryColumn]}>
-                    <View style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-                      <Text style={[styles.categoryBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                        {book.category}
-                      </Text>
+                    <View style={styles.categoryBadges}>
+                      {book.categories.slice(0, 3).map((category) => (
+                        <View key={category} style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                          <Text style={[styles.categoryBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                            {category}
+                          </Text>
+                        </View>
+                      ))}
+                      {book.categories.length > 3 && (
+                        <Text style={[styles.moreBadge, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                          +{book.categories.length - 3}
+                        </Text>
+                      )}
                     </View>
                   </View>
                   <View style={[styles.tableCell, styles.statusColumn]}>
@@ -643,16 +652,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Georgia',
   },
+  categoryBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    alignItems: 'center',
+  },
   categoryBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
     borderRadius: 6,
-    alignSelf: 'flex-start',
   },
   categoryBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Georgia',
     fontWeight: '600',
+  },
+  moreBadge: {
+    fontSize: 11,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    fontStyle: 'italic',
   },
   statusBadge: {
     flexDirection: 'row',

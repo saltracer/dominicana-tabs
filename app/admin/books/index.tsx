@@ -300,10 +300,20 @@ export default function BooksListScreen() {
                     </Text>
                   )}
                   <View style={styles.bookMeta}>
-                    <View style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-                      <Text style={[styles.categoryBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                        {book.category}
-                      </Text>
+                    {/* Categories (show first 3 + more indicator) */}
+                    <View style={styles.categoryBadges}>
+                      {book.categories.slice(0, 3).map((category) => (
+                        <View key={category} style={[styles.categoryBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                          <Text style={[styles.categoryBadgeText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                            {category}
+                          </Text>
+                        </View>
+                      ))}
+                      {book.categories.length > 3 && (
+                        <Text style={[styles.moreBadge, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                          +{book.categories.length - 3}
+                        </Text>
+                      )}
                     </View>
                     {/* Published Status Badge */}
                     <View
@@ -592,6 +602,13 @@ const styles = StyleSheet.create({
   bookMeta: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
+  },
+  categoryBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    alignItems: 'center',
   },
   categoryBadge: {
     paddingHorizontal: 8,
@@ -599,9 +616,15 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   categoryBadgeText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Georgia',
     fontWeight: '600',
+  },
+  moreBadge: {
+    fontSize: 11,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+    fontStyle: 'italic',
   },
   badge: {
     flexDirection: 'row',

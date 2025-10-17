@@ -174,7 +174,7 @@ export interface Book {
   title: string;
   author: string;
   year?: string | null;
-  category: string; // Your categories: Philosophy, Theology, Mysticism, Science, Natural History, Spiritual
+  categories: string[]; // Array of categories - books can belong to multiple categories (max 10)
   coverImage?: string | null;
   description: string;
   longDescription?: string[]; // Array of paragraphs for detailed description
