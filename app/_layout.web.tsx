@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFonts } from 'expo-font';
-import { Stack, Link } from 'expo-router';
+import { Stack, Link, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native';
@@ -541,56 +541,58 @@ function RootLayoutNav() {
                   
                   {userDropdownOpen && (
                     <View style={[styles.dropdownMenu, styles.userDropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
-                      <Link href="/settings/quick" asChild>
-                        <div 
-                          style={{
-                            padding: '12px 16px',
-                            borderBottom: '1px solid #F0F0F0',
-                            backgroundColor: 'transparent',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.15s ease',
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: '10px',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#F5F5F5';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                          onClick={closeUserDropdown}
-                        >
-                          <Ionicons name="settings-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
-                          <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Quick Settings</Text>
-                        </div>
-                      </Link>
-                      <Link href="/profile" asChild>
-                        <div 
-                          style={{
-                            padding: '12px 16px',
-                            borderBottom: '1px solid #F0F0F0',
-                            backgroundColor: 'transparent',
-                            cursor: 'pointer',
-                            transition: 'background-color 0.15s ease',
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: '10px',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#F5F5F5';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                          onClick={closeUserDropdown}
-                        >
-                          <Ionicons name="person-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
-                          <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>View Profile</Text>
-                        </div>
-                      </Link>
+                      <div 
+                        style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid #F0F0F0',
+                          backgroundColor: 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F5F5F5';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        onClick={() => {
+                          closeUserDropdown();
+                          router.push('/profile/quick' as any);
+                        }}
+                      >
+                        <Ionicons name="settings-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Quick Settings</Text>
+                      </div>
+                      <div 
+                        style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid #F0F0F0',
+                          backgroundColor: 'transparent',
+                          cursor: 'pointer',
+                          transition: 'background-color 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#F5F5F5';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        onClick={() => {
+                          closeUserDropdown();
+                          router.push('/profile/account' as any);
+                        }}
+                      >
+                        <Ionicons name="person-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>View Profile</Text>
+                      </div>
                       {isAdmin && (
                         <Link href="/admin" asChild>
                           <div 
@@ -671,8 +673,7 @@ function RootLayoutNav() {
             }}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="profile" options={{ presentation: 'modal', headerShown: false }} />
-            <Stack.Screen name="settings" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="settings" options={{ headerShown: false }} />
           </Stack>
         </View>
 
