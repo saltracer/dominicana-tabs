@@ -1,8 +1,8 @@
 # TODO LIST
 
 ## Profiles
-- [] Redesign the prefences page, as the organization doesn't make sense and not all of them are used. The initial idea is that they would be organized by "section"of the app (eg prayer, study, etc)
-- [] On the web, the profile page should be a menu dropdown, not a page modal
+- [x] Redesign the prefences page, as the organization doesn't make sense and not all of them are used. The initial idea is that they would be organized by "section"of the app (eg prayer, study, etc)
+- [x] On the web, the profile page should be a menu dropdown, not a page modal
 
 ## Prayer
 - More content
@@ -40,7 +40,7 @@
 - [x] Add a setting to remove the download
 - [x] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
-- [ ] Book categories should be tags not single optionsS
+- [x] Book categories should be tags not single optionsS
 
 ## Community
 - [ ] Calendar is ugly
@@ -53,7 +53,7 @@
 
 ## Other
 - [ ] Carplay
-- [ ] Admin console
+- [x] Admin console
 - [ ] Look for opportunities to refactor
 - [ ] fix the user profile sub page titling
 
