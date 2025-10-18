@@ -183,6 +183,25 @@ export default function SaintsScreen() {
     }
   };
 
+  const getLiturgicalColor = (color?: string) => {
+    switch (color?.toLowerCase()) {
+      case 'red':
+        return '#DC2626';
+      case 'white':
+        return '#F3F4F6';
+      case 'green':
+        return '#059669';
+      case 'purple':
+        return '#7C3AED';
+      case 'rose':
+        return '#EC4899';
+      case 'gold':
+        return '#D97706';
+      default:
+        return Colors[colorScheme ?? 'light'].textSecondary;
+    }
+  };
+
   if (!liturgicalDay) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -201,56 +220,80 @@ export default function SaintsScreen() {
     return (
       <TouchableOpacity
         style={[
-          styles.saintCard, 
+          styles.enhancedSaintCard, 
           { 
             backgroundColor: Colors[colorScheme ?? 'light'].card,
-            borderWidth: isSelected ? 2 : 0,
-            borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : 'transparent',
+            borderWidth: isSelected ? 2 : 1,
+            borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].border,
           }
         ]}
         onPress={() => handleSaintPress(saint)}
       >
-      <View style={styles.saintHeader}>
-        {/* Doctor badge - top left */}
-        {saint.is_doctor && (
-          <View style={[styles.doctorBadge, styles.topLeftBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-            <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              Doctor
+        <View style={styles.saintHeader}>
+          {/* Doctor badge - top left */}
+          {saint.is_doctor && (
+            <View style={[styles.doctorBadge, styles.topLeftBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                Doctor
+              </Text>
+            </View>
+          )}
+          
+          {/* Dominican badge - top right */}
+          {saint.is_dominican && (
+            <View style={[styles.dominicanBadge, styles.topRightBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+                OP
+              </Text>
+            </View>
+          )}
+          
+          <Ionicons 
+            name="person-circle" 
+            size={48} 
+            color={Colors[colorScheme ?? 'light'].primary} 
+          />
+
+          {/* Liturgical color indicator */}
+          {saint.color && (
+            <View style={[
+              styles.colorIndicator, 
+              { backgroundColor: getLiturgicalColor(saint.color) }
+            ]} />
+          )}
+        </View>
+
+        <Text style={[styles.saintName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
+          {saint.name}
+        </Text>
+        
+        <Text style={[styles.saintFeastDay, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+          {formatFeastDay(saint.feast_day)}
+        </Text>
+
+        {/* Birth-Death Years */}
+        {saint.birth_year && saint.death_year && (
+          <Text style={[styles.saintYears, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+            {saint.birth_year} - {saint.death_year}
+          </Text>
+        )}
+
+        {/* Patronage with icon */}
+        {saint.patronage && (
+          <View style={styles.patronageRow}>
+            <Ionicons name="ribbon" size={12} color={Colors[colorScheme ?? 'light'].primary} />
+            <Text style={[styles.saintPatronage, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={2}>
+              {saint.patronage.split(',').slice(0, 2).join(', ')}
             </Text>
           </View>
         )}
-        
-        {/* Dominican badge - top right */}
-        {saint.is_dominican && (
-          <View style={[styles.dominicanBadge, styles.topRightBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-            <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              OP
-            </Text>
-          </View>
+
+        {/* Short bio preview */}
+        {saint.short_bio && (
+          <Text style={[styles.bioPreview, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={3}>
+            {saint.short_bio}
+          </Text>
         )}
-        
-        <Ionicons 
-          name="person-circle" 
-          size={40} 
-          color={Colors[colorScheme ?? 'light'].primary} 
-        />
-      </View>
-      <Text style={[styles.saintName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
-        {saint.name}
-      </Text>
-      <Text style={[styles.saintFeastDay, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-        {formatFeastDay(saint.feast_day)}
-      </Text>
-      {saint.patronage && (
-        <Text style={[styles.saintPatronage, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={2}>
-          {saint.patronage.split(',').slice(0, 2).join(', ')}
-        </Text>
-      )}
-      {saint.birth_year && saint.death_year && (
-        <Text style={[styles.saintYears, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-          {saint.birth_year} - {saint.death_year}
-        </Text>
-      )}
       </TouchableOpacity>
     );
   };
@@ -259,30 +302,32 @@ export default function SaintsScreen() {
     <TouchableOpacity
       key={filter}
       style={[
-        styles.filterButton,
+        styles.sidebarFilterButton,
         { 
           backgroundColor: filterBy === filter 
             ? Colors[colorScheme ?? 'light'].primary 
-            : Colors[colorScheme ?? 'light'].surface,
-          borderColor: Colors[colorScheme ?? 'light'].border
+            : 'transparent',
+          borderColor: filterBy === filter
+            ? Colors[colorScheme ?? 'light'].primary
+            : Colors[colorScheme ?? 'light'].border
         }
       ]}
       onPress={() => setFilterBy(filter)}
     >
       <Ionicons 
         name={icon as any} 
-        size={16} 
+        size={18} 
         color={filterBy === filter 
           ? Colors[colorScheme ?? 'light'].dominicanWhite 
           : Colors[colorScheme ?? 'light'].textSecondary
         } 
       />
       <Text style={[
-        styles.filterButtonText,
+        styles.sidebarButtonText,
         { 
           color: filterBy === filter 
             ? Colors[colorScheme ?? 'light'].dominicanWhite 
-            : Colors[colorScheme ?? 'light'].textSecondary
+            : Colors[colorScheme ?? 'light'].text
         }
       ]}>
         {label}
@@ -294,30 +339,32 @@ export default function SaintsScreen() {
     <TouchableOpacity
       key={sort}
       style={[
-        styles.sortButton,
+        styles.sidebarFilterButton,
         { 
           backgroundColor: sortBy === sort 
             ? Colors[colorScheme ?? 'light'].primary 
-            : Colors[colorScheme ?? 'light'].surface,
-          borderColor: Colors[colorScheme ?? 'light'].border
+            : 'transparent',
+          borderColor: sortBy === sort
+            ? Colors[colorScheme ?? 'light'].primary
+            : Colors[colorScheme ?? 'light'].border
         }
       ]}
       onPress={() => setSortBy(sort)}
     >
       <Ionicons 
         name={icon as any} 
-        size={16} 
+        size={18} 
         color={sortBy === sort 
           ? Colors[colorScheme ?? 'light'].dominicanWhite 
           : Colors[colorScheme ?? 'light'].textSecondary
         } 
       />
       <Text style={[
-        styles.sortButtonText,
+        styles.sidebarButtonText,
         { 
           color: sortBy === sort 
             ? Colors[colorScheme ?? 'light'].dominicanWhite 
-            : Colors[colorScheme ?? 'light'].textSecondary
+            : Colors[colorScheme ?? 'light'].text
         }
       ]}>
         {label}
@@ -327,92 +374,119 @@ export default function SaintsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      {/* <CommunityNavigation activeTab="saints" /> */}
-      <Animated.View 
-        style={[
-          styles.tabContentWeb,
-          {
-            width: slideAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['100%', `${100 - (Math.min(500, screenWidth * 0.45) / screenWidth * 100)}%`],
-            }),
-          }
-        ]}
-      >
-      <Text style={[styles.pageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Saints & Blesseds
-          </Text>
-        {/* Search Bar */}
-        <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
-          <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-          <TextInput
-            style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
-            placeholder="Search saints by name, patronage, or biography..."
-            placeholderTextColor={Colors[colorScheme ?? 'light'].textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
-            <Ionicons 
-              name="filter" 
-              size={20} 
-              color={Colors[colorScheme ?? 'light'].textSecondary} 
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Results Count */}
-        <Text style={[styles.resultsCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-          {filteredAndSortedSaints.length} saints found
-        </Text>
-
-        {/* Filters and Sort - Always visible on web */}
-        <View style={CommunityStyles.filtersContainer}>
-          <View style={CommunityStyles.filterSection}>
-            <Text style={[CommunityStyles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Filter by Category
+      {/* Main Layout - Sidebar + Content */}
+      <View style={styles.mainLayout}>
+        {/* Left Sidebar - Filters */}
+        <View style={[styles.sidebar, { 
+          backgroundColor: Colors[colorScheme ?? 'light'].surface,
+          borderRightColor: Colors[colorScheme ?? 'light'].border 
+        }]}>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Sidebar Title */}
+            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Filters
             </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={CommunityStyles.filterScroll}>
-              {renderFilterButton('all', 'All', 'list')}
-              {renderFilterButton('dominican', 'Dominican', 'book')}
-              {renderFilterButton('doctor', 'Doctors', 'school')}
+
+            {/* Search Bar */}
+            <View style={styles.sidebarSection}>
+              <View style={[styles.searchContainer, { 
+                backgroundColor: Colors[colorScheme ?? 'light'].background,
+                borderColor: Colors[colorScheme ?? 'light'].border 
+              }]}>
+                <Ionicons name="search" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                <TextInput
+                  style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+                  placeholder="Search saints..."
+                  placeholderTextColor={Colors[colorScheme ?? 'light'].textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+            </View>
+
+            {/* Results Count */}
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.resultsCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                {filteredAndSortedSaints.length} saints found
+              </Text>
+            </View>
+
+            {/* Filter by Category */}
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Category
+              </Text>
+              {renderFilterButton('all', 'All Saints', 'list')}
+              {renderFilterButton('dominican', 'Dominican Order', 'book')}
+              {renderFilterButton('doctor', 'Doctors of the Church', 'school')}
               {renderFilterButton('martyr', 'Martyrs', 'flame')}
               {renderFilterButton('virgin', 'Virgins', 'heart')}
               {renderFilterButton('founder', 'Founders', 'build')}
-            </ScrollView>
-          </View>
+            </View>
 
-          <View style={CommunityStyles.sortSection}>
-            <Text style={[CommunityStyles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Sort by
-            </Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={CommunityStyles.sortScroll}>
+            {/* Sort by */}
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Sort by
+              </Text>
               {renderSortButton('name', 'Name', 'text')}
               {renderSortButton('feast_day', 'Feast Day', 'calendar')}
               {renderSortButton('birth_year', 'Birth Year', 'person')}
               {renderSortButton('death_year', 'Death Year', 'time')}
-            </ScrollView>
-          </View>
+            </View>
+
+            {/* Clear Filters */}
+            {(filterBy !== 'all' || searchQuery !== '') && (
+              <TouchableOpacity
+                style={[styles.clearButton, { borderColor: Colors[colorScheme ?? 'light'].border }]}
+                onPress={() => {
+                  setFilterBy('all');
+                  setSearchQuery('');
+                }}
+              >
+                <Ionicons name="close-circle" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                <Text style={[styles.clearButtonText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Clear Filters
+                </Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
         </View>
 
-        {/* Saints Grid */}
-        <FlatList
-          data={paginatedSaints}
-          renderItem={renderSaintCard}
-          keyExtractor={(item) => item.id}
-          numColumns={4} // More columns for web
-          columnWrapperStyle={styles.row}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.saintsGrid, { flexGrow: 1 }]}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="search" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
-              <Text style={[styles.emptyStateText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                No saints found matching your criteria
-              </Text>
-            </View>
-          }
-        />
+        {/* Main Content Area */}
+        <Animated.View 
+          style={[
+            styles.mainContent,
+            {
+              width: slideAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['100%', `${100 - (Math.min(500, screenWidth * 0.45) / screenWidth * 100)}%`],
+              }),
+            }
+          ]}
+        >
+          <Text style={[styles.pageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            Saints & Blesseds
+          </Text>
+
+          {/* Saints Grid */}
+          <FlatList
+            data={paginatedSaints}
+            renderItem={renderSaintCard}
+            keyExtractor={(item) => item.id}
+            numColumns={3} // 3 columns for better card sizing
+            columnWrapperStyle={styles.row}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.saintsGrid, { flexGrow: 1 }]}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="search" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
+                <Text style={[styles.emptyStateText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                  No saints found matching your criteria
+                </Text>
+              </View>
+            }
+          />
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -469,11 +543,12 @@ export default function SaintsScreen() {
           </View>
         )}
 
-        {/* Footer - After pagination */}
-        <View style={styles.footerWrapper}>
-          <Footer />
-        </View>
-      </Animated.View>
+          {/* Footer - After pagination */}
+          <View style={styles.footerWrapper}>
+            <Footer />
+          </View>
+        </Animated.View>
+      </View>
 
       {/* Saint Detail Panel */}
       <SaintDetailPanel
@@ -495,16 +570,143 @@ const styles = StyleSheet.create({
   // Include all shared styles
   ...CommunityStyles,
   
-  // Add/override with unique local styles
-  tabContentWeb: {
+  // Main layout structure
+  mainLayout: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+
+  // Sidebar styles
+  sidebar: {
+    width: 280,
+    borderRightWidth: 1,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+
+  sidebarTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 20,
+  },
+
+  sidebarSection: {
+    marginBottom: 24,
+  },
+
+  sidebarSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
+  sidebarFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 6,
+    borderWidth: 1,
+  },
+
+  sidebarButtonText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginLeft: 8,
+    flex: 1,
+  },
+
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+
+  clearButtonText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    marginLeft: 6,
+  },
+
+  // Main content area
+  mainContent: {
     flex: 1,
     paddingHorizontal: 24,
-    alignSelf: 'flex-start',
+    paddingTop: 20,
   },
+
+  // Enhanced saint cards
+  enhancedSaintCard: {
+    width: '31%',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    minHeight: 280,
+    cursor: 'pointer' as any,
+    transition: 'all 0.2s ease' as any,
+  },
+
+  colorIndicator: {
+    position: 'absolute',
+    bottom: -4,
+    width: 24,
+    height: 3,
+    borderRadius: 2,
+  },
+
+  patronageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 6,
+  },
+
+  bioPreview: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    lineHeight: 16,
+    marginTop: 8,
+  },
+
+  // Override result count for sidebar
+  resultsCount: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    textAlign: 'left',
+  },
+
+  // Override search container for sidebar
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    fontFamily: 'Georgia',
+  },
+
   footerWrapper: {
     position: 'relative' as any,
-    left: -24, // Offset the parent's paddingHorizontal
-    width: '100vw' as any, // Full viewport width
+    left: -24,
+    width: '100vw' as any,
     maxWidth: '100vw' as any,
   },
 });
