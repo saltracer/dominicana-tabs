@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +16,7 @@ import { useCalendar } from '../../../components/CalendarContext';
 import PrayerNavigation from '../../../components/PrayerNavigation';
 import FeastBanner from '../../../components/FeastBanner';
 import { PrayerStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 export default function PrayerIndex() {
   const { colorScheme } = useTheme();
@@ -46,7 +48,7 @@ export default function PrayerIndex() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']} >
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}>
         {/* Prayer Navigation */}
         <PrayerNavigation activeTab="prayer" />
 
@@ -100,6 +102,9 @@ export default function PrayerIndex() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Footer - Web only */}
+        {Platform.OS === 'web' && <Footer />}
       </ScrollView>
       
       {/* Feast Banner at Bottom */}

@@ -41,7 +41,10 @@ export default function Index() {
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
       {/* Hero Section */}
       <View style={styles.heroSection}>
         <Text style={[styles.heroTitle, { color: Colors[colorScheme ?? 'light'].primary }]}>
@@ -98,6 +101,7 @@ export default function Index() {
         </View>
       </View>
       
+      <Footer />
     </ScrollView>
   );
 }

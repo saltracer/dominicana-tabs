@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { GlobalStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 export default function PreachingIndexWeb() {
   const { colorScheme } = useTheme();
@@ -29,7 +30,7 @@ export default function PreachingIndexWeb() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -157,6 +158,8 @@ export default function PreachingIndexWeb() {
             </View>
           </TouchableOpacity>
         </View>
+
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

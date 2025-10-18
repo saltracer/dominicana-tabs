@@ -12,7 +12,6 @@ import { CalendarProvider, useCalendar } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/Colors';
-import Footer from '@/components/Footer.web';
 import FeastBanner from '@/components/FeastBanner.web';
 import LiturgicalCalendarService from '@/services/LiturgicalCalendar';
 import { LiturgicalDay } from '@/types';
@@ -656,9 +655,6 @@ function RootLayoutNav() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>
-
-          {/* Footer */}
-          <Footer />
         </View>
 
       </View>

@@ -22,6 +22,7 @@ import { allSaints } from '../../../assets/data/calendar/saints';
 import { Saint } from '../../../types/saint-types';
 import { CelebrationRank } from '../../../types/celebrations-types';
 import { CommunityStyles, getPlatformStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 type SortOption = 'name' | 'feast_day' | 'birth_year' | 'death_year';
 type FilterOption = 'all' | 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
@@ -402,7 +403,7 @@ export default function SaintsScreen() {
           numColumns={4} // More columns for web
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.saintsGrid}
+          contentContainerStyle={[styles.saintsGrid, { flexGrow: 1 }]}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="search" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
@@ -467,8 +468,12 @@ export default function SaintsScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Footer - After pagination */}
+        <View style={styles.footerWrapper}>
+          <Footer />
+        </View>
       </Animated.View>
-      
 
       {/* Saint Detail Panel */}
       <SaintDetailPanel
@@ -495,5 +500,11 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     alignSelf: 'flex-start',
+  },
+  footerWrapper: {
+    position: 'relative' as any,
+    left: -24, // Offset the parent's paddingHorizontal
+    width: '100vw' as any, // Full viewport width
+    maxWidth: '100vw' as any,
   },
 });

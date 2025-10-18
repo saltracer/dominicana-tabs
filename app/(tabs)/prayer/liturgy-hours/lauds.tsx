@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,7 @@ import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrappe
 import PrayerHourPickerModal from '../../../../components/PrayerHourPickerModal';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { PrayerStyles, LiturgyStyles } from '../../../../styles';
+import Footer from '../../../../components/Footer.web';
 
 export default function LaudsScreen() {
   const { colorScheme } = useTheme();
@@ -272,6 +274,9 @@ export default function LaudsScreen() {
 
         {/* Prayer Navigation Buttons */}
         <PrayerNavButtons currentHour="lauds" />
+
+        {/* Footer - Web only */}
+        {Platform.OS === 'web' && <Footer />}
       </ScrollView>
       
       {/* Prayer Hour Picker Modal */}

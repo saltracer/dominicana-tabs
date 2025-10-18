@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { GlobalStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 export default function BlogsWebScreen() {
   const { colorScheme } = useTheme();
@@ -27,7 +28,7 @@ export default function BlogsWebScreen() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       >
         <View style={styles.placeholderContainer}>
           <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
@@ -82,6 +83,8 @@ export default function BlogsWebScreen() {
             </View>
           </View>
         </View>
+
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

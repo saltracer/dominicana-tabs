@@ -20,6 +20,7 @@ import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
 import { parseISO, format, subDays, addDays } from 'date-fns';
 import { CommunityStyles, getPlatformStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -307,7 +308,7 @@ export default function CalendarScreen() {
         ref={scrollViewRef}
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       >
         {/* <CommunityNavigation activeTab="calendar" /> */}
         
@@ -441,7 +442,7 @@ export default function CalendarScreen() {
           </View>
         </View>
 
-        
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

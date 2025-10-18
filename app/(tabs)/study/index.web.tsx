@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { StudyStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 export default function StudyIndexWeb() {
   const { colorScheme } = useTheme();
@@ -29,7 +30,7 @@ export default function StudyIndexWeb() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -155,6 +156,8 @@ export default function StudyIndexWeb() {
             </View>
           </TouchableOpacity>
         </View>
+
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

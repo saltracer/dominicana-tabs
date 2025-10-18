@@ -23,6 +23,7 @@ import { multiVersionBibleService } from '../../../../services/MultiVersionBible
 import BibleVersionSelector from '../../../../components/BibleVersionSelector';
 import { VersionBibleBook } from '../../../../types/bible-version-types';
 import { OLD_TESTAMENT_BOOKS, NEW_TESTAMENT_BOOKS, getTestamentColor } from '../../../../constants/bibleBookOrder';
+import Footer from '../../../../components/Footer.web';
 
 export default function BibleIndexWebScreen() {
   const { colorScheme } = useTheme();
@@ -167,7 +168,7 @@ export default function BibleIndexWebScreen() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
       >
         {/* Old Testament Section */}
         {oldTestamentBooks.length > 0 && (
@@ -253,11 +254,13 @@ export default function BibleIndexWebScreen() {
             <Text style={[styles.emptyText, { color: colors.text }]}>
               No books found
             </Text>
-            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-              Try a different search term
-            </Text>
-          </View>
-        )}
+          <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
+            Try a different search term
+          </Text>
+        </View>
+      )}
+
+      <Footer />
       </ScrollView>
     </SafeAreaView>
   );

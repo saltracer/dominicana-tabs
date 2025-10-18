@@ -152,6 +152,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#E0E0E0',
     paddingVertical: 32,
     paddingHorizontal: 24,
+    marginTop: 'auto',
   },
   footerContent: {
     flexDirection: 'row',

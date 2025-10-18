@@ -23,6 +23,7 @@ import BeadCounter from '../../../components/BeadCounter';
 import RosaryDecadeSelector from '../../../components/RosaryDecadeSelector';
 import RosaryMysteryCarousel from '../../../components/RosaryMysteryCarousel';
 import { RosaryBead, RosaryForm, MysterySet, AudioSettings } from '../../../types/rosary-types';
+import Footer from '../../../components/Footer.web';
 import { rosaryService } from '../../../services/RosaryService';
 import { bibleService } from '../../../services/BibleService';
 import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryData';
@@ -456,9 +457,10 @@ export default function RosaryWebScreen() {
     // Welcome screen
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* Header */}
-          <View style={styles.header}>
+        <ScrollView style={styles.scrollView} contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.scrollContent}>
+            {/* Header */}
+            <View style={styles.header}>
             <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
               The Holy Rosary
             </Text>
@@ -525,6 +527,9 @@ export default function RosaryWebScreen() {
               </View>
             ))}
           </View>
+          </View>
+
+          <Footer />
         </ScrollView>
       </SafeAreaView>
     );
@@ -774,7 +779,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
     maxWidth: 800,
     alignSelf: 'center',
     width: '100%',

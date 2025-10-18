@@ -26,6 +26,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useReadingProgress } from '../../../contexts/ReadingProgressContext';
 import { useBooks } from '../../../hooks/useBooks';
 import { useBookCategories } from '../../../hooks/useBookCategories';
+import Footer from '../../../components/Footer.web';
 
 export default function LibraryWebScreen() {
   const { colorScheme } = useTheme();
@@ -142,7 +143,7 @@ export default function LibraryWebScreen() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -388,6 +389,8 @@ export default function LibraryWebScreen() {
             ))}
           </View>
         </View>
+
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

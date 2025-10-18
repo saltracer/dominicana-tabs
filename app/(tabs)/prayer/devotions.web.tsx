@@ -14,6 +14,7 @@ import FeastBanner from '../../../components/FeastBanner';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay } from '../../../types';
 import { PrayerStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 export default function DevotionsWebScreen() {
   const { colorScheme } = useTheme();
@@ -85,9 +86,10 @@ export default function DevotionsWebScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Header */}
-        <View style={styles.header}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={styles.contentWrapper}>
+          {/* Header */}
+          <View style={styles.header}>
           <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
             Devotions
           </Text>
@@ -181,6 +183,9 @@ export default function DevotionsWebScreen() {
             </Text>
           </View>
         </View>
+        </View>
+
+        <Footer />
       </ScrollView>
       
     </SafeAreaView>
@@ -193,6 +198,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  contentWrapper: {
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
   },
   loadingContainer: {
     flex: 1,

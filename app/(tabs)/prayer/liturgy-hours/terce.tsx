@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,7 @@ import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrappe
 import PrayerHourPickerModal from '../../../../components/PrayerHourPickerModal';
 import { LiturgicalDay, HourType } from '../../../../types';
 import { PrayerStyles, LiturgyStyles } from '../../../../styles';
+import Footer from '../../../../components/Footer.web';
 
 export default function TerceScreen() {
   const { colorScheme } = useTheme();
@@ -238,6 +240,9 @@ export default function TerceScreen() {
 
         {/* Prayer Navigation Buttons */}
         <PrayerNavButtons currentHour="terce" />
+
+        {/* Footer - Web only */}
+        {Platform.OS === 'web' && <Footer />}
       </ScrollView>
       
       {/* Prayer Hour Picker Modal */}

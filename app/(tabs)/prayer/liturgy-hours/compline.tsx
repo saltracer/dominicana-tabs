@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import { useCompline } from '../../../../hooks/useCompline';
 import { LanguageCode } from '../../../../types/compline-types';
 import ErrorBoundary from '../../../../components/ErrorBoundary';
 import ChantWebView from '../../../../components/ChantWebView';
+import Footer from '../../../../components/Footer.web';
 
 function ComplineScreenContent() {
   const theme = useTheme();
@@ -358,6 +360,9 @@ function ComplineScreenContent() {
 
         {/* Prayer Navigation Buttons */}
         <PrayerNavButtons currentHour="compline" />
+
+        {/* Footer - Web only */}
+        {Platform.OS === 'web' && <Footer />}
       </ScrollView>
       
       {/* Prayer Hour Picker Modal */}

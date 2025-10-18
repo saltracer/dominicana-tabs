@@ -15,6 +15,7 @@ import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
 import { LiturgicalDay, Province } from '../../../types';
 import { CommunityStyles } from '../../../styles';
+import Footer from '../../../components/Footer.web';
 
 // Import ProvincesMap - Metro will automatically choose the right platform-specific file
 import ProvincesMap from '../../../components/ProvincesMap';
@@ -58,13 +59,21 @@ export default function ProvincesScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       {/* <CommunityNavigation activeTab="provinces" /> */}
       
-      {/* Map takes full remaining space */}
-      <View style={styles.mapContainer}>
-      <Text style={[styles.pageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
+        {/* Map takes full remaining space */}
+        <View style={styles.mapContainer}>
+          <Text style={[styles.pageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             Dominican Provinces
           </Text>
-        <ProvincesMap onProvinceSelect={handleProvinceSelect} />
-      </View>
+          <ProvincesMap onProvinceSelect={handleProvinceSelect} />
+        </View>
+
+        <Footer />
+      </ScrollView>
       
     </SafeAreaView>
   );
@@ -74,5 +83,7 @@ const styles = StyleSheet.create({
   // Include all shared styles
   ...CommunityStyles,
   
-  // No unique local styles needed for this component
+  scrollView: {
+    flex: 1,
+  },
 });
