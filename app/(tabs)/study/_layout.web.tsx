@@ -10,6 +10,7 @@ export default function StudyLayoutWeb() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="library" />
         <Stack.Screen name="bible" />
         <Stack.Screen name="book/[id]" />
       </Stack>

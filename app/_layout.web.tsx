@@ -315,7 +315,7 @@ function RootLayoutNav() {
                 
                 {studyDropdownOpen && (
                   <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
-                    <Link href="/(tabs)/study" asChild>
+                    <Link href="/(tabs)/study/bible" asChild>
                       <div 
                         style={{
                           padding: '12px 16px',
@@ -332,10 +332,10 @@ function RootLayoutNav() {
                         }}
                         onClick={closeStudyDropdown}
                       >
-                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Courses</Text>
+                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Bible</Text>
                       </div>
                     </Link>
-                    <Link href="/(tabs)/study" asChild>
+                    <Link href="/(tabs)/study/library" asChild>
                       <div 
                         style={{
                           padding: '12px 16px',
@@ -453,66 +453,48 @@ function RootLayoutNav() {
                 
                 {preachingDropdownOpen && (
                   <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
-                    <Link href="/(tabs)/preaching" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closePreachingDropdown}
-                      >
-                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Sermons</Text>
-                      </div>
-                    </Link>
-                    <Link href="/(tabs)/preaching" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closePreachingDropdown}
-                      >
-                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Reflections</Text>
-                      </div>
-                    </Link>
-                    <Link href="/(tabs)/preaching" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closePreachingDropdown}
-                      >
-                        <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Blog</Text>
-                      </div>
-                    </Link>
+                    <div 
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid #F0F0F0',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#F5F5F5';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      onClick={() => {
+                        closePreachingDropdown();
+                        router.push('/(tabs)/preaching/podcasts' as any);
+                      }}
+                    >
+                      <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Podcasts</Text>
+                    </div>
+                    <div 
+                      style={{
+                        padding: '12px 16px',
+                        borderBottom: '1px solid #F0F0F0',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#F5F5F5';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                      onClick={() => {
+                        closePreachingDropdown();
+                        router.push('/(tabs)/preaching/blogs' as any);
+                      }}
+                    >
+                      <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Blog & Reflections</Text>
+                    </div>
                   </View>
                 )}
               </View>
@@ -674,10 +656,11 @@ function RootLayoutNav() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>
+
+          {/* Footer */}
+          <Footer />
         </View>
 
-        {/* Footer */}
-        <Footer />
       </View>
     </SafeAreaProvider>
   );

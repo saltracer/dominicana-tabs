@@ -1,6 +1,6 @@
 /**
- * Preaching Landing Page - Web Only
- * Information about the Dominican preaching pillar with navigation to resources
+ * Study Landing Page - Web Only
+ * Information about the Dominican study pillar with navigation to resources
  */
 
 import React from 'react';
@@ -16,9 +16,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
-import { GlobalStyles } from '../../../styles';
+import { StudyStyles } from '../../../styles';
 
-export default function PreachingIndexWeb() {
+export default function StudyIndexWeb() {
   const { colorScheme } = useTheme();
 
   return (
@@ -34,36 +34,34 @@ export default function PreachingIndexWeb() {
         {/* Header */}
         <View style={styles.header}>
           <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-            <Ionicons name="chatbubble" size={48} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            <Ionicons name="book" size={48} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
           </View>
           <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Preaching
+            Study
           </Text>
           <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            The Dominican Pillar of Proclamation
+            The Dominican Pillar of Intellectual Life
           </Text>
         </View>
 
         {/* Content Section */}
         <View style={styles.contentSection}>
           <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Saint Dominic founded the Order of Preachers with one primary mission: to preach the Gospel and 
-            combat heresy through the proclamation of truth. The very name of our Order—Order of Preachers—
-            reflects this fundamental charism. We are called above all else to be heralds of Christ, bringing 
-            the light of the Gospel to a world in need of divine truth.
+            The Order of Preachers was founded on the principle that effective preaching requires deep study and 
+            understanding of Sacred Scripture, theology, and philosophy. Saint Dominic recognized that to preach 
+            the Gospel authentically, his friars needed to be thoroughly educated in the truths of the faith.
           </Text>
           
           <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Dominican preaching is not merely an activity but flows from the whole of our life. Through prayer, 
-            study, and community life, we prepare ourselves to share the fruits of our contemplation with others. 
-            Our preaching takes many forms—from the pulpit to the classroom, from spiritual direction to the 
-            written word, and now through digital media.
+            From the earliest days of the Order, Dominicans have been at the forefront of theological and 
+            philosophical inquiry. Great teachers like Saint Thomas Aquinas and Saint Albert the Great exemplify 
+            the Dominican commitment to pursuing truth through rigorous intellectual engagement with Scripture, 
+            tradition, and reason.
           </Text>
 
           <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            The Dominican tradition of preaching emphasizes clarity, truth, and charity. We seek to understand 
-            deeply before we speak, to proclaim the truth with confidence yet humility, and to do so always in 
-            service of salvation. This sacred task remains as urgent today as it was in the 13th century.
+            This pillar of Dominican life remains as vital today as it was in the 13th century. Through prayer, 
+            study, and contemplation of divine truth, we prepare ourselves to preach with wisdom and authority.
           </Text>
         </View>
 
@@ -74,17 +72,17 @@ export default function PreachingIndexWeb() {
         }]}>
           <Ionicons name="quote" size={24} color={Colors[colorScheme ?? 'light'].primary} style={styles.quoteIcon} />
           <Text style={[styles.quoteText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            "Go forth and set the world on fire."
+            "To contemplate and to give to others the fruits of contemplation."
           </Text>
           <Text style={[styles.quoteAttribution, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            — Saint Dominic
+            — Dominican Motto
           </Text>
         </View>
 
         {/* Resources Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Preaching Resources
+            Study Resources
           </Text>
           
           <TouchableOpacity
@@ -95,23 +93,23 @@ export default function PreachingIndexWeb() {
                 borderColor: Colors[colorScheme ?? 'light'].border,
               }
             ]}
-            onPress={() => router.push('/(tabs)/preaching/podcasts')}
+            onPress={() => router.push('/(tabs)/study/bible')}
             activeOpacity={0.7}
           >
             <View style={styles.resourceContent}>
-              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}>
+              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
                 <Ionicons 
-                  name="mic" 
+                  name="book" 
                   size={24} 
                   color={Colors[colorScheme ?? 'light'].background}
                 />
               </View>
               <View style={styles.resourceText}>
                 <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Podcasts
+                  Holy Bible
                 </Text>
                 <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Listen to homilies and teachings from Dominican friars
+                  Read and study Sacred Scripture with the Douay-Rheims translation
                 </Text>
               </View>
               <Ionicons 
@@ -130,23 +128,23 @@ export default function PreachingIndexWeb() {
                 borderColor: Colors[colorScheme ?? 'light'].border,
               }
             ]}
-            onPress={() => router.push('/(tabs)/preaching/blogs')}
+            onPress={() => router.push('/(tabs)/study/library')}
             activeOpacity={0.7}
           >
             <View style={styles.resourceContent}>
-              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}>
                 <Ionicons 
-                  name="document-text" 
+                  name="library" 
                   size={24} 
                   color={Colors[colorScheme ?? 'light'].background}
                 />
               </View>
               <View style={styles.resourceText}>
                 <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Blog & Reflections
+                  Catholic Library
                 </Text>
                 <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Read theological reflections and spiritual writings
+                  Browse classic works of theology, philosophy, and spirituality
                 </Text>
               </View>
               <Ionicons 
@@ -163,13 +161,7 @@ export default function PreachingIndexWeb() {
 }
 
 const styles = StyleSheet.create({
-  ...GlobalStyles,
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
+  ...StudyStyles,
   header: {
     paddingHorizontal: 20,
     paddingVertical: 40,
@@ -241,9 +233,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     textAlign: 'right',
   },
-  section: {
-    marginBottom: 24,
-  },
   sectionTitle: {
     fontSize: 24,
     fontWeight: '700',
@@ -291,3 +280,4 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
 });
+

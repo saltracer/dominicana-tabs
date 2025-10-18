@@ -64,6 +64,22 @@ export default function PreachingLayout() {
           headerRight: () => headerRightComponent,
         }}
       />
+      <Stack.Screen 
+        name="podcasts" 
+        options={{
+          headerTitle: 'Podcasts',
+          headerLeft: () => headerLeftComponent,
+          headerRight: () => headerRightComponent,
+        }}
+      />
+      <Stack.Screen 
+        name="blogs" 
+        options={{
+          headerTitle: 'Blogs',
+          headerLeft: () => headerLeftComponent,
+          headerRight: () => headerRightComponent,
+        }}
+      />
     </Stack>
   );
 }

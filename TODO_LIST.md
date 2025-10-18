@@ -56,7 +56,7 @@
 - [ ] Carplay
 - [x] Admin console
 - [ ] Look for opportunities to refactor
-- [ ] fix the user profile sub page titling
+- [x] fix the user profile sub page titling
 - [ ] scrolling footer
 - [ ] support text resizing
 

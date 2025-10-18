@@ -1,6 +1,6 @@
 /**
- * Preaching Landing Page - Web Only
- * Information about the Dominican preaching pillar with navigation to resources
+ * Community Landing Page - Web Only
+ * Information about the Dominican community pillar with navigation to resources
  */
 
 import React from 'react';
@@ -18,7 +18,7 @@ import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { GlobalStyles } from '../../../styles';
 
-export default function PreachingIndexWeb() {
+export default function CommunityIndexWeb() {
   const { colorScheme } = useTheme();
 
   return (
@@ -33,58 +33,58 @@ export default function PreachingIndexWeb() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-            <Ionicons name="chatbubble" size={48} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+          <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}>
+            <Ionicons name="people" size={48} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
           </View>
           <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Preaching
+            Community
           </Text>
           <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            The Dominican Pillar of Proclamation
+            The Dominican Pillar of Communal Life
           </Text>
         </View>
 
         {/* Content Section */}
         <View style={styles.contentSection}>
           <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Saint Dominic founded the Order of Preachers with one primary mission: to preach the Gospel and 
-            combat heresy through the proclamation of truth. The very name of our Order—Order of Preachers—
-            reflects this fundamental charism. We are called above all else to be heralds of Christ, bringing 
-            the light of the Gospel to a world in need of divine truth.
+            From its founding, the Order of Preachers has been built on the foundation of communal life. 
+            Saint Dominic established communities of friars who would live, pray, and study together, 
+            supporting one another in their mission to preach the Gospel and save souls.
           </Text>
           
           <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Dominican preaching is not merely an activity but flows from the whole of our life. Through prayer, 
-            study, and community life, we prepare ourselves to share the fruits of our contemplation with others. 
-            Our preaching takes many forms—from the pulpit to the classroom, from spiritual direction to the 
-            written word, and now through digital media.
+            Dominican community is not merely functional—it is integral to our identity. Living in community 
+            allows us to grow in charity, practice humility, and discern God's will together. Through our 
+            common life, we witness to the world the joy and power of Christian brotherhood and sisterhood, 
+            united in Christ.
           </Text>
 
           <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            The Dominican tradition of preaching emphasizes clarity, truth, and charity. We seek to understand 
-            deeply before we speak, to proclaim the truth with confidence yet humility, and to do so always in 
-            service of salvation. This sacred task remains as urgent today as it was in the 13th century.
+            The Dominican family extends far beyond individual communities. We are part of a worldwide family 
+            that includes friars, nuns, sisters, laity, and cooperators across every continent. United by our 
+            common charism and devotion to preaching truth, we form a global community dedicated to bringing 
+            Christ to the world.
           </Text>
         </View>
 
         {/* Quote Section */}
         <View style={[styles.quoteCard, { 
           backgroundColor: Colors[colorScheme ?? 'light'].card,
-          borderLeftColor: Colors[colorScheme ?? 'light'].primary,
+          borderLeftColor: Colors[colorScheme ?? 'light'].secondary,
         }]}>
-          <Ionicons name="quote" size={24} color={Colors[colorScheme ?? 'light'].primary} style={styles.quoteIcon} />
+          <Ionicons name="quote" size={24} color={Colors[colorScheme ?? 'light'].secondary} style={styles.quoteIcon} />
           <Text style={[styles.quoteText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            "Go forth and set the world on fire."
+            "See how good and pleasant it is when brothers live together in unity!"
           </Text>
           <Text style={[styles.quoteAttribution, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            — Saint Dominic
+            — Psalm 133:1
           </Text>
         </View>
 
         {/* Resources Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Preaching Resources
+            Community Resources
           </Text>
           
           <TouchableOpacity
@@ -95,23 +95,23 @@ export default function PreachingIndexWeb() {
                 borderColor: Colors[colorScheme ?? 'light'].border,
               }
             ]}
-            onPress={() => router.push('/(tabs)/preaching/podcasts')}
+            onPress={() => router.push('/(tabs)/community/calendar')}
             activeOpacity={0.7}
           >
             <View style={styles.resourceContent}>
-              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}>
+              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
                 <Ionicons 
-                  name="mic" 
+                  name="calendar" 
                   size={24} 
                   color={Colors[colorScheme ?? 'light'].background}
                 />
               </View>
               <View style={styles.resourceText}>
                 <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Podcasts
+                  Liturgical Calendar
                 </Text>
                 <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Listen to homilies and teachings from Dominican friars
+                  Explore the feasts and celebrations of the Church year
                 </Text>
               </View>
               <Ionicons 
@@ -130,23 +130,58 @@ export default function PreachingIndexWeb() {
                 borderColor: Colors[colorScheme ?? 'light'].border,
               }
             ]}
-            onPress={() => router.push('/(tabs)/preaching/blogs')}
+            onPress={() => router.push('/(tabs)/community/saints')}
             activeOpacity={0.7}
           >
             <View style={styles.resourceContent}>
-              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}>
                 <Ionicons 
-                  name="document-text" 
+                  name="star" 
                   size={24} 
                   color={Colors[colorScheme ?? 'light'].background}
                 />
               </View>
               <View style={styles.resourceText}>
                 <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Blog & Reflections
+                  Dominican Saints
                 </Text>
                 <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Read theological reflections and spiritual writings
+                  Discover the holy men and women of the Dominican Order
+                </Text>
+              </View>
+              <Ionicons 
+                name="chevron-forward" 
+                size={20} 
+                color={Colors[colorScheme ?? 'light'].textSecondary}
+              />
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.resourceCard,
+              { 
+                backgroundColor: Colors[colorScheme ?? 'light'].card,
+                borderColor: Colors[colorScheme ?? 'light'].border,
+              }
+            ]}
+            onPress={() => router.push('/(tabs)/community/provinces')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.resourceContent}>
+              <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+                <Ionicons 
+                  name="globe" 
+                  size={24} 
+                  color={Colors[colorScheme ?? 'light'].background}
+                />
+              </View>
+              <View style={styles.resourceText}>
+                <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Dominican Provinces
+                </Text>
+                <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Explore Dominican communities around the world
                 </Text>
               </View>
               <Ionicons 
@@ -291,3 +326,4 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
 });
+
