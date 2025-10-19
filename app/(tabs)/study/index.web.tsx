@@ -11,7 +11,6 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
@@ -23,15 +22,11 @@ export default function StudyIndexWeb() {
   const { colorScheme } = useTheme();
 
   return (
-    <SafeAreaView 
-      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} 
-      edges={['left', 'right']}
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ flexGrow: 1 }}
     >
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
-      >
         {/* Header */}
         <View style={styles.header}>
           <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
@@ -158,8 +153,7 @@ export default function StudyIndexWeb() {
         </View>
 
         <Footer />
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 

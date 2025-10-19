@@ -10,7 +10,6 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
@@ -21,15 +20,11 @@ export default function BlogsWebScreen() {
   const { colorScheme } = useTheme();
 
   return (
-    <SafeAreaView 
-      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} 
-      edges={['left', 'right']}
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ flexGrow: 1 }}
     >
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
-      >
         <View style={styles.placeholderContainer}>
           <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
             <Ionicons name="document-text" size={64} color={Colors[colorScheme ?? 'light'].primary} />
@@ -85,8 +80,7 @@ export default function BlogsWebScreen() {
         </View>
 
         <Footer />
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 

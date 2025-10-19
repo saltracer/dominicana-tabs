@@ -11,7 +11,6 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
@@ -23,15 +22,11 @@ export default function CommunityIndexWeb() {
   const { colorScheme } = useTheme();
 
   return (
-    <SafeAreaView 
-      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} 
-      edges={['left', 'right']}
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ flexGrow: 1 }}
     >
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
-      >
         {/* Header */}
         <View style={styles.header}>
           <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}>
@@ -73,7 +68,7 @@ export default function CommunityIndexWeb() {
           backgroundColor: Colors[colorScheme ?? 'light'].card,
           borderLeftColor: Colors[colorScheme ?? 'light'].secondary,
         }]}>
-          <Ionicons name="quote" size={24} color={Colors[colorScheme ?? 'light'].secondary} style={styles.quoteIcon} />
+          <Ionicons name="chatbox-ellipses" size={24} color={Colors[colorScheme ?? 'light'].secondary} style={styles.quoteIcon} />
           <Text style={[styles.quoteText, { color: Colors[colorScheme ?? 'light'].text }]}>
             "See how good and pleasant it is when brothers live together in unity!"
           </Text>
@@ -195,8 +190,7 @@ export default function CommunityIndexWeb() {
         </View>
 
         <Footer />
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 

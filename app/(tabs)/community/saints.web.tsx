@@ -10,7 +10,6 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
@@ -204,14 +203,14 @@ export default function SaintsScreen() {
 
   if (!liturgicalDay) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <CommunityNavigation activeTab="saints" />
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
             Loading liturgical information...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -373,7 +372,7 @@ export default function SaintsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       {/* Main Layout - Sidebar + Content */}
       <View style={styles.mainLayout}>
         {/* Left Sidebar - Filters */}
@@ -562,7 +561,7 @@ export default function SaintsScreen() {
         slideAnimation={slideAnimation}
       />
       
-    </SafeAreaView>
+    </View>
   );
 }
 

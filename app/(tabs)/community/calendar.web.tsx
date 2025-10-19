@@ -8,7 +8,6 @@ import {
   Pressable,
   Animated,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
@@ -291,25 +290,24 @@ export default function CalendarScreen() {
 
   if (!liturgicalDay) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <CommunityNavigation activeTab="calendar" />
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
             Loading liturgical information...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
-      >
+    <ScrollView 
+      ref={scrollViewRef}
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
         {/* <CommunityNavigation activeTab="calendar" /> */}
         
         {/* Main Content Container - Side by Side Layout */}
@@ -443,8 +441,7 @@ export default function CalendarScreen() {
         </View>
 
         <Footer />
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 

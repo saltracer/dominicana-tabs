@@ -14,7 +14,6 @@ import {
   Image,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
@@ -115,13 +114,13 @@ export default function LibraryWebScreen() {
 
   if (!liturgicalDay || authLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
             {!liturgicalDay ? 'Loading liturgical information...' : 'Loading...'}
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -139,12 +138,11 @@ export default function LibraryWebScreen() {
   const showContinueReading = user && filteredContinueReading.length > 0;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
-        refreshControl={
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ flexGrow: 1 }}
+      refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
@@ -391,8 +389,7 @@ export default function LibraryWebScreen() {
         </View>
 
         <Footer />
-      </ScrollView>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 

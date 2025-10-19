@@ -7,7 +7,6 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import FeastBanner from '../../../components/FeastBanner';
@@ -44,26 +43,24 @@ export default function ProvincesScreen() {
 
   if (!liturgicalDay) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <CommunityNavigation activeTab="provinces" />
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
             Loading liturgical information...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
       {/* <CommunityNavigation activeTab="provinces" /> */}
-      
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1 }}
-      >
         {/* Map takes full remaining space */}
         <View style={styles.mapContainer}>
           <Text style={[styles.pageTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -72,10 +69,8 @@ export default function ProvincesScreen() {
           <ProvincesMap onProvinceSelect={handleProvinceSelect} />
         </View>
 
-        <Footer />
-      </ScrollView>
-      
-    </SafeAreaView>
+      <Footer />
+    </ScrollView>
   );
 }
 

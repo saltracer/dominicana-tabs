@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
@@ -30,6 +29,7 @@ import { ReadingAnnotationOverlay } from '../../../../components/ReadingAnnotati
 import { HighlightColorPicker } from '../../../../components/HighlightColorPicker';
 import { AnnotationNoteEditor } from '../../../../components/AnnotationNoteEditor';
 import { AnnotationsListView } from '../../../../components/AnnotationsListView';
+import Footer from '../../../../components/Footer.web';
 
 export default function BibleBookWebScreen() {
   const { bookCode, chapter, version } = useLocalSearchParams();
@@ -277,20 +277,20 @@ export default function BibleBookWebScreen() {
 
   if (loading && !showChapterGrid && !currentChapter) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.text }]}>
             Loading...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
           <Ionicons 
             name="alert-circle-outline" 
@@ -327,14 +327,14 @@ export default function BibleBookWebScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // CHAPTER GRID MODE
   if (showChapterGrid) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity
             style={styles.headerButton}
@@ -358,7 +358,7 @@ export default function BibleBookWebScreen() {
         <ScrollView 
           style={styles.scrollView} 
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ flexGrow: 1 }}
         >
           <View style={styles.chapterGridContainer}>
             <Text style={[styles.chapterGridLabel, { color: colors.text }]}>
@@ -386,14 +386,16 @@ export default function BibleBookWebScreen() {
               ))}
             </View>
           </View>
+          
+          <Footer />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // CHAPTER READER MODE
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
@@ -484,7 +486,7 @@ export default function BibleBookWebScreen() {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ flexGrow: 1 }}
       >
         <View style={styles.chapterContainer}>
           {currentChapter?.verses.map((verse) => {
@@ -530,6 +532,8 @@ export default function BibleBookWebScreen() {
             );
           })}
         </View>
+        
+        <Footer />
       </ScrollView>
 
       {/* Annotation Overlay */}
@@ -582,7 +586,7 @@ export default function BibleBookWebScreen() {
         onDeleteAnnotation={handleDeleteAnnotation}
         onEditNote={handleEditNote}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

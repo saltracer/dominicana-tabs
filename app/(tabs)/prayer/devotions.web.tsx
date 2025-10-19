@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
@@ -74,20 +73,23 @@ export default function DevotionsWebScreen() {
 
   if (!liturgicalDay) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
             Loading liturgical information...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={styles.contentWrapper}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false} 
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
+      <View style={styles.contentWrapper}>
           {/* Header */}
           <View style={styles.header}>
           <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -183,12 +185,10 @@ export default function DevotionsWebScreen() {
             </Text>
           </View>
         </View>
-        </View>
+      </View>
 
-        <Footer />
-      </ScrollView>
-      
-    </SafeAreaView>
+      <Footer />
+    </ScrollView>
   );
 }
 

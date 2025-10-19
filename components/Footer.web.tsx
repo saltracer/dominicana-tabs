@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
     paddingVertical: 32,
-    paddingHorizontal: 24,
     marginTop: 'auto',
   },
   footerContent: {
@@ -159,7 +158,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
     maxWidth: 1200,
+    width: '100%',
     alignSelf: 'center',
+    paddingHorizontal: 24,
   },
   footerColumnGroup: {
     flex: 1,
@@ -214,7 +215,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     maxWidth: 1200,
+    width: '100%',
     alignSelf: 'center',
+    paddingHorizontal: 24,
   },
   copyright: {
     fontSize: 12,

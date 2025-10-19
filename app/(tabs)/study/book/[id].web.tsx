@@ -10,7 +10,6 @@ import {
   Image,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
@@ -21,6 +20,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { useBooks } from '../../../../hooks/useBooks';
 import { supabase } from '../../../../lib/supabase';
 import { EpubReader } from '../../../../components/EpubReader.web';
+import Footer from '../../../../components/Footer.web';
 
 export default function BookDetailWebScreen() {
   const { colorScheme } = useTheme();
@@ -132,13 +132,13 @@ export default function BookDetailWebScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
             Loading book details...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -153,7 +153,7 @@ export default function BookDetailWebScreen() {
 
   if (!book) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
         <View style={styles.errorContainer}>
           <Ionicons name="book-outline" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
           <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -168,13 +168,16 @@ export default function BookDetailWebScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ flexGrow: 1 }}
+    >
         
         {/* Header */}
         <View style={styles.header}>
@@ -335,8 +338,8 @@ export default function BookDetailWebScreen() {
           </View>
         )}
 
-      </ScrollView>
-    </SafeAreaView>
+      <Footer />
+    </ScrollView>
   );
 }
 
