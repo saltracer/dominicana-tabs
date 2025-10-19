@@ -35,6 +35,9 @@ export default function FeastBanner({
   const isTablet = useIsTablet();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0); // 0 = date, 1 = feast
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   const navigateToPreviousDay = () => {
     const currentDate = parseISO(liturgicalDay.date);
@@ -142,6 +145,29 @@ export default function FeastBanner({
     return feast.rank;
   };
 
+  // Swipe handlers for mobile carousel
+  const handleTouchStart = (e: any) => {
+    if (!isMobile) return;
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: any) => {
+    if (!isMobile) return;
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isMobile || !primaryFeast) return;
+    if (touchStart - touchEnd > 75) {
+      // Swiped left - go to next slide
+      setCarouselIndex(1);
+    }
+    if (touchStart - touchEnd < -75) {
+      // Swiped right - go to previous slide
+      setCarouselIndex(0);
+    }
+  };
+
   return (
     <View style={[
       styles.container, 
@@ -158,110 +184,123 @@ export default function FeastBanner({
           ]} 
         />
       
-      <View style={[styles.bannerContent, isMobile && styles.bannerContentMobile, isTablet && styles.bannerContentTablet]}>
+      <View 
+        style={[styles.bannerContent, isMobile && styles.bannerContentMobile, isTablet && styles.bannerContentTablet]}
+        {...(isMobile && {
+          onTouchStart: handleTouchStart,
+          onTouchMove: handleTouchMove,
+          onTouchEnd: handleTouchEnd,
+        } as any)}
+      >
         {/* Date/Feast Section with Navigation */}
-        <View style={[styles.topRow, isMobile && styles.topRowMobile]}>
-          {/* Date Navigation Section */}
-          <View style={[styles.leftSection, isMobile && styles.leftSectionMobile]}>
-            <TouchableOpacity
-              style={[styles.navButton, isMobile && styles.navButtonMobile]}
-              onPress={navigateToPreviousDay}
-              activeOpacity={0.7}
-              accessibilityLabel="Previous day"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="chevron-back" 
-                size={isMobile ? 24 : 20} 
-                color={Colors[colorScheme ?? 'light'].textSecondary} 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.dateButton, isMobile && styles.dateButtonMobile]}
-              onPress={showDatePickerModal}
-              activeOpacity={0.8}
-              accessibilityLabel="Select date"
-              accessibilityRole="button"
-            >
-              <Text style={[
-                styles.dateText,
-                isMobile && styles.dateTextMobile,
-                isTablet && styles.dateTextTablet,
-                { color: Colors[colorScheme ?? 'light'].text }
-              ]}>
-                {isMobile 
-                  ? format(parseISO(liturgicalDay.date), 'MMM d, yyyy')
-                  : format(parseISO(liturgicalDay.date), 'EEEE, MMM d, yyyy')
-                }
-              </Text>
-            </TouchableOpacity>
-            
-            {/* Reset to Today Button - Only show if not on today's date */}
-            {format(parseISO(liturgicalDay.date), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
+        <View style={styles.topRow}>
+          {/* Date Navigation Section - Hidden on mobile when carousel is on feast view */}
+          {(!isMobile || carouselIndex === 0) && (
+            <View style={Object.assign({}, styles.leftSection, isMobile ? { flex: 1, justifyContent: 'center' } : {})}>
               <TouchableOpacity
-                style={[styles.resetButton, isMobile && styles.resetButtonMobile]}
-                onPress={() => setSelectedDate(new Date())}
+                style={[styles.navButton, isMobile && styles.navButtonMobile]}
+                onPress={navigateToPreviousDay}
                 activeOpacity={0.7}
-                accessibilityLabel="Reset to today"
+                accessibilityLabel="Previous day"
                 accessibilityRole="button"
               >
                 <Ionicons 
-                  name="arrow-undo" 
-                  size={isMobile ? 20 : 16} 
+                  name="chevron-back" 
+                  size={isMobile ? 24 : 20} 
                   color={Colors[colorScheme ?? 'light'].textSecondary} 
                 />
               </TouchableOpacity>
-            )}
-            
-            <TouchableOpacity
-              style={[styles.navButton, isMobile && styles.navButtonMobile]}
-              onPress={navigateToNextDay}
-              activeOpacity={0.7}
-              accessibilityLabel="Next day"
-              accessibilityRole="button"
-            >
-              <Ionicons 
-                name="chevron-forward" 
-                size={isMobile ? 24 : 20} 
-                color={Colors[colorScheme ?? 'light'].textSecondary} 
-              />
-            </TouchableOpacity>
-          </View>
+              
+              <TouchableOpacity
+                style={[styles.dateButton, isMobile && styles.dateButtonMobile]}
+                onPress={showDatePickerModal}
+                activeOpacity={0.8}
+                accessibilityLabel="Select date"
+                accessibilityRole="button"
+              >
+                <Text style={Object.assign(
+                  {},
+                  styles.dateText,
+                  isMobile ? styles.dateTextMobile : {},
+                  isTablet ? styles.dateTextTablet : {},
+                  { color: Colors[colorScheme ?? 'light'].text }
+                )}>
+                  {isMobile 
+                    ? format(parseISO(liturgicalDay.date), 'MMM d, yyyy')
+                    : format(parseISO(liturgicalDay.date), 'EEEE, MMM d, yyyy')
+                  }
+                </Text>
+              </TouchableOpacity>
+              
+              {/* Reset to Today Button - Only show if not on today's date */}
+              {format(parseISO(liturgicalDay.date), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
+                <TouchableOpacity
+                  style={[styles.resetButton, isMobile && styles.resetButtonMobile]}
+                  onPress={() => setSelectedDate(new Date())}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Reset to today"
+                  accessibilityRole="button"
+                >
+                  <Ionicons 
+                    name="arrow-undo" 
+                    size={isMobile ? 20 : 16} 
+                    color={Colors[colorScheme ?? 'light'].textSecondary} 
+                  />
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity
+                style={[styles.navButton, isMobile && styles.navButtonMobile]}
+                onPress={navigateToNextDay}
+                activeOpacity={0.7}
+                accessibilityLabel="Next day"
+                accessibilityRole="button"
+              >
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={isMobile ? 24 : 20} 
+                  color={Colors[colorScheme ?? 'light'].textSecondary} 
+                />
+              </TouchableOpacity>
+            </View>
+          )}
           
-          {/* Feast Section */}
-          {primaryFeast && (
-            <View style={[styles.rightSection, isMobile && styles.rightSectionMobile]}>
-              <View style={[styles.feastRow, isMobile && styles.feastRowMobile]}>
-                <View style={[
+          {/* Feast Section - Hidden on mobile when carousel is on date view */}
+          {primaryFeast && (!isMobile || carouselIndex === 1) && (
+            <View style={Object.assign({}, styles.rightSection, isMobile ? { flex: 1, alignItems: 'center' } : {})}>
+              <View style={styles.feastRow}>
+                <View style={Object.assign(
+                  {},
                   styles.rankContainer, 
                   { 
                     backgroundColor: getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark'),
                     borderWidth: (primaryFeast.color?.toLowerCase() === 'white') ? 1 : 0,
                     borderColor: (primaryFeast.color?.toLowerCase() === 'white') ? '#000000' : 'transparent'
                   }
-                ]}>
-                  <Text style={[
+                )}>
+                  <Text style={Object.assign(
+                    {},
                     styles.rankText, 
                     { 
                       color: (primaryFeast.color?.toLowerCase() === 'white') 
                         ? '#000000' 
                         : Colors[colorScheme ?? 'light'].dominicanWhite 
                     }
-                  ]}>
+                  )}>
                     {primaryFeast.rank}
                   </Text>
                 </View>
                 <View style={styles.feastTextContainer}>
-                <Text style={[
-                  styles.feastName,
-                  isMobile && styles.feastNameMobile,
-                  { color: Colors[colorScheme ?? 'light'].text }
-                ]} numberOfLines={isMobile ? 2 : 1}>
-                  {getFeastDisplayName(primaryFeast)}
-                </Text>
+                  <Text style={Object.assign(
+                    {},
+                    styles.feastName,
+                    isMobile ? styles.feastNameMobile : {},
+                    { color: Colors[colorScheme ?? 'light'].text }
+                  )} numberOfLines={isMobile ? 2 : 1}>
+                    {getFeastDisplayName(primaryFeast)}
+                  </Text>
                   {primaryFeast.isDominican && (
-                    <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                    <Text style={Object.assign({}, styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary })}>
                       Dominican
                     </Text>
                   )}
@@ -283,6 +322,32 @@ export default function FeastBanner({
             </View>
           )}
         </View>
+
+        {/* Mobile Carousel Indicators */}
+        {isMobile && primaryFeast && (
+          <View style={styles.carouselIndicators}>
+            <TouchableOpacity
+              style={Object.assign(
+                {},
+                styles.carouselDot,
+                carouselIndex === 0 ? { backgroundColor: Colors[colorScheme ?? 'light'].primary, width: 20 } : { backgroundColor: Colors[colorScheme ?? 'light'].border, width: 8 }
+              )}
+              onPress={() => setCarouselIndex(0)}
+              accessibilityLabel="View date navigation"
+              accessibilityRole="button"
+            />
+            <TouchableOpacity
+              style={Object.assign(
+                {},
+                styles.carouselDot,
+                carouselIndex === 1 ? { backgroundColor: Colors[colorScheme ?? 'light'].primary, width: 20 } : { backgroundColor: Colors[colorScheme ?? 'light'].border, width: 8 }
+              )}
+              onPress={() => setCarouselIndex(1)}
+              accessibilityLabel="View feast information"
+              accessibilityRole="button"
+            />
+          </View>
+        )}
       </View>
 
       {/* Date Picker Modal */}
@@ -579,6 +644,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.sm,
+    minHeight: 58,
   },
   topRowMobile: {
     flexDirection: 'column',
@@ -890,5 +956,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  
+  // Mobile carousel indicators
+  carouselIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  carouselDot: {
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
   },
 });
