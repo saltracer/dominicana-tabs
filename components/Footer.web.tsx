@@ -65,39 +65,58 @@ export default function Footer() {
           </Text>
         </View>
 
-        {/* Quick Links Columns */}
-        <View style={Object.assign(
-          {},
-          styles.footerColumnGroup,
-          isMobile ? styles.footerColumnGroupMobile : {},
-          isTablet ? styles.footerColumnGroupTablet : {}
-        )}>
-          <View style={Object.assign({}, styles.footerColumn, isMobile ? styles.footerColumnMobile : {})}>
+        {/* Quick Links Section */}
+        {isMobile ? (
+          <View style={styles.footerColumnMobile}>
             <Text style={Object.assign(
               {},
               styles.footerSectionTitle,
-              isTablet ? styles.footerSectionTitleTablet : {},
               { color: Colors[colorScheme ?? 'light'].text }
             )}>
               Quick Links
             </Text>
-            {quickLinks1.map((link, index) => (
-              <Link key={index} href={link.href as any} asChild>
-                <TouchableOpacity style={styles.footerLink}>
-                  <Text style={Object.assign(
-                    {},
-                    styles.footerLinkText,
-                    isTablet ? styles.footerLinkTextTablet : {},
-                    { color: Colors[colorScheme ?? 'light'].textSecondary }
-                  )}>
-                    {link.name}
-                  </Text>
-                </TouchableOpacity>
-              </Link>
-            ))}
+            <View style={styles.mobileLinkGroup}>
+              {[...quickLinks1, ...quickLinks2].map((link, index) => (
+                <Link key={index} href={link.href as any} asChild>
+                  <TouchableOpacity style={styles.footerLink}>
+                    <Text style={Object.assign({}, styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary })}>
+                      {link.name}
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              ))}
+            </View>
           </View>
-
-          {!isMobile && (
+        ) : (
+          <View style={Object.assign(
+            {},
+            styles.footerColumnGroup,
+            isTablet ? styles.footerColumnGroupTablet : {}
+          )}>
+            <View style={styles.footerColumn}>
+              <Text style={Object.assign(
+                {},
+                styles.footerSectionTitle,
+                isTablet ? styles.footerSectionTitleTablet : {},
+                { color: Colors[colorScheme ?? 'light'].text }
+              )}>
+                Quick Links
+              </Text>
+              {quickLinks1.map((link, index) => (
+                <Link key={index} href={link.href as any} asChild>
+                  <TouchableOpacity style={styles.footerLink}>
+                    <Text style={Object.assign(
+                      {},
+                      styles.footerLinkText,
+                      isTablet ? styles.footerLinkTextTablet : {},
+                      { color: Colors[colorScheme ?? 'light'].textSecondary }
+                    )}>
+                      {link.name}
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              ))}
+            </View>
             <View style={styles.footerColumn}>
               <Text style={Object.assign(
                 {},
@@ -122,52 +141,61 @@ export default function Footer() {
                 </Link>
               ))}
             </View>
-          )}
-          
-          {isMobile && quickLinks2.map((link, index) => (
-            <Link key={index} href={link.href as any} asChild>
-              <TouchableOpacity style={styles.footerLink}>
-                <Text style={Object.assign({}, styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary })}>
-                  {link.name}
-                </Text>
-              </TouchableOpacity>
-            </Link>
-          ))}
-        </View>
+          </View>
+        )}
 
-        {/* Resources Columns */}
-        <View style={Object.assign(
-          {},
-          styles.footerColumnGroup,
-          isMobile ? styles.footerColumnGroupMobile : {},
-          isTablet ? styles.footerColumnGroupTablet : {}
-        )}>
-          <View style={Object.assign({}, styles.footerColumn, isMobile ? styles.footerColumnMobile : {})}>
+        {/* Resources Section */}
+        {isMobile ? (
+          <View style={styles.footerColumnMobile}>
             <Text style={Object.assign(
               {},
               styles.footerSectionTitle,
-              isTablet ? styles.footerSectionTitleTablet : {},
               { color: Colors[colorScheme ?? 'light'].text }
             )}>
               Resources
             </Text>
-            {resources1.map((link, index) => (
-              <Link key={index} href={link.href as any} asChild>
-                <TouchableOpacity style={styles.footerLink}>
-                  <Text style={Object.assign(
-                    {},
-                    styles.footerLinkText,
-                    isTablet ? styles.footerLinkTextTablet : {},
-                    { color: Colors[colorScheme ?? 'light'].textSecondary }
-                  )}>
-                    {link.name}
-                  </Text>
-                </TouchableOpacity>
-              </Link>
-            ))}
+            <View style={styles.mobileLinkGroup}>
+              {[...resources1, ...resources2].map((link, index) => (
+                <Link key={index} href={link.href as any} asChild>
+                  <TouchableOpacity style={styles.footerLink}>
+                    <Text style={Object.assign({}, styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary })}>
+                      {link.name}
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              ))}
+            </View>
           </View>
-
-          {!isMobile && (
+        ) : (
+          <View style={Object.assign(
+            {},
+            styles.footerColumnGroup,
+            isTablet ? styles.footerColumnGroupTablet : {}
+          )}>
+            <View style={styles.footerColumn}>
+              <Text style={Object.assign(
+                {},
+                styles.footerSectionTitle,
+                isTablet ? styles.footerSectionTitleTablet : {},
+                { color: Colors[colorScheme ?? 'light'].text }
+              )}>
+                Resources
+              </Text>
+              {resources1.map((link, index) => (
+                <Link key={index} href={link.href as any} asChild>
+                  <TouchableOpacity style={styles.footerLink}>
+                    <Text style={Object.assign(
+                      {},
+                      styles.footerLinkText,
+                      isTablet ? styles.footerLinkTextTablet : {},
+                      { color: Colors[colorScheme ?? 'light'].textSecondary }
+                    )}>
+                      {link.name}
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              ))}
+            </View>
             <View style={styles.footerColumn}>
               <Text style={Object.assign(
                 {},
@@ -192,18 +220,8 @@ export default function Footer() {
                 </Link>
               ))}
             </View>
-          )}
-          
-          {isMobile && resources2.map((link, index) => (
-            <Link key={index} href={link.href as any} asChild>
-              <TouchableOpacity style={styles.footerLink}>
-                <Text style={Object.assign({}, styles.footerLinkText, { color: Colors[colorScheme ?? 'light'].textSecondary })}>
-                  {link.name}
-                </Text>
-              </TouchableOpacity>
-            </Link>
-          ))}
-        </View>
+          </View>
+        )}
       </View>
 
       {/* Bottom Line */}
@@ -241,7 +259,8 @@ const styles = StyleSheet.create({
   footer: {
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
-    paddingVertical: spacing.xl, // 32px
+    paddingTop: spacing.xl, // 32px
+    paddingBottom: spacing.lg, // 24px
     marginTop: 'auto',
   },
   
@@ -257,7 +276,7 @@ const styles = StyleSheet.create({
   },
   footerContentMobile: {
     flexDirection: 'column',
-    paddingHorizontal: spacing.md, // 16px
+    paddingHorizontal: spacing.lg, // 24px
     marginBottom: spacing.md, // 16px
   },
   footerContentTablet: {
@@ -273,7 +292,7 @@ const styles = StyleSheet.create({
   footerColumnGroupMobile: {
     flexDirection: 'column',
     marginHorizontal: 0,
-    marginBottom: spacing.lg, // 24px
+    marginBottom: 0,
   },
   footerColumnGroupTablet: {
     marginHorizontal: spacing.xs, // 4px
@@ -286,14 +305,18 @@ const styles = StyleSheet.create({
   },
   footerColumnMobile: {
     marginHorizontal: 0,
-    marginBottom: spacing.md, // 16px
+    marginBottom: spacing.lg, // 24px
+  },
+  mobileLinkGroup: {
+    flexDirection: 'column',
+    paddingLeft: spacing.md, // 16px indent
   },
   
   // Logo section
   logoSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md, // 12px
+    marginBottom: spacing.sm, // 8px
   },
   logoIcon: {
     width: 24,
@@ -315,7 +338,7 @@ const styles = StyleSheet.create({
   },
   footerDescription: {
     fontSize: 14,
-    marginBottom: spacing.md, // 12px
+    marginBottom: 0,
     fontFamily: 'Georgia',
     lineHeight: 20,
   },
@@ -324,7 +347,7 @@ const styles = StyleSheet.create({
   footerSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: spacing.md, // 12px
+    marginBottom: spacing.sm, // 8px
     fontFamily: 'Georgia',
   },
   footerSectionTitleTablet: {
@@ -332,8 +355,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm, // 8px
   },
   footerLink: {
-    marginBottom: spacing.sm, // 8px
-    minHeight: 32,
+    marginBottom: 2, //spacing.xs, // 4px
+    minHeight: 44,
     justifyContent: 'center',
   },
   footerLinkText: {
@@ -359,8 +382,9 @@ const styles = StyleSheet.create({
   bottomLineMobile: {
     flexDirection: 'column',
     alignItems: 'center',
-    paddingHorizontal: spacing.md, // 16px
-    paddingTop: spacing.md, // 16px
+    paddingHorizontal: spacing.lg, // 24px
+    paddingTop: spacing.lg, // 24px
+    marginTop: spacing.sm, // 8px
   },
   copyright: {
     fontSize: 12,
