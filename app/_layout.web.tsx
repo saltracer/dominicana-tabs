@@ -17,7 +17,7 @@ import MobileMenu from '@/components/MobileMenu.web';
 import LiturgicalCalendarService from '@/services/LiturgicalCalendar';
 import { LiturgicalDay } from '@/types';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { useIsMobile } from '@/hooks/useMediaQuery';
+import { useIsMobile, useIsTablet, useIsDesktop, useMediaQuery } from '@/hooks/useMediaQuery';
 import { useIsScrolled } from '@/hooks/useScrollPosition';
 
 // Import web-specific CSS
@@ -82,6 +82,10 @@ function RootLayoutNav() {
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdminAuth();
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const isDesktop = useIsDesktop();
+  const isCompactDesktop = !useMediaQuery(1100); // < 1100px gets tighter spacing
+  const isNarrowTablet = useMediaQuery(820); // >= 820px shows logo text
   const isScrolled = useIsScrolled(10);
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
@@ -223,7 +227,7 @@ function RootLayoutNav() {
           ]}
         >
           {/* Top Navigation Bar */}
-          <View style={[styles.topNav, isScrolled && styles.topNavScrolled, isMobile && styles.topNavMobile]}>
+          <View style={[styles.topNav, isScrolled && styles.topNavScrolled, isMobile && styles.topNavMobile, isTablet && styles.topNavTablet]}>
             {/* Mobile: Hamburger + Logo */}
             {isMobile && (
               <>
@@ -252,7 +256,7 @@ function RootLayoutNav() {
               </>
             )}
 
-            {/* Desktop: Logo */}
+            {/* Desktop/Tablet: Logo */}
             {!isMobile && (
               <Link href="/" asChild>
                 <TouchableOpacity style={styles.logoSection}>
@@ -263,25 +267,38 @@ function RootLayoutNav() {
                       resizeMode="contain"
                     />
                   </View>
-                  <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                    Dominicana
-                  </Text>
+                  {/* Hide "Dominicana" text on narrow tablets (< 820px) */}
+                  {isNarrowTablet && (
+                    <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      Dominicana
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </Link>
             )}
 
-            {/* Desktop: Navigation Links */}
-            {!isMobile && <View style={styles.navLinks}>
+            {/* Desktop/Tablet: Navigation Links */}
+            {!isMobile && <View style={Object.assign(
+              {}, 
+              styles.navLinks,
+              isCompactDesktop ? styles.navLinksCompact : {},
+              isTablet ? styles.navLinksTablet : {}
+            )}>
               {/* Prayer Dropdown */}
               <View style={styles.dropdownContainer} ref={prayerDropdownRef}>
                 <TouchableOpacity 
-                  style={styles.navLink}
+                  style={Object.assign(
+                    {}, 
+                    styles.navLink,
+                    isCompactDesktop ? styles.navLinkCompact : {},
+                    isTablet ? styles.navLinkTablet : {}
+                  )}
                   onPress={togglePrayerDropdown}
                   accessibilityLabel="Prayer menu"
                   accessibilityRole="button"
                   accessibilityState={{ expanded: prayerDropdownOpen }}
                 >
-                  <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Prayer</Text>
+                  <Text style={Object.assign({}, styles.navLinkText, isTablet ? styles.navLinkTextTablet : {}, { color: Colors[colorScheme ?? 'light'].text })}>Prayer</Text>
                   <Ionicons 
                     name={prayerDropdownOpen ? "chevron-up" : "chevron-down"} 
                     size={12} 
@@ -358,13 +375,18 @@ function RootLayoutNav() {
               {/* Study Dropdown */}
               <View style={styles.dropdownContainer} ref={studyDropdownRef}>
                 <TouchableOpacity 
-                  style={styles.navLink}
+                  style={Object.assign(
+                    {}, 
+                    styles.navLink,
+                    isCompactDesktop ? styles.navLinkCompact : {},
+                    isTablet ? styles.navLinkTablet : {}
+                  )}
                   onPress={toggleStudyDropdown}
                   accessibilityLabel="Study menu"
                   accessibilityRole="button"
                   accessibilityState={{ expanded: studyDropdownOpen }}
                 >
-                  <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Study</Text>
+                  <Text style={Object.assign({}, styles.navLinkText, isTablet ? styles.navLinkTextTablet : {}, { color: Colors[colorScheme ?? 'light'].text })}>Study</Text>
                   <Ionicons 
                     name={studyDropdownOpen ? "chevron-up" : "chevron-down"} 
                     size={12} 
@@ -420,13 +442,18 @@ function RootLayoutNav() {
               {/* Community Dropdown */}
               <View style={styles.dropdownContainer} ref={communityDropdownRef}>
                 <TouchableOpacity 
-                  style={styles.navLink}
+                  style={Object.assign(
+                    {}, 
+                    styles.navLink,
+                    isCompactDesktop ? styles.navLinkCompact : {},
+                    isTablet ? styles.navLinkTablet : {}
+                  )}
                   onPress={toggleCommunityDropdown}
                   accessibilityLabel="Community menu"
                   accessibilityRole="button"
                   accessibilityState={{ expanded: communityDropdownOpen }}
                 >
-                  <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Community</Text>
+                  <Text style={Object.assign({}, styles.navLinkText, isTablet ? styles.navLinkTextTablet : {}, { color: Colors[colorScheme ?? 'light'].text })}>Community</Text>
                   <Ionicons 
                     name={communityDropdownOpen ? "chevron-up" : "chevron-down"} 
                     size={12} 
@@ -502,13 +529,18 @@ function RootLayoutNav() {
               {/* Preaching Dropdown */}
               <View style={styles.dropdownContainer} ref={preachingDropdownRef}>
                 <TouchableOpacity 
-                  style={styles.navLink}
+                  style={Object.assign(
+                    {}, 
+                    styles.navLink,
+                    isCompactDesktop ? styles.navLinkCompact : {},
+                    isTablet ? styles.navLinkTablet : {}
+                  )}
                   onPress={togglePreachingDropdown}
                   accessibilityLabel="Preaching menu"
                   accessibilityRole="button"
                   accessibilityState={{ expanded: preachingDropdownOpen }}
                 >
-                  <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Preaching</Text>
+                  <Text style={Object.assign({}, styles.navLinkText, isTablet ? styles.navLinkTextTablet : {}, { color: Colors[colorScheme ?? 'light'].text })}>Preaching</Text>
                   <Ionicons 
                     name={preachingDropdownOpen ? "chevron-up" : "chevron-down"} 
                     size={12} 
@@ -567,11 +599,6 @@ function RootLayoutNav() {
             
             {/* Header Actions */}
             <View style={styles.headerActions}>
-              {!isMobile && (
-                <TouchableOpacity style={styles.actionIcon} accessibilityLabel="Messages" accessibilityRole="button">
-                  <Ionicons name="chatbubble-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
-                </TouchableOpacity>
-              )}
               {user ? (
                 <View style={styles.dropdownContainer} ref={userDropdownRef}>
                   <TouchableOpacity 
@@ -582,14 +609,19 @@ function RootLayoutNav() {
                     accessibilityState={{ expanded: userDropdownOpen }}
                   >
                     <Ionicons name="person-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
-                    <Text style={[styles.signInText, styles.profileButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      {profile?.name || user.email?.split('@')[0] || 'Profile'}
-                    </Text>
-                    <Ionicons 
-                      name={userDropdownOpen ? "chevron-up" : "chevron-down"} 
-                      size={12} 
-                      color={Colors[colorScheme ?? 'light'].text} 
-                    />
+                    {/* Full Desktop only (≥ 1100px): Show name + chevron */}
+                    {!isCompactDesktop && (
+                      <>
+                        <Text style={[styles.signInText, styles.profileButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                          {profile?.name || user.email?.split('@')[0] || 'Profile'}
+                        </Text>
+                        <Ionicons 
+                          name={userDropdownOpen ? "chevron-up" : "chevron-down"} 
+                          size={12} 
+                          color={Colors[colorScheme ?? 'light'].text} 
+                        />
+                      </>
+                    )}
                   </TouchableOpacity>
                   
                   {userDropdownOpen && (
@@ -762,6 +794,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 56,
   },
+  topNavTablet: {
+    paddingHorizontal: 16, // Reduce from 24px to save space
+  },
   topNavMobile: {
     paddingHorizontal: 16,
     minHeight: 56,
@@ -806,6 +841,12 @@ const styles = StyleSheet.create({
     zIndex: 10000,
     position: 'relative',
   },
+  navLinksCompact: {
+    marginHorizontal: 20, // Reduce from 32px for 997-1100px range
+  },
+  navLinksTablet: {
+    marginHorizontal: 12, // Further reduce for tablets
+  },
   navLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -813,18 +854,25 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
+  navLinkCompact: {
+    marginHorizontal: 10, // Reduce from 16px for 997-1100px range
+    paddingHorizontal: 8, // Reduce from 12px
+  },
+  navLinkTablet: {
+    marginHorizontal: 8, // Further reduce for tablets
+    paddingHorizontal: 6,
+  },
   navLinkText: {
     fontSize: 16,
     fontWeight: '500',
     marginRight: 4,
   },
+  navLinkTextTablet: {
+    fontSize: 15, // Slightly smaller on tablet
+  },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  actionIcon: {
-    padding: 8,
-    marginRight: 16,
   },
   signInButton: {
     flexDirection: 'row',
