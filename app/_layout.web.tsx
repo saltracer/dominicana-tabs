@@ -13,9 +13,17 @@ import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/Colors';
 import FeastBanner from '@/components/FeastBanner.web';
+import MobileMenu from '@/components/MobileMenu.web';
 import LiturgicalCalendarService from '@/services/LiturgicalCalendar';
 import { LiturgicalDay } from '@/types';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useIsMobile } from '@/hooks/useMediaQuery';
+import { useIsScrolled } from '@/hooks/useScrollPosition';
+
+// Import web-specific CSS
+if (Platform.OS === 'web') {
+  require('./global.web.css');
+}
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -73,6 +81,9 @@ function RootLayoutNav() {
   const { liturgicalDay } = useCalendar();
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdminAuth();
+  const isMobile = useIsMobile();
+  const isScrolled = useIsScrolled(10);
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [communityDropdownOpen, setCommunityDropdownOpen] = useState(false);
   const [preachingDropdownOpen, setPreachingDropdownOpen] = useState(false);
   const [studyDropdownOpen, setStudyDropdownOpen] = useState(false);
@@ -198,31 +209,77 @@ function RootLayoutNav() {
   return (
     <SafeAreaProvider>
       <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        {/* Mobile Menu */}
+        <MobileMenu visible={mobileMenuVisible} onClose={() => setMobileMenuVisible(false)} />
+
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <View
+          // @ts-ignore - className is web-only
+          className={`header-sticky ${isScrolled ? 'header-scrolled' : ''}`}
+          style={[
+            styles.header,
+            { backgroundColor: Colors[colorScheme ?? 'light'].surface },
+            isScrolled && styles.headerScrolled,
+          ]}
+        >
           {/* Top Navigation Bar */}
-          <View style={styles.topNav}>
-            <Link href="/" asChild>
-              <TouchableOpacity style={styles.logoSection}>
-                <View style={styles.logoIcon}>
-                  <Image 
-                    source={require('../assets/images/dominicana_logo.png')} 
-                    style={styles.logoImage}
-                    resizeMode="contain"
-                  />
-                </View>
-                <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  Dominicana
-                </Text>
-              </TouchableOpacity>
-            </Link>
-            
-            <View style={styles.navLinks}>
+          <View style={[styles.topNav, isScrolled && styles.topNavScrolled, isMobile && styles.topNavMobile]}>
+            {/* Mobile: Hamburger + Logo */}
+            {isMobile && (
+              <>
+                <TouchableOpacity
+                  style={styles.hamburgerButton}
+                  onPress={() => setMobileMenuVisible(true)}
+                  accessibilityLabel="Open navigation menu"
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="menu" size={28} color={Colors[colorScheme ?? 'light'].text} />
+                </TouchableOpacity>
+                <Link href="/" asChild>
+                  <TouchableOpacity style={styles.logoSection}>
+                    <View style={styles.logoIcon}>
+                      <Image
+                        source={require('../assets/images/dominicana_logo.png')}
+                        style={[styles.logoImage, styles.logoImageMobile]}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <Text style={[styles.logoText, styles.logoTextMobile, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      Dominicana
+                    </Text>
+                  </TouchableOpacity>
+                </Link>
+              </>
+            )}
+
+            {/* Desktop: Logo */}
+            {!isMobile && (
+              <Link href="/" asChild>
+                <TouchableOpacity style={styles.logoSection}>
+                  <View style={styles.logoIcon}>
+                    <Image
+                      source={require('../assets/images/dominicana_logo.png')}
+                      style={styles.logoImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                    Dominicana
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            )}
+
+            {/* Desktop: Navigation Links */}
+            {!isMobile && <View style={styles.navLinks}>
               {/* Prayer Dropdown */}
               <View style={styles.dropdownContainer} ref={prayerDropdownRef}>
                 <TouchableOpacity 
                   style={styles.navLink}
                   onPress={togglePrayerDropdown}
+                  accessibilityLabel="Prayer menu"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: prayerDropdownOpen }}
                 >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Prayer</Text>
                   <Ionicons 
@@ -303,6 +360,9 @@ function RootLayoutNav() {
                 <TouchableOpacity 
                   style={styles.navLink}
                   onPress={toggleStudyDropdown}
+                  accessibilityLabel="Study menu"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: studyDropdownOpen }}
                 >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Study</Text>
                   <Ionicons 
@@ -362,6 +422,9 @@ function RootLayoutNav() {
                 <TouchableOpacity 
                   style={styles.navLink}
                   onPress={toggleCommunityDropdown}
+                  accessibilityLabel="Community menu"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: communityDropdownOpen }}
                 >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Community</Text>
                   <Ionicons 
@@ -441,6 +504,9 @@ function RootLayoutNav() {
                 <TouchableOpacity 
                   style={styles.navLink}
                   onPress={togglePreachingDropdown}
+                  accessibilityLabel="Preaching menu"
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: preachingDropdownOpen }}
                 >
                   <Text style={[styles.navLinkText, { color: Colors[colorScheme ?? 'light'].text }]}>Preaching</Text>
                   <Ionicons 
@@ -497,17 +563,23 @@ function RootLayoutNav() {
                   </View>
                 )}
               </View>
-            </View>
+            </View>}
             
+            {/* Header Actions */}
             <View style={styles.headerActions}>
-              <TouchableOpacity style={styles.actionIcon}>
-                <Ionicons name="chatbubble-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
-              </TouchableOpacity>
+              {!isMobile && (
+                <TouchableOpacity style={styles.actionIcon} accessibilityLabel="Messages" accessibilityRole="button">
+                  <Ionicons name="chatbubble-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
+                </TouchableOpacity>
+              )}
               {user ? (
                 <View style={styles.dropdownContainer} ref={userDropdownRef}>
                   <TouchableOpacity 
                     style={[styles.signInButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
                     onPress={toggleUserDropdown}
+                    accessibilityLabel="User menu"
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: userDropdownOpen }}
                   >
                     <Ionicons name="person-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].text} />
                     <Text style={[styles.signInText, styles.profileButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -670,7 +742,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
     zIndex: 10000,
-    position: 'relative',
+    position: 'sticky',
+    top: 0,
+  },
+  headerScrolled: {
+    paddingVertical: 0,
   },
   topNav: {
     flexDirection: 'row',
@@ -681,6 +757,18 @@ const styles = StyleSheet.create({
     minHeight: 64,
     zIndex: 10000,
     position: 'relative',
+  },
+  topNavScrolled: {
+    paddingVertical: 12,
+    minHeight: 56,
+  },
+  topNavMobile: {
+    paddingHorizontal: 16,
+    minHeight: 56,
+  },
+  hamburgerButton: {
+    padding: 8,
+    marginRight: 8,
   },
   logoSection: {
     flexDirection: 'row',
@@ -703,6 +791,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     fontFamily: 'Georgia',
+  },
+  logoTextMobile: {
+    fontSize: 20,
+  },
+  logoImageMobile: {
+    width: 24,
+    height: 24,
   },
   navLinks: {
     flexDirection: 'row',
@@ -808,10 +903,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
     elevation: 3,
     zIndex: 9999,
-    marginTop: 4,
+    marginTop: 8,
   },
   userDropdownMenu: {
     right: 0,

@@ -17,6 +17,8 @@ import { useCalendar } from './CalendarContext';
 import { LiturgicalDay } from '../types';
 import { Celebration } from '../types/celebrations-types';
 import { parseISO, format } from 'date-fns';
+import { useIsMobile, useIsTablet } from '@/hooks/useMediaQuery';
+import { spacing } from '@/constants/Spacing';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
@@ -29,6 +31,8 @@ export default function FeastBanner({
 }: FeastBannerProps) {
   const { colorScheme } = useTheme();
   const { selectedDate, setSelectedDate } = useCalendar();
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
 
@@ -154,54 +158,81 @@ export default function FeastBanner({
           ]} 
         />
       
-      <View style={styles.bannerContent}>
+      <View style={[styles.bannerContent, isMobile && styles.bannerContentMobile, isTablet && styles.bannerContentTablet]}>
         {/* Date/Feast Section with Navigation */}
-        <View style={styles.topRow}>
-          <View style={styles.leftSection}>
+        <View style={[styles.topRow, isMobile && styles.topRowMobile]}>
+          {/* Date Navigation Section */}
+          <View style={[styles.leftSection, isMobile && styles.leftSectionMobile]}>
             <TouchableOpacity
-              style={styles.navButton}
+              style={[styles.navButton, isMobile && styles.navButtonMobile]}
               onPress={navigateToPreviousDay}
               activeOpacity={0.7}
+              accessibilityLabel="Previous day"
+              accessibilityRole="button"
             >
-              <Ionicons name="chevron-back" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              <Ionicons 
+                name="chevron-back" 
+                size={isMobile ? 24 : 20} 
+                color={Colors[colorScheme ?? 'light'].textSecondary} 
+              />
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={styles.dateButton}
+              style={[styles.dateButton, isMobile && styles.dateButtonMobile]}
               onPress={showDatePickerModal}
               activeOpacity={0.8}
+              accessibilityLabel="Select date"
+              accessibilityRole="button"
             >
               <Text style={[
-                styles.dateText, 
+                styles.dateText,
+                isMobile && styles.dateTextMobile,
+                isTablet && styles.dateTextTablet,
                 { color: Colors[colorScheme ?? 'light'].text }
               ]}>
-                {format(parseISO(liturgicalDay.date), 'EEEE, MMM d, yyyy')}
+                {isMobile 
+                  ? format(parseISO(liturgicalDay.date), 'MMM d, yyyy')
+                  : format(parseISO(liturgicalDay.date), 'EEEE, MMM d, yyyy')
+                }
               </Text>
             </TouchableOpacity>
             
             {/* Reset to Today Button - Only show if not on today's date */}
             {format(parseISO(liturgicalDay.date), 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
               <TouchableOpacity
-                style={styles.resetButton}
+                style={[styles.resetButton, isMobile && styles.resetButtonMobile]}
                 onPress={() => setSelectedDate(new Date())}
                 activeOpacity={0.7}
+                accessibilityLabel="Reset to today"
+                accessibilityRole="button"
               >
-                <Ionicons name="arrow-undo" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                <Ionicons 
+                  name="arrow-undo" 
+                  size={isMobile ? 20 : 16} 
+                  color={Colors[colorScheme ?? 'light'].textSecondary} 
+                />
               </TouchableOpacity>
             )}
             
             <TouchableOpacity
-              style={styles.navButton}
+              style={[styles.navButton, isMobile && styles.navButtonMobile]}
               onPress={navigateToNextDay}
               activeOpacity={0.7}
+              accessibilityLabel="Next day"
+              accessibilityRole="button"
             >
-              <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              <Ionicons 
+                name="chevron-forward" 
+                size={isMobile ? 24 : 20} 
+                color={Colors[colorScheme ?? 'light'].textSecondary} 
+              />
             </TouchableOpacity>
           </View>
           
+          {/* Feast Section */}
           {primaryFeast && (
-            <View style={styles.rightSection}>
-              <View style={styles.feastRow}>
+            <View style={[styles.rightSection, isMobile && styles.rightSectionMobile]}>
+              <View style={[styles.feastRow, isMobile && styles.feastRowMobile]}>
                 <View style={[
                   styles.rankContainer, 
                   { 
@@ -222,12 +253,13 @@ export default function FeastBanner({
                   </Text>
                 </View>
                 <View style={styles.feastTextContainer}>
-                  <Text style={[
-                    styles.feastName, 
-                    { color: Colors[colorScheme ?? 'light'].text }
-                  ]} numberOfLines={1}>
-                    {getFeastDisplayName(primaryFeast)}
-                  </Text>
+                <Text style={[
+                  styles.feastName,
+                  isMobile && styles.feastNameMobile,
+                  { color: Colors[colorScheme ?? 'light'].text }
+                ]} numberOfLines={isMobile ? 2 : 1}>
+                  {getFeastDisplayName(primaryFeast)}
+                </Text>
                   {primaryFeast.isDominican && (
                     <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].primary }]}>
                       Dominican
@@ -235,11 +267,17 @@ export default function FeastBanner({
                   )}
                 </View>
                 <TouchableOpacity 
-                  style={styles.infoButton} 
+                  style={[styles.infoButton, isMobile && styles.infoButtonMobile]} 
                   onPress={() => setShowInfoModal(true)}
                   activeOpacity={0.7}
+                  accessibilityLabel="View feast information"
+                  accessibilityRole="button"
                 >
-                  <Ionicons name="information-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  <Ionicons 
+                    name="information-circle-outline" 
+                    size={isMobile ? 24 : 20} 
+                    color={Colors[colorScheme ?? 'light'].textSecondary} 
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -336,11 +374,15 @@ export default function FeastBanner({
             <View style={styles.modalOverlayInner} />
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.infoModalContent} 
+            style={[styles.infoModalContent, isMobile && styles.infoModalContentMobile]} 
             activeOpacity={1} 
             onPress={() => {}} // Prevent dismissal when tapping content
           >
-            <View style={[styles.infoModalContentInner, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <View style={[
+              styles.infoModalContentInner, 
+              { backgroundColor: Colors[colorScheme ?? 'light'].surface },
+              isMobile && { padding: spacing.md }
+            ]}>
             <View style={styles.modalHeader}>
                               <View style={[
                   styles.modalTitleContainer, 
@@ -520,7 +562,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   bannerContent: {
-    padding: 16,
+    padding: spacing.md,
+  },
+  bannerContentMobile: {
+    padding: spacing.md,
+  },
+  bannerContentTablet: {
+    padding: spacing.md,
   },
   seasonColorBar: {
     height: 4,
@@ -530,30 +578,60 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
+  },
+  topRowMobile: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  leftSectionMobile: {
+    flex: 'none',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
   rightSection: {
     alignItems: 'flex-end',
     flex: 1,
   },
+  rightSectionMobile: {
+    flex: 'none',
+    alignItems: 'center',
+    width: '100%',
+  },
   navButton: {
-    padding: 8,
+    padding: spacing.sm,
     borderRadius: 20,
     backgroundColor: 'transparent',
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navButtonMobile: {
+    minWidth: 44,
+    minHeight: 44,
+    padding: spacing.md,
   },
   resetButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    marginLeft: 8,
+    marginLeft: spacing.sm,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+    minHeight: 40,
+  },
+  resetButtonMobile: {
+    minWidth: 44,
+    minHeight: 44,
+    paddingVertical: spacing.md,
   },
   centerSection: {
     flex: 1,
@@ -567,13 +645,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dateButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    marginHorizontal: 8,
+    marginHorizontal: spacing.sm,
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.1)',
+    minHeight: 40,
+  },
+  dateButtonMobile: {
+    minHeight: 44,
+    paddingVertical: spacing.md,
   },
   dateSection: {
     flexDirection: 'row',
@@ -591,6 +674,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     fontFamily: 'Georgia',
+  },
+  dateTextMobile: {
+    fontSize: 16,
+  },
+  dateTextTablet: {
+    fontSize: 15,
   },
   seasonText: {
     fontSize: 14,
@@ -610,6 +699,10 @@ const styles = StyleSheet.create({
   },
   feastRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  feastRowMobile: {
+    flexDirection: 'column',
     alignItems: 'center',
   },
   rankContainer: {
@@ -643,6 +736,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     fontFamily: 'Georgia',
+  },
+  feastNameMobile: {
+    fontSize: 16,
+    textAlign: 'center',
   },
   feastRank: {
     fontSize: 12,
@@ -705,19 +802,34 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   infoButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: spacing.sm,
+    marginLeft: spacing.sm,
     borderRadius: 20,
     backgroundColor: 'transparent',
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoButtonMobile: {
+    minWidth: 44,
+    minHeight: 44,
+    marginLeft: 0,
+    marginTop: spacing.sm,
   },
   infoModalContent: {
     width: '90%',
     maxWidth: 650,
     maxHeight: '80%',
     borderRadius: 16,
-    padding: 20,
+    padding: spacing.lg,
     elevation: 5,
     boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
+  },
+  infoModalContentMobile: {
+    width: '95%',
+    maxHeight: '90%',
+    padding: spacing.md,
   },
   infoModalContentInner: {
     width: '100%',
