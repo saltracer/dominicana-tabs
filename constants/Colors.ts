@@ -11,6 +11,7 @@ export const Colors = {
     
     // Background and surface colors
     background: '#F7F6F2', // Soft grey 247, 246, 242
+    lightBackground: '#FAFAFA',
     surface: '#FFFFFF',
     card: '#FFFFFF',
     offWhiteCard: '#F8F7F3',
@@ -78,6 +79,7 @@ export const Colors = {
     
     // Background and surface colors
     background: '#000000',
+    lightBackground: '#1A1A1A',
     surface: '#201D1D',
     card: '#151515',
     offWhiteCard: '#393939',

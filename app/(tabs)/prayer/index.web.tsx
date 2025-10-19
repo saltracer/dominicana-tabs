@@ -1,5 +1,5 @@
 /**
- * Prayer Landing Page - Web Only
+ * Prayer Landing Page - Web Only (Redesigned)
  * Information about the Dominican prayer pillar with navigation to resources
  */
 
@@ -15,11 +15,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
-import { PrayerStyles } from '../../../styles';
+import { useIsMobile, useIsTablet } from '../../../hooks/useMediaQuery';
+import { spacing } from '../../../constants/Spacing';
 import Footer from '../../../components/Footer.web';
 
 export default function PrayerIndexWeb() {
   const { colorScheme } = useTheme();
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+
+  const resources = [
+    {
+      name: 'Liturgy of the Hours',
+      description: 'Pray the official prayer of the Church throughout the day',
+      icon: 'time',
+      route: '/(tabs)/prayer/liturgy',
+      color: Colors[colorScheme ?? 'light'].primary,
+    },
+    {
+      name: 'Holy Rosary',
+      description: 'Meditate on the mysteries of Christ with the Dominican Rosary',
+      icon: 'flower',
+      route: '/(tabs)/prayer/rosary',
+      color: Colors[colorScheme ?? 'light'].secondary,
+    },
+    {
+      name: 'Devotions',
+      description: 'Explore traditional Catholic prayers and devotional practices',
+      icon: 'heart',
+      route: '/(tabs)/prayer/devotions',
+      color: Colors[colorScheme ?? 'light'].primary,
+    },
+  ];
 
   return (
     <ScrollView 
@@ -27,166 +54,150 @@ export default function PrayerIndexWeb() {
       showsVerticalScrollIndicator={false} 
       contentContainerStyle={{ flexGrow: 1 }}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-          <Ionicons name="heart" size={48} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+      {/* Hero Section */}
+      <View style={[
+        styles.hero,
+        { backgroundColor: Colors[colorScheme ?? 'light'].lightBackground },
+        isMobile && styles.heroMobile
+      ]}>
+        <View style={[styles.heroContent, isMobile && styles.heroContentMobile]}>
+          <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+            <Ionicons name="heart" size={isMobile ? 40 : 56} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+          </View>
+          <Text style={[
+            styles.title,
+            { color: Colors[colorScheme ?? 'light'].text },
+            isMobile && styles.titleMobile
+          ]}>
+            Prayer
+          </Text>
+          <Text style={[
+            styles.subtitle,
+            { color: Colors[colorScheme ?? 'light'].textSecondary },
+            isMobile && styles.subtitleMobile
+          ]}>
+            The Dominican Pillar of Spiritual Life
+          </Text>
         </View>
-        <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-          Prayer
-        </Text>
-        <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-          The Dominican Pillar of Spiritual Life
-        </Text>
       </View>
 
-      {/* Content Section */}
-      <View style={styles.contentSection}>
-        <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-          Prayer is the lifeblood of Dominican life. From the very beginning, Saint Dominic exemplified 
-          the centrality of prayer in the life of a preacher. He was known to spend entire nights in prayer, 
-          interceding for sinners and drawing strength from communion with God. His deep prayer life became 
-          the wellspring from which his powerful preaching flowed.
-        </Text>
-        
-        <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-          The Dominican tradition of prayer is rich and diverse, encompassing both liturgical and personal 
-          devotions. The Liturgy of the Hours forms the backbone of our communal prayer, sanctifying each 
-          moment of the day. The Holy Rosary, entrusted to Saint Dominic by Our Lady herself, remains a 
-          treasured meditation on the mysteries of Christ's life, death, and resurrection.
-        </Text>
+      {/* Main Content Container */}
+      <View style={[
+        styles.mainContent,
+        isMobile && styles.mainContentMobile
+      ]}>
+        {/* Introduction Section */}
+        <View style={[styles.introSection, isMobile && styles.introSectionMobile]}>
+          <Text style={[
+            styles.introText,
+            { color: Colors[colorScheme ?? 'light'].text },
+            isMobile && styles.introTextMobile
+          ]}>
+            Prayer is the lifeblood of Dominican life. From the very beginning, Saint Dominic exemplified 
+            the centrality of prayer in the life of a preacher. His deep prayer life became the wellspring 
+            from which his powerful preaching flowed.
+          </Text>
+          
+          <Text style={[
+            styles.bodyText,
+            { color: Colors[colorScheme ?? 'light'].text },
+            isMobile && styles.bodyTextMobile
+          ]}>
+            The Dominican tradition of prayer is rich and diverse, encompassing both liturgical and personal 
+            devotions. The Liturgy of the Hours forms the backbone of our communal prayer, sanctifying each 
+            moment of the day. The Holy Rosary, entrusted to Saint Dominic by Our Lady herself, remains a 
+            treasured meditation on the mysteries of Christ's life.
+          </Text>
+        </View>
 
-        <Text style={[styles.bodyText, { color: Colors[colorScheme ?? 'light'].text }]}>
-          Through faithful prayer, we open ourselves to receive grace, deepen our relationship with God, 
-          and prepare our hearts to share the Gospel with others. Prayer is not separate from our preaching—
-          it is the very foundation that makes authentic proclamation of truth possible.
-        </Text>
-      </View>
+        {/* Quote Section */}
+        <View style={[
+          styles.quoteSection,
+          { 
+            backgroundColor: Colors[colorScheme ?? 'light'].card,
+            borderLeftColor: Colors[colorScheme ?? 'light'].primary,
+          },
+          isMobile && styles.quoteSectionMobile
+        ]}>
+          <Ionicons name="chatbox-ellipses-outline" size={32} color={Colors[colorScheme ?? 'light'].primary} style={styles.quoteIcon} />
+          <Text style={[
+            styles.quoteText,
+            { color: Colors[colorScheme ?? 'light'].text },
+            isMobile && styles.quoteTextMobile
+          ]}>
+            "Speak with God before you speak about God."
+          </Text>
+          <Text style={[
+            styles.quoteAttribution,
+            { color: Colors[colorScheme ?? 'light'].textSecondary }
+          ]}>
+            — Dominican Wisdom
+          </Text>
+        </View>
 
-      {/* Quote Section */}
-      <View style={[styles.quoteCard, { 
-        backgroundColor: Colors[colorScheme ?? 'light'].card,
-        borderLeftColor: Colors[colorScheme ?? 'light'].primary,
-      }]}>
-        <Ionicons name="chatbox-ellipses" size={24} color={Colors[colorScheme ?? 'light'].primary} style={styles.quoteIcon} />
-        <Text style={[styles.quoteText, { color: Colors[colorScheme ?? 'light'].text }]}>
-          "Speak with God before you speak about God."
-        </Text>
-        <Text style={[styles.quoteAttribution, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-          — Dominican Wisdom
-        </Text>
-      </View>
-
-      {/* Resources Section */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-          Prayer Resources
-        </Text>
-        
-        <TouchableOpacity
-          style={[
-            styles.resourceCard,
-            { 
-              backgroundColor: Colors[colorScheme ?? 'light'].card,
-              borderColor: Colors[colorScheme ?? 'light'].border,
-            }
-          ]}
-          onPress={() => router.push('/(tabs)/prayer/liturgy')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.resourceContent}>
-            <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-              <Ionicons 
-                name="time" 
-                size={24} 
-                color={Colors[colorScheme ?? 'light'].background}
-              />
-            </View>
-            <View style={styles.resourceText}>
-              <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Liturgy of the Hours
-              </Text>
-              <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Pray the official prayer of the Church throughout the day
-              </Text>
-            </View>
-            <Ionicons 
-              name="chevron-forward" 
-              size={20} 
-              color={Colors[colorScheme ?? 'light'].textSecondary}
-            />
+        {/* Resources Grid */}
+        <View style={styles.resourcesSection}>
+          <Text style={[
+            styles.sectionTitle,
+            { color: Colors[colorScheme ?? 'light'].text },
+            isMobile && styles.sectionTitleMobile
+          ]}>
+            Explore Prayer Resources
+          </Text>
+          
+          <View style={[
+            styles.resourcesGrid,
+            isMobile && styles.resourcesGridMobile,
+            isTablet && !isMobile && styles.resourcesGridTablet
+          ]}>
+            {resources.map((resource, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.resourceCard,
+                  { 
+                    backgroundColor: Colors[colorScheme ?? 'light'].card,
+                    borderColor: Colors[colorScheme ?? 'light'].border,
+                  },
+                  isMobile && styles.resourceCardMobile
+                ]}
+                onPress={() => router.push(resource.route as any)}
+                activeOpacity={0.7}
+                // @ts-ignore - web only
+                className="resource-card"
+              >
+                <View style={[styles.resourceIconLarge, { backgroundColor: resource.color }]}>
+                  <Ionicons 
+                    name={resource.icon as any} 
+                    size={32} 
+                    color={Colors[colorScheme ?? 'light'].dominicanWhite}
+                  />
+                </View>
+                <Text style={[
+                  styles.resourceName,
+                  { color: Colors[colorScheme ?? 'light'].text },
+                  isMobile && styles.resourceNameMobile
+                ]}>
+                  {resource.name}
+                </Text>
+                <Text style={[
+                  styles.resourceDescription,
+                  { color: Colors[colorScheme ?? 'light'].textSecondary },
+                  isMobile && styles.resourceDescriptionMobile
+                ]}>
+                  {resource.description}
+                </Text>
+                <View style={styles.resourceArrow}>
+                  <Ionicons 
+                    name="arrow-forward" 
+                    size={20} 
+                    color={Colors[colorScheme ?? 'light'].primary}
+                  />
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.resourceCard,
-            { 
-              backgroundColor: Colors[colorScheme ?? 'light'].card,
-              borderColor: Colors[colorScheme ?? 'light'].border,
-            }
-          ]}
-          onPress={() => router.push('/(tabs)/prayer/rosary')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.resourceContent}>
-            <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].secondary }]}>
-              <Ionicons 
-                name="flower" 
-                size={24} 
-                color={Colors[colorScheme ?? 'light'].background}
-              />
-            </View>
-            <View style={styles.resourceText}>
-              <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Holy Rosary
-              </Text>
-              <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Meditate on the mysteries of Christ with the Dominican Rosary
-              </Text>
-            </View>
-            <Ionicons 
-              name="chevron-forward" 
-              size={20} 
-              color={Colors[colorScheme ?? 'light'].textSecondary}
-            />
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.resourceCard,
-            { 
-              backgroundColor: Colors[colorScheme ?? 'light'].card,
-              borderColor: Colors[colorScheme ?? 'light'].border,
-            }
-          ]}
-          onPress={() => router.push('/(tabs)/prayer/devotions')}
-          activeOpacity={0.7}
-        >
-          <View style={styles.resourceContent}>
-            <View style={[styles.resourceIcon, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-              <Ionicons 
-                name="heart" 
-                size={24} 
-                color={Colors[colorScheme ?? 'light'].background}
-              />
-            </View>
-            <View style={styles.resourceText}>
-              <Text style={[styles.resourceName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Devotions
-              </Text>
-              <Text style={[styles.resourceDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Explore traditional Catholic prayers and devotional practices
-              </Text>
-            </View>
-            <Ionicons 
-              name="chevron-forward" 
-              size={20} 
-              color={Colors[colorScheme ?? 'light'].textSecondary}
-            />
-          </View>
-        </TouchableOpacity>
+        </View>
       </View>
 
       <Footer />
@@ -198,125 +209,216 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+  
+  // Hero Section
+  hero: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  heroMobile: {
+    paddingVertical: spacing.xl, // 32px
+  },
+  heroContent: {
     alignItems: 'center',
+    paddingVertical: spacing.xxl + spacing.md, // 64px
+    maxWidth: 1200,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: spacing.xl, // 32px
+  },
+  heroContentMobile: {
+    paddingVertical: spacing.xl, // 32px
+    paddingHorizontal: spacing.lg, // 24px
   },
   iconCircle: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.lg, // 24px
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowRadius: 12,
   },
   title: {
-    fontSize: 36,
+    fontSize: 48,
     fontWeight: '700',
     fontFamily: 'Georgia',
-    marginBottom: 8,
+    marginBottom: spacing.sm, // 8px
     textAlign: 'center',
+  },
+  titleMobile: {
+    fontSize: 36,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'Georgia',
     textAlign: 'center',
+    lineHeight: 28,
+  },
+  subtitleMobile: {
+    fontSize: 18,
     lineHeight: 26,
   },
-  contentSection: {
-    paddingHorizontal: 32,
-    paddingVertical: 24,
-    maxWidth: 800,
+  
+  // Main Content
+  mainContent: {
+    maxWidth: 1200,
+    width: '100%',
     alignSelf: 'center',
+    paddingHorizontal: spacing.xl, // 32px
+    paddingVertical: spacing.xxl, // 48px
+  },
+  mainContentMobile: {
+    paddingHorizontal: spacing.lg, // 24px
+    paddingVertical: spacing.xl, // 32px
+  },
+  
+  // Introduction
+  introSection: {
+    marginBottom: spacing.xxl, // 48px
+  },
+  introSectionMobile: {
+    marginBottom: spacing.xl, // 32px
+  },
+  introText: {
+    fontSize: 20,
+    lineHeight: 32,
+    fontFamily: 'Georgia',
+    marginBottom: spacing.lg, // 24px
+    fontWeight: '500',
+  },
+  introTextMobile: {
+    fontSize: 18,
+    lineHeight: 28,
   },
   bodyText: {
     fontSize: 16,
     lineHeight: 26,
     fontFamily: 'Georgia',
-    marginBottom: 20,
-    textAlign: 'justify',
   },
-  quoteCard: {
-    marginHorizontal: 32,
-    marginVertical: 24,
-    padding: 24,
+  bodyTextMobile: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  
+  // Quote Section
+  quoteSection: {
+    padding: spacing.xl, // 32px
+    borderRadius: 16,
+    borderLeftWidth: 6,
+    marginBottom: spacing.xxl + spacing.md, // 64px
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+  },
+  quoteSectionMobile: {
+    padding: spacing.lg, // 24px
     borderRadius: 12,
-    borderLeftWidth: 4,
-    maxWidth: 800,
-    alignSelf: 'center',
+    marginBottom: spacing.xl, // 32px
+  },
+  quoteIcon: {
+    marginBottom: spacing.md, // 16px
+  },
+  quoteText: {
+    fontSize: 24,
+    lineHeight: 36,
+    fontFamily: 'Georgia',
+    fontStyle: 'italic',
+    marginBottom: spacing.md, // 16px
+  },
+  quoteTextMobile: {
+    fontSize: 20,
+    lineHeight: 30,
+  },
+  quoteAttribution: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    textAlign: 'right',
+  },
+  
+  // Resources Section
+  resourcesSection: {
+    marginBottom: spacing.xl, // 32px
+  },
+  sectionTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: spacing.xl, // 32px
+    textAlign: 'center',
+  },
+  sectionTitleMobile: {
+    fontSize: 28,
+    marginBottom: spacing.lg, // 24px
+  },
+  resourcesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -spacing.sm, // -8px (for gap)
+  },
+  resourcesGridMobile: {
+    flexDirection: 'column',
+    marginHorizontal: 0,
+  },
+  resourcesGridTablet: {
+    justifyContent: 'center',
+  },
+  resourceCard: {
+    width: '48%',
+    marginHorizontal: spacing.sm, // 8px
+    marginBottom: spacing.md, // 16px
+    padding: spacing.xl, // 32px
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    alignItems: 'center',
+  },
+  resourceCardMobile: {
+    width: '100%',
+    marginHorizontal: 0,
+    padding: spacing.lg, // 24px
+  },
+  resourceIconLarge: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg, // 24px
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
   },
-  quoteIcon: {
-    marginBottom: 12,
-  },
-  quoteText: {
-    fontSize: 18,
-    lineHeight: 28,
-    fontFamily: 'Georgia',
-    fontStyle: 'italic',
-    marginBottom: 12,
-  },
-  quoteAttribution: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    textAlign: 'right',
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    marginBottom: 20,
-    paddingHorizontal: 32,
-  },
-  resourceCard: {
-    marginHorizontal: 32,
-    marginBottom: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    maxWidth: 800,
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-  },
-  resourceContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-  },
-  resourceIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  resourceText: {
-    flex: 1,
-  },
   resourceName: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    marginBottom: spacing.sm, // 8px
+    textAlign: 'center',
+  },
+  resourceNameMobile: {
+    fontSize: 20,
   },
   resourceDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+    marginBottom: spacing.md, // 16px
+  },
+  resourceDescriptionMobile: {
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: 'Georgia',
+  },
+  resourceArrow: {
+    marginTop: 'auto',
   },
 });
-

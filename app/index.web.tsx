@@ -114,6 +114,7 @@ export default function Index() {
       <View style={Object.assign(
         {},
         styles.pillarsSection,
+        { backgroundColor: Colors[colorScheme ?? 'light'].lightBackground },
         isMobile ? styles.pillarsSectionMobile : {}
       )}>
         <Text style={Object.assign(
@@ -285,8 +286,7 @@ const styles = StyleSheet.create({
   pillarsSection: {
     paddingVertical: spacing.xxl + spacing.xl, // 80px
     paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    alignItems: 'center'
   },
   pillarsSectionMobile: {
     paddingVertical: spacing.xxl - 8, // 40px
