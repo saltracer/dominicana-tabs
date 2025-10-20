@@ -236,8 +236,14 @@ const DayCell: React.FC<DayCellProps> = ({
       {hasFeasts && size !== 'small' && (size === 'medium' || size === 'large' || size === 'xlarge') && !!dayContent?.primaryFeast && (
         <View style={styles.centerContent}>
           <Text
-            style={[styles.feastName, { color: colors.textColor }]}
-            numberOfLines={size === 'medium' ? 1 : 2}
+            style={[
+              styles.feastName,
+              size === 'medium' && styles.feastNameMedium,
+              size === 'large' && styles.feastNameLarge,
+              size === 'xlarge' && styles.feastNameXLarge,
+              { color: colors.textColor }
+            ]}
+            numberOfLines={size === 'medium' ? 2 : size === 'large' ? 3 : 4}
           >
             {dayContent.primaryFeast.name}
           </Text>
@@ -384,11 +390,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
   feastName: {
-    fontSize: 11,
     fontFamily: 'Georgia',
     textAlign: 'center',
-    marginTop: 6,
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
+    lineHeight: 14,
+  },
+  feastNameMedium: {
+    fontSize: 9,
+    fontWeight: '500',
+  },
+  feastNameLarge: {
+    fontSize: 11,
+    fontWeight: '500',
+    lineHeight: 15,
+  },
+  feastNameXLarge: {
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 17,
   },
 });
 
