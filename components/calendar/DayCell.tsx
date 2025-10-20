@@ -123,8 +123,8 @@ const DayCell: React.FC<DayCellProps> = ({
       borderStyle: 'solid',
       // borderRadius: 8,
       // borderWidth: 1,
-      marginTop: -7,
-      marginBottom: -7,
+      // marginTop: -7,
+      // marginBottom: -7,
       overflow: 'hidden',
       borderWidth: 1,
       backgroundColor: colors.backgroundColor,
@@ -169,7 +169,14 @@ const DayCell: React.FC<DayCellProps> = ({
               <View
                 style={[
                   styles.feastDot,
-                  { backgroundColor: colors.feastIndicatorColor },
+                  { 
+                    backgroundColor: colors.feastIndicatorColor,
+                    borderWidth: 1,
+                    borderColor: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
+                                 colors.feastIndicatorColor?.toLowerCase() === 'white' 
+                      ? '#000000' 
+                      : colors.feastIndicatorColor,
+                  },
                 ]}
               />
               {dayContent.isDominican && (
@@ -186,7 +193,13 @@ const DayCell: React.FC<DayCellProps> = ({
                 style={[
                   styles.rankBadge,
                   size === 'xlarge' ? styles.rankBadgeLarge : {},
-                  { backgroundColor: colors.feastIndicatorColor },
+                  { 
+                    backgroundColor: colors.feastIndicatorColor,
+                    borderColor: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
+                                 colors.feastIndicatorColor?.toLowerCase() === 'white' 
+                      ? '#000000' 
+                      : 'rgba(255,255,255,0.3)',
+                  },
                 ]}
               >
                 <Text
