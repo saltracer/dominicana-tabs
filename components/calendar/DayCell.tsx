@@ -129,7 +129,6 @@ const DayCell: React.FC<DayCellProps> = ({
       overflow: 'hidden',
       // borderWidth: 1,
       backgroundColor: colors.backgroundColor,
-      // ...(containerSize ? containerSize : {}),
     }}>
     <Pressable
       style={({ pressed, hovered }: any) => [
@@ -157,107 +156,92 @@ const DayCell: React.FC<DayCellProps> = ({
       ]}
       onPress={() => onPress?.(date)}
     >
-      {/* Day Number - Top Left */}
-      <Text style={[styles.dayNumber, dayNumberSize, styles.dayNumberPosition, { color: colors.textColor }]}>
-        {date?.day}
-      </Text>
-
-      {/* Feast Indicators */}
-      {hasFeasts && (
-        <>
-          {size === 'small' ? (
-            // Small: Just a colored dot
-            <View style={styles.smallIndicators}>
-              <View
-                style={[
-                  styles.feastDot,
-                  { 
-                    backgroundColor: colors.feastIndicatorColor,
-                    borderWidth: 1,
-                    borderColor: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
-                                 colors.feastIndicatorColor?.toLowerCase() === 'white' 
-                      ? '#000000' 
-                      : colors.feastIndicatorColor,
-                  },
-                ]}
-              />
-              {dayContent.isDominican && (
-                <Text style={[styles.dominicanSymbolSmall, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  ⚫
-                </Text>
-              )}
-            </View>
-          ) : (
-            // Medium/Large/XLarge: Badges and indicators
-            <View style={styles.feastIndicators}>
-              {/* Rank Badge */}
-              <View
-                style={[
-                  styles.rankBadge,
-                  size === 'xlarge' ? styles.rankBadgeLarge : {},
-                  { 
-                    backgroundColor: colors.feastIndicatorColor,
-                    borderColor: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
-                                 colors.feastIndicatorColor?.toLowerCase() === 'white' 
-                      ? '#000000' 
-                      : 'rgba(255,255,255,0.3)',
-                    marginRight: 3,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.rankText,
-                    size === 'xlarge' ? styles.rankTextLarge : {},
-                  ]}
-                >
-                  {getFeastRankLetter()}
-                </Text>
-              </View>
-
-              {/* Dominican Indicator */}
-              {dayContent.isDominican && (
-                <Text
-                  style={[
-                    styles.dominicanSymbol,
-                    { color: isSelected ? '#FFFFFF' : Colors[colorScheme ?? 'light'].primary, marginRight: 3 },
-                  ]}
-                >
-                  ⚫
-                </Text>
-              )}
-
-              {/* Multiple Feasts Indicator */}
-              {dayContent.feastCount > 1 && (
-                <View
-                  style={[
-                    styles.multipleFeastsIndicator,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].surface, marginLeft: 3 },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.multipleFeastsText,
-                      { color: colors.textColor },
-                    ]}
-                  >
-                    +{dayContent.feastCount - 1}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {/* Feast Name (only on xlarge) */}
-          {showFeastName && (size === 'xlarge' || size === 'large' || size === 'medium' || size === 'small') && !!dayContent?.primaryFeast && (
-            <Text
-              style={[styles.feastName, { color: colors.textColor }]}
-              numberOfLines={1}
-            >
-              {dayContent.primaryFeast.name}
+      {/* Day Number - Top Left with Dominican Indicator next to it */}
+      <View style={styles.topLeftSection}>
+        <Text style={[styles.dayNumber, dayNumberSize, { color: colors.textColor }]}>
+          {date?.day}
+        </Text>
+        
+        {/* Dominican Indicator - next to day number */}
+        {hasFeasts && dayContent.isDominican && (
+          <View
+            style={[
+              styles.dominicanBadge,
+              { backgroundColor: Colors[colorScheme ?? 'light'].dominicanBlack },
+            ]}
+          >
+            <Text style={[styles.dominicanBadgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              OP
             </Text>
-          )}
-        </>
+          </View>
+        )}
+      </View>
+
+      {/* Feast Level Indicator - Top Right */}
+      {hasFeasts && (
+        <View style={styles.topRightSection}>
+          <View
+            style={[
+              styles.rankBadge,
+              size === 'xlarge' ? styles.rankBadgeLarge : {},
+              { 
+                backgroundColor: colors.feastIndicatorColor,
+                borderColor: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
+                             colors.feastIndicatorColor?.toLowerCase() === 'white' 
+                  ? '#000000' 
+                  : 'rgba(255,255,255,0.3)',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.rankText,
+                size === 'xlarge' ? styles.rankTextLarge : {},
+                {
+                  color: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
+                         colors.feastIndicatorColor?.toLowerCase() === 'white'
+                    ? '#000000'
+                    : '#FFFFFF',
+                },
+              ]}
+            >
+              {getFeastRankLetter()}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Multiple Feasts Indicator - Bottom Right */}
+      {hasFeasts && dayContent.feastCount > 1 && (
+        <View style={styles.bottomRightSection}>
+          <View
+            style={[
+              styles.multipleFeastsIndicator,
+              { backgroundColor: Colors[colorScheme ?? 'light'].surface },
+            ]}
+          >
+            <Text
+              style={[
+                styles.multipleFeastsText,
+                { color: colors.textColor },
+              ]}
+            >
+              +{dayContent.feastCount - 1}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Center Content - Feast Name */}
+      {hasFeasts && size !== 'small' && (size === 'medium' || size === 'large' || size === 'xlarge') && !!dayContent?.primaryFeast && (
+        <View style={styles.centerContent}>
+          <Text
+            style={[styles.feastName, { color: colors.textColor }]}
+            numberOfLines={size === 'medium' ? 1 : 2}
+          >
+            {dayContent.primaryFeast.name}
+          </Text>
+        </View>
       )}
     </Pressable>
     </View>
@@ -291,14 +275,33 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
   },
+  topLeftSection: {
+    position: 'absolute',
+    // top: 4,
+    left: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  topRightSection: {
+    position: 'absolute',
+    top: 6,
+    right: 4,
+  },
+  bottomRightSection: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+  },
+  centerContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 16,
+  },
   dayNumber: {
     fontFamily: 'Georgia',
     fontWeight: '600',
-  },
-  dayNumberPosition: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
+    marginRight: 4,
   },
   dayNumberSmall: {
     fontSize: 16,
@@ -333,7 +336,7 @@ const styles = StyleSheet.create({
   rankBadge: {
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: 4,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
@@ -342,16 +345,28 @@ const styles = StyleSheet.create({
   rankBadgeLarge: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 5,
   },
   rankText: {
     fontSize: 9,
     fontWeight: '700',
-    color: '#FFFFFF',
     fontFamily: 'Georgia',
   },
   rankTextLarge: {
     fontSize: 11,
+  },
+  dominicanBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    top: 2
+  },
+  dominicanBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
   },
   dominicanSymbol: {
     fontSize: 12,
@@ -361,19 +376,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    borderColor: 'rgba(0,0,0,0.4)',
   },
   multipleFeastsText: {
-    fontSize: 8,
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: 'Georgia',
   },
   feastName: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Georgia',
     textAlign: 'center',
-    marginTop: 4,
-    paddingHorizontal: 2,
+    marginTop: 6,
+    paddingHorizontal: 4,
   },
 });
 
