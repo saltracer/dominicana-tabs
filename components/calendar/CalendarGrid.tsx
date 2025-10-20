@@ -25,18 +25,19 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   const colors = Colors[colorScheme ?? 'light'];
 
   return (
-    <Calendar
-      current={currentDate}
-      onDayPress={onDayPress}
-      markedDates={markedDates}
-      dayComponent={(props) => (
-        <DayCell
-          {...props}
-          size={cellSize}
-          showFeastName={showFeastNames}
-        />
-      )}
-      theme={{
+    <View style={[styles.gridWrapper, { borderColor: colors.border }]}>
+      <Calendar
+        current={currentDate}
+        onDayPress={onDayPress}
+        markedDates={markedDates}
+        dayComponent={(props) => (
+          <DayCell
+            {...props}
+            size={cellSize}
+            showFeastName={showFeastNames}
+          />
+        )}
+        theme={{
         backgroundColor: colors.card,
         calendarBackground: colors.card,
         textSectionTitleColor: colors.text,
@@ -56,18 +57,31 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         textDayFontSize: 16,
         textMonthFontSize: 18,
         textDayHeaderFontSize: 14,
-      }}
+        'stylesheet.calendar.main': {
+          week: {
+            marginTop: 0,
+            marginBottom: 0,
+            paddingTop: 0,
+            paddingBottom: 0,
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+          },
+        },
+      } as any}
       minDate={format(subDays(new Date(), 1000), 'yyyy-MM-dd')}
       maxDate={format(addDays(new Date(), 1000), 'yyyy-MM-dd')}
       key={colorScheme}
       enableSwipeMonths={true}
-    />
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  gridWrapper: {
+    // borderWidth: 1,
+    // borderLeftWidth: 1,
+    // borderTopWidth: 1,
   },
 });
 

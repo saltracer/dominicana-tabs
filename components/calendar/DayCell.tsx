@@ -109,6 +109,26 @@ const DayCell: React.FC<DayCellProps> = ({
   }[size];
 
   return (
+    <View style={{
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      width: '100%',
+      height: '100%',
+      borderRightWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: Colors[colorScheme ?? 'light'].border,
+      borderStyle: 'solid',
+      // borderRadius: 8,
+      // borderWidth: 1,
+      marginTop: -7,
+      marginBottom: -7,
+      overflow: 'hidden',
+      borderWidth: 1,
+      backgroundColor: colors.backgroundColor,
+    }}>
     <Pressable
       style={({ pressed, hovered }: any) => [
         styles.container,
@@ -224,6 +244,7 @@ const DayCell: React.FC<DayCellProps> = ({
         </>
       )}
     </Pressable>
+    </View>
   );
 };
 
@@ -232,7 +253,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingTop: 4,
-    borderRadius: 8,
     ...(Platform.OS === 'web' && {
       transition: 'all 0.15s ease-in-out',
       cursor: 'pointer',
