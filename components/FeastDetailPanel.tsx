@@ -92,7 +92,7 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
         style={styles.panelContent}
         showsVerticalScrollIndicator={false}
       >
-        {liturgicalDay.feasts.length > 0 ? (
+        {!!liturgicalDay.feasts && liturgicalDay.feasts.length > 0 ? (
           liturgicalDay.feasts.map((feast, index) => (
             <View key={index} style={styles.feastContainer}>
               <SaintContentRenderer 
@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
   seasonHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 4,
   },
   seasonName: {
@@ -188,7 +187,6 @@ const styles = StyleSheet.create({
   feastCountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     marginTop: 4,
   },
   feastCount: {

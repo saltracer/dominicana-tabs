@@ -36,7 +36,7 @@ const SeasonBanner: React.FC<SeasonBannerProps> = ({
       <Text style={[compact ? styles.compactSeasonName : styles.seasonName, { color: textColor }]}>
         {seasonName}
       </Text>
-      {weekString && !compact && (
+      {!!weekString && !compact && (
         <Text style={[styles.weekString, { color: textColor }]}>{weekString}</Text>
       )}
     </View>

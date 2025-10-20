@@ -114,7 +114,6 @@ const DayCell: React.FC<DayCellProps> = ({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 4,
       width: '100%',
       height: '100%',
       aspectRatio: 1,

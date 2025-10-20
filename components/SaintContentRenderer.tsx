@@ -146,7 +146,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
              liturgicalDay ? formatLiturgicalDay(liturgicalDay) : 
              'Feast Day: Unknown'}
           </Text>
-          {saint.birth_year && saint.death_year && (
+          {!!saint.birth_year && !!saint.death_year && (
             <Text style={[styles.saintDetailYears, { color: colors.textMuted }]}>
               {saint.birth_year} - {saint.death_year}
             </Text>
@@ -168,7 +168,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
                 </Text>
               </View>
             )}
-            {saint.color && (
+            {!!saint.color && (
               <View style={[
                 styles.colorBadge, 
                 { 
@@ -192,7 +192,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
           </View>
         </View>
         {/* Expand/Collapse Icon */}
-        { saint.feast_day && (
+        { !!saint.feast_day && (
         <Ionicons 
           name={isExpanded ? "chevron-up" : "chevron-down"} 
           size={24} 
@@ -202,7 +202,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
       </TouchableOpacity>
 
       {/* Expandable Content */}
-      { saint.feast_day && (
+      { !!saint.feast_day && (
       <Animated.View 
         style={[
           styles.expandableContent,
@@ -216,7 +216,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
         ]}
       >
         {/* Biography Section */}
-        {saint.short_bio && (
+        {!!saint.short_bio && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Biography
@@ -228,7 +228,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
         )}
 
         {/* Patronage Section */}
-        {saint.patronage && (
+        {!!saint.patronage && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Patronage
@@ -240,25 +240,27 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
         )}
 
         {/* Detailed Biography Section */}
-        {saint.biography && Array.isArray(saint.biography) && saint.biography.length > 0 && (
+        {!!saint.biography && Array.isArray(saint.biography) && saint.biography.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Detailed Biography
             </Text>
-            {saint.biography.map((paragraph: string, index: number) => (
-              <Text key={index} style={[
-                styles.sectionContent, 
-                styles.biographyParagraph,
-                { color: colors.textSecondary }
-              ]}>
-                {paragraph}
-              </Text>
-            ))}
+            <>
+              {saint.biography.map((paragraph: string, index: number) => (
+                <Text key={index} style={[
+                  styles.sectionContent, 
+                  styles.biographyParagraph,
+                  { color: colors.textSecondary }
+                ]}>
+                  {paragraph}
+                </Text>
+              ))}
+            </>
           </View>
         )}
 
         {/* Prayer Section */}
-        {saint.prayers && (
+        {!!saint.prayers && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Prayer
@@ -270,34 +272,38 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
         )}
 
         {/* Quotes Section */}
-        {saint.quotes && Array.isArray(saint.quotes) && saint.quotes.length > 0 && (
+        {!!saint.quotes && Array.isArray(saint.quotes) && saint.quotes.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Quotes
             </Text>
-            {saint.quotes.map((quote: string, index: number) => (
-              <View key={index} style={[styles.quoteContainer, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.quoteText, { color: colors.textSecondary }]}>
-                  "{quote}"
-                </Text>
-              </View>
-            ))}
+            <>
+              {saint.quotes.map((quote: string, index: number) => (
+                <View key={index} style={[styles.quoteContainer, { backgroundColor: colors.surface }]}>
+                  <Text style={[styles.quoteText, { color: colors.textSecondary }]}>
+                    "{quote}"
+                  </Text>
+                </View>
+              ))}
+            </>
           </View>
         )}
 
         {/* Books Section */}
-        {saint.books && Array.isArray(saint.books) && saint.books.length > 0 && (
+        {!!saint.books && Array.isArray(saint.books) && saint.books.length > 0 && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               Writings & Books
             </Text>
-            {saint.books.map((book: string, index: number) => (
-              <View key={index} style={[styles.bookContainer, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.bookTitle, { color: colors.text }]}>
-                  {book.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                </Text>
-              </View>
-            ))}
+            <>
+              {saint.books.map((book: string, index: number) => (
+                <View key={index} style={[styles.bookContainer, { backgroundColor: colors.surface }]}>
+                  <Text style={[styles.bookTitle, { color: colors.text }]}>
+                    {book.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                  </Text>
+                </View>
+              ))}
+            </>
           </View>
         )}
 
@@ -307,7 +313,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
             Additional Information
           </Text>
           <View style={styles.infoGrid}>
-            {saint.birth_place && (
+            {!!saint.birth_place && (
               <View style={styles.infoItem}>
                 <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
                   Birth Place
@@ -317,7 +323,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
                 </Text>
               </View>
             )}
-            {saint.death_place && (
+            {!!saint.death_place && (
               <View style={styles.infoItem}>
                 <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
                   Death Place
@@ -327,7 +333,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
                 </Text>
               </View>
             )}
-            {saint.canonization_date && (
+            {!!saint.canonization_date && (
               <View style={styles.infoItem}>
                 <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
                   Canonized
@@ -337,7 +343,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
                 </Text>
               </View>
             )}
-            {saint.rank && (
+            {!!saint.rank && (
               <View style={styles.infoItem}>
                 <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
                   Rank
