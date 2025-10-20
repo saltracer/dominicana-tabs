@@ -4,314 +4,244 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Dimensions,
   Pressable,
   Animated,
-  Platform,
+  Modal,
+  useWindowDimensions,
+  PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar } from 'react-native-calendars';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { useCalendar } from '../../../components/CalendarContext';
-import FeastBanner from '../../../components/FeastBanner';
 import FeastDetailPanel from '../../../components/FeastDetailPanel';
 import CommunityNavigation from '../../../components/CommunityNavigation';
 import LiturgicalCalendarService from '../../../services/LiturgicalCalendar';
-import { LiturgicalDay } from '../../../types';
-import { parseISO, format, subDays, addDays } from 'date-fns';
-import { CommunityStyles, getPlatformStyles } from '../../../styles';
+import { parseISO, format } from 'date-fns';
 
-const { width: screenWidth } = Dimensions.get('window');
+// New calendar components
+import SearchBar from '../../../components/calendar/SearchBar';
+import FilterPanel, { FeastFilter } from '../../../components/calendar/FilterPanel';
+import SeasonBanner from '../../../components/calendar/SeasonBanner';
+import ViewModeToggle, { ViewMode } from '../../../components/calendar/ViewModeToggle';
+import CalendarGrid from '../../../components/calendar/CalendarGrid';
+import WeekView from '../../../components/calendar/WeekView';
+import ListView from '../../../components/calendar/ListView';
 
-// Custom Day Component for rich content display
-interface CustomDayProps {
-  date?: {
-    dateString: string;
-    day: number;
-  };
-  state?: string;
-  marking?: any;
-  onPress?: (date?: any) => void;
-}
-
-const CustomDayComponent = ({ date, state, marking, onPress }: CustomDayProps) => {
+export default function CalendarScreenNative() {
   const { colorScheme } = useTheme();
-  const [dayContent, setDayContent] = useState<any>(null);
-  
-  useEffect(() => {
-    if (date?.dateString) {
-      const calendarService = LiturgicalCalendarService.getInstance();
-      const selectedDate = parseISO(date.dateString);
-      const liturgicalDay = calendarService.getLiturgicalDay(selectedDate);
-      
-      if (liturgicalDay.feasts.length > 0) {
-        // Get the highest rank feast for this date
-        const primaryFeast = liturgicalDay.feasts.reduce((highest, current) => {
-          const rankOrder: { [key: string]: number } = { 'Solemnity': 1, 'Feast': 2, 'Memorial': 3, 'Optional Memorial': 4, 'Ferial': 5 };
-          const currentRank = rankOrder[current.rank] || 5;
-          const highestRank = rankOrder[highest.rank] || 5;
-          return currentRank < highestRank ? current : highest;
-        }, liturgicalDay.feasts[0]);
-        
-        const hasDominicanFeast = liturgicalDay.feasts.some(feast => feast.isDominican);
-        
-        setDayContent({
-          primaryFeast,
-          hasDominicanFeast,
-          feastCount: liturgicalDay.feasts.length,
-          isDominican: hasDominicanFeast
-        });
-      }
-    }
-  }, [date?.dateString]);
-
-  const isToday = date?.dateString === format(new Date(), 'yyyy-MM-dd');
-  const isSelected = marking?.selected;
-  const hasFeasts = dayContent && dayContent.feastCount > 0;
-  
-  // Memoize color calculations to avoid recalculation on every render
-  const colors = useMemo(() => {
-    const currentColors = Colors[colorScheme ?? 'light'];
-    
-    return {
-      backgroundColor: (() => {
-        if (isSelected) return currentColors.primary;
-        if (isToday) return currentColors.surface;
-        if (hasFeasts) return currentColors.card;
-        return 'transparent';
-      })(),
-      textColor: (() => {
-        if (isSelected) return currentColors.dominicanWhite;
-        if (isToday) return currentColors.primary;
-        if (hasFeasts) return currentColors.text;
-        return currentColors.textMuted;
-      })(),
-      feastIndicatorColor: (() => {
-        if (dayContent?.hasDominicanFeast) return currentColors.primary;
-        if (dayContent?.primaryFeast) return dayContent.primaryFeast.color;
-        return currentColors.textMuted;
-      })()
-    };
-  }, [isSelected, isToday, hasFeasts, dayContent, colorScheme]);
-
-  return (
-    <Pressable
-      style={[
-        styles.customDayContainer,
-        {
-          backgroundColor: colors.backgroundColor,
-          borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].border,
-          borderWidth: isSelected ? 2 : (isToday ? 1 : 0),
-        }
-      ]}
-      onPress={() => onPress?.(date)}
-    >
-      {/* Day Number */}
-      <Text style={[
-        styles.dayNumber,
-        { color: colors.textColor }
-      ]}>
-        {date?.day}
-      </Text>
-      
-      {/* Feast Indicators */}
-      {hasFeasts && (
-        <View style={styles.feastIndicators}>
-          {/* Primary Feast Rank Badge */}
-          {dayContent.primaryFeast && (
-            <View style={[
-              styles.rankBadge,
-              { backgroundColor: colors.feastIndicatorColor }
-            ]}>
-              <Text style={styles.rankText}>
-                {dayContent.primaryFeast.rank.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          
-          {/* Dominican Indicator */}
-          {dayContent.isDominican && (
-            <View style={styles.dominicanIndicatorContainer}>
-              <Text style={[styles.dominicanIndicator, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                OP{/* ⚫ */}
-              </Text>
-            </View>
-          )}
-          
-          {/* Multiple Feasts Indicator */}
-          {dayContent.feastCount > 1 && (
-            <View style={[styles.multipleFeastsIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-              <Text style={[styles.multipleFeastsText, { color: colors.feastIndicatorColor }]}>
-                +{dayContent.feastCount - 1}
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
-      
-      {/* Feast Name Preview (for larger screens) */}
-      {hasFeasts && screenWidth > 400 && (
-        <Text 
-          style={[
-            styles.feastNamePreview,
-            { color: colors.textColor }
-          ]}
-          numberOfLines={1}
-        >
-          {/* {dayContent.primaryFeast.name} */}
-        </Text>
-      )}
-    </Pressable>
-  );
-};
-
-export default function CalendarScreen() {
-  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const { liturgicalDay, selectedDate, updateCalendarSelection } = useCalendar();
-  const isWeb = Platform.OS === 'web';
-  const platformStyles = getPlatformStyles(isWeb);
+  const { width } = useWindowDimensions();
+
+  // State management
   const [markedDates, setMarkedDates] = useState<any>({});
   const [showFeastDetail, setShowFeastDetail] = useState(false);
-  const [feastDetailAnimation] = useState(new Animated.Value(0));
-  const scrollViewRef = useRef<ScrollView>(null);
-  const feastDetailRef = useRef<View>(null);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
+  const [dominicanOnly, setDominicanOnly] = useState(false);
 
+  // Animations
+  const bottomSheetAnim = useRef(new Animated.Value(0)).current;
+  const searchModalAnim = useRef(new Animated.Value(0)).current;
 
+  // Responsive breakpoints (for tablets)
+  const isTablet = width >= 768;
+
+  // Determine calendar cell size
+  const cellSize = isTablet ? 'medium' : 'small';
+
+  // Pan responder for swipe down to dismiss
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          bottomSheetAnim.setValue(1 - gestureState.dy / 500);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 100) {
+          closeFeastDetail();
+        } else {
+          Animated.spring(bottomSheetAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   useEffect(() => {
-    // Preload current month and adjacent months for better performance
-    const calendarService = LiturgicalCalendarService.getInstance();
-    calendarService.preloadCurrentMonth();
-    
     generateMarkedDates();
-    
-    // Show feast details for the initial liturgical day
-    if (liturgicalDay && !showFeastDetail) {
-      setShowFeastDetail(true);
-      Animated.timing(feastDetailAnimation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [colorScheme, liturgicalDay, showFeastDetail, feastDetailAnimation]);
+  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly]);
 
   const generateMarkedDates = useCallback(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
     const marked: any = {};
-    
-    // Only process visible months instead of entire year for better performance
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const startMonth = Math.max(0, today.getMonth() - 1); // Previous month
-    const endMonth = Math.min(11, today.getMonth() + 2);   // 2 months ahead
-    
-    for (let month = startMonth; month <= endMonth; month++) {
+
+    // Generate feast days for the current year
+    const currentYear = new Date().getFullYear();
+    for (let month = 0; month < 12; month++) {
       const daysInMonth = new Date(currentYear, month + 1, 0).getDate();
-      
+
       for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(currentYear, month, day);
-        const liturgicalDay = calendarService.getLiturgicalDay(date);
-        
-        if (liturgicalDay.feasts.length > 0) {
-          const dateString = date.toISOString().split('T')[0];
-          
-          // Get the highest rank feast for this date
-          const primaryFeast = liturgicalDay.feasts.reduce((highest, current) => {
-            const rankOrder: { [key: string]: number } = { 'Solemnity': 1, 'Feast': 2, 'Memorial': 3, 'Optional Memorial': 4, 'Ferial': 5 };
-            const currentRank = rankOrder[current.rank] || 5;
-            const highestRank = rankOrder[highest.rank] || 5;
-            return currentRank < highestRank ? current : highest;
-          }, liturgicalDay.feasts[0]);
-          
-          // Check if any feast is Dominican
-          const hasDominicanFeast = liturgicalDay.feasts.some(feast => feast.isDominican);
-          
-          marked[dateString] = {
-            marked: true,
-            dotColor: hasDominicanFeast ? Colors[colorScheme ?? 'light'].primary : (primaryFeast?.color || '#2E7D32'),
-            textColor: hasDominicanFeast ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].text,
-          };
+        const dayLiturgicalData = calendarService.getLiturgicalDay(date);
+
+        if (dayLiturgicalData.feasts.length > 0) {
+          // Filter feasts based on active filters
+          let feasts = dayLiturgicalData.feasts;
+
+          if (dominicanOnly) {
+            feasts = feasts.filter(feast => feast.isDominican);
+          }
+
+          if (selectedFilters.length > 0) {
+            feasts = feasts.filter(feast => selectedFilters.includes(feast.rank as FeastFilter));
+          }
+
+          if (feasts.length > 0) {
+            const dateString = date.toISOString().split('T')[0];
+
+            // Get the highest rank feast for this date
+            const primaryFeast = feasts.reduce((highest, current) => {
+              const rankOrder: { [key: string]: number } = {
+                Solemnity: 1,
+                Feast: 2,
+                Memorial: 3,
+                'Optional Memorial': 4,
+                Ferial: 5,
+              };
+              const currentRank = rankOrder[current.rank] || 5;
+              const highestRank = rankOrder[highest.rank] || 5;
+              return currentRank < highestRank ? current : highest;
+            }, feasts[0]);
+
+            // Check if any feast is Dominican
+            const hasDominicanFeast = feasts.some(feast => feast.isDominican);
+
+            marked[dateString] = {
+              marked: true,
+              dotColor: hasDominicanFeast
+                ? colors.primary
+                : primaryFeast?.color || '#2E7D32',
+              textColor: hasDominicanFeast ? colors.text : colors.text,
+            };
+          }
         }
       }
     }
-    
+
     // Mark the selected date
     if (liturgicalDay) {
       const selectedDateString = new Date(liturgicalDay.date).toISOString().split('T')[0];
       marked[selectedDateString] = {
         ...marked[selectedDateString],
         selected: true,
-        selectedColor: Colors[colorScheme ?? 'light'].primary,
-        selectedTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
+        selectedColor: colors.primary,
+        selectedTextColor: colors.dominicanWhite,
       };
     }
-    
-    setMarkedDates(marked);
-  }, [colorScheme, liturgicalDay]);
 
-  const handleDayPress = useCallback((day: any) => {
-    // Use date-fns parseISO for clean date parsing
-    const selectedDate = parseISO(day.dateString);
-    updateCalendarSelection(selectedDate);
-    
-    // Update marked dates to show new selection
-    const newMarkedDates = { ...markedDates };
-    Object.keys(newMarkedDates).forEach(key => {
-      if (newMarkedDates[key].selected) {
-        delete newMarkedDates[key].selected;
-        delete newMarkedDates[key].selectedColor;
-        delete newMarkedDates[key].selectedTextColor;
-      }
-    });
-    
-    const dateString = day.dateString;
-    newMarkedDates[dateString] = {
-      ...newMarkedDates[dateString],
-      selected: true,
-      selectedColor: Colors[colorScheme ?? 'light'].primary,
-      selectedTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
-    };
-    
-    setMarkedDates(newMarkedDates);
-    
-    // Show feast detail panel with animation and scroll to it
-    setShowFeastDetail(true);
-    Animated.timing(feastDetailAnimation, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      // Scroll to the feast detail section after animation
-      setTimeout(() => {
-        feastDetailRef.current?.measureLayout(
-          scrollViewRef.current as any,
-          (x, y) => {
-            scrollViewRef.current?.scrollTo({ y: y - 20, animated: true });
-          },
-          () => {}
-        );
-      }, 100);
-    });
-  }, [markedDates, colorScheme, updateCalendarSelection, feastDetailAnimation]);
+    setMarkedDates(marked);
+  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly, colors]);
+
+  const handleDayPress = useCallback(
+    (day: any) => {
+      const dateObj = day.dateString ? parseISO(day.dateString) : day;
+      updateCalendarSelection(dateObj);
+
+      // Update marked dates to show new selection
+      const newMarkedDates = { ...markedDates };
+      Object.keys(newMarkedDates).forEach(key => {
+        if (newMarkedDates[key].selected) {
+          delete newMarkedDates[key].selected;
+          delete newMarkedDates[key].selectedColor;
+          delete newMarkedDates[key].selectedTextColor;
+        }
+      });
+
+      const dateString = format(dateObj, 'yyyy-MM-dd');
+      newMarkedDates[dateString] = {
+        ...newMarkedDates[dateString],
+        selected: true,
+        selectedColor: colors.primary,
+        selectedTextColor: colors.dominicanWhite,
+      };
+
+      setMarkedDates(newMarkedDates);
+
+      // Show bottom sheet with animation
+      setShowFeastDetail(true);
+      Animated.spring(bottomSheetAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    },
+    [markedDates, colors, updateCalendarSelection, bottomSheetAnim]
+  );
 
   const closeFeastDetail = useCallback(() => {
-    Animated.timing(feastDetailAnimation, {
+    Animated.timing(bottomSheetAnim, {
       toValue: 0,
-      duration: 300,
+      duration: 250,
       useNativeDriver: true,
     }).start(() => {
       setShowFeastDetail(false);
     });
-  }, [feastDetailAnimation]);
+  }, [bottomSheetAnim]);
+
+  const handleToggleFilter = (filter: FeastFilter) => {
+    setSelectedFilters(prev =>
+      prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev, filter]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedFilters([]);
+    setDominicanOnly(false);
+  };
+
+  const handleSearchSelect = (date: Date) => {
+    setShowSearchModal(false);
+    handleDayPress({ dateString: format(date, 'yyyy-MM-dd') });
+  };
+
+  const openSearchModal = () => {
+    setShowSearchModal(true);
+    Animated.timing(searchModalAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeSearchModal = () => {
+    Animated.timing(searchModalAnim, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowSearchModal(false);
+    });
+  };
 
   if (!liturgicalDay) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <CommunityNavigation activeTab="calendar" />
         <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
+          <Text style={[styles.loadingText, { color: colors.text }]}>
             Loading liturgical information...
           </Text>
         </View>
@@ -320,146 +250,390 @@ export default function CalendarScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={['left', 'right']}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
         <CommunityNavigation activeTab="calendar" />
-        
-        {/* Liturgical Calendar */}
-        <View style={[styles.calendarContainer, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-          <Text style={[styles.calendarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Liturgical Calendar
-          </Text>
-          
-          {/* Enhanced Calendar Component */}
-          <Calendar
-            current={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
-            onDayPress={handleDayPress}
-            markedDates={markedDates}
-            dayComponent={CustomDayComponent}
-            theme={{
-              backgroundColor: Colors[colorScheme ?? 'light'].card,
-              calendarBackground: Colors[colorScheme ?? 'light'].card,
-              textSectionTitleColor: Colors[colorScheme ?? 'light'].text,
-              selectedDayBackgroundColor: Colors[colorScheme ?? 'light'].primary,
-              selectedDayTextColor: Colors[colorScheme ?? 'light'].dominicanWhite,
-              todayTextColor: Colors[colorScheme ?? 'light'].primary,
-              dayTextColor: Colors[colorScheme ?? 'light'].text,
-              textDisabledColor: Colors[colorScheme ?? 'light'].textMuted,
-              dotColor: Colors[colorScheme ?? 'light'].primary,
-              selectedDotColor: Colors[colorScheme ?? 'light'].dominicanWhite,
-              arrowColor: Colors[colorScheme ?? 'light'].primary,
-              monthTextColor: Colors[colorScheme ?? 'light'].text,
-              indicatorColor: Colors[colorScheme ?? 'light'].primary,
-              textDayFontFamily: 'Georgia',
-              textMonthFontFamily: 'Georgia',
-              textDayHeaderFontFamily: 'Georgia',
-              textDayFontSize: 16,
-              textMonthFontSize: 18,
-              textDayHeaderFontSize: 14,
-            }}
-            minDate={format(subDays(new Date(), 365), 'yyyy-MM-dd')}
-            maxDate={format(addDays(new Date(), 365), 'yyyy-MM-dd')}
-            key={colorScheme}
+
+        {/* Season Banner */}
+        <View style={styles.contentPadding}>
+          <SeasonBanner
+            seasonName={liturgicalDay.season.name}
+            seasonColor={liturgicalDay.season.color}
+            weekString={liturgicalDay.weekString}
+            compact={true}
           />
 
-          {/* Calendar Legend */}
-          <View style={[styles.calendarLegend, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-            <Text style={[styles.legendTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Calendar Legend
-            </Text>
-            <View style={styles.legendItems}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Solemnity
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4B0082' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Feast
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#DAA520' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Memorial
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#2E7D32' }]} />
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Ferial Day
-                </Text>
-              </View>
-            </View>
-            
-            {/* Enhanced Dominican Indicator */}
-            <View style={styles.dominicanLegend}>
-              <Text style={[styles.legendSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Dominican Celebrations
+          {/* Header with Search Button */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.monthTitle, { color: colors.text }]}>
+                {format(selectedDate || new Date(), 'MMMM yyyy')}
               </Text>
-              <View style={styles.legendItem}>
-                <Text style={[styles.dominicanSymbol, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  ⚫
-                </Text>
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Dominican Saint/Feast
-                </Text>
-              </View>
-              <View style={styles.legendItem}>
-                <Text style={[styles.legendText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  +N = Additional feasts
-                </Text>
-              </View>
+            </View>
+            <View style={styles.headerRight}>
+              <Pressable onPress={openSearchModal} style={styles.iconButton}>
+                <Ionicons name="search" size={24} color={colors.text} />
+              </Pressable>
             </View>
           </View>
 
-          {/* Inline Feast Detail Panel */}
-        {liturgicalDay && (
-          <Animated.View 
-            ref={feastDetailRef}
+          {/* Collapsible Filters */}
+          <Pressable
+            onPress={() => setShowFilters(!showFilters)}
+            style={[styles.filterToggle, { backgroundColor: colors.surface }]}
+          >
+            <Ionicons
+              name={showFilters ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={colors.text}
+            />
+            <Text style={[styles.filterToggleText, { color: colors.text }]}>
+              Filters {(selectedFilters.length > 0 || dominicanOnly) && `(${selectedFilters.length + (dominicanOnly ? 1 : 0)})`}
+            </Text>
+          </Pressable>
+
+          {showFilters && (
+            <View style={styles.filtersContainer}>
+              <FilterPanel
+                selectedFilters={selectedFilters}
+                onToggleFilter={handleToggleFilter}
+                dominicanOnly={dominicanOnly}
+                onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+                onClearAll={handleClearFilters}
+                compact={true}
+              />
+            </View>
+          )}
+
+          {/* View Mode Toggle */}
+          <View style={styles.viewModeSection}>
+            <ViewModeToggle
+              currentMode={viewMode}
+              onModeChange={setViewMode}
+              compact={true}
+            />
+          </View>
+
+          {/* Calendar View Container */}
+          <View style={[styles.calendarContainer, { backgroundColor: colors.card }]}>
+            {viewMode === 'month' && (
+              <CalendarGrid
+                currentDate={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
+                markedDates={markedDates}
+                onDayPress={handleDayPress}
+                cellSize={cellSize}
+                showFeastNames={false}
+              />
+            )}
+
+            {viewMode === 'week' && (
+              <WeekView
+                currentDate={selectedDate || new Date()}
+                selectedDate={selectedDate || new Date()}
+                onDayPress={handleDayPress}
+              />
+            )}
+
+            {viewMode === 'list' && (
+              <ListView
+                currentDate={selectedDate || new Date()}
+                selectedDate={selectedDate || new Date()}
+                onDayPress={handleDayPress}
+              />
+            )}
+          </View>
+
+          {/* Calendar Legend */}
+          <View style={[styles.calendarLegend, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
+            <View style={styles.legendItems}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>Solemnity</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#4B0082' }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>Feast</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#DAA520' }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>Memorial</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#2E7D32' }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>Ferial</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <Text style={[styles.dominicanSymbol, { color: colors.primary }]}>⚫</Text>
+                <Text style={[styles.legendText, { color: colors.text }]}>Dominican</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Sheet Modal for Feast Details */}
+      <Modal
+        visible={showFeastDetail}
+        transparent
+        animationType="none"
+        onRequestClose={closeFeastDetail}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.backdrop} onPress={closeFeastDetail} />
+          <Animated.View
+            {...panResponder.panHandlers}
             style={[
-              styles.inlineFeastContainer,
+              styles.bottomSheet,
+              { backgroundColor: colors.background },
               {
-                opacity: feastDetailAnimation,
-                transform: [{
-                  translateY: feastDetailAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [50, 0],
-                  })
-                }]
-              }
+                transform: [
+                  {
+                    translateY: bottomSheetAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [600, 0],
+                    }),
+                  },
+                ],
+              },
             ]}
           >
-            <FeastDetailPanel
-              liturgicalDay={liturgicalDay}
-              isVisible={true}
-              onClose={closeFeastDetail}
-            />
-          </Animated.View>
-        )}
-        </View>
+            {/* Handle */}
+            <View style={styles.sheetHandle}>
+              <View style={[styles.handle, { backgroundColor: colors.border }]} />
+            </View>
 
-        
-      </ScrollView>
+            {/* Content */}
+            <ScrollView style={styles.sheetContent} showsVerticalScrollIndicator={false}>
+              {liturgicalDay && (
+                <FeastDetailPanel
+                  liturgicalDay={liturgicalDay}
+                  isVisible={true}
+                  onClose={closeFeastDetail}
+                />
+              )}
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* Search Modal */}
+      <Modal
+        visible={showSearchModal}
+        transparent
+        animationType="none"
+        onRequestClose={closeSearchModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.backdrop} onPress={closeSearchModal} />
+          <Animated.View
+            style={[
+              styles.searchModal,
+              { backgroundColor: colors.card },
+              {
+                transform: [
+                  {
+                    translateY: searchModalAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [-400, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.searchModalHeader}>
+              <Text style={[styles.searchModalTitle, { color: colors.text }]}>
+                Search Feasts
+              </Text>
+              <Pressable onPress={closeSearchModal} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </Pressable>
+            </View>
+            <View style={styles.searchModalContent}>
+              <SearchBar onSelectDate={handleSearchSelect} />
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  // Include all shared styles
-  ...CommunityStyles,
-  
-  // Add/override with unique local styles
-  dominicanLegend: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.border,
-    paddingTop: 16,
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  contentPadding: {
+    paddingHorizontal: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  monthTitle: {
+    fontSize: 24,
+    fontFamily: 'Georgia',
+    fontWeight: '700',
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  filterToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    gap: 8,
+  },
+  filterToggleText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+  },
+  filtersContainer: {
+    marginBottom: 16,
+  },
+  viewModeSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  calendarContainer: {
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
+  },
+  calendarLegend: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  legendTitle: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  legendItems: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    width: '45%',
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+  },
+  dominicanSymbol: {
+    fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  backdrop: {
+    flex: 1,
+  },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '75%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  sheetHandle: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+  },
+  sheetContent: {
+    flex: 1,
+  },
+  searchModal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    paddingBottom: 20,
+  },
+  searchModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    paddingTop: 50,
+  },
+  searchModalTitle: {
+    fontSize: 20,
+    fontFamily: 'Georgia',
+    fontWeight: '700',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  searchModalContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
 });
