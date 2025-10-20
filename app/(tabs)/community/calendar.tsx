@@ -8,7 +8,6 @@ import {
   Animated,
   Modal,
   useWindowDimensions,
-  PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,7 +44,7 @@ export default function CalendarScreenNative() {
   const [dominicanOnly, setDominicanOnly] = useState(false);
 
   // Animations
-  const bottomSheetAnim = useRef(new Animated.Value(0)).current;
+  const feastDetailAnimation = useRef(new Animated.Value(0)).current;
   const searchModalAnim = useRef(new Animated.Value(0)).current;
 
   // Responsive breakpoints (for tablets)
@@ -53,31 +52,6 @@ export default function CalendarScreenNative() {
 
   // Determine calendar cell size
   const cellSize = isTablet ? 'medium' : 'small';
-
-  // Pan responder for swipe down to dismiss
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dy) > 5;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dy > 0) {
-          bottomSheetAnim.setValue(1 - gestureState.dy / 500);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 100) {
-          closeFeastDetail();
-        } else {
-          Animated.spring(bottomSheetAnim, {
-            toValue: 1,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    })
-  ).current;
 
   useEffect(() => {
     generateMarkedDates();
@@ -179,27 +153,26 @@ export default function CalendarScreenNative() {
 
       setMarkedDates(newMarkedDates);
 
-      // Show bottom sheet with animation
+      // Show feast detail with animation
       setShowFeastDetail(true);
-      Animated.spring(bottomSheetAnim, {
+      Animated.timing(feastDetailAnimation, {
         toValue: 1,
-        friction: 8,
-        tension: 40,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     },
-    [markedDates, colors, updateCalendarSelection, bottomSheetAnim]
+    [markedDates, colors, updateCalendarSelection, feastDetailAnimation]
   );
 
   const closeFeastDetail = useCallback(() => {
-    Animated.timing(bottomSheetAnim, {
+    Animated.timing(feastDetailAnimation, {
       toValue: 0,
-      duration: 250,
+      duration: 300,
       useNativeDriver: true,
     }).start(() => {
       setShowFeastDetail(false);
     });
-  }, [bottomSheetAnim]);
+  }, [feastDetailAnimation]);
 
   const handleToggleFilter = (filter: FeastFilter) => {
     setSelectedFilters(prev =>
@@ -376,53 +349,34 @@ export default function CalendarScreenNative() {
               </View>
             </View>
           </View>
+
+          {/* Feast Detail Panel - Inline Below Calendar */}
+          {liturgicalDay && showFeastDetail && (
+            <Animated.View
+              style={[
+                styles.feastPanelStacked,
+                {
+                  opacity: feastDetailAnimation,
+                  transform: [
+                    {
+                      translateY: feastDetailAnimation.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [50, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <FeastDetailPanel
+                liturgicalDay={liturgicalDay}
+                isVisible={true}
+                onClose={closeFeastDetail}
+              />
+            </Animated.View>
+          )}
         </View>
       </ScrollView>
-
-      {/* Bottom Sheet Modal for Feast Details */}
-      <Modal
-        visible={showFeastDetail}
-        transparent
-        animationType="none"
-        onRequestClose={closeFeastDetail}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable style={styles.backdrop} onPress={closeFeastDetail} />
-          <Animated.View
-            {...panResponder.panHandlers}
-            style={[
-              styles.bottomSheet,
-              { backgroundColor: colors.background },
-              {
-                transform: [
-                  {
-                    translateY: bottomSheetAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [600, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            {/* Handle */}
-            <View style={styles.sheetHandle}>
-              <View style={[styles.handle, { backgroundColor: colors.border }]} />
-            </View>
-
-            {/* Content */}
-            <ScrollView style={styles.sheetContent} showsVerticalScrollIndicator={false}>
-              {liturgicalDay && (
-                <FeastDetailPanel
-                  liturgicalDay={liturgicalDay}
-                  isVisible={true}
-                  onClose={closeFeastDetail}
-                />
-              )}
-            </ScrollView>
-          </Animated.View>
-        </View>
-      </Modal>
 
       {/* Search Modal */}
       <Modal
@@ -569,39 +523,14 @@ const styles = StyleSheet.create({
   dominicanSymbol: {
     fontSize: 12,
   },
+  feastPanelStacked: {
+    marginTop: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  backdrop: {
-    flex: 1,
-  },
-  bottomSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '75%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  sheetHandle: {
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-  },
-  sheetContent: {
-    flex: 1,
   },
   searchModal: {
     position: 'absolute',
