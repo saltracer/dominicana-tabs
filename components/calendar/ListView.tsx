@@ -9,6 +9,7 @@ interface ListViewProps {
   currentDate: Date;
   selectedDate: Date;
   onDayPress: (date: Date) => void;
+  ListHeaderComponent?: React.ReactElement;
 }
 
 interface FeastListItem {
@@ -21,7 +22,7 @@ interface Section {
   data: FeastListItem[];
 }
 
-const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPress }) => {
+const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPress, ListHeaderComponent }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
   const calendarService = LiturgicalCalendarService.getInstance();
@@ -162,6 +163,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         stickySectionHeadersEnabled={true}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={ListHeaderComponent}
       />
     </View>
   );

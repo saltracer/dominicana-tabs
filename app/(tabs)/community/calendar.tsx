@@ -227,131 +227,80 @@ export default function CalendarScreenNative() {
       style={[styles.container, { backgroundColor: colors.background }]}
       edges={['left', 'right']}
     >
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
-      >
-        <CommunityNavigation activeTab="calendar" />
+      <CommunityNavigation activeTab="calendar" />
+      
+      {viewMode === 'list' ? (
+        // List view: No ScrollView wrapper (AgendaList handles its own scrolling)
+        <View style={{ flex: 1 }}>
+          <ListView
+            currentDate={selectedDate || new Date()}
+            selectedDate={selectedDate || new Date()}
+            onDayPress={handleDayPress}
+            ListHeaderComponent={
+              <View style={styles.contentPadding}>
+                <SeasonBanner
+                  seasonName={liturgicalDay.season.name}
+                  seasonColor={liturgicalDay.season.color}
+                  weekString={liturgicalDay.weekString}
+                  compact={true}
+                />
 
-        {/* Season Banner */}
-        <View style={styles.contentPadding}>
-          <SeasonBanner
-            seasonName={liturgicalDay.season.name}
-            seasonColor={liturgicalDay.season.color}
-            weekString={liturgicalDay.weekString}
-            compact={true}
+                {/* Header with Search Button */}
+                <View style={styles.header}>
+                  <View style={styles.headerLeft}>
+                    <Text style={[styles.monthTitle, { color: colors.text }]}>
+                      {format(selectedDate || new Date(), 'MMMM yyyy')}
+                    </Text>
+                  </View>
+                  <View style={styles.headerRight}>
+                    <Pressable onPress={openSearchModal} style={styles.iconButton}>
+                      <Ionicons name="search" size={24} color={colors.text} />
+                    </Pressable>
+                  </View>
+                </View>
+
+                {/* Collapsible Filters */}
+                <Pressable
+                  onPress={() => setShowFilters(!showFilters)}
+                  style={[styles.filterToggle, { backgroundColor: colors.surface }]}
+                >
+                  <Ionicons
+                    name={showFilters ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={colors.text}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={[styles.filterToggleText, { color: colors.text }]}>
+                    Filters{(selectedFilters.length > 0 || dominicanOnly) ? ` (${selectedFilters.length + (dominicanOnly ? 1 : 0)})` : ''}
+                  </Text>
+                </Pressable>
+
+                {showFilters && (
+                  <View style={styles.filtersContainer}>
+                    <FilterPanel
+                      selectedFilters={selectedFilters}
+                      onToggleFilter={handleToggleFilter}
+                      dominicanOnly={dominicanOnly}
+                      onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+                      onClearAll={handleClearFilters}
+                      compact={true}
+                    />
+                  </View>
+                )}
+
+                {/* View Mode Toggle */}
+                <View style={styles.viewModeSection}>
+                  <ViewModeToggle
+                    currentMode={viewMode}
+                    onModeChange={setViewMode}
+                    compact={true}
+                  />
+                </View>
+              </View>
+            }
           />
 
-          {/* Header with Search Button */}
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={[styles.monthTitle, { color: colors.text }]}>
-                {format(selectedDate || new Date(), 'MMMM yyyy')}
-              </Text>
-            </View>
-            <View style={styles.headerRight}>
-              <Pressable onPress={openSearchModal} style={styles.iconButton}>
-                <Ionicons name="search" size={24} color={colors.text} />
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Collapsible Filters */}
-          <Pressable
-            onPress={() => setShowFilters(!showFilters)}
-            style={[styles.filterToggle, { backgroundColor: colors.surface }]}
-          >
-            <Ionicons
-              name={showFilters ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={colors.text}
-              style={{ marginRight: 8 }}
-            />
-            <Text style={[styles.filterToggleText, { color: colors.text }]}>
-              Filters{(selectedFilters.length > 0 || dominicanOnly) ? ` (${selectedFilters.length + (dominicanOnly ? 1 : 0)})` : ''}
-            </Text>
-          </Pressable>
-
-          {showFilters && (
-            <View style={styles.filtersContainer}>
-              <FilterPanel
-                selectedFilters={selectedFilters}
-                onToggleFilter={handleToggleFilter}
-                dominicanOnly={dominicanOnly}
-                onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
-                onClearAll={handleClearFilters}
-                compact={true}
-              />
-            </View>
-          )}
-
-          {/* View Mode Toggle */}
-          <View style={styles.viewModeSection}>
-            <ViewModeToggle
-              currentMode={viewMode}
-              onModeChange={setViewMode}
-              compact={true}
-            />
-          </View>
-
-          {/* Calendar View Container */}
-          <View style={[styles.calendarContainer, { backgroundColor: colors.card }]}>
-            {viewMode === 'month' && (
-              <CalendarGrid
-                currentDate={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
-                markedDates={markedDates}
-                onDayPress={handleDayPress}
-                cellSize={cellSize}
-                showFeastNames={false}
-              />
-            )}
-
-            {viewMode === 'week' && (
-              <WeekView
-                currentDate={selectedDate || new Date()}
-                selectedDate={selectedDate || new Date()}
-                onDayPress={handleDayPress}
-              />
-            )}
-
-            {viewMode === 'list' && (
-              <ListView
-                currentDate={selectedDate || new Date()}
-                selectedDate={selectedDate || new Date()}
-                onDayPress={handleDayPress}
-              />
-            )}
-          </View>
-
-          {/* Calendar Legend */}
-          <View style={[styles.calendarLegend, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
-            <View style={styles.legendItems}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#8B0000', marginRight: 6 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Solemnity</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4B0082', marginRight: 6 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Feast</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#DAA520', marginRight: 6 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Memorial</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#2E7D32', marginRight: 6 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Ferial</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 6 }]}>⚫</Text>
-                <Text style={[styles.legendText, { color: colors.text }]}>Dominican</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Feast Detail Panel - Inline Below Calendar */}
+          {/* Feast Detail Panel - Shows when day is selected */}
           {liturgicalDay && showFeastDetail && (
             <Animated.View
               style={[
@@ -377,7 +326,151 @@ export default function CalendarScreenNative() {
             </Animated.View>
           )}
         </View>
-      </ScrollView>
+      ) : (
+        // Month/Week views: Use ScrollView
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+        >
+
+          {/* Season Banner */}
+          <View style={styles.contentPadding}>
+            <SeasonBanner
+              seasonName={liturgicalDay.season.name}
+              seasonColor={liturgicalDay.season.color}
+              weekString={liturgicalDay.weekString}
+              compact={true}
+            />
+
+            {/* Header with Search Button */}
+            <View style={styles.header}>
+              <View style={styles.headerLeft}>
+                <Text style={[styles.monthTitle, { color: colors.text }]}>
+                  {format(selectedDate || new Date(), 'MMMM yyyy')}
+                </Text>
+              </View>
+              <View style={styles.headerRight}>
+                <Pressable onPress={openSearchModal} style={styles.iconButton}>
+                  <Ionicons name="search" size={24} color={colors.text} />
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Collapsible Filters */}
+            <Pressable
+              onPress={() => setShowFilters(!showFilters)}
+              style={[styles.filterToggle, { backgroundColor: colors.surface }]}
+            >
+              <Ionicons
+                name={showFilters ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={colors.text}
+                style={{ marginRight: 8 }}
+              />
+              <Text style={[styles.filterToggleText, { color: colors.text }]}>
+                Filters{(selectedFilters.length > 0 || dominicanOnly) ? ` (${selectedFilters.length + (dominicanOnly ? 1 : 0)})` : ''}
+              </Text>
+            </Pressable>
+
+            {showFilters && (
+              <View style={styles.filtersContainer}>
+                <FilterPanel
+                  selectedFilters={selectedFilters}
+                  onToggleFilter={handleToggleFilter}
+                  dominicanOnly={dominicanOnly}
+                  onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+                  onClearAll={handleClearFilters}
+                  compact={true}
+                />
+              </View>
+            )}
+
+            {/* View Mode Toggle */}
+            <View style={styles.viewModeSection}>
+              <ViewModeToggle
+                currentMode={viewMode}
+                onModeChange={setViewMode}
+                compact={true}
+              />
+            </View>
+
+            {/* Calendar View Container (Month/Week only) */}
+            <View style={[styles.calendarContainer, { backgroundColor: colors.card }]}>
+              {viewMode === 'month' && (
+                <CalendarGrid
+                  currentDate={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
+                  markedDates={markedDates}
+                  onDayPress={handleDayPress}
+                  cellSize={cellSize}
+                  showFeastNames={false}
+                />
+              )}
+
+              {viewMode === 'week' && (
+                <WeekView
+                  currentDate={selectedDate || new Date()}
+                  selectedDate={selectedDate || new Date()}
+                  onDayPress={handleDayPress}
+                />
+              )}
+            </View>
+
+            {/* Calendar Legend */}
+            <View style={[styles.calendarLegend, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
+              <View style={styles.legendItems}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#8B0000', marginRight: 6 }]} />
+                  <Text style={[styles.legendText, { color: colors.text }]}>Solemnity</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#4B0082', marginRight: 6 }]} />
+                  <Text style={[styles.legendText, { color: colors.text }]}>Feast</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#DAA520', marginRight: 6 }]} />
+                  <Text style={[styles.legendText, { color: colors.text }]}>Memorial</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#2E7D32', marginRight: 6 }]} />
+                  <Text style={[styles.legendText, { color: colors.text }]}>Ferial</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 6 }]}>⚫</Text>
+                  <Text style={[styles.legendText, { color: colors.text }]}>Dominican</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Feast Detail Panel - Inline Below Calendar */}
+            {liturgicalDay && showFeastDetail && (
+              <Animated.View
+                style={[
+                  styles.feastPanelStacked,
+                  {
+                    opacity: feastDetailAnimation,
+                    transform: [
+                      {
+                        translateY: feastDetailAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [50, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <FeastDetailPanel
+                  liturgicalDay={liturgicalDay}
+                  isVisible={true}
+                  onClose={closeFeastDetail}
+                />
+              </Animated.View>
+            )}
+          </View>
+        </ScrollView>
+      )}
 
       {/* Search Modal */}
       <Modal
@@ -387,7 +480,7 @@ export default function CalendarScreenNative() {
         onRequestClose={closeSearchModal}
       >
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.backdrop} onPress={closeSearchModal} />
+          <Pressable style={{ flex: 1 }} onPress={closeSearchModal} />
           <Animated.View
             style={[
               styles.searchModal,
