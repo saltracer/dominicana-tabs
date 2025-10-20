@@ -81,8 +81,6 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             paddingBottom: 0,
             flexDirection: 'row',
             justifyContent: 'space-around',
-            // borderWidth: 1,
-            // borderColor: '#FF0000',
           },
         },
         // 'stylesheet.day.basic': {
