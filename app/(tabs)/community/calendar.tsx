@@ -266,9 +266,10 @@ export default function CalendarScreenNative() {
               name={showFilters ? 'chevron-up' : 'chevron-down'}
               size={20}
               color={colors.text}
+              style={{ marginRight: 8 }}
             />
             <Text style={[styles.filterToggleText, { color: colors.text }]}>
-              Filters {(selectedFilters.length > 0 || dominicanOnly) && `(${selectedFilters.length + (dominicanOnly ? 1 : 0)})`}
+              Filters{(selectedFilters.length > 0 || dominicanOnly) ? ` (${selectedFilters.length + (dominicanOnly ? 1 : 0)})` : ''}
             </Text>
           </Pressable>
 
@@ -328,23 +329,23 @@ export default function CalendarScreenNative() {
             <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
             <View style={styles.legendItems}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#8B0000', marginRight: 6 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Solemnity</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4B0082' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#4B0082', marginRight: 6 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Feast</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#DAA520' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#DAA520', marginRight: 6 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Memorial</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#2E7D32' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#2E7D32', marginRight: 6 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Ferial</Text>
               </View>
               <View style={styles.legendItem}>
-                <Text style={[styles.dominicanSymbol, { color: colors.primary }]}>⚫</Text>
+                <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 6 }]}>⚫</Text>
                 <Text style={[styles.legendText, { color: colors.text }]}>Dominican</Text>
               </View>
             </View>
@@ -452,7 +453,6 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     flexDirection: 'row',
-    gap: 8,
   },
   monthTitle: {
     fontSize: 24,
@@ -470,7 +470,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
-    gap: 8,
   },
   filterToggleText: {
     fontSize: 14,
@@ -503,13 +502,12 @@ const styles = StyleSheet.create({
   legendItems: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
     width: '45%',
+    marginBottom: 8,
   },
   legendDot: {
     width: 10,

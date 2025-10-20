@@ -109,7 +109,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                   <Text
                     style={[
                       styles.dominicanIndicator,
-                      { color: isSelected ? colors.dominicanWhite : colors.primary },
+                      { color: isSelected ? colors.dominicanWhite : colors.primary, marginRight: 6 },
                     ]}
                   >
                     ⚫
@@ -129,7 +129,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                 <View
                   style={[
                     styles.rankBadge,
-                    { backgroundColor: feast.color || colors.textMuted },
+                    { backgroundColor: feast.color || colors.textMuted, marginRight: 8 },
                   ]}
                 >
                   <Text style={styles.rankText}>
@@ -212,15 +212,14 @@ const styles = StyleSheet.create({
   },
   feastsColumn: {
     flex: 1,
-    gap: 12,
   },
   feastRow: {
-    gap: 6,
+    marginBottom: 12,
   },
   feastHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 6,
+    marginBottom: 6,
   },
   dominicanIndicator: {
     fontSize: 14,
@@ -236,7 +235,6 @@ const styles = StyleSheet.create({
   feastMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   rankBadge: {
     width: 20,

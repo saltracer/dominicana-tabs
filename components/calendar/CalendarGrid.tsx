@@ -58,6 +58,22 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
         textMonthFontSize: 18,
         textDayHeaderFontSize: 14,
         'stylesheet.calendar.main': {
+          dayContainer: {
+            flex: 1,
+            borderWidth: 1,
+            borderColor: colors.border,
+            width: '100%',
+            height: '100%',
+            aspectRatio: 1,
+          },
+          emptyDayContainer: {
+            flex: 1,
+            borderWidth: 1,
+            width: '100%',
+            height: '100%',
+            borderColor: colors.border,
+            aspectRatio: 1,
+          },
           week: {
             marginTop: 0,
             marginBottom: 0,
@@ -65,8 +81,18 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             paddingBottom: 0,
             flexDirection: 'row',
             justifyContent: 'space-around',
+            // borderWidth: 1,
+            // borderColor: '#FF0000',
           },
         },
+        // 'stylesheet.day.basic': {
+        //   container: {
+        //     borderWidth: 1,
+        //     borderColor: '#00FF00',
+        //   },
+        //   // borderWidth: 1,
+        //   // borderColor: '#00FF00',
+        // },
       } as any}
       minDate={format(subDays(new Date(), 1000), 'yyyy-MM-dd')}
       maxDate={format(addDays(new Date(), 1000), 'yyyy-MM-dd')}

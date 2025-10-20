@@ -53,6 +53,7 @@ const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
               name={modeConfig.icon}
               size={compact ? 18 : 20}
               color={isSelected ? '#FFFFFF' : colors.text}
+              style={{ marginRight: compact ? 0 : 6 }}
             />
             {!compact && (
               <Text
@@ -84,7 +85,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    gap: 6,
   },
   modeLabel: {
     fontSize: 14,

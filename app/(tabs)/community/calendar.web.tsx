@@ -315,23 +315,23 @@ export default function CalendarScreenWeb() {
             <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
             <View style={styles.legendItems}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#8B0000' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#8B0000', marginRight: 8 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Solemnity</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4B0082' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#4B0082', marginRight: 8 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Feast</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#DAA520' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#DAA520', marginRight: 8 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Memorial</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#2E7D32' }]} />
+                <View style={[styles.legendDot, { backgroundColor: '#2E7D32', marginRight: 8 }]} />
                 <Text style={[styles.legendText, { color: colors.text }]}>Ferial Day</Text>
               </View>
               <View style={styles.legendItem}>
-                <Text style={[styles.dominicanSymbol, { color: colors.primary }]}>⚫</Text>
+                <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 8 }]}>⚫</Text>
                 <Text style={[styles.legendText, { color: colors.text }]}>Dominican</Text>
               </View>
             </View>
@@ -371,9 +371,7 @@ export default function CalendarScreenWeb() {
               onClose={closeFeastDetail}
             />
           </Animated.View>
-        ) : (
-          shouldStackVertically &&
-          showFeastDetail && (
+        ) : shouldStackVertically && showFeastDetail ? (
             <Animated.View
               style={[
                 styles.feastPanelStacked,
@@ -396,8 +394,7 @@ export default function CalendarScreenWeb() {
                 onClose={closeFeastDetail}
               />
             </Animated.View>
-          )
-        )}
+        ) : null}
       </View>
 
       <Footer />
@@ -425,11 +422,11 @@ const styles = StyleSheet.create({
   },
   sideBySideLayout: {
     flexDirection: 'row',
-    gap: 20,
   },
   calendarSection: {
     flex: 1,
     minWidth: 400,
+    marginRight: 20,
   },
   searchSection: {
     marginBottom: 16,
@@ -469,12 +466,12 @@ const styles = StyleSheet.create({
   legendItems: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    marginRight: 16,
+    marginBottom: 8,
   },
   legendDot: {
     width: 12,

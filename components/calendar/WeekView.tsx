@@ -65,30 +65,30 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
                     return (
                       <View key={index} style={styles.feastItem}>
                         {hasDominican && (
-                          <Text
-                            style={[
-                              styles.dominicanIndicator,
-                              { color: isSelected ? colors.dominicanWhite : colors.primary },
-                            ]}
-                          >
-                            ⚫
-                          </Text>
-                        )}
-                        <Text
-                          style={[
-                            styles.feastName,
-                            { color: isSelected ? colors.dominicanWhite : colors.text },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {feast.name}
-                        </Text>
-                        <View
-                          style={[
-                            styles.rankBadge,
-                            { backgroundColor: feast.color || colors.textMuted },
-                          ]}
-                        >
+                <Text
+                  style={[
+                    styles.dominicanIndicator,
+                    { color: isSelected ? colors.dominicanWhite : colors.primary, marginRight: 4 },
+                  ]}
+                >
+                  ⚫
+                </Text>
+              )}
+              <Text
+                style={[
+                  styles.feastName,
+                  { color: isSelected ? colors.dominicanWhite : colors.text, marginRight: 4 },
+                ]}
+                numberOfLines={1}
+              >
+                {feast.name}
+              </Text>
+              <View
+                style={[
+                  styles.rankBadge,
+                  { backgroundColor: feast.color || colors.textMuted },
+                ]}
+              >
                           <Text style={styles.rankText}>
                             {feast.rank === 'Optional Memorial'
                               ? 'O'
@@ -125,7 +125,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 12,
-    gap: 12,
   },
   dayCard: {
     width: 160,
@@ -133,6 +132,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 12,
     borderWidth: 2,
+    marginRight: 12,
   },
   dayOfWeek: {
     fontSize: 12,
@@ -149,12 +149,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   feastsContainer: {
-    gap: 6,
   },
   feastItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    marginBottom: 6,
   },
   dominicanIndicator: {
     fontSize: 10,

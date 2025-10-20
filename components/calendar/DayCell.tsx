@@ -110,29 +110,31 @@ const DayCell: React.FC<DayCellProps> = ({
 
   return (
     <View style={{
-      flex: 1,
+      //flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 4,
       width: '100%',
       height: '100%',
-      borderRightWidth: 1,
-      borderBottomWidth: 1,
-      borderColor: Colors[colorScheme ?? 'light'].border,
-      borderStyle: 'solid',
+      aspectRatio: 1,
+      // borderRightWidth: 1,
+      // borderBottomWidth: 1,
+      // borderColor: Colors[colorScheme ?? 'light'].border,
+      // borderStyle: 'solid',
       // borderRadius: 8,
       // borderWidth: 1,
       // marginTop: -7,
       // marginBottom: -7,
       overflow: 'hidden',
-      borderWidth: 1,
+      // borderWidth: 1,
       backgroundColor: colors.backgroundColor,
+      // ...(containerSize ? containerSize : {}),
     }}>
     <Pressable
       style={({ pressed, hovered }: any) => [
         styles.container,
-        containerSize,
+        { width: '100%', height: '100%', aspectRatio: 1 },
         {
           backgroundColor: colors.backgroundColor,
           borderColor: isSelected
@@ -155,8 +157,8 @@ const DayCell: React.FC<DayCellProps> = ({
       ]}
       onPress={() => onPress?.(date)}
     >
-      {/* Day Number */}
-      <Text style={[styles.dayNumber, dayNumberSize, { color: colors.textColor }]}>
+      {/* Day Number - Top Left */}
+      <Text style={[styles.dayNumber, dayNumberSize, styles.dayNumberPosition, { color: colors.textColor }]}>
         {date?.day}
       </Text>
 
@@ -199,6 +201,7 @@ const DayCell: React.FC<DayCellProps> = ({
                                  colors.feastIndicatorColor?.toLowerCase() === 'white' 
                       ? '#000000' 
                       : 'rgba(255,255,255,0.3)',
+                    marginRight: 3,
                   },
                 ]}
               >
@@ -217,7 +220,7 @@ const DayCell: React.FC<DayCellProps> = ({
                 <Text
                   style={[
                     styles.dominicanSymbol,
-                    { color: isSelected ? '#FFFFFF' : Colors[colorScheme ?? 'light'].primary },
+                    { color: isSelected ? '#FFFFFF' : Colors[colorScheme ?? 'light'].primary, marginRight: 3 },
                   ]}
                 >
                   ⚫
@@ -229,7 +232,7 @@ const DayCell: React.FC<DayCellProps> = ({
                 <View
                   style={[
                     styles.multipleFeastsIndicator,
-                    { backgroundColor: Colors[colorScheme ?? 'light'].surface },
+                    { backgroundColor: Colors[colorScheme ?? 'light'].surface, marginLeft: 3 },
                   ]}
                 >
                   <Text
@@ -246,7 +249,7 @@ const DayCell: React.FC<DayCellProps> = ({
           )}
 
           {/* Feast Name (only on xlarge) */}
-          {showFeastName && size === 'xlarge' && dayContent.primaryFeast && (
+          {showFeastName && (size === 'xlarge' || size === 'large' || size === 'medium' || size === 'small') && !!dayContent?.primaryFeast && (
             <Text
               style={[styles.feastName, { color: colors.textColor }]}
               numberOfLines={1}
@@ -265,7 +268,8 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingTop: 4,
+    // paddingTop: 4,
+    // paddingLeft: 4,
     ...(Platform.OS === 'web' && {
       transition: 'all 0.15s ease-in-out',
       cursor: 'pointer',
@@ -290,7 +294,11 @@ const styles = StyleSheet.create({
   dayNumber: {
     fontFamily: 'Georgia',
     fontWeight: '600',
-    marginBottom: 2,
+  },
+  dayNumberPosition: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
   },
   dayNumberSmall: {
     fontSize: 16,
@@ -306,7 +314,6 @@ const styles = StyleSheet.create({
   },
   smallIndicators: {
     alignItems: 'center',
-    gap: 2,
   },
   feastDot: {
     width: 6,
@@ -321,7 +328,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    gap: 3,
     marginTop: 2,
   },
   rankBadge: {

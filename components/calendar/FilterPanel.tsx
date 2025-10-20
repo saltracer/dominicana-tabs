@@ -72,13 +72,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <View
           style={[
             styles.filterDot,
-            { backgroundColor: feastColor },
+            { backgroundColor: feastColor, marginRight: 6 },
           ]}
         />
         <Text
           style={[
             styles.filterText,
-            { color: isSelected ? '#FFFFFF' : colors.text },
+            { color: isSelected ? '#FFFFFF' : colors.text, marginRight: 6 },
           ]}
         >
           {filter}
@@ -123,7 +123,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             },
           ]}
         >
-          <Text style={styles.dominicanSymbol}>⚫</Text>
+          <Text style={[styles.dominicanSymbol, { marginRight: 6 }]}>⚫</Text>
           <Text
             style={[
               styles.filterText,
@@ -175,7 +175,6 @@ const styles = StyleSheet.create({
   },
   filtersScroll: {
     flexDirection: 'row',
-    gap: 8,
     paddingRight: 16,
   },
   filterChip: {
@@ -185,7 +184,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    gap: 6,
+    marginRight: 8,
   },
   dominicanChip: {
     marginRight: 8,
