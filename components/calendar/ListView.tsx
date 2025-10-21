@@ -388,7 +388,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                         viewPosition: 0.05,
                       });
                     }
-                  }, 1000); // Wait longer for items to render
+                  }, 500); // Wait longer for items to render
                 }
               } else {
                 console.warn('❌ Could not access scroll responder');
