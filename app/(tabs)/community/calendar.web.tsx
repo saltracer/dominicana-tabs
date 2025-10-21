@@ -360,11 +360,6 @@ export default function CalendarScreenWeb() {
               },
             ]}
           >
-            <View style={styles.feastPanelHeader}>
-              <Pressable onPress={closeFeastDetail} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={colors.text} />
-              </Pressable>
-            </View>
             <FeastDetailPanel
               liturgicalDay={liturgicalDay}
               isVisible={true}
@@ -487,14 +482,10 @@ const styles = StyleSheet.create({
   },
   feastPanelSide: {
     overflow: 'hidden',
-  },
-  feastPanelHeader: {
-    alignItems: 'flex-end',
-    marginBottom: 8,
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 20,
+    position: 'sticky' as any,
+    top: 0,
+    alignSelf: 'flex-start',
+    maxHeight: '85vh' as any, // Constrain to viewport height
   },
   feastPanelStacked: {
     marginTop: 20,
