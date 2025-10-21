@@ -30,6 +30,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
   const [isContentReady, setIsContentReady] = React.useState(false);
   const pendingScroll = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
   const lastScrolledDate = useRef<string | null>(null); // Prevent scrolling to same date multiple times
+  const lastScrollTimestamp = useRef<number>(0); // Timestamp of last scroll to prevent rapid duplicates
   const scrollRetryCount = useRef<number>(0); // Track retry attempts to prevent infinite loops
   const isFineTuning = useRef<boolean>(false); // Track if we're in fine-tuning phase
 
@@ -78,20 +79,35 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
   // Scroll to selected date when content is ready
   useEffect(() => {
     const currentDateString = format(selectedDate, 'yyyy-MM-dd');
+    const now = Date.now();
+    
+    // FIRST: Check if a scroll happened very recently (within 100ms) - prevents batch duplicates
+    if (now - lastScrollTimestamp.current < 100) {
+      console.log('🚫 Scroll blocked: Too soon after last scroll');
+      return;
+    }
+    
+    // SECOND: Check if we already scrolled to this date
+    if (lastScrolledDate.current === currentDateString) {
+      console.log('🚫 Scroll blocked: Already scrolled to', currentDateString);
+      return;
+    }
+    
+    // Update timestamp IMMEDIATELY to block rapid duplicates
+    lastScrollTimestamp.current = now;
+    
+    // Mark this date as scrolled IMMEDIATELY
+    lastScrolledDate.current = currentDateString;
     
     if (!isContentReady) {
+      console.log('⏳ Scroll deferred: Content not ready yet');
+      // Reset flags since we didn't actually scroll
+      lastScrolledDate.current = null;
       return;
     }
-
-    // Single guard: only scroll if this date hasn't been scrolled to yet
-    if (lastScrolledDate.current === currentDateString) {
-      return;
-    }
-    
-    // Mark this date as scrolled IMMEDIATELY (before any async operations)
-    lastScrolledDate.current = currentDateString;
 
     if (!sectionListRef.current || sections.length === 0) {
+      console.log('⏳ Scroll deferred: SectionList or sections not ready');
       return;
     }
 
@@ -150,7 +166,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         console.error('❌ Native: Scroll failed', error?.message);
       }
     }, 750); // Increased delay to allow auto-measurement of items
-  }, [isContentReady, selectedDate, sections]);
+  }, [isContentReady, selectedDate]); // Removed 'sections' - it's stable for a given currentDate and causes unnecessary re-runs
 
   const renderSectionHeader = React.useCallback(({ section }: any) => (
     <View style={[styles.sectionHeader, { backgroundColor: colors.surface }]}>
