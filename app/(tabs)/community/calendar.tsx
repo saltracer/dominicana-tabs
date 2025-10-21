@@ -42,6 +42,7 @@ export default function CalendarScreenNative() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
   const [dominicanOnly, setDominicanOnly] = useState(false);
+  const userClosedPanel = useRef(false); // Track if user explicitly closed the panel
 
   // Animations
   const feastDetailAnimation = useRef(new Animated.Value(0)).current;
@@ -153,6 +154,9 @@ export default function CalendarScreenNative() {
 
       setMarkedDates(newMarkedDates);
 
+      // User intentionally opened the panel, clear the "closed" flag
+      userClosedPanel.current = false;
+
       // Show feast detail with animation
       setShowFeastDetail(true);
       Animated.timing(feastDetailAnimation, {
@@ -165,6 +169,9 @@ export default function CalendarScreenNative() {
   );
 
   const closeFeastDetail = useCallback(() => {
+    // Mark that user explicitly closed the panel
+    userClosedPanel.current = true;
+    
     Animated.timing(feastDetailAnimation, {
       toValue: 0,
       duration: 300,

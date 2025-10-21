@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -40,6 +40,7 @@ export default function CalendarScreenWeb() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
   const [dominicanOnly, setDominicanOnly] = useState(false);
+  const userClosedPanel = useRef(false); // Track if user explicitly closed the panel
 
   // Responsive breakpoints
   const isMobile = width < 768;
@@ -61,8 +62,9 @@ export default function CalendarScreenWeb() {
   useEffect(() => {
     generateMarkedDates();
 
-    // Show feast details for the initial liturgical day
-    if (liturgicalDay && !showFeastDetail) {
+    // Only auto-show feast details on desktop (side panel), not on mobile/tablet (modal)
+    // And only if user hasn't explicitly closed it
+    if (liturgicalDay && !showFeastDetail && !userClosedPanel.current && isDesktop) {
       setShowFeastDetail(true);
       Animated.timing(feastDetailAnimation, {
         toValue: 1,
@@ -70,7 +72,7 @@ export default function CalendarScreenWeb() {
         useNativeDriver: false,
       }).start();
     }
-  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly]);
+  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly, isDesktop, showFeastDetail, feastDetailAnimation]);
 
   const generateMarkedDates = useCallback(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -168,6 +170,9 @@ export default function CalendarScreenWeb() {
 
       setMarkedDates(newMarkedDates);
 
+      // User intentionally opened the panel, clear the "closed" flag
+      userClosedPanel.current = false;
+      
       // Show feast detail panel with animation
       if (!showFeastDetail) {
         setShowFeastDetail(true);
@@ -182,6 +187,9 @@ export default function CalendarScreenWeb() {
   );
 
   const closeFeastDetail = useCallback(() => {
+    // Mark that user explicitly closed the panel
+    userClosedPanel.current = true;
+    
     Animated.timing(feastDetailAnimation, {
       toValue: 0,
       duration: 300,
