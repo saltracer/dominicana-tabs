@@ -30,6 +30,8 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
   const [isContentReady, setIsContentReady] = React.useState(false);
   const pendingScroll = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
   const lastScrolledDate = useRef<string | null>(null); // Prevent scrolling to same date multiple times
+  const scrollRetryCount = useRef<number>(0); // Track retry attempts to prevent infinite loops
+  const isFineTuning = useRef<boolean>(false); // Track if we're in fine-tuning phase
 
   // Generate list of feasts for the current year
   const generateFeastsList = (): Section[] => {
@@ -98,6 +100,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
     const sectionIndex = sections.findIndex(section => section.title === selectedDateString);
     
     if (sectionIndex === -1) {
+      console.log('❌ Scroll: Section not found for', selectedDateString);
       return;
     }
     
@@ -106,25 +109,47 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
     const itemIndex = section.data.findIndex(item => isSameDay(item.date, selectedDate));
     
     if (itemIndex === -1) {
+      console.log('❌ Scroll: Item not found in section', selectedDateString);
       return;
     }
     
+    console.log('📍 Preparing to scroll to:', {
+      date: format(selectedDate, 'MMM d, yyyy'),
+      sectionIndex,
+      sectionTitle: section.title,
+      itemIndex,
+      itemsInSection: section.data.length,
+      totalSections: sections.length,
+      viewPosition: 0.05,
+    });
+    
     // Store pending scroll for retry if needed
     pendingScroll.current = { sectionIndex, itemIndex };
+    scrollRetryCount.current = 0; // Reset retry counter for new scroll attempt
+    isFineTuning.current = false; // Reset fine-tuning flag
     
-    // Native: Use scrollToLocation with buffer to account for rendering
+    // Native: Use scrollToLocation to position selected item with breathing room
+    // Increased delay since we're not using getItemLayout - need time for items to be measured
     setTimeout(() => {
       try {
+        console.log('🎯 Scrolling to location:', {
+          sectionIndex,
+          itemIndex,
+          viewPosition: 0.05,
+          animated: true,
+          note: 'Using auto-measurement (no getItemLayout)'
+        });
         sectionListRef.current?.scrollToLocation({
           sectionIndex,
           itemIndex,
           animated: true,
-          viewPosition: 0.2, // Leave buffer room for items rendering above
+          viewPosition: 0.05, // Position near top (5% down) to keep visible above bottom menu
         });
+        console.log('✅ Scroll command executed successfully');
       } catch (error: any) {
-        console.error('Native: Scroll failed', error?.message);
+        console.error('❌ Native: Scroll failed', error?.message);
       }
-    }, 300); // Longer delay to let more items render first
+    }, 750); // Increased delay to allow auto-measurement of items
   }, [isContentReady, selectedDate, sections]);
 
   const renderSectionHeader = React.useCallback(({ section }: any) => (
@@ -257,7 +282,18 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         const targetItem = section.data[itemIndexInSection];
         const itemHeight = getItemHeight(targetItem);
         
-        // Removed logging - called too frequently, causes performance issues
+        // Add logging for the target item (only log occasionally, not for every render)
+        if (index % 50 === 0 || index === 0) {
+          console.log('📏 getItemLayout calculated:', {
+            flatIndex: index,
+            sectionIdx,
+            itemIndexInSection,
+            calculatedOffset: offset,
+            itemHeight,
+            note: 'This offset does NOT include ListHeaderComponent height'
+          });
+        }
+        
         return { length: itemHeight, offset, index };
       }
       
@@ -269,6 +305,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
     }
     
     // Fallback (shouldn't reach here)
+    console.warn('⚠️ getItemLayout fallback reached for index', index);
     return { length: 100, offset, index };
   }, [sections, getItemHeight]);
 
@@ -284,30 +321,96 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={ListHeaderComponent}
-        initialNumToRender={50}
+        initialNumToRender={365}
         maxToRenderPerBatch={30}
         windowSize={21}
         removeClippedSubviews={false}
-        getItemLayout={getItemLayout}
+        // getItemLayout={getItemLayout} // DISABLED: Let SectionList auto-measure for accurate positioning
         onContentSizeChange={handleContentSizeChange}
         onScrollToIndexFailed={(info) => {
-          console.log('⚠️  Native: Scroll to index failed, retrying...', {
+          const gap = info.index - info.highestMeasuredFrameIndex;
+          
+          console.log('⚠️  Native: Scroll to index failed', {
             targetIndex: info.index,
             highestMeasured: info.highestMeasuredFrameIndex,
             averageItemLength: info.averageItemLength,
+            gap,
+            isFineTuning: isFineTuning.current,
           });
           
-          // Retry after a short delay if we have a pending scroll
+          // If we're in fine-tuning mode
+          if (isFineTuning.current) {
+            // Only continue if gap is very small (≤ 10 items)
+            if (gap <= 10) {
+              console.log('🎯 Fine-tuning: Gap small enough, trying scrollToLocation once more');
+              isFineTuning.current = false; // Prevent further fine-tuning attempts
+              setTimeout(() => {
+                if (pendingScroll.current) {
+                  sectionListRef.current?.scrollToLocation({
+                    sectionIndex: pendingScroll.current.sectionIndex,
+                    itemIndex: pendingScroll.current.itemIndex,
+                    animated: true,
+                    viewPosition: 0.05,
+                  });
+                }
+              }, 300);
+            } else {
+              console.log('⚠️ Fine-tuning: Gap still too large, giving up');
+              isFineTuning.current = false;
+            }
+            return;
+          }
+          
+          // Initial scroll attempt failed
+          // If target is far away (gap > 20 items), use scrollTo fallback immediately
+          // Otherwise, retry once to see if more items have been measured
+          if (gap > 30 || scrollRetryCount.current > 0) {
+            console.log('📏 Using scrollTo fallback (gap too large or retry exhausted)');
+            const estimatedOffset = info.index * info.averageItemLength;
+            
+            setTimeout(() => {
+              const scrollResponder = (sectionListRef.current as any)?.getScrollResponder?.();
+              if (scrollResponder) {
+                scrollResponder.scrollTo({ y: estimatedOffset, animated: true });
+                console.log('✅ Scrolled to estimated offset:', estimatedOffset);
+                
+                // Only attempt fine-tuning if gap was very large (needed scrollTo)
+                // Wait for rendering, then try once more
+                if (gap > 20) {
+                  setTimeout(() => {
+                    if (pendingScroll.current) {
+                      console.log('🎯 Starting fine-tuning phase');
+                      isFineTuning.current = true;
+                      sectionListRef.current?.scrollToLocation({
+                        sectionIndex: pendingScroll.current.sectionIndex,
+                        itemIndex: pendingScroll.current.itemIndex,
+                        animated: true,
+                        viewPosition: 0.05,
+                      });
+                    }
+                  }, 1000); // Wait longer for items to render
+                }
+              } else {
+                console.warn('❌ Could not access scroll responder');
+              }
+            }, 100);
+            
+            scrollRetryCount.current = 0;
+            return;
+          }
+          
+          // First retry - wait for more items to render
+          scrollRetryCount.current += 1;
           if (pendingScroll.current) {
             setTimeout(() => {
-              console.log('🔄 Native: Retrying scroll...');
+              console.log('🔄 Retrying scroll to location (attempt 1)');
               sectionListRef.current?.scrollToLocation({
                 sectionIndex: pendingScroll.current!.sectionIndex,
                 itemIndex: pendingScroll.current!.itemIndex,
-                animated: false, // No animation on retry for speed
-                viewPosition: 0.1,
+                animated: false,
+                viewPosition: 0.05,
               });
-            }, 100);
+            }, 500);
           }
         }}
       />
