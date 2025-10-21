@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
@@ -26,6 +26,8 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
   const calendarService = LiturgicalCalendarService.getInstance();
+  const sectionListRef = useRef<SectionList>(null);
+  const [isFullyRendered, setIsFullyRendered] = React.useState(false);
 
   // Generate list of feasts for the current year
   const generateFeastsList = (): Section[] => {
@@ -61,7 +63,82 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
 
   const sections = generateFeastsList();
 
-  const renderSectionHeader = ({ section }: { section: Section }) => (
+  // Mark when list is fully rendered
+  useEffect(() => {
+    // Wait for list to finish rendering all items
+    const timer = setTimeout(() => {
+      console.log('✅ List marked as fully rendered');
+      setIsFullyRendered(true);
+    }, 2000); // Give it 2 seconds to render everything
+
+    return () => clearTimeout(timer);
+  }, [sections]);
+
+  // Scroll to selected date AFTER list is fully rendered
+  useEffect(() => {
+    if (!isFullyRendered) {
+      console.log('⏳ Waiting for list to fully render before scrolling');
+      return;
+    }
+
+    console.log('=== SCROLL EFFECT TRIGGERED (List Rendered) ===');
+    console.log('Selected date:', format(selectedDate, 'yyyy-MM-dd (EEEE)'));
+    console.log('Has ref:', !!sectionListRef.current);
+    console.log('Sections count:', sections.length);
+    
+    if (!sectionListRef.current) {
+      console.log('❌ No ref to SectionList yet');
+      return;
+    }
+    
+    if (sections.length === 0) {
+      console.log('❌ No sections available');
+      return;
+    }
+
+    // Find the section index for the selected date
+    const selectedDateString = format(selectedDate, 'MMMM yyyy');
+    console.log('Looking for section:', selectedDateString);
+    
+    const sectionIndex = sections.findIndex(section => section.title === selectedDateString);
+    console.log('Found section at index:', sectionIndex);
+    
+    if (sectionIndex === -1) {
+      console.log('❌ Section not found for date:', selectedDateString);
+      return;
+    }
+    
+    // Find the item index within that section
+    const section = sections[sectionIndex];
+    console.log('Section has', section.data.length, 'items');
+    
+    const itemIndex = section.data.findIndex(item => isSameDay(item.date, selectedDate));
+    console.log('Found item at index:', itemIndex);
+    
+    if (itemIndex === -1) {
+      console.log('❌ Item not found in section');
+      return;
+    }
+    
+    console.log(`✅ Native: Scrolling to section ${sectionIndex}, item ${itemIndex} (${format(selectedDate, 'MMMM d, yyyy')})`);
+    
+    // Native: Use scrollToLocation with getItemLayout for accurate positioning
+    setTimeout(() => {
+      try {
+        sectionListRef.current?.scrollToLocation({
+          sectionIndex,
+          itemIndex,
+          animated: true,
+          viewPosition: 0.15,
+        });
+        console.log(`✅ Native: scrollToLocation called`);
+      } catch (error: any) {
+        console.log(`❌ Native: Scroll failed -`, error?.message);
+      }
+    }, 300);
+  }, [isFullyRendered, selectedDate, sections]);
+
+  const renderSectionHeader = ({ section }: any) => (
     <View style={[styles.sectionHeader, { backgroundColor: colors.surface }]}>
       <Text style={[styles.sectionHeaderText, { color: colors.text }]}>{section.title}</Text>
     </View>
@@ -153,17 +230,71 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
     );
   };
 
+  // Provide item layout to enable instant scrolling without measuring
+  // Calculate height based on number of feasts per day (measured from actual rendering)
+  const getItemHeight = (item: FeastListItem) => {
+    // Measured: 1 feast = 96px, 2 feasts = 156px, so each additional feast = 60px
+    const BASE_HEIGHT = 96; // Includes first feast + padding + borders
+    const ADDITIONAL_FEAST_HEIGHT = 60; // Height per additional feast
+    return BASE_HEIGHT + ((item.feasts.length - 1) * ADDITIONAL_FEAST_HEIGHT);
+  };
+
+  const getItemLayout = (_data: any, index: number) => {
+    // Section header: paddingVertical (24) + marginBottom (8) + text (~24) = ~60px
+    const SECTION_HEADER_HEIGHT = 60;
+    
+    // Calculate offset based on sections with variable item heights
+    let offset = 0;
+    let currentFlatIndex = 0;
+    
+    for (let i = 0; i < sections.length; i++) {
+      // Add section header
+      if (currentFlatIndex === index) {
+        return { length: SECTION_HEADER_HEIGHT, offset, index };
+      }
+      offset += SECTION_HEADER_HEIGHT;
+      currentFlatIndex++;
+      
+      // Add items in this section with their actual heights
+      for (let j = 0; j < sections[i].data.length; j++) {
+        const item = sections[i].data[j];
+        const itemHeight = getItemHeight(item);
+        
+        if (currentFlatIndex === index) {
+          return { length: itemHeight, offset, index };
+        }
+        offset += itemHeight;
+        currentFlatIndex++;
+      }
+    }
+    
+    // Fallback (shouldn't reach here)
+    return { length: 100, offset, index };
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <SectionList
+        ref={sectionListRef}
         sections={sections}
-        renderSectionHeader={renderSectionHeader}
+        renderSectionHeader={renderSectionHeader as any}
         renderItem={renderItem}
         keyExtractor={(item) => item.date.toISOString()}
         stickySectionHeadersEnabled={true}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={ListHeaderComponent}
+        initialNumToRender={50}
+        maxToRenderPerBatch={30}
+        windowSize={21}
+        removeClippedSubviews={false}
+        getItemLayout={getItemLayout}
+        onScrollToIndexFailed={(info) => {
+          console.log('⚠️  onScrollToIndexFailed (should not happen with getItemLayout):', {
+            targetIndex: info.index,
+            highestMeasured: info.highestMeasuredFrameIndex,
+          });
+        }}
       />
     </View>
   );
