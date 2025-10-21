@@ -27,7 +27,9 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
   const colors = Colors[colorScheme ?? 'light'];
   const calendarService = LiturgicalCalendarService.getInstance();
   const sectionListRef = useRef<SectionList>(null);
-  const [isFullyRendered, setIsFullyRendered] = React.useState(false);
+  const [isContentReady, setIsContentReady] = React.useState(false);
+  const pendingScroll = useRef<{ sectionIndex: number; itemIndex: number } | null>(null);
+  const lastScrolledDate = useRef<string | null>(null); // Prevent scrolling to same date multiple times
 
   // Generate list of feasts for the current year
   const generateFeastsList = (): Section[] => {
@@ -61,90 +63,77 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
     return sections;
   };
 
-  const sections = generateFeastsList();
+  // Memoize sections to prevent regenerating on every render
+  const sections = React.useMemo(() => generateFeastsList(), [currentDate]);
 
-  // Mark when list is fully rendered
+  // Handle content size change (list is measured and ready)
+  const handleContentSizeChange = () => {
+    if (!isContentReady) {
+      setIsContentReady(true);
+    }
+  };
+
+  // Scroll to selected date when content is ready
   useEffect(() => {
-    // Wait for list to finish rendering all items
-    const timer = setTimeout(() => {
-      console.log('✅ List marked as fully rendered');
-      setIsFullyRendered(true);
-    }, 2000); // Give it 2 seconds to render everything
-
-    return () => clearTimeout(timer);
-  }, [sections]);
-
-  // Scroll to selected date AFTER list is fully rendered
-  useEffect(() => {
-    if (!isFullyRendered) {
-      console.log('⏳ Waiting for list to fully render before scrolling');
+    const currentDateString = format(selectedDate, 'yyyy-MM-dd');
+    
+    if (!isContentReady) {
       return;
     }
 
-    console.log('=== SCROLL EFFECT TRIGGERED (List Rendered) ===');
-    console.log('Selected date:', format(selectedDate, 'yyyy-MM-dd (EEEE)'));
-    console.log('Has ref:', !!sectionListRef.current);
-    console.log('Sections count:', sections.length);
-    
-    if (!sectionListRef.current) {
-      console.log('❌ No ref to SectionList yet');
+    // Single guard: only scroll if this date hasn't been scrolled to yet
+    if (lastScrolledDate.current === currentDateString) {
       return;
     }
     
-    if (sections.length === 0) {
-      console.log('❌ No sections available');
+    // Mark this date as scrolled IMMEDIATELY (before any async operations)
+    lastScrolledDate.current = currentDateString;
+
+    if (!sectionListRef.current || sections.length === 0) {
       return;
     }
 
     // Find the section index for the selected date
     const selectedDateString = format(selectedDate, 'MMMM yyyy');
-    console.log('Looking for section:', selectedDateString);
-    
     const sectionIndex = sections.findIndex(section => section.title === selectedDateString);
-    console.log('Found section at index:', sectionIndex);
     
     if (sectionIndex === -1) {
-      console.log('❌ Section not found for date:', selectedDateString);
       return;
     }
     
     // Find the item index within that section
     const section = sections[sectionIndex];
-    console.log('Section has', section.data.length, 'items');
-    
     const itemIndex = section.data.findIndex(item => isSameDay(item.date, selectedDate));
-    console.log('Found item at index:', itemIndex);
     
     if (itemIndex === -1) {
-      console.log('❌ Item not found in section');
       return;
     }
     
-    console.log(`✅ Native: Scrolling to section ${sectionIndex}, item ${itemIndex} (${format(selectedDate, 'MMMM d, yyyy')})`);
+    // Store pending scroll for retry if needed
+    pendingScroll.current = { sectionIndex, itemIndex };
     
-    // Native: Use scrollToLocation with getItemLayout for accurate positioning
+    // Native: Use scrollToLocation with buffer to account for rendering
     setTimeout(() => {
       try {
         sectionListRef.current?.scrollToLocation({
           sectionIndex,
           itemIndex,
           animated: true,
-          viewPosition: 0.15,
+          viewPosition: 0.2, // Leave buffer room for items rendering above
         });
-        console.log(`✅ Native: scrollToLocation called`);
       } catch (error: any) {
-        console.log(`❌ Native: Scroll failed -`, error?.message);
+        console.error('Native: Scroll failed', error?.message);
       }
-    }, 300);
-  }, [isFullyRendered, selectedDate, sections]);
+    }, 300); // Longer delay to let more items render first
+  }, [isContentReady, selectedDate, sections]);
 
-  const renderSectionHeader = ({ section }: any) => (
+  const renderSectionHeader = React.useCallback(({ section }: any) => (
     <View style={[styles.sectionHeader, { backgroundColor: colors.surface }]}>
       <Text style={[styles.sectionHeaderText, { color: colors.text }]}>{section.title}</Text>
     </View>
-  );
+  ), [colors.surface, colors.text]);
 
-  const renderItem = ({ item }: { item: FeastListItem }) => {
+  const renderItem = React.useCallback(({ item }: { item: FeastListItem }) => {
     const isSelected = isSameDay(item.date, selectedDate);
     const isToday = isSameDay(item.date, new Date());
 
@@ -228,49 +217,60 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         </View>
       </Pressable>
     );
-  };
+  }, [selectedDate, onDayPress, colors.primary, colors.card, colors.border, colors.dominicanWhite, colors.text, colors.textSecondary]);
 
   // Provide item layout to enable instant scrolling without measuring
   // Calculate height based on number of feasts per day (measured from actual rendering)
-  const getItemHeight = (item: FeastListItem) => {
+  const getItemHeight = React.useCallback((item: FeastListItem) => {
     // Measured: 1 feast = 96px, 2 feasts = 156px, so each additional feast = 60px
     const BASE_HEIGHT = 96; // Includes first feast + padding + borders
     const ADDITIONAL_FEAST_HEIGHT = 60; // Height per additional feast
     return BASE_HEIGHT + ((item.feasts.length - 1) * ADDITIONAL_FEAST_HEIGHT);
-  };
+  }, []);
 
-  const getItemLayout = (_data: any, index: number) => {
-    // Section header: paddingVertical (24) + marginBottom (8) + text (~24) = ~60px
-    const SECTION_HEADER_HEIGHT = 60;
+  const getItemLayout = React.useCallback((_data: any, index: number) => {
+    // Section header: Measured on native at 44.7px
+    const SECTION_HEADER_HEIGHT = 45;
     
-    // Calculate offset based on sections with variable item heights
+    // KEY INSIGHT: index is the flat ITEM index (excluding section headers),
+    // but offset must INCLUDE section header heights in the calculation
     let offset = 0;
-    let currentFlatIndex = 0;
+    let itemsSoFar = 0; // Count items only, not headers
     
-    for (let i = 0; i < sections.length; i++) {
-      // Add section header
-      if (currentFlatIndex === index) {
-        return { length: SECTION_HEADER_HEIGHT, offset, index };
-      }
-      offset += SECTION_HEADER_HEIGHT;
-      currentFlatIndex++;
+    for (let sectionIdx = 0; sectionIdx < sections.length; sectionIdx++) {
+      const section = sections[sectionIdx];
+      const itemsInThisSection = section.data.length;
       
-      // Add items in this section with their actual heights
-      for (let j = 0; j < sections[i].data.length; j++) {
-        const item = sections[i].data[j];
-        const itemHeight = getItemHeight(item);
+      // Add section header height to offset (but not to item count)
+      offset += SECTION_HEADER_HEIGHT;
+      
+      // Check if the target index is in this section
+      if (index < itemsSoFar + itemsInThisSection) {
+        // Target item is in this section!
+        const itemIndexInSection = index - itemsSoFar;
         
-        if (currentFlatIndex === index) {
-          return { length: itemHeight, offset, index };
+        // Add heights of all items BEFORE the target in this section
+        for (let i = 0; i < itemIndexInSection; i++) {
+          offset += getItemHeight(section.data[i]);
         }
-        offset += itemHeight;
-        currentFlatIndex++;
+        
+        const targetItem = section.data[itemIndexInSection];
+        const itemHeight = getItemHeight(targetItem);
+        
+        // Removed logging - called too frequently, causes performance issues
+        return { length: itemHeight, offset, index };
       }
+      
+      // Not in this section yet, add all item heights from this section
+      for (let i = 0; i < itemsInThisSection; i++) {
+        offset += getItemHeight(section.data[i]);
+      }
+      itemsSoFar += itemsInThisSection;
     }
     
     // Fallback (shouldn't reach here)
     return { length: 100, offset, index };
-  };
+  }, [sections, getItemHeight]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -289,11 +289,26 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         windowSize={21}
         removeClippedSubviews={false}
         getItemLayout={getItemLayout}
+        onContentSizeChange={handleContentSizeChange}
         onScrollToIndexFailed={(info) => {
-          console.log('⚠️  onScrollToIndexFailed (should not happen with getItemLayout):', {
+          console.log('⚠️  Native: Scroll to index failed, retrying...', {
             targetIndex: info.index,
             highestMeasured: info.highestMeasuredFrameIndex,
+            averageItemLength: info.averageItemLength,
           });
+          
+          // Retry after a short delay if we have a pending scroll
+          if (pendingScroll.current) {
+            setTimeout(() => {
+              console.log('🔄 Native: Retrying scroll...');
+              sectionListRef.current?.scrollToLocation({
+                sectionIndex: pendingScroll.current!.sectionIndex,
+                itemIndex: pendingScroll.current!.itemIndex,
+                animated: false, // No animation on retry for speed
+                viewPosition: 0.1,
+              });
+            }, 100);
+          }
         }}
       />
     </View>
