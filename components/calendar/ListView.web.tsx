@@ -62,6 +62,17 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
 
   const sections = React.useMemo(() => generateFeastsList(), [currentDate]);
 
+  // Helper function to check if a color is white or very light
+  const isLightColor = (color: string): boolean => {
+    if (!color) return false;
+    const lowerColor = color.toLowerCase();
+    return lowerColor === '#ffffff' || 
+           lowerColor === '#fff' || 
+           lowerColor === 'white' ||
+           lowerColor === 'rgb(255, 255, 255)' ||
+           lowerColor === 'rgba(255, 255, 255, 1)';
+  };
+
   // Scroll to selected date when it changes
   useEffect(() => {
     if (!selectedDate) return;
@@ -173,10 +184,24 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                             <View
                               style={[
                                 styles.rankBadge,
-                                { backgroundColor: feast.color || colors.textMuted, marginRight: 8 },
+                                { 
+                                  backgroundColor: feast.color || colors.textMuted, 
+                                  marginRight: 8,
+                                  // Add black border for white feasts (always black, even in dark mode)
+                                  borderWidth: isLightColor(feast.color) ? 1 : 0,
+                                  borderColor: isLightColor(feast.color) ? colors.alwaysBlack : 'transparent',
+                                },
                               ]}
                             >
-                              <Text style={styles.rankText}>
+                              <Text 
+                                style={[
+                                  styles.rankText,
+                                  {
+                                    // Use black text for white feasts (always black for contrast), white for all others
+                                    color: isLightColor(feast.color) ? colors.alwaysBlack : colors.dominicanWhite,
+                                  }
+                                ]}
+                              >
                                 {feast.rank === 'Optional Memorial' ? 'OM' : feast.rank.charAt(0)}
                               </Text>
                             </View>

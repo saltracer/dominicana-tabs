@@ -283,9 +283,9 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                     { 
                       backgroundColor: feast.color || colors.textMuted, 
                       marginRight: 8,
-                      // Add black border for white feasts
-                      borderWidth: isLightColor(feast.color) ? 2 : 0,
-                      borderColor: isLightColor(feast.color) ? '#000000' : 'transparent',
+                      // Add black border for white feasts (always black, even in dark mode)
+                      borderWidth: isLightColor(feast.color) ? 1 : 0,
+                      borderColor: isLightColor(feast.color) ? colors.alwaysBlack : 'transparent',
                     },
                   ]}
                 >
@@ -293,8 +293,8 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                     style={[
                       styles.rankText,
                       {
-                        // Use black text for white feasts, white text for all others
-                        color: isLightColor(feast.color) ? '#000000' : '#FFFFFF',
+                        // Use black text for white feasts (always black for contrast), white for all others
+                        color: isLightColor(feast.color) ? colors.alwaysBlack : colors.dominicanWhite,
                       }
                     ]}
                   >
@@ -315,7 +315,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         </View>
       </Pressable>
     );
-  }, [selectedDate, onDayPress, colors.primary, colors.card, colors.border, colors.dominicanWhite, colors.text, colors.textSecondary, colors.textMuted, isLightColor]);
+  }, [selectedDate, onDayPress, colors.primary, colors.card, colors.border, colors.dominicanWhite, colors.dominicanBlack, colors.text, colors.textSecondary, colors.textMuted, isLightColor]);
 
   // Provide item layout to enable instant scrolling without measuring
   // Calculate height based on number of feasts per day (measured from actual rendering)

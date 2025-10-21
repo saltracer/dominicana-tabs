@@ -64,6 +64,9 @@ export const Colors = {
     dominicanWhite: '#FFFFFF',
     dominicanGold: '#DAA520',
     dominicanRed: '#B42025',
+
+    alwaysBlack: '#000000',
+    alwaysWhite: '#FFFFFF',
     
     tint: tintColorLight,
     icon: '#687076',
@@ -133,6 +136,9 @@ export const Colors = {
     dominicanWhite: '#000000',
     dominicanGold: '#FFD700',
     dominicanRed: '#B42025',
+
+    alwaysBlack: '#000000',
+    alwaysWhite: '#FFFFFF',
 
     tint: tintColorDark,
     icon: '#9BA1A6',
