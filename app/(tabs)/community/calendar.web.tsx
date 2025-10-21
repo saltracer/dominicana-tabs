@@ -7,6 +7,7 @@ import {
   Pressable,
   Animated,
   useWindowDimensions,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
@@ -340,6 +341,7 @@ export default function CalendarScreenWeb() {
 
         {/* Right Column / Bottom Section - Feast Detail Panel */}
         {shouldShowSideBySide ? (
+          // Desktop: Side panel
           <Animated.View
             style={[
               styles.feastPanelSide,
@@ -366,29 +368,49 @@ export default function CalendarScreenWeb() {
               onClose={closeFeastDetail}
             />
           </Animated.View>
+        ) : viewMode === 'list' && shouldStackVertically && showFeastDetail ? (
+          // List view on mobile/tablet: Modal
+          <Modal
+            visible={showFeastDetail}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={closeFeastDetail}
+          >
+            <View style={styles.modalOverlay}>
+              <Pressable style={styles.modalBackdrop} onPress={closeFeastDetail} />
+              <View style={styles.modalContent}>
+                <FeastDetailPanel
+                  liturgicalDay={liturgicalDay}
+                  isVisible={true}
+                  onClose={closeFeastDetail}
+                />
+              </View>
+            </View>
+          </Modal>
         ) : shouldStackVertically && showFeastDetail ? (
-            <Animated.View
-              style={[
-                styles.feastPanelStacked,
-                {
-                  opacity: feastDetailAnimation,
-                  transform: [
-                    {
-                      translateY: feastDetailAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [50, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <FeastDetailPanel
-                liturgicalDay={liturgicalDay}
-                isVisible={true}
-                onClose={closeFeastDetail}
-              />
-            </Animated.View>
+          // Month/Week views on mobile/tablet: Stacked
+          <Animated.View
+            style={[
+              styles.feastPanelStacked,
+              {
+                opacity: feastDetailAnimation,
+                transform: [
+                  {
+                    translateY: feastDetailAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [50, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <FeastDetailPanel
+              liturgicalDay={liturgicalDay}
+              isVisible={true}
+              onClose={closeFeastDetail}
+            />
+          </Animated.View>
         ) : null}
       </View>
 
@@ -490,6 +512,27 @@ const styles = StyleSheet.create({
   feastPanelStacked: {
     marginTop: 20,
     borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 600,
+    maxHeight: '85%',
+    borderRadius: 20,
     overflow: 'hidden',
   },
 });

@@ -300,30 +300,25 @@ export default function CalendarScreenNative() {
             }
           />
 
-          {/* Feast Detail Panel - Shows when day is selected */}
+          {/* Feast Detail Panel - Shows as modal in list view */}
           {liturgicalDay && showFeastDetail && (
-            <Animated.View
-              style={[
-                styles.feastPanelStacked,
-                {
-                  opacity: feastDetailAnimation,
-                  transform: [
-                    {
-                      translateY: feastDetailAnimation.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [50, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
+            <Modal
+              visible={showFeastDetail}
+              animationType="slide"
+              transparent={true}
+              onRequestClose={closeFeastDetail}
             >
-              <FeastDetailPanel
-                liturgicalDay={liturgicalDay}
-                isVisible={true}
-                onClose={closeFeastDetail}
-              />
-            </Animated.View>
+              <View style={styles.modalOverlay}>
+                <Pressable style={styles.modalBackdrop} onPress={closeFeastDetail} />
+                <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+                  <FeastDetailPanel
+                    liturgicalDay={liturgicalDay}
+                    isVisible={true}
+                    onClose={closeFeastDetail}
+                  />
+                </View>
+              </View>
+            </Modal>
           )}
         </View>
       ) : (
@@ -621,7 +616,23 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+  },
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '85%',
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   searchModal: {
     position: 'absolute',
