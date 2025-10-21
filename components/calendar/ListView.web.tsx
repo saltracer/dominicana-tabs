@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   sectionHeader: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12, // Reduced from 16 for narrow screens
     paddingVertical: 12,
     borderRadius: 8,
     marginBottom: 8,
@@ -249,19 +249,19 @@ const styles = StyleSheet.create({
   },
   listItem: {
     flexDirection: 'row',
-    padding: 16,
+    padding: 12, // Reduced from 16 for narrow screens
     marginBottom: 8,
     borderRadius: 12,
     borderWidth: 2,
   },
   dateColumn: {
-    width: 60,
+    width: 50, // Reduced from 60 for narrow screens
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: 12, // Reduced from 16 for narrow screens
   },
   dateDay: {
-    fontSize: 28,
+    fontSize: 24, // Reduced from 28 for narrow screens
     fontFamily: 'Georgia',
     fontWeight: '700',
   },
@@ -296,6 +296,7 @@ const styles = StyleSheet.create({
   feastMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap', // Allow wrapping on narrow screens
   },
   rankBadge: {
     width: 20,
@@ -311,8 +312,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
   rankLabel: {
-    fontSize: 13,
+    fontSize: 12, // Reduced from 13 for narrow screens
     fontFamily: 'Georgia',
+    flexShrink: 1, // Allow text to shrink if needed
   },
 });
 

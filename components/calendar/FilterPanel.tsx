@@ -96,7 +96,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     <View style={styles.container}>
       {!compact && (
         <View style={styles.header}>
-          <Text style={[styles.headerText, { color: colors.text }]}>Filter Feasts</Text>
+          {/* <Text style={[styles.headerText, { color: colors.text }]}>Filter Feasts</Text> */}
           {hasActiveFilters && (
             <Pressable onPress={onClearAll} style={styles.clearButton}>
               <Text style={[styles.clearText, { color: colors.primary }]}>Clear All</Text>

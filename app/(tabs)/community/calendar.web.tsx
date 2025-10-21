@@ -260,26 +260,32 @@ export default function CalendarScreenWeb() {
             <SearchBar onSelectDate={handleSearchSelect} />
           </View>
 
-          {/* Filters */}
-          <FilterPanel
-            selectedFilters={selectedFilters}
-            onToggleFilter={handleToggleFilter}
-            dominicanOnly={dominicanOnly}
-            onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
-            onClearAll={handleClearFilters}
-            compact={isMobile}
-          />
+          {/* Filters & View Mode Toggle */}
+          <View style={[
+            styles.controlsContainer,
+            // Only use horizontal layout on very wide screens, or desktop without side panel
+            (isWide || (isDesktop && !shouldShowSideBySide)) && styles.controlsContainerHorizontal
+          ]}>
+            {/* Filters */}
+            <View style={(isWide || (isDesktop && !shouldShowSideBySide)) ? styles.filtersWide : styles.filtersFull}>
+              <FilterPanel
+                selectedFilters={selectedFilters}
+                onToggleFilter={handleToggleFilter}
+                dominicanOnly={dominicanOnly}
+                onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+                onClearAll={handleClearFilters}
+                compact={isMobile}
+              />
+            </View>
 
-          {/* View Mode Toggle & Month Title */}
-          <View style={styles.calendarHeader}>
-            <Text style={[styles.calendarTitle, { color: colors.text }]}>
-              {format(selectedDate || new Date(), 'MMMM yyyy')}
-            </Text>
-            <ViewModeToggle
-              currentMode={viewMode}
-              onModeChange={setViewMode}
-              compact={isMobile}
-            />
+            {/* View Mode Toggle */}
+            <View style={(isWide || (isDesktop && !shouldShowSideBySide)) ? styles.viewModeWide : styles.viewModeFull}>
+              <ViewModeToggle
+                currentMode={viewMode}
+                onModeChange={setViewMode}
+                compact={isMobile}
+              />
+            </View>
           </View>
 
           {/* Calendar View Container */}
@@ -448,9 +454,32 @@ const styles = StyleSheet.create({
   searchSection: {
     marginBottom: 16,
   },
+  controlsContainer: {
+    marginBottom: 16,
+  },
+  controlsContainerHorizontal: {
+    flexDirection: 'row',
+    gap: 16,
+    alignItems: 'center', // Vertically center filters and view mode toggle
+  },
+  filtersWide: {
+    flex: 1,
+  },
+  filtersFull: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  viewModeWide: {
+    minWidth: 200,
+    alignItems: 'flex-end',
+  },
+  viewModeFull: {
+    width: '100%',
+    alignItems: 'center',
+  },
   calendarHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center', // Center the ViewModeToggle
     alignItems: 'center',
     marginBottom: 16,
   },
