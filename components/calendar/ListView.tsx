@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
@@ -33,18 +33,21 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
   const lastScrollTimestamp = useRef<number>(0); // Timestamp of last scroll to prevent rapid duplicates
   const scrollRetryCount = useRef<number>(0); // Track retry attempts to prevent infinite loops
   const isFineTuning = useRef<boolean>(false); // Track if we're in fine-tuning phase
+  
+  // Track loaded years and sections with state for dynamic loading
+  const [sections, setSections] = React.useState<Section[]>([]);
+  const loadedYears = useRef<Set<number>>(new Set());
 
-  // Generate list of feasts for the current year
-  const generateFeastsList = (): Section[] => {
-    const sections: Section[] = [];
-    const currentYear = currentDate.getFullYear();
+  // Generate list of feasts for a specific year
+  const generateFeastsForYear = useCallback((year: number): Section[] => {
+    const yearSections: Section[] = [];
 
     for (let month = 0; month < 12; month++) {
-      const daysInMonth = new Date(currentYear, month + 1, 0).getDate();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
       const monthData: FeastListItem[] = [];
 
       for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(currentYear, month, day);
+        const date = new Date(year, month, day);
         const liturgicalDay = calendarService.getLiturgicalDay(date);
 
         if (liturgicalDay.feasts.length > 0) {
@@ -56,18 +59,47 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
       }
 
       if (monthData.length > 0) {
-        sections.push({
-          title: format(new Date(currentYear, month, 1), 'MMMM yyyy'),
+        yearSections.push({
+          title: format(new Date(year, month, 1), 'MMMM yyyy'),
           data: monthData,
         });
       }
     }
 
-    return sections;
-  };
+    return yearSections;
+  }, [calendarService]);
 
-  // Memoize sections to prevent regenerating on every render
-  const sections = React.useMemo(() => generateFeastsList(), [currentDate]);
+  // Initialize with current year's data
+  useEffect(() => {
+    const currentYear = currentDate.getFullYear();
+    if (!loadedYears.current.has(currentYear)) {
+      const initialSections = generateFeastsForYear(currentYear);
+      setSections(initialSections);
+      loadedYears.current.add(currentYear);
+      console.log('📅 Loaded initial year:', currentYear);
+    }
+  }, [currentDate, generateFeastsForYear]);
+
+  // Handle loading next year when user scrolls to bottom
+  const handleEndReached = useCallback(() => {
+    // Find the highest year currently loaded
+    const years = Array.from(loadedYears.current);
+    const maxYear = Math.max(...years);
+    const nextYear = maxYear + 1;
+
+    // Check if we've already loaded this year
+    if (loadedYears.current.has(nextYear)) {
+      return;
+    }
+
+    console.log('📅 Loading next year:', nextYear);
+    const nextYearSections = generateFeastsForYear(nextYear);
+    
+    // Append next year's data to existing sections
+    setSections(prevSections => [...prevSections, ...nextYearSections]);
+    loadedYears.current.add(nextYear);
+    console.log('✅ Loaded year:', nextYear);
+  }, [generateFeastsForYear]);
 
   // Handle content size change (list is measured and ready)
   const handleContentSizeChange = () => {
@@ -174,6 +206,17 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
     </View>
   ), [colors.surface, colors.text]);
 
+  // Helper function to check if a color is white or very light
+  const isLightColor = (color: string): boolean => {
+    if (!color) return false;
+    const lowerColor = color.toLowerCase();
+    return lowerColor === '#ffffff' || 
+           lowerColor === '#fff' || 
+           lowerColor === 'white' ||
+           lowerColor === 'rgb(255, 255, 255)' ||
+           lowerColor === 'rgba(255, 255, 255, 1)';
+  };
+
   const renderItem = React.useCallback(({ item }: { item: FeastListItem }) => {
     const isSelected = isSameDay(item.date, selectedDate);
     const isToday = isSameDay(item.date, new Date());
@@ -237,10 +280,24 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                 <View
                   style={[
                     styles.rankBadge,
-                    { backgroundColor: feast.color || colors.textMuted, marginRight: 8 },
+                    { 
+                      backgroundColor: feast.color || colors.textMuted, 
+                      marginRight: 8,
+                      // Add black border for white feasts
+                      borderWidth: isLightColor(feast.color) ? 2 : 0,
+                      borderColor: isLightColor(feast.color) ? '#000000' : 'transparent',
+                    },
                   ]}
                 >
-                  <Text style={styles.rankText}>
+                  <Text 
+                    style={[
+                      styles.rankText,
+                      {
+                        // Use black text for white feasts, white text for all others
+                        color: isLightColor(feast.color) ? '#000000' : '#FFFFFF',
+                      }
+                    ]}
+                  >
                     {feast.rank === 'Optional Memorial' ? 'OM' : feast.rank.charAt(0)}
                   </Text>
                 </View>
@@ -258,7 +315,7 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         </View>
       </Pressable>
     );
-  }, [selectedDate, onDayPress, colors.primary, colors.card, colors.border, colors.dominicanWhite, colors.text, colors.textSecondary]);
+  }, [selectedDate, onDayPress, colors.primary, colors.card, colors.border, colors.dominicanWhite, colors.text, colors.textSecondary, colors.textMuted, isLightColor]);
 
   // Provide item layout to enable instant scrolling without measuring
   // Calculate height based on number of feasts per day (measured from actual rendering)
@@ -338,11 +395,13 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={ListHeaderComponent}
         initialNumToRender={365}
-        maxToRenderPerBatch={30}
+        maxToRenderPerBatch={365}
         windowSize={21}
         removeClippedSubviews={false}
         // getItemLayout={getItemLayout} // DISABLED: Let SectionList auto-measure for accurate positioning
         onContentSizeChange={handleContentSizeChange}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={0.8} // Load next year when user is 80% through the list
         onScrollToIndexFailed={(info) => {
           const gap = info.index - info.highestMeasuredFrameIndex;
           
@@ -440,7 +499,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   listContent: {
-    paddingBottom: 20,
+    paddingBottom: 300, // Ensure last items are fully visible above tab bar
   },
   sectionHeader: {
     paddingHorizontal: 16,
