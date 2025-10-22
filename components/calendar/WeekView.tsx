@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
-import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, addWeeks, subWeeks } from 'date-fns';
+import DayCell from './DayCell';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, subWeeks } from 'date-fns';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -16,7 +16,6 @@ interface WeekViewProps {
 const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPress, onWeekChange }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const calendarService = LiturgicalCalendarService.getInstance();
   const scrollViewRef = useRef<ScrollView>(null);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -25,10 +24,12 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
 
   // Auto-scroll to selected date when it changes or when week changes
   useEffect(() => {
-    const selectedIndex = daysInWeek.findIndex(day => isSameDay(day, selectedDate));
+    const selectedIndex = daysInWeek.findIndex(day => 
+      format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+    );
     if (selectedIndex >= 0 && scrollViewRef.current) {
-      // Calculate scroll position: each card is 160 width + 12 margin
-      const scrollPosition = selectedIndex * (160 + 12);
+      // Calculate scroll position: each cell is 120 width + 12 margin
+      const scrollPosition = selectedIndex * (120 + 12);
       // Use setTimeout to ensure the layout is ready
       setTimeout(() => {
         scrollViewRef.current?.scrollTo({
@@ -49,6 +50,17 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
     onWeekChange?.(newDate);
   };
 
+  // Create marking for selected date
+  const getMarking = (day: Date) => {
+    const dateString = format(day, 'yyyy-MM-dd');
+    const selectedDateString = format(selectedDate, 'yyyy-MM-dd');
+    
+    if (dateString === selectedDateString) {
+      return { selected: true };
+    }
+    return undefined;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
       {/* Week Navigation Header */}
@@ -57,7 +69,7 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
           onPress={handlePreviousWeek}
           style={({ pressed }) => [
             styles.navButton,
-            { backgroundColor: pressed ? colors.surface : 'transparent' },
+            { opacity: pressed ? 0.6 : 1 }
           ]}
         >
           <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -71,7 +83,7 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
           onPress={handleNextWeek}
           style={({ pressed }) => [
             styles.navButton,
-            { backgroundColor: pressed ? colors.surface : 'transparent' },
+            { opacity: pressed ? 0.6 : 1 }
           ]}
         >
           <Ionicons name="chevron-forward" size={24} color={colors.text} />
@@ -80,93 +92,27 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
 
       <ScrollView ref={scrollViewRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {daysInWeek.map((day) => {
-          const liturgicalDay = calendarService.getLiturgicalDay(day);
-          const isSelected = isSameDay(day, selectedDate);
-          const isToday = isSameDay(day, new Date());
+          const dateString = format(day, 'yyyy-MM-dd');
+          const dayNumber = parseInt(format(day, 'd'), 10);
 
           return (
-            <Pressable
-              key={day.toISOString()}
-              onPress={() => onDayPress(day)}
-              style={({ pressed }) => [
-                styles.dayCard,
-                {
-                  backgroundColor: isSelected ? colors.primary : colors.surface,
-                  borderColor: isToday ? colors.primary : colors.border,
-                  opacity: pressed ? 0.7 : 1,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.dayOfWeek,
-                  { color: isSelected ? colors.dominicanWhite : colors.textSecondary },
-                ]}
-              >
+            <View key={day.toISOString()} style={styles.dayCellWrapper}>
+              {/* Day of Week Label */}
+              <Text style={[styles.dayOfWeek, { color: colors.textSecondary }]}>
                 {format(day, 'EEE')}
               </Text>
-              <Text
-                style={[
-                  styles.dayNumber,
-                  { color: isSelected ? colors.dominicanWhite : colors.text },
-                ]}
-              >
-                {format(day, 'd')}
-              </Text>
-
-              {liturgicalDay.feasts.length > 0 && (
-                <View style={styles.feastsContainer}>
-                  {liturgicalDay.feasts.slice(0, 2).map((feast, index) => {
-                    const hasDominican = feast.isDominican;
-                    return (
-                      <View key={index} style={styles.feastItem}>
-                        {hasDominican && (
-                <Text
-                  style={[
-                    styles.dominicanIndicator,
-                    { color: isSelected ? colors.dominicanWhite : colors.primary, marginRight: 4 },
-                  ]}
-                >
-                  ⚫
-                </Text>
-              )}
-              <Text
-                style={[
-                  styles.feastName,
-                  { color: isSelected ? colors.dominicanWhite : colors.text, marginRight: 4 },
-                ]}
-                numberOfLines={1}
-              >
-                {feast.name}
-              </Text>
-              <View
-                style={[
-                  styles.rankBadge,
-                  { backgroundColor: feast.color || colors.textMuted },
-                ]}
-              >
-                          <Text style={styles.rankText}>
-                            {feast.rank === 'Optional Memorial'
-                              ? 'O'
-                              : feast.rank.charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })}
-                  {liturgicalDay.feasts.length > 2 && (
-                    <Text
-                      style={[
-                        styles.moreFeastsText,
-                        { color: isSelected ? colors.dominicanWhite : colors.textMuted },
-                      ]}
-                    >
-                      +{liturgicalDay.feasts.length - 2} more
-                    </Text>
-                  )}
-                </View>
-              )}
-            </Pressable>
+              
+              {/* DayCell Component */}
+              <View style={styles.dayCellContainer}>
+                <DayCell
+                  date={{ dateString, day: dayNumber }}
+                  marking={getMarking(day)}
+                  onPress={() => onDayPress(day)}
+                  size="large"
+                  showFeastName={true}
+                />
+              </View>
+            </View>
           );
         })}
       </ScrollView>
@@ -195,17 +141,15 @@ const styles = StyleSheet.create({
   navButton: {
     padding: 8,
     borderRadius: 20,
-  },
+    cursor: 'pointer',
+  } as any,
   scrollContent: {
     padding: 12,
+    gap: 12,
+    flexDirection: 'row',
   },
-  dayCard: {
-    width: 160,
-    minHeight: 120,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginRight: 12,
+  dayCellWrapper: {
+    alignItems: 'center',
   },
   dayOfWeek: {
     fontSize: 12,
@@ -213,46 +157,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  dayNumber: {
-    fontSize: 24,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
     marginBottom: 8,
+    textAlign: 'center',
   },
-  feastsContainer: {
-  },
-  feastItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  dominicanIndicator: {
-    fontSize: 10,
-  },
-  feastName: {
-    flex: 1,
-    fontSize: 11,
-    fontFamily: 'Georgia',
-  },
-  rankBadge: {
-    width: 16,
-    height: 16,
+  dayCellContainer: {
+    width: 120,
+    height: 120,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rankText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    fontFamily: 'Georgia',
-  },
-  moreFeastsText: {
-    fontSize: 10,
-    fontFamily: 'Georgia',
-    fontStyle: 'italic',
+    overflow: 'hidden',
   },
 });
 
