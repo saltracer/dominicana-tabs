@@ -227,8 +227,9 @@ export default function CalendarScreenWeb() {
   }
 
   // Responsive layout logic
-  const shouldShowSideBySide = isDesktop && showFeastDetail;
-  const shouldStackVertically = (isMobile || isTablet) || !showFeastDetail;
+  // In week view, always stack vertically (feast panel below calendar)
+  const shouldShowSideBySide = isDesktop && showFeastDetail && viewMode !== 'week';
+  const shouldStackVertically = (isMobile || isTablet) || !showFeastDetail || viewMode === 'week';
 
   return (
     <ScrollView
