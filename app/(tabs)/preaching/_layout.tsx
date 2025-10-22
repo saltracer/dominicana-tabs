@@ -53,7 +53,9 @@ export default function PreachingLayout() {
           fontFamily: 'System',
           fontWeight: '700',
         },
-        contentStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background }
+        contentStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background },
+        // Disable default animations - we'll handle them with custom wrapper
+        animation: 'none',
       }}
     >
       <Stack.Screen 
@@ -68,6 +70,7 @@ export default function PreachingLayout() {
         name="podcasts" 
         options={{
           headerTitle: 'Podcasts',
+          headerBackTitle: '',
           headerLeft: () => headerLeftComponent,
           headerRight: () => headerRightComponent,
         }}
@@ -76,6 +79,7 @@ export default function PreachingLayout() {
         name="blogs" 
         options={{
           headerTitle: 'Blogs',
+          headerBackTitle: '',
           headerLeft: () => headerLeftComponent,
           headerRight: () => headerRightComponent,
         }}
