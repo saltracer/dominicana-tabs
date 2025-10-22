@@ -13,7 +13,11 @@ export default function CommunityNavigation({ activeTab }: CommunityNavigationPr
   const router = useRouter();
 
   const handleTabPress = (tab: string) => {
-    router.push(`/(tabs)/community/${tab}` as any);
+    if (tab === activeTab) return; // Don't navigate to the same tab
+    
+    // Use replace instead of push for lateral tab navigation
+    // This prevents building up a navigation stack and provides cleaner transitions
+    router.replace(`/(tabs)/community/${tab}` as any);
   };
 
   return (
