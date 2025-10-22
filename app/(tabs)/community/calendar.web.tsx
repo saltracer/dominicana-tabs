@@ -250,6 +250,8 @@ export default function CalendarScreenWeb() {
         style={[
           styles.mainContentContainer,
           shouldShowSideBySide && styles.sideBySideLayout,
+          // Reduce padding on very narrow screens
+          width < 400 && { padding: 8 },
         ]}
       >
         {/* Left Column / Top Section - Calendar */}
@@ -323,6 +325,7 @@ export default function CalendarScreenWeb() {
                 selectedDate={selectedDate || new Date()}
                 onDayPress={handleDayPress}
                 onWeekChange={(newDate) => setCurrentWeekDate(newDate)}
+                cellSize={cellSize}
               />
             )}
 
@@ -466,7 +469,7 @@ const styles = StyleSheet.create({
   },
   calendarSection: {
     flex: 1,
-    minWidth: 400,
+    minWidth: 300, // Reduced from 400 to support 390px screens
     marginRight: 20,
   },
   searchSection: {

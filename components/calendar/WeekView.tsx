@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useRef, useEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
@@ -11,16 +11,37 @@ interface WeekViewProps {
   selectedDate: Date;
   onDayPress: (date: Date) => void;
   onWeekChange?: (newDate: Date) => void;
+  cellSize?: 'small' | 'medium' | 'large' | 'xlarge';
 }
 
-const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPress, onWeekChange }) => {
+const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPress, onWeekChange, cellSize = 'large' }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
   const scrollViewRef = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  // Determine cell width based on size
+  const cellWidth = useMemo(() => {
+    switch (cellSize) {
+      case 'small':
+        return 80;
+      case 'medium':
+        return 100;
+      case 'large':
+        return 120;
+      case 'xlarge':
+        return 140;
+      default:
+        return 120;
+    }
+  }, [cellSize]);
+
+  // Determine if we should show feast name based on size
+  const showFeastName = cellSize !== 'small';
 
   // Auto-scroll to selected date when it changes or when week changes
   useEffect(() => {
@@ -28,8 +49,8 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
       format(day, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
     );
     if (selectedIndex >= 0 && scrollViewRef.current) {
-      // Calculate scroll position: each cell is 120 width + 12 margin
-      const scrollPosition = selectedIndex * (120 + 12);
+      // Calculate scroll position: each cell is cellWidth + 12 margin
+      const scrollPosition = selectedIndex * (cellWidth + 12);
       // Use setTimeout to ensure the layout is ready
       setTimeout(() => {
         scrollViewRef.current?.scrollTo({
@@ -38,7 +59,7 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
         });
       }, 100);
     }
-  }, [selectedDate, currentDate]);
+  }, [selectedDate, currentDate, cellWidth]);
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(currentDate, 1);
@@ -103,13 +124,13 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
               </Text>
               
               {/* DayCell Component */}
-              <View style={styles.dayCellContainer}>
+              <View style={[styles.dayCellContainer, { width: cellWidth, height: cellWidth }]}>
                 <DayCell
                   date={{ dateString, day: dayNumber }}
                   marking={getMarking(day)}
                   onPress={() => onDayPress(day)}
-                  size="large"
-                  showFeastName={true}
+                  size={cellSize}
+                  showFeastName={showFeastName}
                 />
               </View>
             </View>
@@ -161,8 +182,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   dayCellContainer: {
-    width: 120,
-    height: 120,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,

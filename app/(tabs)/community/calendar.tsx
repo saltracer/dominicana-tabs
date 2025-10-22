@@ -423,6 +423,7 @@ export default function CalendarScreenNative() {
                   selectedDate={selectedDate || new Date()}
                   onDayPress={handleDayPress}
                   onWeekChange={(newDate) => setCurrentWeekDate(newDate)}
+                  cellSize={cellSize}
                 />
               )}
             </View>
