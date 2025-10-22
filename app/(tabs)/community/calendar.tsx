@@ -42,6 +42,7 @@ export default function CalendarScreenNative() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
   const [dominicanOnly, setDominicanOnly] = useState(false);
+  const [currentWeekDate, setCurrentWeekDate] = useState<Date>(selectedDate || new Date()); // Track which week is being viewed
   const userClosedPanel = useRef(false); // Track if user explicitly closed the panel
 
   // Animations
@@ -53,6 +54,13 @@ export default function CalendarScreenNative() {
 
   // Determine calendar cell size
   const cellSize = isTablet ? 'medium' : 'small';
+
+  // Sync currentWeekDate when selectedDate changes (e.g., when a day is clicked)
+  useEffect(() => {
+    if (selectedDate) {
+      setCurrentWeekDate(selectedDate);
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
     generateMarkedDates();
@@ -411,9 +419,10 @@ export default function CalendarScreenNative() {
 
               {viewMode === 'week' && (
                 <WeekView
-                  currentDate={selectedDate || new Date()}
+                  currentDate={currentWeekDate}
                   selectedDate={selectedDate || new Date()}
                   onDayPress={handleDayPress}
+                  onWeekChange={(newDate) => setCurrentWeekDate(newDate)}
                 />
               )}
             </View>

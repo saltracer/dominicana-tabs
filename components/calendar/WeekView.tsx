@@ -1,28 +1,84 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
 import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, addWeeks, subWeeks } from 'date-fns';
 
 interface WeekViewProps {
   currentDate: Date;
   selectedDate: Date;
   onDayPress: (date: Date) => void;
+  onWeekChange?: (newDate: Date) => void;
 }
 
-const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPress }) => {
+const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPress, onWeekChange }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
   const calendarService = LiturgicalCalendarService.getInstance();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
   const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
+  // Auto-scroll to selected date when it changes or when week changes
+  useEffect(() => {
+    const selectedIndex = daysInWeek.findIndex(day => isSameDay(day, selectedDate));
+    if (selectedIndex >= 0 && scrollViewRef.current) {
+      // Calculate scroll position: each card is 160 width + 12 margin
+      const scrollPosition = selectedIndex * (160 + 12);
+      // Use setTimeout to ensure the layout is ready
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({
+          x: scrollPosition,
+          animated: true,
+        });
+      }, 100);
+    }
+  }, [selectedDate, currentDate]);
+
+  const handlePreviousWeek = () => {
+    const newDate = subWeeks(currentDate, 1);
+    onWeekChange?.(newDate);
+  };
+
+  const handleNextWeek = () => {
+    const newDate = addWeeks(currentDate, 1);
+    onWeekChange?.(newDate);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      {/* Week Navigation Header */}
+      <View style={[styles.weekHeader, { borderBottomColor: colors.border }]}>
+        <Pressable
+          onPress={handlePreviousWeek}
+          style={({ pressed }) => [
+            styles.navButton,
+            { backgroundColor: pressed ? colors.surface : 'transparent' },
+          ]}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </Pressable>
+        
+        <Text style={[styles.weekTitle, { color: colors.text }]}>
+          {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
+        </Text>
+        
+        <Pressable
+          onPress={handleNextWeek}
+          style={({ pressed }) => [
+            styles.navButton,
+            { backgroundColor: pressed ? colors.surface : 'transparent' },
+          ]}
+        >
+          <Ionicons name="chevron-forward" size={24} color={colors.text} />
+        </Pressable>
+      </View>
+
+      <ScrollView ref={scrollViewRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {daysInWeek.map((day) => {
           const liturgicalDay = calendarService.getLiturgicalDay(day);
           const isSelected = isSameDay(day, selectedDate);
@@ -122,6 +178,23 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  weekTitle: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
+    fontWeight: '600',
+  },
+  navButton: {
+    padding: 8,
+    borderRadius: 20,
   },
   scrollContent: {
     padding: 12,

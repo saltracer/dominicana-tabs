@@ -40,6 +40,7 @@ export default function CalendarScreenWeb() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
   const [dominicanOnly, setDominicanOnly] = useState(false);
+  const [currentWeekDate, setCurrentWeekDate] = useState<Date>(selectedDate || new Date()); // Track which week is being viewed
   const userClosedPanel = useRef(false); // Track if user explicitly closed the panel
 
   // Responsive breakpoints
@@ -58,6 +59,13 @@ export default function CalendarScreenWeb() {
 
   // Show feast names on wide desktop
   const showFeastNames = isWide;
+
+  // Sync currentWeekDate when selectedDate changes (e.g., when a day is clicked)
+  useEffect(() => {
+    if (selectedDate) {
+      setCurrentWeekDate(selectedDate);
+    }
+  }, [selectedDate]);
 
   useEffect(() => {
     generateMarkedDates();
@@ -311,9 +319,10 @@ export default function CalendarScreenWeb() {
 
             {viewMode === 'week' && (
               <WeekView
-                currentDate={selectedDate || new Date()}
+                currentDate={currentWeekDate}
                 selectedDate={selectedDate || new Date()}
                 onDayPress={handleDayPress}
+                onWeekChange={(newDate) => setCurrentWeekDate(newDate)}
               />
             )}
 
