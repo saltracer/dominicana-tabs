@@ -176,9 +176,9 @@ const DayCell: React.FC<DayCellProps> = ({
         )}
       </View>
 
-      {/* Feast Level Indicator - Top Right */}
+      {/* Feast Level Indicator - Position depends on cell size */}
       {hasFeasts && (
-        <View style={styles.topRightSection}>
+        <View style={size !== 'small' ? styles.topRightSection : styles.bottomLeftSection}>
           <View
             style={[
               styles.rankBadge,
@@ -291,6 +291,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 4,
+  },
+  bottomLeftSection: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
   },
   bottomRightSection: {
     position: 'absolute',
