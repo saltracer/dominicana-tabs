@@ -36,7 +36,7 @@ export default function SaintsScreen() {
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const [selectedSaint, setSelectedSaint] = useState<Saint | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [displayedCount, setDisplayedCount] = useState(24);
   const itemsPerPage = 24; // More items per page for web
   const slideAnimation = useRef(new Animated.Value(0)).current;
   const { width: screenWidth } = Dimensions.get('window');
@@ -80,12 +80,20 @@ export default function SaintsScreen() {
     return filtered;
   }, [searchQuery, sortBy, filterBy]);
 
-  const paginatedSaints = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedSaints.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedSaints, currentPage]);
+  const displayedSaints = useMemo(() => {
+    return filteredAndSortedSaints.slice(0, displayedCount);
+  }, [filteredAndSortedSaints, displayedCount]);
 
-  const totalPages = Math.ceil(filteredAndSortedSaints.length / itemsPerPage);
+  // Reset displayed count when filters/search/sort changes
+  useEffect(() => {
+    setDisplayedCount(24);
+  }, [searchQuery, sortBy, filterBy]);
+
+  const handleLoadMore = () => {
+    if (displayedCount < filteredAndSortedSaints.length) {
+      setDisplayedCount(prev => prev + itemsPerPage);
+    }
+  };
 
   const handleSaintPress = (saint: Saint) => {
     if (selectedSaint === null) {
@@ -372,7 +380,7 @@ export default function SaintsScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background, height: '100vh' as any }]}>
       {/* Main Layout - Sidebar + Content */}
       <View style={styles.mainLayout}>
         {/* Left Sidebar - Filters */}
@@ -470,13 +478,16 @@ export default function SaintsScreen() {
 
           {/* Saints Grid */}
           <FlatList
-            data={paginatedSaints}
+            style={{ flex: 1 }}
+            data={displayedSaints}
             renderItem={renderSaintCard}
             keyExtractor={(item) => item.id}
             numColumns={3} // 3 columns for better card sizing
             columnWrapperStyle={styles.row}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.saintsGrid, { flexGrow: 1 }]}
+            contentContainerStyle={styles.saintsGrid}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <Ionicons name="search" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
@@ -485,67 +496,27 @@ export default function SaintsScreen() {
                 </Text>
               </View>
             }
+            ListFooterComponent={
+              <>
+                {displayedCount < filteredAndSortedSaints.length ? (
+                  <View style={styles.loadingMore}>
+                    <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                      Showing {displayedCount} of {filteredAndSortedSaints.length} saints
+                    </Text>
+                  </View>
+                ) : filteredAndSortedSaints.length > 0 ? (
+                  <View style={styles.loadingMore}>
+                    <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                      All {filteredAndSortedSaints.length} saints loaded
+                    </Text>
+                  </View>
+                ) : null}
+                <View style={styles.footerWrapper}>
+                  <Footer />
+                </View>
+              </>
+            }
           />
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <View style={styles.pagination}>
-            <TouchableOpacity
-              style={[
-                styles.paginationButton,
-                { 
-                  backgroundColor: currentPage === 1 
-                    ? Colors[colorScheme ?? 'light'].border 
-                    : Colors[colorScheme ?? 'light'].primary,
-                  borderColor: Colors[colorScheme ?? 'light'].border
-                }
-              ]}
-              onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              <Ionicons 
-                name="chevron-back" 
-                size={20} 
-                color={currentPage === 1 
-                  ? Colors[colorScheme ?? 'light'].textMuted 
-                  : Colors[colorScheme ?? 'light'].dominicanWhite
-                } 
-              />
-            </TouchableOpacity>
-            
-            <Text style={[styles.paginationText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {currentPage} of {totalPages}
-            </Text>
-            
-            <TouchableOpacity
-              style={[
-                styles.paginationButton,
-                { 
-                  backgroundColor: currentPage === totalPages 
-                    ? Colors[colorScheme ?? 'light'].border 
-                    : Colors[colorScheme ?? 'light'].primary,
-                  borderColor: Colors[colorScheme ?? 'light'].border
-                }
-              ]}
-              onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <Ionicons 
-                name="chevron-forward" 
-                size={20} 
-                color={currentPage === totalPages 
-                  ? Colors[colorScheme ?? 'light'].textMuted 
-                  : Colors[colorScheme ?? 'light'].dominicanWhite
-                } 
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-
-          {/* Footer - After pagination */}
-          <View style={styles.footerWrapper}>
-            <Footer />
-          </View>
         </Animated.View>
       </View>
 
@@ -652,7 +623,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     minHeight: 280,
     cursor: 'pointer' as any,
-    transition: 'all 0.2s ease' as any,
   },
 
   colorIndicator: {
@@ -707,5 +677,25 @@ const styles = StyleSheet.create({
     left: -24,
     width: '100vw' as any,
     maxWidth: '100vw' as any,
+  },
+
+  loadingMore: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+
+  loadingMoreText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
+
+  saintsGrid: {
+    paddingBottom: 20,
+  },
+
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
 });
