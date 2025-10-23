@@ -40,6 +40,7 @@ export default function CalendarScreenWeb() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
   const [dominicanOnly, setDominicanOnly] = useState(false);
+  const [doctorOnly, setDoctorOnly] = useState(false);
   const [currentWeekDate, setCurrentWeekDate] = useState<Date>(selectedDate || new Date()); // Track which week is being viewed
   const userClosedPanel = useRef(false); // Track if user explicitly closed the panel
   
@@ -108,6 +109,10 @@ export default function CalendarScreenWeb() {
             feasts = feasts.filter(feast => feast.isDominican);
           }
 
+          if (doctorOnly) {
+            feasts = feasts.filter(feast => feast.isDoctor);
+          }
+
           if (selectedFilters.length > 0) {
             feasts = feasts.filter(feast => {
               const feastColor = feast.color?.toLowerCase() || '';
@@ -163,7 +168,7 @@ export default function CalendarScreenWeb() {
     }
 
     setMarkedDates(marked);
-  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly, colors]);
+  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly, doctorOnly, colors]);
 
   const handleDayPress = useCallback(
     (day: any) => {
@@ -228,6 +233,7 @@ export default function CalendarScreenWeb() {
   const handleClearFilters = () => {
     setSelectedFilters([]);
     setDominicanOnly(false);
+    setDoctorOnly(false);
   };
 
   const handleSearchSelect = (date: Date) => {
@@ -257,7 +263,7 @@ export default function CalendarScreenWeb() {
     if (!liturgicalDay) return null;
     
     // If no filters active, return original
-    if (!dominicanOnly && selectedFilters.length === 0) {
+    if (!dominicanOnly && !doctorOnly && selectedFilters.length === 0) {
       return liturgicalDay;
     }
     
@@ -266,6 +272,11 @@ export default function CalendarScreenWeb() {
     // Apply Dominican filter
     if (dominicanOnly) {
       filteredFeasts = filteredFeasts.filter(feast => feast.isDominican);
+    }
+    
+    // Apply Doctor filter
+    if (doctorOnly) {
+      filteredFeasts = filteredFeasts.filter(feast => feast.isDoctor);
     }
     
     // Apply color filters
@@ -284,7 +295,7 @@ export default function CalendarScreenWeb() {
       ...liturgicalDay,
       feasts: filteredFeasts
     };
-  }, [liturgicalDay, selectedFilters, dominicanOnly]);
+  }, [liturgicalDay, selectedFilters, dominicanOnly, doctorOnly]);
 
   if (!liturgicalDay) {
     return (
@@ -370,6 +381,7 @@ export default function CalendarScreenWeb() {
                 showFeastNames={showFeastNames}
                 colorFilters={selectedFilters}
                 dominicanOnly={dominicanOnly}
+                doctorOnly={doctorOnly}
               />
             )}
 
@@ -382,6 +394,7 @@ export default function CalendarScreenWeb() {
                 cellSize={cellSize}
                 colorFilters={selectedFilters}
                 dominicanOnly={dominicanOnly}
+                doctorOnly={doctorOnly}
               />
             )}
 
@@ -392,6 +405,7 @@ export default function CalendarScreenWeb() {
                 onDayPress={handleDayPress}
                 colorFilters={selectedFilters}
                 dominicanOnly={dominicanOnly}
+                doctorOnly={doctorOnly}
               />
             )}
           </View>
@@ -402,6 +416,8 @@ export default function CalendarScreenWeb() {
             onToggleFilter={handleToggleFilter}
             dominicanOnly={dominicanOnly}
             onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+            doctorOnly={doctorOnly}
+            onToggleDoctor={() => setDoctorOnly(!doctorOnly)}
             onClearAll={handleClearFilters}
             compact={isMobile}
           />

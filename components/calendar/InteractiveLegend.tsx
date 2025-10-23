@@ -16,6 +16,8 @@ interface InteractiveLegendProps {
   onToggleFilter: (filter: FeastFilter) => void;
   dominicanOnly: boolean;
   onToggleDominican: () => void;
+  doctorOnly: boolean;
+  onToggleDoctor: () => void;
   onClearAll: () => void;
   compact?: boolean;
 }
@@ -25,22 +27,26 @@ const InteractiveLegend: React.FC<InteractiveLegendProps> = ({
   onToggleFilter,
   dominicanOnly,
   onToggleDominican,
+  doctorOnly,
+  onToggleDoctor,
   onClearAll,
   compact = false,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const hasActiveFilters = selectedFilters.length > 0 || dominicanOnly;
+  const hasActiveFilters = selectedFilters.length > 0 || dominicanOnly || doctorOnly;
 
   const legendItems: Array<{
-    id: 'dominican' | FeastFilter;
+    id: 'dominican' | 'doctor' | FeastFilter;
     label: string;
     color: string;
     isDominican?: boolean;
+    isDoctor?: boolean;
     isWhite?: boolean;
   }> = [
     { id: 'dominican', label: 'Dominican Feast', color: colors.primary, isDominican: true },
+    { id: 'doctor', label: 'Doctor of the Church', color: '#FFD700', isDoctor: true },
     { id: 'red', label: 'Martyrs (Red)', color: '#DC143C' },
     { id: 'white', label: 'White Feasts', color: '#FFFFFF', isWhite: true },
     { id: 'green', label: 'Ordinary Time (Green)', color: '#2E7D32' },
@@ -50,8 +56,11 @@ const InteractiveLegend: React.FC<InteractiveLegendProps> = ({
 
   const renderLegendItem = (item: typeof legendItems[0]) => {
     const isDominicanItem = item.isDominican;
+    const isDoctorItem = item.isDoctor;
     const isSelected = isDominicanItem 
       ? dominicanOnly 
+      : isDoctorItem
+      ? doctorOnly
       : selectedFilters.includes(item.id as FeastFilter);
     const isWhiteItem = item.isWhite;
 
@@ -61,6 +70,8 @@ const InteractiveLegend: React.FC<InteractiveLegendProps> = ({
         onPress={() => {
           if (isDominicanItem) {
             onToggleDominican();
+          } else if (isDoctorItem) {
+            onToggleDoctor();
           } else {
             onToggleFilter(item.id as FeastFilter);
           }
@@ -83,6 +94,10 @@ const InteractiveLegend: React.FC<InteractiveLegendProps> = ({
         {isDominicanItem ? (
           <Text style={[styles.dominicanSymbol, { color: item.color, marginRight: 8 }]}>
             ⚫
+          </Text>
+        ) : isDoctorItem ? (
+          <Text style={[styles.doctorSymbol, { color: item.color, marginRight: 8 }]}>
+            ✦
           </Text>
         ) : (
           <View
@@ -209,6 +224,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   dominicanSymbol: {
+    fontSize: 14,
+  },
+  doctorSymbol: {
     fontSize: 14,
   },
 });

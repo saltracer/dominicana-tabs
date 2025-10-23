@@ -14,6 +14,7 @@ interface ListViewProps {
   ListHeaderComponent?: React.ReactElement;
   colorFilters?: FeastColorFilter[];
   dominicanOnly?: boolean;
+  doctorOnly?: boolean;
 }
 
 interface FeastListItem {
@@ -33,6 +34,7 @@ const ListView: React.FC<ListViewProps> = ({
   ListHeaderComponent,
   colorFilters = [],
   dominicanOnly = false,
+  doctorOnly = false,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -59,6 +61,11 @@ const ListView: React.FC<ListViewProps> = ({
           // Apply Dominican filter
           if (dominicanOnly) {
             feasts = feasts.filter(feast => feast.isDominican);
+          }
+          
+          // Apply Doctor filter
+          if (doctorOnly) {
+            feasts = feasts.filter(feast => feast.isDoctor);
           }
           
           // Apply color filters
@@ -92,9 +99,9 @@ const ListView: React.FC<ListViewProps> = ({
     }
 
     return sections;
-  }, [currentDate, colorFilters, dominicanOnly, calendarService]);
+  }, [currentDate, colorFilters, dominicanOnly, doctorOnly, calendarService]);
 
-  const sections = React.useMemo(() => generateFeastsList(), [currentDate, colorFilters, dominicanOnly]);
+  const sections = React.useMemo(() => generateFeastsList(), [currentDate, colorFilters, dominicanOnly, doctorOnly, generateFeastsList]);
 
   // Map liturgical color names to hex codes (same as DayCell)
   const getLiturgicalColorHex = React.useCallback((colorName: string | undefined): string => {

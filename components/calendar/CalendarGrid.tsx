@@ -14,6 +14,7 @@ interface CalendarGridProps {
   showFeastNames?: boolean;
   colorFilters?: FeastColorFilter[];
   dominicanOnly?: boolean;
+  doctorOnly?: boolean;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -24,6 +25,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   showFeastNames = false,
   colorFilters = [],
   dominicanOnly = false,
+  doctorOnly = false,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -41,6 +43,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             showFeastName={showFeastNames}
             colorFilters={colorFilters}
             dominicanOnly={dominicanOnly}
+            doctorOnly={doctorOnly}
           />
         )}
         theme={{

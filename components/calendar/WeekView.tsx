@@ -14,6 +14,7 @@ interface WeekViewProps {
   cellSize?: 'small' | 'medium' | 'large' | 'xlarge';
   colorFilters?: FeastColorFilter[];
   dominicanOnly?: boolean;
+  doctorOnly?: boolean;
 }
 
 const WeekView: React.FC<WeekViewProps> = ({ 
@@ -24,6 +25,7 @@ const WeekView: React.FC<WeekViewProps> = ({
   cellSize = 'large',
   colorFilters = [],
   dominicanOnly = false,
+  doctorOnly = false,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -143,6 +145,7 @@ const WeekView: React.FC<WeekViewProps> = ({
                   showFeastName={showFeastName}
                   colorFilters={colorFilters}
                   dominicanOnly={dominicanOnly}
+                  doctorOnly={doctorOnly}
                 />
               </View>
             </View>

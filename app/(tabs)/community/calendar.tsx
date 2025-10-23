@@ -41,6 +41,7 @@ export default function CalendarScreenNative() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
   const [dominicanOnly, setDominicanOnly] = useState(false);
+  const [doctorOnly, setDoctorOnly] = useState(false);
   const [currentWeekDate, setCurrentWeekDate] = useState<Date>(selectedDate || new Date()); // Track which week is being viewed
   const userClosedPanel = useRef(false); // Track if user explicitly closed the panel
 
@@ -63,7 +64,7 @@ export default function CalendarScreenNative() {
 
   useEffect(() => {
     generateMarkedDates();
-  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly]);
+  }, [colorScheme, liturgicalDay, selectedFilters, dominicanOnly, doctorOnly]);
 
   const generateMarkedDates = useCallback(() => {
     const calendarService = LiturgicalCalendarService.getInstance();
@@ -84,6 +85,10 @@ export default function CalendarScreenNative() {
 
           if (dominicanOnly) {
             feasts = feasts.filter(feast => feast.isDominican);
+          }
+
+          if (doctorOnly) {
+            feasts = feasts.filter(feast => feast.isDoctor);
           }
 
           if (selectedFilters.length > 0) {
@@ -204,6 +209,7 @@ export default function CalendarScreenNative() {
   const handleClearFilters = () => {
     setSelectedFilters([]);
     setDominicanOnly(false);
+    setDoctorOnly(false);
   };
 
   const handleSearchSelect = (date: Date) => {
@@ -216,7 +222,7 @@ export default function CalendarScreenNative() {
     if (!liturgicalDay) return null;
     
     // If no filters active, return original
-    if (!dominicanOnly && selectedFilters.length === 0) {
+    if (!dominicanOnly && !doctorOnly && selectedFilters.length === 0) {
       return liturgicalDay;
     }
     
@@ -225,6 +231,11 @@ export default function CalendarScreenNative() {
     // Apply Dominican filter
     if (dominicanOnly) {
       filteredFeasts = filteredFeasts.filter(feast => feast.isDominican);
+    }
+    
+    // Apply Doctor filter
+    if (doctorOnly) {
+      filteredFeasts = filteredFeasts.filter(feast => feast.isDoctor);
     }
     
     // Apply color filters
@@ -243,7 +254,7 @@ export default function CalendarScreenNative() {
       ...liturgicalDay,
       feasts: filteredFeasts
     };
-  }, [liturgicalDay, selectedFilters, dominicanOnly]);
+  }, [liturgicalDay, selectedFilters, dominicanOnly, doctorOnly]);
 
   const openSearchModal = () => {
     setShowSearchModal(true);
@@ -293,6 +304,7 @@ export default function CalendarScreenNative() {
             onDayPress={handleDayPress}
             colorFilters={selectedFilters}
             dominicanOnly={dominicanOnly}
+            doctorOnly={doctorOnly}
             ListHeaderComponent={
               <View style={styles.contentPadding}>
                 <SeasonBanner
@@ -400,6 +412,7 @@ export default function CalendarScreenNative() {
                   showFeastNames={false}
                   colorFilters={selectedFilters}
                   dominicanOnly={dominicanOnly}
+                  doctorOnly={doctorOnly}
                 />
               )}
 
@@ -412,6 +425,7 @@ export default function CalendarScreenNative() {
                   cellSize={cellSize}
                   colorFilters={selectedFilters}
                   dominicanOnly={dominicanOnly}
+                  doctorOnly={doctorOnly}
                 />
               )}
             </View>
@@ -422,6 +436,8 @@ export default function CalendarScreenNative() {
               onToggleFilter={handleToggleFilter}
               dominicanOnly={dominicanOnly}
               onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+              doctorOnly={doctorOnly}
+              onToggleDoctor={() => setDoctorOnly(!doctorOnly)}
               onClearAll={handleClearFilters}
               compact={true}
             />

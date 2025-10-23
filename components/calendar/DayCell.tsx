@@ -18,6 +18,7 @@ interface DayCellProps {
   showFeastName?: boolean;
   colorFilters?: FeastColorFilter[];
   dominicanOnly?: boolean;
+  doctorOnly?: boolean;
 }
 
 const DayCell: React.FC<DayCellProps> = ({
@@ -28,6 +29,7 @@ const DayCell: React.FC<DayCellProps> = ({
   showFeastName = false,
   colorFilters = [],
   dominicanOnly = false,
+  doctorOnly = false,
 }) => {
   const { colorScheme } = useTheme();
   const [dayContent, setDayContent] = useState<any>(null);
@@ -45,6 +47,11 @@ const DayCell: React.FC<DayCellProps> = ({
         // Apply Dominican filter
         if (dominicanOnly) {
           feasts = feasts.filter(feast => feast.isDominican);
+        }
+        
+        // Apply Doctor filter
+        if (doctorOnly) {
+          feasts = feasts.filter(feast => feast.isDoctor);
         }
         
         // Apply color filters
@@ -91,7 +98,7 @@ const DayCell: React.FC<DayCellProps> = ({
         setDayContent(null);
       }
     }
-  }, [date?.dateString, colorFilters, dominicanOnly]);
+  }, [date?.dateString, colorFilters, dominicanOnly, doctorOnly]);
 
   const isToday = date?.dateString === format(new Date(), 'yyyy-MM-dd');
   const isSelected = marking?.selected;

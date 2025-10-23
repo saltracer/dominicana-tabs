@@ -15,6 +15,7 @@ interface ListViewProps {
   ListHeaderComponent?: React.ReactElement;
   colorFilters?: FeastColorFilter[];
   dominicanOnly?: boolean;
+  doctorOnly?: boolean;
 }
 
 interface FeastListItem {
@@ -34,6 +35,7 @@ const ListView: React.FC<ListViewProps> = ({
   ListHeaderComponent,
   colorFilters = [],
   dominicanOnly = false,
+  doctorOnly = false,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -76,6 +78,11 @@ const ListView: React.FC<ListViewProps> = ({
             feasts = feasts.filter(feast => feast.isDominican);
           }
           
+          // Apply Doctor filter
+          if (doctorOnly) {
+            feasts = feasts.filter(feast => feast.isDoctor);
+          }
+          
           // Apply color filters
           if (colorFilters.length > 0) {
             feasts = feasts.filter(feast => {
@@ -107,7 +114,7 @@ const ListView: React.FC<ListViewProps> = ({
     }
 
     return yearSections;
-  }, [calendarService, colorFilters, dominicanOnly]);
+  }, [calendarService, colorFilters, dominicanOnly, doctorOnly]);
 
   // Initialize with current year's data
   useEffect(() => {
@@ -117,8 +124,8 @@ const ListView: React.FC<ListViewProps> = ({
     setSections(initialSections);
     loadedYears.current.clear();
     loadedYears.current.add(currentYear);
-    console.log('📅 Loaded initial year with filters:', currentYear, { colorFilters, dominicanOnly });
-  }, [currentDate, generateFeastsForYear, colorFilters, dominicanOnly]);
+    console.log('📅 Loaded initial year with filters:', currentYear, { colorFilters, dominicanOnly, doctorOnly });
+  }, [currentDate, generateFeastsForYear, colorFilters, dominicanOnly, doctorOnly]);
 
   // Handle loading next year when user scrolls to bottom
   const handleEndReached = useCallback(() => {
