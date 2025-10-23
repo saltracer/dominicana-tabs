@@ -24,6 +24,8 @@ interface SaintDetailPanelProps {
   hasPrevious: boolean;
   hasNext: boolean;
   slideAnimation: Animated.Value;
+  useRelativePositioning?: boolean; // For side-by-side layout
+  isModal?: boolean; // For modal mode (no left border)
 }
 
 export default function SaintDetailPanel({
@@ -35,6 +37,8 @@ export default function SaintDetailPanel({
   hasPrevious,
   hasNext,
   slideAnimation,
+  useRelativePositioning = false,
+  isModal = false,
 }: SaintDetailPanelProps) {
   const { colorScheme } = useTheme();
 
@@ -44,11 +48,14 @@ export default function SaintDetailPanel({
   return (
     <Animated.View
       style={[
-        styles.panel,
+        useRelativePositioning ? styles.panelRelative : styles.panel,
         {
           backgroundColor: Colors[colorScheme ?? 'light'].background,
           borderLeftColor: Colors[colorScheme ?? 'light'].border,
-          transform: [
+          borderLeftWidth: isModal ? 0 : undefined, // No border in modal mode
+          elevation: isModal ? 0 : undefined, // No extra elevation in modal
+          boxShadow: isModal ? 'none' : undefined, // No shadow in modal
+          transform: useRelativePositioning ? [] : [
             {
               translateX: slideAnimation.interpolate({
                 inputRange: [0, 1],
@@ -117,7 +124,15 @@ export default function SaintDetailPanel({
       </View>
 
       {/* Panel Content */}
-      <ScrollView style={styles.panelContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.panelContent} 
+        contentContainerStyle={[
+          styles.panelContentContainer,
+          { paddingBottom: isModal ? 120 : 300 } // More padding for side panel
+        ]}
+        showsVerticalScrollIndicator={true}
+        nestedScrollEnabled={true}
+      >
         <SaintContentRenderer 
           saint={selectedSaint} 
           colorScheme={colorScheme}
@@ -141,6 +156,15 @@ const styles = StyleSheet.create({
     elevation: 8,
     boxShadow: '-2px 0px 8px rgba(0, 0, 0, 0.25)',
     zIndex: 1000,
+  },
+  panelRelative: {
+    position: 'relative' as any,
+    flex: 1,
+    width: '100%',
+    height: '100%',
+    borderLeftWidth: 1,
+    elevation: 8,
+    boxShadow: '-2px 0px 8px rgba(0, 0, 0, 0.25)',
   },
   panelHeader: {
     flexDirection: 'row',
@@ -175,6 +199,10 @@ const styles = StyleSheet.create({
   },
   panelContent: {
     flex: 1,
+  },
+  panelContentContainer: {
     paddingHorizontal: 16,
+    paddingTop: 16,
+    // paddingBottom set dynamically via inline styles
   },
 });

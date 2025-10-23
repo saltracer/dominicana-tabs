@@ -673,7 +673,7 @@ export default function SaintsScreen() {
 
   // Determine responsive layout
   const shouldShowSidebar = isDesktop || isWide; // Only show sidebar on desktop and wider
-  const shouldShowSideBySide = isDesktop && selectedSaint !== null;
+  const shouldShowSideBySide = (isDesktop || isWide) && selectedSaint !== null;
   const shouldUseModal = (isMobile || isTablet) && selectedSaint !== null;
   
   // Determine number of columns based on screen width
@@ -1010,42 +1010,35 @@ export default function SaintsScreen() {
             }
           />
         </Animated.View>
-      </View>
 
-      {/* Saint Detail Panel - Desktop Side Panel */}
-      {shouldShowSideBySide && (
-        <Animated.View
-          style={[
-            styles.detailPanelSide,
-            {
-              width: slideAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', '38%'],
-              }),
-              opacity: slideAnimation,
-              transform: [
-                {
-                  translateX: slideAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [100, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <SaintDetailPanel
-            selectedSaint={selectedSaint}
-            isVisible={true}
-            onClose={closePanel}
-            onPrevious={navigateToPrevious}
-            onNext={navigateToNext}
-            hasPrevious={getCurrentIndex() > 0}
-            hasNext={getCurrentIndex() < filteredAndSortedSaints.length - 1}
-            slideAnimation={slideAnimation}
-          />
-        </Animated.View>
-      )}
+        {/* Saint Detail Panel - Desktop Side Panel */}
+        {shouldShowSideBySide && (
+          <Animated.View
+            style={[
+              styles.detailPanelSide,
+              {
+                width: slideAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '38%'],
+                }),
+                opacity: slideAnimation,
+              },
+            ]}
+          >
+            <SaintDetailPanel
+              selectedSaint={selectedSaint}
+              isVisible={true}
+              onClose={closePanel}
+              onPrevious={navigateToPrevious}
+              onNext={navigateToNext}
+              hasPrevious={getCurrentIndex() > 0}
+              hasNext={getCurrentIndex() < filteredAndSortedSaints.length - 1}
+              slideAnimation={new Animated.Value(1)} // Always visible in side panel mode
+              useRelativePositioning={true}
+            />
+          </Animated.View>
+        )}
+      </View>
 
       {/* Saint Detail Panel - Mobile/Tablet Modal */}
       {shouldUseModal && (
@@ -1060,6 +1053,7 @@ export default function SaintsScreen() {
             <View style={[styles.modalContent, { 
               width: isMobile ? '95%' : isTablet ? '85%' : '80%',
               maxWidth: isMobile ? undefined : 700,
+              backgroundColor: Colors[colorScheme ?? 'light'].background,
             }]}>
               <SaintDetailPanel
                 selectedSaint={selectedSaint}
@@ -1069,7 +1063,9 @@ export default function SaintsScreen() {
                 onNext={navigateToNext}
                 hasPrevious={getCurrentIndex() > 0}
                 hasNext={getCurrentIndex() < filteredAndSortedSaints.length - 1}
-                slideAnimation={slideAnimation}
+                slideAnimation={new Animated.Value(1)} // Always visible in modal mode
+                useRelativePositioning={true}
+                isModal={true}
               />
             </View>
           </View>
@@ -1347,6 +1343,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 9999,
   },
 
   modalBackdrop: {
@@ -1359,16 +1356,21 @@ const styles = StyleSheet.create({
 
   modalContent: {
     maxHeight: '90%',
+    height: '90%',
     borderRadius: 20,
     overflow: 'hidden',
+    position: 'relative' as any,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    zIndex: 10000,
   },
 
   // Desktop side panel
   detailPanelSide: {
     overflow: 'hidden',
-    position: 'sticky' as any,
-    top: 0,
-    alignSelf: 'flex-start',
-    maxHeight: '100vh' as any,
+    height: '100%' as any,
   },
 });
