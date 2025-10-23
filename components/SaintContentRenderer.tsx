@@ -209,7 +209,7 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
           {
             maxHeight: animationValue.interpolate({
               inputRange: [0, 1],
-              outputRange: [0, 2000], // Adjust this value based on your content
+              outputRange: [0, 4000], // Adjust this value based on your content
             }),
             opacity: animationValue,
           }

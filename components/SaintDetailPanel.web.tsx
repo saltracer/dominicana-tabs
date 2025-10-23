@@ -128,7 +128,7 @@ export default function SaintDetailPanel({
         style={styles.panelContent} 
         contentContainerStyle={[
           styles.panelContentContainer,
-          { paddingBottom: isModal ? 120 : 300 } // More padding for side panel
+          { paddingBottom: isModal ? 120 : 200 } // More padding for side panel
         ]}
         showsVerticalScrollIndicator={true}
         nestedScrollEnabled={true}
