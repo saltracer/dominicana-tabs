@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
-  Dimensions,
+  useWindowDimensions,
   Animated,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
@@ -24,22 +26,28 @@ import { CommunityStyles, getPlatformStyles } from '../../../styles';
 import Footer from '../../../components/Footer.web';
 
 type SortOption = 'name' | 'feast_day' | 'birth_year' | 'death_year';
-type FilterOption = 'all' | 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
+type FilterOption = 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
 
 export default function SaintsScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const { width } = useWindowDimensions();
   const isWeb = true;
   const platformStyles = getPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
-  const [filterBy, setFilterBy] = useState<FilterOption>('all');
+  const [activeFilters, setActiveFilters] = useState<FilterOption[]>([]);
   const [selectedSaint, setSelectedSaint] = useState<Saint | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(24);
   const itemsPerPage = 24; // More items per page for web
   const slideAnimation = useRef(new Animated.Value(0)).current;
-  const { width: screenWidth } = Dimensions.get('window');
+  
+  // Responsive breakpoints (matching calendar page)
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1024;
+  const isDesktop = width >= 1024;
+  const isWide = width >= 1440;
 
   const filteredAndSortedSaints = useMemo(() => {
     let filtered = allSaints.filter(saint => {
@@ -50,13 +58,24 @@ export default function SaintsScreen() {
         saint.short_bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         saint.biography?.some(bio => bio.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // Category filter
-      const matchesFilter = filterBy === 'all' || 
-        (filterBy === 'dominican' && saint.is_dominican) ||
-        (filterBy === 'doctor' && saint.is_doctor) ||
-        (filterBy === 'martyr' && saint.rank === CelebrationRank.MEMORIAL && saint.color?.toLowerCase() === 'red') ||
-        (filterBy === 'virgin' && saint.name.toLowerCase().includes('virgin')) ||
-        (filterBy === 'founder' && (saint.patronage?.toLowerCase().includes('founder') || saint.short_bio?.toLowerCase().includes('founder')));
+      // Category filter - if no filters active, show all
+      // If filters are active, saint must match ALL filters (AND logic)
+      const matchesFilter = activeFilters.length === 0 || activeFilters.every(filter => {
+        switch (filter) {
+          case 'dominican':
+            return saint.is_dominican;
+          case 'doctor':
+            return saint.is_doctor;
+          case 'martyr':
+            return saint.rank === CelebrationRank.MEMORIAL && saint.color?.toLowerCase() === 'red';
+          case 'virgin':
+            return saint.name.toLowerCase().includes('virgin');
+          case 'founder':
+            return saint.patronage?.toLowerCase().includes('founder') || saint.short_bio?.toLowerCase().includes('founder');
+          default:
+            return false;
+        }
+      });
 
       return matchesSearch && matchesFilter;
     });
@@ -78,7 +97,7 @@ export default function SaintsScreen() {
     });
 
     return filtered;
-  }, [searchQuery, sortBy, filterBy]);
+  }, [searchQuery, sortBy, activeFilters]);
 
   const displayedSaints = useMemo(() => {
     return filteredAndSortedSaints.slice(0, displayedCount);
@@ -87,7 +106,7 @@ export default function SaintsScreen() {
   // Reset displayed count when filters/search/sort changes
   useEffect(() => {
     setDisplayedCount(24);
-  }, [searchQuery, sortBy, filterBy]);
+  }, [searchQuery, sortBy, activeFilters]);
 
   const handleLoadMore = () => {
     if (displayedCount < filteredAndSortedSaints.length) {
@@ -102,7 +121,7 @@ export default function SaintsScreen() {
       Animated.timing(slideAnimation, {
         toValue: 1,
         duration: 300,
-        useNativeDriver: true,
+        useNativeDriver: false, // Changed to false for width animation
       }).start();
     } else {
       // Panel already open - just update the saint
@@ -115,7 +134,7 @@ export default function SaintsScreen() {
     Animated.timing(slideAnimation, {
       toValue: 0,
       duration: 300,
-      useNativeDriver: true,
+      useNativeDriver: false, // Changed to false for width animation
     }).start(() => {
       setSelectedSaint(null);
     });
@@ -224,6 +243,8 @@ export default function SaintsScreen() {
 
   const renderSaintCard = ({ item: saint }: { item: Saint }) => {
     const isSelected = selectedSaint?.id === saint.id;
+    const isMobileView = !shouldShowSidebar;
+    
     return (
       <TouchableOpacity
         style={[
@@ -232,6 +253,10 @@ export default function SaintsScreen() {
             backgroundColor: Colors[colorScheme ?? 'light'].card,
             borderWidth: isSelected ? 2 : 1,
             borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].border,
+            width: getCardWidth(),
+            marginHorizontal: numColumns === 1 ? 0 : 8,
+            padding: isMobileView ? 12 : 16,
+            minHeight: isMobileView ? 180 : 280,
           }
         ]}
         onPress={() => handleSaintPress(saint)}
@@ -240,7 +265,7 @@ export default function SaintsScreen() {
           {/* Doctor badge - top left */}
           {saint.is_doctor && (
             <View style={[styles.doctorBadge, styles.topLeftBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              <Text style={[styles.badgeText, { color: 'black' }]}>
                 Doctor
               </Text>
             </View>
@@ -257,12 +282,12 @@ export default function SaintsScreen() {
           
           <Ionicons 
             name="person-circle" 
-            size={48} 
+            size={isMobileView ? 40 : 48} 
             color={Colors[colorScheme ?? 'light'].primary} 
           />
 
-          {/* Liturgical color indicator */}
-          {saint.color && (
+          {/* Liturgical color indicator - only on desktop */}
+          {!isMobileView && saint.color && (
             <View style={[
               styles.colorIndicator, 
               { backgroundColor: getLiturgicalColor(saint.color) }
@@ -278,6 +303,22 @@ export default function SaintsScreen() {
           {formatFeastDay(saint.feast_day)}
         </Text>
 
+        {/* Patronage - simplified on mobile */}
+        {saint.patronage && (
+          isMobileView ? (
+            <Text style={[styles.saintPatronage, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={2}>
+              {saint.patronage.split(',').slice(0, 2).join(', ')}
+            </Text>
+          ) : (
+            <View style={styles.patronageRow}>
+              <Ionicons name="ribbon" size={12} color={Colors[colorScheme ?? 'light'].primary} />
+              <Text style={[styles.saintPatronage, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={2}>
+                {saint.patronage.split(',').slice(0, 2).join(', ')}
+              </Text>
+            </View>
+          )
+        )}
+
         {/* Birth-Death Years */}
         {saint.birth_year && saint.death_year && (
           <Text style={[styles.saintYears, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
@@ -285,18 +326,8 @@ export default function SaintsScreen() {
           </Text>
         )}
 
-        {/* Patronage with icon */}
-        {saint.patronage && (
-          <View style={styles.patronageRow}>
-            <Ionicons name="ribbon" size={12} color={Colors[colorScheme ?? 'light'].primary} />
-            <Text style={[styles.saintPatronage, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={2}>
-              {saint.patronage.split(',').slice(0, 2).join(', ')}
-            </Text>
-          </View>
-        )}
-
-        {/* Short bio preview */}
-        {saint.short_bio && (
+        {/* Short bio preview - only on desktop */}
+        {!isMobileView && saint.short_bio && (
           <Text style={[styles.bioPreview, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={3}>
             {saint.short_bio}
           </Text>
@@ -305,94 +336,145 @@ export default function SaintsScreen() {
     );
   };
 
-  const renderFilterButton = (filter: FilterOption, label: string, icon: string) => (
-    <TouchableOpacity
-      key={filter}
-      style={[
-        styles.sidebarFilterButton,
-        { 
-          backgroundColor: filterBy === filter 
-            ? Colors[colorScheme ?? 'light'].primary 
-            : 'transparent',
-          borderColor: filterBy === filter
-            ? Colors[colorScheme ?? 'light'].primary
-            : Colors[colorScheme ?? 'light'].border
-        }
-      ]}
-      onPress={() => setFilterBy(filter)}
-    >
-      <Ionicons 
-        name={icon as any} 
-        size={18} 
-        color={filterBy === filter 
-          ? Colors[colorScheme ?? 'light'].dominicanWhite 
-          : Colors[colorScheme ?? 'light'].textSecondary
-        } 
-      />
-      <Text style={[
-        styles.sidebarButtonText,
-        { 
-          color: filterBy === filter 
-            ? Colors[colorScheme ?? 'light'].dominicanWhite 
-            : Colors[colorScheme ?? 'light'].text
-        }
-      ]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+  const handleToggleFilter = (filter: FilterOption) => {
+    setActiveFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter) 
+        : [...prev, filter]
+    );
+  };
 
-  const renderSortButton = (sort: SortOption, label: string, icon: string) => (
-    <TouchableOpacity
-      key={sort}
-      style={[
-        styles.sidebarFilterButton,
-        { 
-          backgroundColor: sortBy === sort 
-            ? Colors[colorScheme ?? 'light'].primary 
-            : 'transparent',
-          borderColor: sortBy === sort
-            ? Colors[colorScheme ?? 'light'].primary
-            : Colors[colorScheme ?? 'light'].border
-        }
-      ]}
-      onPress={() => setSortBy(sort)}
-    >
-      <Ionicons 
-        name={icon as any} 
-        size={18} 
-        color={sortBy === sort 
-          ? Colors[colorScheme ?? 'light'].dominicanWhite 
-          : Colors[colorScheme ?? 'light'].textSecondary
-        } 
-      />
-      <Text style={[
-        styles.sidebarButtonText,
-        { 
-          color: sortBy === sort 
+  const handleClearAllFilters = () => {
+    setActiveFilters([]);
+    setSearchQuery('');
+  };
+
+  const renderFilterButton = (filter: FilterOption, label: string, icon: string) => {
+    const isActive = activeFilters.includes(filter);
+    const isMobileView = !shouldShowSidebar;
+    
+    return (
+      <TouchableOpacity
+        key={filter}
+        style={[
+          isMobileView ? styles.mobileFilterButton : styles.sidebarFilterButton,
+          { 
+            backgroundColor: isActive 
+              ? Colors[colorScheme ?? 'light'].primary 
+              : isMobileView ? Colors[colorScheme ?? 'light'].surface : 'transparent',
+            borderColor: isActive
+              ? Colors[colorScheme ?? 'light'].primary
+              : Colors[colorScheme ?? 'light'].border
+          }
+        ]}
+        onPress={() => handleToggleFilter(filter)}
+      >
+        <Ionicons 
+          name={icon as any} 
+          size={isMobileView ? 16 : 18} 
+          color={isActive 
             ? Colors[colorScheme ?? 'light'].dominicanWhite 
-            : Colors[colorScheme ?? 'light'].text
-        }
-      ]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+            : Colors[colorScheme ?? 'light'].textSecondary
+          } 
+        />
+        <Text style={[
+          isMobileView ? styles.mobileFilterButtonText : styles.sidebarButtonText,
+          { 
+            color: isActive 
+              ? Colors[colorScheme ?? 'light'].dominicanWhite 
+              : Colors[colorScheme ?? 'light'].text
+          }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderSortButton = (sort: SortOption, label: string, icon: string) => {
+    const isActive = sortBy === sort;
+    const isMobileView = !shouldShowSidebar;
+    
+    return (
+      <TouchableOpacity
+        key={sort}
+        style={[
+          isMobileView ? styles.mobileSortButton : styles.sidebarFilterButton,
+          { 
+            backgroundColor: isActive 
+              ? Colors[colorScheme ?? 'light'].primary 
+              : isMobileView ? Colors[colorScheme ?? 'light'].surface : 'transparent',
+            borderColor: isActive
+              ? Colors[colorScheme ?? 'light'].primary
+              : Colors[colorScheme ?? 'light'].border
+          }
+        ]}
+        onPress={() => setSortBy(sort)}
+      >
+        <Ionicons 
+          name={icon as any} 
+          size={isMobileView ? 16 : 18} 
+          color={isActive 
+            ? Colors[colorScheme ?? 'light'].dominicanWhite 
+            : Colors[colorScheme ?? 'light'].textSecondary
+          } 
+        />
+        <Text style={[
+          isMobileView ? styles.mobileFilterButtonText : styles.sidebarButtonText,
+          { 
+            color: isActive 
+              ? Colors[colorScheme ?? 'light'].dominicanWhite 
+              : Colors[colorScheme ?? 'light'].text
+          }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  // Determine responsive layout
+  const shouldShowSidebar = isDesktop || isWide; // Only show sidebar on desktop and wider
+  const shouldShowSideBySide = isDesktop && selectedSaint !== null;
+  const shouldUseModal = (isMobile || isTablet) && selectedSaint !== null;
+  
+  // Determine number of columns based on screen width
+  const numColumns = useMemo(() => {
+    if (isMobile) return 1;
+    if (isTablet) return 2;
+    if (isWide) return 4;
+    return 3; // desktop
+  }, [isMobile, isTablet, isWide]);
+
+  // Calculate card width based on columns and available space
+  const getCardWidth = (): '100%' | `${number}%` | undefined => {
+    if (numColumns === 1) return '100%';
+    // Use fixed percentages for each column configuration
+    if (numColumns === 2) return '48%'; // ~50% with gap
+    if (numColumns === 3) return '31%'; // ~33% with gap
+    if (numColumns === 4) return '23%'; // ~25% with gap
+    return undefined;
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background, height: '100vh' as any }]}>
       {/* Main Layout - Sidebar + Content */}
-      <View style={styles.mainLayout}>
-        {/* Left Sidebar - Filters */}
-        <View style={[styles.sidebar, { 
-          backgroundColor: Colors[colorScheme ?? 'light'].surface,
-          borderRightColor: Colors[colorScheme ?? 'light'].border 
-        }]}>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Sidebar Title */}
-            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Filters
-            </Text>
+      <View style={[
+        styles.mainLayout,
+        { flexDirection: shouldShowSidebar ? 'row' : 'column' }
+      ]}>
+        {/* Left Sidebar - Filters (hidden on mobile/tablet) */}
+        {shouldShowSidebar && (
+          <View style={[styles.sidebar, { 
+            backgroundColor: Colors[colorScheme ?? 'light'].surface,
+            borderRightColor: Colors[colorScheme ?? 'light'].border,
+            width: isTablet ? 220 : 280, // Narrower sidebar on tablet
+          }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Sidebar Title */}
+              <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Filters
+              </Text>
 
             {/* Search Bar */}
             <View style={styles.sidebarSection}>
@@ -421,9 +503,8 @@ export default function SaintsScreen() {
             {/* Filter by Category */}
             <View style={styles.sidebarSection}>
               <Text style={[styles.sidebarSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Category
+                Categories {activeFilters.length > 0 && `(${activeFilters.length})`}
               </Text>
-              {renderFilterButton('all', 'All Saints', 'list')}
               {renderFilterButton('dominican', 'Dominican Order', 'book')}
               {renderFilterButton('doctor', 'Doctors of the Church', 'school')}
               {renderFilterButton('martyr', 'Martyrs', 'flame')}
@@ -442,33 +523,34 @@ export default function SaintsScreen() {
               {renderSortButton('death_year', 'Death Year', 'time')}
             </View>
 
-            {/* Clear Filters */}
-            {(filterBy !== 'all' || searchQuery !== '') && (
+            {/* Clear All Filters */}
+            {(activeFilters.length > 0 || searchQuery !== '') && (
               <TouchableOpacity
                 style={[styles.clearButton, { borderColor: Colors[colorScheme ?? 'light'].border }]}
-                onPress={() => {
-                  setFilterBy('all');
-                  setSearchQuery('');
-                }}
+                onPress={handleClearAllFilters}
               >
                 <Ionicons name="close-circle" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
                 <Text style={[styles.clearButtonText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Clear Filters
+                  Clear All
                 </Text>
               </TouchableOpacity>
             )}
           </ScrollView>
         </View>
+        )}
 
         {/* Main Content Area */}
         <Animated.View 
           style={[
             styles.mainContent,
             {
-              width: slideAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['100%', `${100 - (Math.min(500, screenWidth * 0.45) / screenWidth * 100)}%`],
-              }),
+              width: shouldShowSideBySide 
+                ? slideAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['100%', '60%'],
+                  })
+                : '100%',
+              paddingHorizontal: isMobile ? 12 : isTablet ? 16 : 24,
             }
           ]}
         >
@@ -476,14 +558,96 @@ export default function SaintsScreen() {
             Saints & Blesseds
           </Text>
 
+          {/* Mobile/Tablet Search and Filter (shown when sidebar is hidden) */}
+          {!shouldShowSidebar && (
+            <>
+              {/* Search Bar with Filter Toggle */}
+              <View style={[styles.mobileSearchContainer, { 
+                backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                borderColor: Colors[colorScheme ?? 'light'].border 
+              }]}>
+                <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                <TextInput
+                  style={[styles.mobileSearchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+                  placeholder="Search saints by name, patronage, or biography..."
+                  placeholderTextColor={Colors[colorScheme ?? 'light'].textMuted}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+                <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
+                  <Ionicons 
+                    name="filter" 
+                    size={20} 
+                    color={showFilters ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary} 
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Results Count */}
+              <Text style={[styles.mobileResultsCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                {filteredAndSortedSaints.length} saints found
+              </Text>
+
+              {/* Expandable Filters and Sort */}
+              {showFilters && (
+                <View style={styles.mobileFiltersContainer}>
+                  <View style={styles.mobileFilterSection}>
+                    <View style={styles.mobileFilterHeader}>
+                      <Text style={[styles.mobileFilterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                        Filter by Category {activeFilters.length > 0 && `(${activeFilters.length})`}
+                      </Text>
+                      {(activeFilters.length > 0 || searchQuery !== '') && (
+                        <TouchableOpacity onPress={handleClearAllFilters}>
+                          <Text style={[styles.clearAllText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                            Clear All
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false} 
+                      style={styles.mobileFilterScroll}
+                      contentContainerStyle={styles.mobileFilterScrollContent}
+                    >
+                      {renderFilterButton('dominican', 'Dominican', 'book')}
+                      {renderFilterButton('doctor', 'Doctors', 'school')}
+                      {renderFilterButton('martyr', 'Martyrs', 'flame')}
+                      {renderFilterButton('virgin', 'Virgins', 'heart')}
+                      {renderFilterButton('founder', 'Founders', 'build')}
+                    </ScrollView>
+                  </View>
+
+                  <View style={styles.mobileSortSection}>
+                    <Text style={[styles.mobileFilterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Sort by
+                    </Text>
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false} 
+                      style={styles.mobileFilterScroll}
+                      contentContainerStyle={styles.mobileFilterScrollContent}
+                    >
+                      {renderSortButton('name', 'Name', 'text')}
+                      {renderSortButton('feast_day', 'Feast Day', 'calendar')}
+                      {renderSortButton('birth_year', 'Birth Year', 'person')}
+                      {renderSortButton('death_year', 'Death Year', 'time')}
+                    </ScrollView>
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+
           {/* Saints Grid */}
           <FlatList
+            key={numColumns} // Force re-render when columns change
             style={{ flex: 1 }}
             data={displayedSaints}
             renderItem={renderSaintCard}
             keyExtractor={(item) => item.id}
-            numColumns={3} // 3 columns for better card sizing
-            columnWrapperStyle={styles.row}
+            numColumns={numColumns}
+            columnWrapperStyle={numColumns > 1 ? styles.row : undefined}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.saintsGrid}
             onEndReached={handleLoadMore}
@@ -520,17 +684,70 @@ export default function SaintsScreen() {
         </Animated.View>
       </View>
 
-      {/* Saint Detail Panel */}
-      <SaintDetailPanel
-        selectedSaint={selectedSaint}
-        isVisible={selectedSaint !== null}
-        onClose={closePanel}
-        onPrevious={navigateToPrevious}
-        onNext={navigateToNext}
-        hasPrevious={getCurrentIndex() > 0}
-        hasNext={getCurrentIndex() < filteredAndSortedSaints.length - 1}
-        slideAnimation={slideAnimation}
-      />
+      {/* Saint Detail Panel - Desktop Side Panel */}
+      {shouldShowSideBySide && (
+        <Animated.View
+          style={[
+            styles.detailPanelSide,
+            {
+              width: slideAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '38%'],
+              }),
+              opacity: slideAnimation,
+              transform: [
+                {
+                  translateX: slideAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [100, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <SaintDetailPanel
+            selectedSaint={selectedSaint}
+            isVisible={true}
+            onClose={closePanel}
+            onPrevious={navigateToPrevious}
+            onNext={navigateToNext}
+            hasPrevious={getCurrentIndex() > 0}
+            hasNext={getCurrentIndex() < filteredAndSortedSaints.length - 1}
+            slideAnimation={slideAnimation}
+          />
+        </Animated.View>
+      )}
+
+      {/* Saint Detail Panel - Mobile/Tablet Modal */}
+      {shouldUseModal && (
+        <Modal
+          visible={true}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={closePanel}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalBackdrop} onPress={closePanel} />
+            <View style={[styles.modalContent, { 
+              width: isMobile ? '95%' : isTablet ? '85%' : '80%',
+              maxWidth: isMobile ? undefined : 700,
+            }]}>
+              <SaintDetailPanel
+                selectedSaint={selectedSaint}
+                isVisible={true}
+                onClose={closePanel}
+                onPrevious={navigateToPrevious}
+                onNext={navigateToNext}
+                hasPrevious={getCurrentIndex() > 0}
+                hasNext={getCurrentIndex() < filteredAndSortedSaints.length - 1}
+                slideAnimation={slideAnimation}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+
       
     </View>
   );
@@ -543,7 +760,7 @@ const styles = StyleSheet.create({
   // Main layout structure
   mainLayout: {
     flex: 1,
-    flexDirection: 'row',
+    // flexDirection set dynamically via inline styles (row for desktop, column for mobile/tablet)
   },
 
   // Sidebar styles
@@ -611,13 +828,13 @@ const styles = StyleSheet.create({
   // Main content area
   mainContent: {
     flex: 1,
-    paddingHorizontal: 24,
     paddingTop: 20,
+    // paddingHorizontal set dynamically via inline styles based on screen size
   },
 
-  // Enhanced saint cards
+  // Enhanced saint cards (width is now dynamic)
   enhancedSaintCard: {
-    width: '31%',
+    // width set dynamically via inline styles
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
@@ -697,5 +914,126 @@ const styles = StyleSheet.create({
   row: {
     justifyContent: 'space-between',
     marginBottom: 16,
+  },
+
+  // Mobile/Tablet search and filters
+  mobileSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+
+  mobileSearchInput: {
+    flex: 1,
+    marginLeft: 8,
+    marginRight: 8,
+    fontSize: 15,
+    fontFamily: 'Georgia',
+  },
+
+  mobileResultsCount: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    marginBottom: 12,
+  },
+
+  mobileFiltersContainer: {
+    marginBottom: 16,
+  },
+
+  mobileFilterSection: {
+    marginBottom: 16,
+  },
+
+  mobileSortSection: {
+    marginBottom: 8,
+  },
+
+  mobileFilterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  mobileFilterSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+
+  clearAllText: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+
+  mobileFilterScroll: {
+    marginBottom: 0,
+  },
+
+  mobileFilterScrollContent: {
+    paddingRight: 16,
+  },
+
+  mobileFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+
+  mobileSortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+
+  mobileFilterButtonText: {
+    fontSize: 13,
+    fontFamily: 'Georgia',
+    marginLeft: 6,
+  },
+
+  // Modal styles for saint detail panel
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+
+  modalContent: {
+    maxHeight: '90%',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+
+  // Desktop side panel
+  detailPanelSide: {
+    overflow: 'hidden',
+    position: 'sticky' as any,
+    top: 0,
+    alignSelf: 'flex-start',
+    maxHeight: '100vh' as any,
   },
 });

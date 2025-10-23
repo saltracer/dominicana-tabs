@@ -24,7 +24,7 @@ import { CelebrationRank } from '../../../types/celebrations-types';
 import { CommunityStyles, getPlatformStyles } from '../../../styles';
 
 type SortOption = 'name' | 'feast_day' | 'birth_year' | 'death_year';
-type FilterOption = 'all' | 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
+type FilterOption = 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
 
 export default function SaintsScreen() {
   const { colorScheme } = useTheme();
@@ -33,7 +33,7 @@ export default function SaintsScreen() {
   const platformStyles = getPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
-  const [filterBy, setFilterBy] = useState<FilterOption>('all');
+  const [activeFilters, setActiveFilters] = useState<FilterOption[]>([]);
   const [selectedSaint, setSelectedSaint] = useState<Saint | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(20);
@@ -48,13 +48,24 @@ export default function SaintsScreen() {
         saint.short_bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         saint.biography?.some(bio => bio.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // Category filter
-      const matchesFilter = filterBy === 'all' || 
-        (filterBy === 'dominican' && saint.is_dominican) ||
-        (filterBy === 'doctor' && saint.is_doctor) ||
-        (filterBy === 'martyr' && saint.rank === CelebrationRank.MEMORIAL && saint.color?.toLowerCase() === 'red') ||
-        (filterBy === 'virgin' && saint.name.toLowerCase().includes('virgin')) ||
-        (filterBy === 'founder' && (saint.patronage?.toLowerCase().includes('founder') || saint.short_bio?.toLowerCase().includes('founder')));
+      // Category filter - if no filters active, show all
+      // If filters are active, saint must match ALL filters (AND logic)
+      const matchesFilter = activeFilters.length === 0 || activeFilters.every(filter => {
+        switch (filter) {
+          case 'dominican':
+            return saint.is_dominican;
+          case 'doctor':
+            return saint.is_doctor;
+          case 'martyr':
+            return saint.rank === CelebrationRank.MEMORIAL && saint.color?.toLowerCase() === 'red';
+          case 'virgin':
+            return saint.name.toLowerCase().includes('virgin');
+          case 'founder':
+            return saint.patronage?.toLowerCase().includes('founder') || saint.short_bio?.toLowerCase().includes('founder');
+          default:
+            return false;
+        }
+      });
 
       return matchesSearch && matchesFilter;
     });
@@ -76,7 +87,7 @@ export default function SaintsScreen() {
     });
 
     return filtered;
-  }, [searchQuery, sortBy, filterBy]);
+  }, [searchQuery, sortBy, activeFilters]);
 
   const displayedSaints = useMemo(() => {
     return filteredAndSortedSaints.slice(0, displayedCount);
@@ -85,7 +96,7 @@ export default function SaintsScreen() {
   // Reset displayed count when filters/search/sort changes
   useEffect(() => {
     setDisplayedCount(20);
-  }, [searchQuery, sortBy, filterBy]);
+  }, [searchQuery, sortBy, activeFilters]);
 
   const handleLoadMore = () => {
     if (displayedCount < filteredAndSortedSaints.length) {
@@ -99,6 +110,19 @@ export default function SaintsScreen() {
 
   const closeModal = () => {
     setSelectedSaint(null);
+  };
+
+  const handleToggleFilter = (filter: FilterOption) => {
+    setActiveFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter) 
+        : [...prev, filter]
+    );
+  };
+
+  const handleClearAllFilters = () => {
+    setActiveFilters([]);
+    setSearchQuery('');
   };
 
   const formatFeastDay = (feastDay: string) => {
@@ -206,40 +230,44 @@ export default function SaintsScreen() {
     </TouchableOpacity>
   );
 
-  const renderFilterButton = (filter: FilterOption, label: string, icon: string) => (
-    <TouchableOpacity
-      key={filter}
-      style={[
-        styles.filterButton,
-        { 
-          backgroundColor: filterBy === filter 
-            ? Colors[colorScheme ?? 'light'].primary 
-            : Colors[colorScheme ?? 'light'].surface,
-          borderColor: Colors[colorScheme ?? 'light'].border
-        }
-      ]}
-      onPress={() => setFilterBy(filter)}
-    >
-      <Ionicons 
-        name={icon as any} 
-        size={16} 
-        color={filterBy === filter 
-          ? Colors[colorScheme ?? 'light'].dominicanWhite 
-          : Colors[colorScheme ?? 'light'].textSecondary
-        } 
-      />
-      <Text style={[
-        styles.filterButtonText,
-        { 
-          color: filterBy === filter 
+  const renderFilterButton = (filter: FilterOption, label: string, icon: string) => {
+    const isActive = activeFilters.includes(filter);
+    
+    return (
+      <TouchableOpacity
+        key={filter}
+        style={[
+          styles.filterButton,
+          { 
+            backgroundColor: isActive 
+              ? Colors[colorScheme ?? 'light'].primary 
+              : Colors[colorScheme ?? 'light'].surface,
+            borderColor: Colors[colorScheme ?? 'light'].border
+          }
+        ]}
+        onPress={() => handleToggleFilter(filter)}
+      >
+        <Ionicons 
+          name={icon as any} 
+          size={16} 
+          color={isActive 
             ? Colors[colorScheme ?? 'light'].dominicanWhite 
             : Colors[colorScheme ?? 'light'].textSecondary
-        }
-      ]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
+          } 
+        />
+        <Text style={[
+          styles.filterButtonText,
+          { 
+            color: isActive 
+              ? Colors[colorScheme ?? 'light'].dominicanWhite 
+              : Colors[colorScheme ?? 'light'].textSecondary
+          }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderSortButton = (sort: SortOption, label: string, icon: string) => (
     <TouchableOpacity
@@ -309,11 +337,19 @@ export default function SaintsScreen() {
         {showFilters && (
           <View style={styles.filtersContainer}>
             <View style={styles.filterSection}>
-              <Text style={[styles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Filter by Category
-              </Text>
+              <View style={styles.filterHeader}>
+                <Text style={[styles.filterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Filter by Category {activeFilters.length > 0 && `(${activeFilters.length})`}
+                </Text>
+                {(activeFilters.length > 0 || searchQuery !== '') && (
+                  <TouchableOpacity onPress={handleClearAllFilters}>
+                    <Text style={[styles.clearAllText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      Clear All
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
-                {renderFilterButton('all', 'All', 'list')}
                 {renderFilterButton('dominican', 'Dominican', 'book')}
                 {renderFilterButton('doctor', 'Doctors', 'school')}
                 {renderFilterButton('martyr', 'Martyrs', 'flame')}
@@ -597,6 +633,17 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  clearAllText: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
   },
   saintDetailHeader: {
     flexDirection: 'row',
