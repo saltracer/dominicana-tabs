@@ -21,7 +21,7 @@ import { parseISO, format } from 'date-fns';
 
 // New calendar components
 import SearchBar from '../../../components/calendar/SearchBar';
-import FilterPanel, { FeastFilter } from '../../../components/calendar/FilterPanel';
+import InteractiveLegend, { FeastFilter } from '../../../components/calendar/InteractiveLegend';
 import SeasonBanner from '../../../components/calendar/SeasonBanner';
 import ViewModeToggle, { ViewMode } from '../../../components/calendar/ViewModeToggle';
 import CalendarGrid from '../../../components/calendar/CalendarGrid';
@@ -38,7 +38,6 @@ export default function CalendarScreenNative() {
   const [markedDates, setMarkedDates] = useState<any>({});
   const [showFeastDetail, setShowFeastDetail] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedFilters, setSelectedFilters] = useState<FeastFilter[]>([]);
   const [dominicanOnly, setDominicanOnly] = useState(false);
@@ -315,35 +314,6 @@ export default function CalendarScreenNative() {
                   </View>
                 </View>
 
-                {/* Collapsible Filters */}
-                <Pressable
-                  onPress={() => setShowFilters(!showFilters)}
-                  style={[styles.filterToggle, { backgroundColor: colors.surface }]}
-                >
-                  <Ionicons
-                    name={showFilters ? 'chevron-up' : 'chevron-down'}
-                    size={20}
-                    color={colors.text}
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text style={[styles.filterToggleText, { color: colors.text }]}>
-                    Filters{(selectedFilters.length > 0 || dominicanOnly) ? ` (${selectedFilters.length + (dominicanOnly ? 1 : 0)})` : ''}
-                  </Text>
-                </Pressable>
-
-                {showFilters && (
-                  <View style={styles.filtersContainer}>
-                    <FilterPanel
-                      selectedFilters={selectedFilters}
-                      onToggleFilter={handleToggleFilter}
-                      dominicanOnly={dominicanOnly}
-                      onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
-                      onClearAll={handleClearFilters}
-                      compact={true}
-                    />
-                  </View>
-                )}
-
                 {/* View Mode Toggle */}
                 <View style={styles.viewModeSection}>
                   <ViewModeToggle
@@ -408,35 +378,6 @@ export default function CalendarScreenNative() {
               </View>
             </View>
 
-            {/* Collapsible Filters */}
-            <Pressable
-              onPress={() => setShowFilters(!showFilters)}
-              style={[styles.filterToggle, { backgroundColor: colors.surface }]}
-            >
-              <Ionicons
-                name={showFilters ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={colors.text}
-                style={{ marginRight: 8 }}
-              />
-              <Text style={[styles.filterToggleText, { color: colors.text }]}>
-                Filters{(selectedFilters.length > 0 || dominicanOnly) ? ` (${selectedFilters.length + (dominicanOnly ? 1 : 0)})` : ''}
-              </Text>
-            </Pressable>
-
-            {showFilters && (
-              <View style={styles.filtersContainer}>
-                <FilterPanel
-                  selectedFilters={selectedFilters}
-                  onToggleFilter={handleToggleFilter}
-                  dominicanOnly={dominicanOnly}
-                  onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
-                  onClearAll={handleClearFilters}
-                  compact={true}
-                />
-              </View>
-            )}
-
             {/* View Mode Toggle */}
             <View style={styles.viewModeSection}>
               <ViewModeToggle
@@ -473,36 +414,15 @@ export default function CalendarScreenNative() {
               )}
             </View>
 
-            {/* Calendar Legend */}
-            <View style={[styles.calendarLegend, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
-              <View style={styles.legendItems}>
-                <View style={styles.legendItem}>
-                  <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 6 }]}>⚫</Text>
-                  <Text style={[styles.legendText, { color: colors.text }]}>Dominican Feast</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#DC143C', marginRight: 6 }]} />
-                  <Text style={[styles.legendText, { color: colors.text }]}>Martyrs (Red)</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#000000', marginRight: 6 }]} />
-                  <Text style={[styles.legendText, { color: colors.text }]}>White Feasts</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#2E7D32', marginRight: 6 }]} />
-                  <Text style={[styles.legendText, { color: colors.text }]}>Ordinary Time (Green)</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#8B008B', marginRight: 6 }]} />
-                  <Text style={[styles.legendText, { color: colors.text }]}>Advent/Lent (Purple)</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#FFB6C1', marginRight: 6 }]} />
-                  <Text style={[styles.legendText, { color: colors.text }]}>Gaudete/Laetare (Pink)</Text>
-                </View>
-              </View>
-            </View>
+            {/* Interactive Legend & Filters */}
+            <InteractiveLegend
+              selectedFilters={selectedFilters}
+              onToggleFilter={handleToggleFilter}
+              dominicanOnly={dominicanOnly}
+              onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+              onClearAll={handleClearFilters}
+              compact={true}
+            />
 
             {/* Feast Detail Panel - Inline Below Calendar */}
             {liturgicalDay && showFeastDetail && (
@@ -617,22 +537,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
   },
-  filterToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  filterToggleText: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    fontWeight: '600',
-  },
-  filtersContainer: {
-    marginBottom: 16,
-  },
   viewModeSection: {
     alignItems: 'center',
     marginBottom: 16,
@@ -641,39 +545,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     marginBottom: 16,
-  },
-  calendarLegend: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  legendTitle: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  legendItems: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '45%',
-    marginBottom: 8,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-  },
-  dominicanSymbol: {
-    fontSize: 12,
   },
   feastPanelStacked: {
     marginTop: 20,

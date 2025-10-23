@@ -20,7 +20,7 @@ import Footer from '../../../components/Footer.web';
 
 // New calendar components
 import SearchBar from '../../../components/calendar/SearchBar';
-import FilterPanel, { FeastFilter } from '../../../components/calendar/FilterPanel';
+import InteractiveLegend, { FeastFilter } from '../../../components/calendar/InteractiveLegend';
 import SeasonBanner from '../../../components/calendar/SeasonBanner';
 import ViewModeToggle, { ViewMode } from '../../../components/calendar/ViewModeToggle';
 import CalendarGrid from '../../../components/calendar/CalendarGrid';
@@ -321,32 +321,13 @@ export default function CalendarScreenWeb() {
             <SearchBar onSelectDate={handleSearchSelect} />
           </View>
 
-          {/* Filters & View Mode Toggle */}
-          <View style={[
-            styles.controlsContainer,
-            // Only use horizontal layout on very wide screens, or desktop without side panel
-            (isWide || (isDesktop && !shouldShowSideBySide)) && styles.controlsContainerHorizontal
-          ]}>
-            {/* Filters */}
-            <View style={(isWide || (isDesktop && !shouldShowSideBySide)) ? styles.filtersWide : styles.filtersFull}>
-              <FilterPanel
-                selectedFilters={selectedFilters}
-                onToggleFilter={handleToggleFilter}
-                dominicanOnly={dominicanOnly}
-                onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
-                onClearAll={handleClearFilters}
-                compact={isMobile}
-              />
-            </View>
-
-            {/* View Mode Toggle */}
-            <View style={(isWide || (isDesktop && !shouldShowSideBySide)) ? styles.viewModeWide : styles.viewModeFull}>
-              <ViewModeToggle
-                currentMode={viewMode}
-                onModeChange={setViewMode}
-                compact={isMobile}
-              />
-            </View>
+          {/* View Mode Toggle */}
+          <View style={styles.viewModeSection}>
+            <ViewModeToggle
+              currentMode={viewMode}
+              onModeChange={setViewMode}
+              compact={isMobile}
+            />
           </View>
 
           {/* Calendar View Container */}
@@ -384,36 +365,15 @@ export default function CalendarScreenWeb() {
             )}
           </View>
 
-          {/* Calendar Legend */}
-          <View style={[styles.calendarLegend, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
-            <View style={styles.legendItems}>
-              <View style={styles.legendItem}>
-                <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 8 }]}>⚫</Text>
-                <Text style={[styles.legendText, { color: colors.text }]}>Dominican Feast</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#DC143C', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Martyrs (Red)</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#000000', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>White Feasts</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#2E7D32', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Ordinary Time (Green)</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#8B008B', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Advent/Lent (Purple)</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#FFB6C1', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Gaudete/Laetare (Pink)</Text>
-              </View>
-            </View>
-          </View>
+          {/* Interactive Legend & Filters */}
+          <InteractiveLegend
+            selectedFilters={selectedFilters}
+            onToggleFilter={handleToggleFilter}
+            dominicanOnly={dominicanOnly}
+            onToggleDominican={() => setDominicanOnly(!dominicanOnly)}
+            onClearAll={handleClearFilters}
+            compact={isMobile}
+          />
         </Animated.View>
 
         {/* Right Column / Bottom Section - Feast Detail Panel */}
@@ -525,28 +485,9 @@ const styles = StyleSheet.create({
   searchSection: {
     marginBottom: 16,
   },
-  controlsContainer: {
-    marginBottom: 16,
-  },
-  controlsContainerHorizontal: {
-    flexDirection: 'row',
-    gap: 16,
-    alignItems: 'center', // Vertically center filters and view mode toggle
-  },
-  filtersWide: {
-    flex: 1,
-  },
-  filtersFull: {
-    width: '100%',
-    marginBottom: 16,
-  },
-  viewModeWide: {
-    minWidth: 200,
-    alignItems: 'flex-end',
-  },
-  viewModeFull: {
-    width: '100%',
+  viewModeSection: {
     alignItems: 'center',
+    marginBottom: 16,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -568,39 +509,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-  },
-  calendarLegend: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  legendTitle: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  legendItems: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-    marginBottom: 8,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  legendText: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-  },
-  dominicanSymbol: {
-    fontSize: 14,
   },
   feastPanelSide: {
     overflow: 'hidden',
