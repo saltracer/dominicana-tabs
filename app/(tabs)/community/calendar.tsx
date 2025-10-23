@@ -291,6 +291,8 @@ export default function CalendarScreenNative() {
             currentDate={selectedDate || new Date()}
             selectedDate={selectedDate || new Date()}
             onDayPress={handleDayPress}
+            colorFilters={selectedFilters}
+            dominicanOnly={dominicanOnly}
             ListHeaderComponent={
               <View style={styles.contentPadding}>
                 <SeasonBanner

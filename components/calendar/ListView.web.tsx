@@ -5,11 +5,15 @@ import { useTheme } from '../ThemeProvider';
 import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
 import { format, isSameDay } from 'date-fns';
 
+export type FeastColorFilter = 'red' | 'white' | 'green' | 'purple' | 'rose';
+
 interface ListViewProps {
   currentDate: Date;
   selectedDate: Date;
   onDayPress: (date: Date) => void;
   ListHeaderComponent?: React.ReactElement;
+  colorFilters?: FeastColorFilter[];
+  dominicanOnly?: boolean;
 }
 
 interface FeastListItem {
@@ -22,14 +26,21 @@ interface Section {
   data: FeastListItem[];
 }
 
-const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPress, ListHeaderComponent }) => {
+const ListView: React.FC<ListViewProps> = ({ 
+  currentDate, 
+  selectedDate, 
+  onDayPress, 
+  ListHeaderComponent,
+  colorFilters = [],
+  dominicanOnly = false,
+}) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
   const calendarService = LiturgicalCalendarService.getInstance();
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Generate list of feasts for the current year
-  const generateFeastsList = (): Section[] => {
+  const generateFeastsList = React.useCallback((): Section[] => {
     const sections: Section[] = [];
     const currentYear = currentDate.getFullYear();
 
@@ -42,10 +53,33 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         const liturgicalDay = calendarService.getLiturgicalDay(date);
 
         if (liturgicalDay.feasts.length > 0) {
-          monthData.push({
-            date,
-            feasts: liturgicalDay.feasts,
-          });
+          // Apply filters to feasts
+          let feasts = [...liturgicalDay.feasts];
+          
+          // Apply Dominican filter
+          if (dominicanOnly) {
+            feasts = feasts.filter(feast => feast.isDominican);
+          }
+          
+          // Apply color filters
+          if (colorFilters.length > 0) {
+            feasts = feasts.filter(feast => {
+              const feastColor = feast.color?.toLowerCase() || '';
+              return colorFilters.some(filter => {
+                if (filter === 'purple') return feastColor === 'purple' || feastColor === 'violet';
+                if (filter === 'rose') return feastColor === 'rose' || feastColor === 'pink';
+                return feastColor === filter;
+              });
+            });
+          }
+          
+          // Only add if there are feasts after filtering
+          if (feasts.length > 0) {
+            monthData.push({
+              date,
+              feasts,
+            });
+          }
         }
       }
 
@@ -58,20 +92,39 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
     }
 
     return sections;
-  };
+  }, [currentDate, colorFilters, dominicanOnly, calendarService]);
 
-  const sections = React.useMemo(() => generateFeastsList(), [currentDate]);
+  const sections = React.useMemo(() => generateFeastsList(), [currentDate, colorFilters, dominicanOnly]);
+
+  // Map liturgical color names to hex codes (same as DayCell)
+  const getLiturgicalColorHex = React.useCallback((colorName: string | undefined): string => {
+    if (!colorName) return colors.textMuted;
+    const color = colorName.toLowerCase();
+    switch (color) {
+      case 'red':
+        return '#DC143C';
+      case 'white':
+        return '#FFFFFF';
+      case 'green':
+        return '#2E7D32';
+      case 'purple':
+      case 'violet':
+        return '#8B008B';
+      case 'rose':
+      case 'pink':
+        return '#FFB6C1';
+      case 'gold':
+        return '#FFD700';
+      default:
+        return colors.textMuted;
+    }
+  }, [colors.textMuted]);
 
   // Helper function to check if a color is white or very light
-  const isLightColor = (color: string): boolean => {
-    if (!color) return false;
-    const lowerColor = color.toLowerCase();
-    return lowerColor === '#ffffff' || 
-           lowerColor === '#fff' || 
-           lowerColor === 'white' ||
-           lowerColor === 'rgb(255, 255, 255)' ||
-           lowerColor === 'rgba(255, 255, 255, 1)';
-  };
+  const isLightColor = React.useCallback((colorHex: string): boolean => {
+    if (!colorHex) return false;
+    return colorHex === '#FFFFFF' || colorHex === '#FFD700';
+  }, []);
 
   // Scroll to selected date when it changes
   useEffect(() => {
@@ -154,68 +207,79 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
                       >
                         {format(item.date, 'EEE')}
                       </Text>
+                      {item.feasts.length > 1 && (
+                        <View style={[styles.multipleFeastsIndicator, { backgroundColor: colors.surface }]}>
+                          <Text style={[styles.multipleFeastsText, { color: colors.text }]}>
+                            +{item.feasts.length - 1}
+                          </Text>
+                        </View>
+                      )}
                     </View>
 
                     <View style={styles.feastsColumn}>
-                      {item.feasts.map((feast, index) => (
-                        <View key={index} style={styles.feastRow}>
-                          <View style={styles.feastHeader}>
-                            {feast.isDominican && (
+                      {item.feasts.map((feast, index) => {
+                        const feastColorHex = getLiturgicalColorHex(feast.color);
+                        const isWhiteOrGold = isLightColor(feastColorHex);
+                        const isLastFeast = index === item.feasts.length - 1;
+                        
+                        return (
+                          <React.Fragment key={index}>
+                            <View style={styles.feastRow}>
+                              <View style={styles.feastHeader}>
+                                <View
+                                  style={[
+                                    styles.rankBadge,
+                                    { 
+                                      backgroundColor: feastColorHex,
+                                      marginRight: 8,
+                                      borderWidth: isWhiteOrGold ? 1 : 1,
+                                      borderColor: isWhiteOrGold ? '#000000' : 'rgba(255,255,255,0.3)',
+                                    },
+                                  ]}
+                                >
+                                  <Text 
+                                    style={[
+                                      styles.rankText,
+                                      {
+                                        color: isWhiteOrGold ? '#000000' : '#FFFFFF',
+                                      }
+                                    ]}
+                                  >
+                                    {feast.rank === 'Optional Memorial' ? 'O' : feast.rank.charAt(0)}
+                                  </Text>
+                                </View>
+                                {feast.isDominican && (
+                                  <View style={[styles.dominicanBadge, { backgroundColor: colors.dominicanBlack, marginRight: 8 }]}>
+                                    <Text style={[styles.dominicanBadgeText, { color: colors.dominicanWhite }]}>
+                                      OP
+                                    </Text>
+                                  </View>
+                                )}
+                                <Text
+                                  style={[
+                                    styles.feastName,
+                                    { color: isSelected ? colors.dominicanWhite : colors.text },
+                                  ]}
+                                  numberOfLines={2}
+                                >
+                                  {feast.name}
+                                </Text>
+                              </View>
                               <Text
                                 style={[
-                                  styles.dominicanIndicator,
-                                  { color: isSelected ? colors.dominicanWhite : colors.primary, marginRight: 6 },
+                                  styles.rankLabel,
+                                  { color: isSelected ? colors.dominicanWhite : colors.textSecondary },
                                 ]}
                               >
-                                ⚫
-                              </Text>
-                            )}
-                            <Text
-                              style={[
-                                styles.feastName,
-                                { color: isSelected ? colors.dominicanWhite : colors.text },
-                              ]}
-                              numberOfLines={2}
-                            >
-                              {feast.name}
-                            </Text>
-                          </View>
-                          <View style={styles.feastMeta}>
-                            <View
-                              style={[
-                                styles.rankBadge,
-                                { 
-                                  backgroundColor: feast.color || colors.textMuted, 
-                                  marginRight: 8,
-                                  // Add black border for white feasts (always black, even in dark mode)
-                                  borderWidth: isLightColor(feast.color) ? 1 : 0,
-                                  borderColor: isLightColor(feast.color) ? colors.alwaysBlack : 'transparent',
-                                },
-                              ]}
-                            >
-                              <Text 
-                                style={[
-                                  styles.rankText,
-                                  {
-                                    // Use black text for white feasts (always black for contrast), white for all others
-                                    color: isLightColor(feast.color) ? colors.alwaysBlack : colors.dominicanWhite,
-                                  }
-                                ]}
-                              >
-                                {feast.rank === 'Optional Memorial' ? 'OM' : feast.rank.charAt(0)}
+                                {feast.rank}
                               </Text>
                             </View>
-                            <Text
-                              style={[
-                                styles.rankLabel,
-                                { color: isSelected ? colors.dominicanWhite : colors.textSecondary },
-                              ]}
-                            >
-                              {feast.rank}
-                            </Text>
-                          </View>
-                        </View>
-                      ))}
+                            {!isLastFeast && (
+                              <View style={[styles.feastDivider, { backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : colors.border }]} />
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </View>
                   </Pressable>
                 </View>
@@ -274,18 +338,45 @@ const styles = StyleSheet.create({
   },
   feastsColumn: {
     flex: 1,
+    justifyContent: 'center',
   },
   feastRow: {
-    marginBottom: 12,
+    paddingVertical: 6,
+  },
+  feastDivider: {
+    height: 1,
+    marginVertical: 6,
+    opacity: 0.5,
   },
   feastHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 6,
+    alignItems: 'center',
+    marginBottom: 2,
   },
-  dominicanIndicator: {
-    fontSize: 14,
-    marginTop: 2,
+  dominicanBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dominicanBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  multipleFeastsIndicator: {
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.4)',
+    marginTop: 4,
+  },
+  multipleFeastsText: {
+    fontSize: 10,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
   },
   feastName: {
     flex: 1,
@@ -294,22 +385,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 22,
   },
-  feastMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap', // Allow wrapping on narrow screens
-  },
   rankBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   rankText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
     fontFamily: 'Georgia',
   },
   rankLabel: {

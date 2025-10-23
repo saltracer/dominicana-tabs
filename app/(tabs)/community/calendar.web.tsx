@@ -390,6 +390,8 @@ export default function CalendarScreenWeb() {
                 currentDate={selectedDate || new Date()}
                 selectedDate={selectedDate || new Date()}
                 onDayPress={handleDayPress}
+                colorFilters={selectedFilters}
+                dominicanOnly={dominicanOnly}
               />
             )}
           </View>
