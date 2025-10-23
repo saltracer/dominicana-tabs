@@ -707,13 +707,18 @@ export default function SaintsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background, height: '100vh' as any }]}>
+    <>
+      <ScrollView
+        style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1 }}
+      >
       {/* Main Layout - Sidebar + Content */}
       <View style={[
         styles.mainLayout,
         { 
           flexDirection: shouldShowSidebar ? 'row' : 'column',
-          height: '100%' as any,
+          minHeight: '100vh' as any,
         }
       ]}>
         {/* Left Sidebar - Filters (hidden on mobile/tablet) */}
@@ -1001,24 +1006,19 @@ export default function SaintsScreen() {
               </View>
             }
             ListFooterComponent={
-              <>
-                {displayedCount < filteredAndSortedSaints.length ? (
-                  <View style={styles.loadingMore}>
-                    <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      Showing {displayedCount} of {filteredAndSortedSaints.length} saints
-                    </Text>
-                  </View>
-                ) : filteredAndSortedSaints.length > 0 ? (
-                  <View style={styles.loadingMore}>
-                    <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
-                      All {filteredAndSortedSaints.length} saints loaded
-                    </Text>
-                  </View>
-                ) : null}
-                <View style={styles.footerWrapper}>
-                  <Footer />
+              displayedCount < filteredAndSortedSaints.length ? (
+                <View style={styles.loadingMore}>
+                  <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    Showing {displayedCount} of {filteredAndSortedSaints.length} saints
+                  </Text>
                 </View>
-              </>
+              ) : filteredAndSortedSaints.length > 0 ? (
+                <View style={styles.loadingMore}>
+                  <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                    All {filteredAndSortedSaints.length} saints loaded
+                  </Text>
+                </View>
+              ) : null
             }
           />
         </Animated.View>
@@ -1052,6 +1052,9 @@ export default function SaintsScreen() {
         )}
       </View>
 
+      <Footer />
+      </ScrollView>
+
       {/* Saint Detail Panel - Mobile/Tablet Modal */}
       {shouldUseModal && (
         <Modal
@@ -1083,9 +1086,7 @@ export default function SaintsScreen() {
           </View>
         </Modal>
       )}
-
-      
-    </View>
+    </>
   );
 }
 
@@ -1093,10 +1094,14 @@ const styles = StyleSheet.create({
   // Include all shared styles
   ...CommunityStyles,
   
+  container: {
+    flex: 1,
+  },
+
   // Main layout structure
   mainLayout: {
     flex: 1,
-    // flexDirection set dynamically via inline styles (row for desktop, column for mobile/tablet)
+    // flexDirection and minHeight set dynamically via inline styles
   },
 
   // Sidebar styles
@@ -1245,13 +1250,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     fontFamily: 'Georgia',
-  },
-
-  footerWrapper: {
-    position: 'relative' as any,
-    left: -24,
-    width: '100vw' as any,
-    maxWidth: '100vw' as any,
   },
 
   loadingMore: {
