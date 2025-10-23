@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } fr
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
-import DayCell from './DayCell';
+import DayCell, { FeastColorFilter } from './DayCell';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, addWeeks, subWeeks } from 'date-fns';
 
 interface WeekViewProps {
@@ -12,9 +12,19 @@ interface WeekViewProps {
   onDayPress: (date: Date) => void;
   onWeekChange?: (newDate: Date) => void;
   cellSize?: 'small' | 'medium' | 'large' | 'xlarge';
+  colorFilters?: FeastColorFilter[];
+  dominicanOnly?: boolean;
 }
 
-const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPress, onWeekChange, cellSize = 'large' }) => {
+const WeekView: React.FC<WeekViewProps> = ({ 
+  currentDate, 
+  selectedDate, 
+  onDayPress, 
+  onWeekChange, 
+  cellSize = 'large',
+  colorFilters = [],
+  dominicanOnly = false,
+}) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
   const scrollViewRef = useRef<ScrollView>(null);
@@ -131,6 +141,8 @@ const WeekView: React.FC<WeekViewProps> = ({ currentDate, selectedDate, onDayPre
                   onPress={() => onDayPress(day)}
                   size={cellSize}
                   showFeastName={showFeastName}
+                  colorFilters={colorFilters}
+                  dominicanOnly={dominicanOnly}
                 />
               </View>
             </View>

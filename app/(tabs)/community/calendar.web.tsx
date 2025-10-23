@@ -88,6 +88,7 @@ export default function CalendarScreenWeb() {
 
     // Generate feast days for the current year
     const currentYear = new Date().getFullYear();
+    
     for (let month = 0; month < 12; month++) {
       const daysInMonth = new Date(currentYear, month + 1, 0).getDate();
 
@@ -104,7 +105,14 @@ export default function CalendarScreenWeb() {
           }
 
           if (selectedFilters.length > 0) {
-            feasts = feasts.filter(feast => selectedFilters.includes(feast.rank as FeastFilter));
+            feasts = feasts.filter(feast => {
+              const feastColor = feast.color?.toLowerCase() || '';
+              return selectedFilters.some(filter => {
+                if (filter === 'purple') return feastColor === 'purple' || feastColor === 'violet';
+                if (filter === 'rose') return feastColor === 'rose' || feastColor === 'pink';
+                return feastColor === filter;
+              });
+            });
           }
 
           if (feasts.length > 0) {
@@ -222,6 +230,40 @@ export default function CalendarScreenWeb() {
     handleDayPress({ dateString: format(date, 'yyyy-MM-dd') });
   };
 
+  // Create filtered liturgicalDay based on active filters
+  const filteredLiturgicalDay = useMemo(() => {
+    if (!liturgicalDay) return null;
+    
+    // If no filters active, return original
+    if (!dominicanOnly && selectedFilters.length === 0) {
+      return liturgicalDay;
+    }
+    
+    let filteredFeasts = [...liturgicalDay.feasts];
+    
+    // Apply Dominican filter
+    if (dominicanOnly) {
+      filteredFeasts = filteredFeasts.filter(feast => feast.isDominican);
+    }
+    
+    // Apply color filters
+    if (selectedFilters.length > 0) {
+      filteredFeasts = filteredFeasts.filter(feast => {
+        const feastColor = feast.color?.toLowerCase() || '';
+        return selectedFilters.some(filter => {
+          if (filter === 'purple') return feastColor === 'purple' || feastColor === 'violet';
+          if (filter === 'rose') return feastColor === 'rose' || feastColor === 'pink';
+          return feastColor === filter;
+        });
+      });
+    }
+    
+    return {
+      ...liturgicalDay,
+      feasts: filteredFeasts
+    };
+  }, [liturgicalDay, selectedFilters, dominicanOnly]);
+
   if (!liturgicalDay) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -316,6 +358,8 @@ export default function CalendarScreenWeb() {
                 onDayPress={handleDayPress}
                 cellSize={cellSize}
                 showFeastNames={showFeastNames}
+                colorFilters={selectedFilters}
+                dominicanOnly={dominicanOnly}
               />
             )}
 
@@ -326,6 +370,8 @@ export default function CalendarScreenWeb() {
                 onDayPress={handleDayPress}
                 onWeekChange={(newDate) => setCurrentWeekDate(newDate)}
                 cellSize={cellSize}
+                colorFilters={selectedFilters}
+                dominicanOnly={dominicanOnly}
               />
             )}
 
@@ -343,24 +389,28 @@ export default function CalendarScreenWeb() {
             <Text style={[styles.legendTitle, { color: colors.text }]}>Legend</Text>
             <View style={styles.legendItems}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#8B0000', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Solemnity</Text>
+                <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 8 }]}>⚫</Text>
+                <Text style={[styles.legendText, { color: colors.text }]}>Dominican Feast</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#4B0082', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Feast</Text>
+                <View style={[styles.legendDot, { backgroundColor: '#DC143C', marginRight: 8 }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>Martyrs (Red)</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#DAA520', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Memorial</Text>
+                <View style={[styles.legendDot, { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#000000', marginRight: 8 }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>White Feasts</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#2E7D32', marginRight: 8 }]} />
-                <Text style={[styles.legendText, { color: colors.text }]}>Ferial Day</Text>
+                <Text style={[styles.legendText, { color: colors.text }]}>Ordinary Time (Green)</Text>
               </View>
               <View style={styles.legendItem}>
-                <Text style={[styles.dominicanSymbol, { color: colors.primary, marginRight: 8 }]}>⚫</Text>
-                <Text style={[styles.legendText, { color: colors.text }]}>Dominican</Text>
+                <View style={[styles.legendDot, { backgroundColor: '#8B008B', marginRight: 8 }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>Advent/Lent (Purple)</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#FFB6C1', marginRight: 8 }]} />
+                <Text style={[styles.legendText, { color: colors.text }]}>Gaudete/Laetare (Pink)</Text>
               </View>
             </View>
           </View>
@@ -390,7 +440,7 @@ export default function CalendarScreenWeb() {
             ]}
           >
             <FeastDetailPanel
-              liturgicalDay={liturgicalDay}
+              liturgicalDay={filteredLiturgicalDay || liturgicalDay}
               isVisible={true}
               onClose={closeFeastDetail}
             />
@@ -407,7 +457,7 @@ export default function CalendarScreenWeb() {
               <Pressable style={styles.modalBackdrop} onPress={closeFeastDetail} />
               <View style={styles.modalContent}>
                 <FeastDetailPanel
-                  liturgicalDay={liturgicalDay}
+                  liturgicalDay={filteredLiturgicalDay || liturgicalDay}
                   isVisible={true}
                   onClose={closeFeastDetail}
                 />
@@ -433,7 +483,7 @@ export default function CalendarScreenWeb() {
             ]}
           >
             <FeastDetailPanel
-              liturgicalDay={liturgicalDay}
+              liturgicalDay={filteredLiturgicalDay || liturgicalDay}
               isVisible={true}
               onClose={closeFeastDetail}
             />

@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
 
-export type FeastFilter = 'Solemnity' | 'Feast' | 'Memorial' | 'Optional Memorial' | 'Ferial';
+export type FeastFilter = 'red' | 'white' | 'green' | 'purple' | 'rose';
 
 interface FilterPanelProps {
   selectedFilters: FeastFilter[];
@@ -33,38 +33,46 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const feastTypes: FeastFilter[] = ['Solemnity', 'Feast', 'Memorial', 'Optional Memorial', 'Ferial'];
+  const colorFilters: { value: FeastFilter; label: string }[] = [
+    { value: 'red', label: 'Martyrs' },
+    { value: 'white', label: 'White Feasts' },
+    { value: 'green', label: 'Ordinary Time' },
+    { value: 'purple', label: 'Advent/Lent' },
+    { value: 'rose', label: 'Gaudete/Laetare' },
+  ];
 
   const getFeastColor = (type: FeastFilter): string => {
     switch (type) {
-      case 'Solemnity':
-        return '#8B0000';
-      case 'Feast':
-        return '#4B0082';
-      case 'Memorial':
-        return '#DAA520';
-      case 'Optional Memorial':
-        return '#CD853F';
-      case 'Ferial':
+      case 'red':
+        return '#DC143C';
+      case 'white':
+        return '#FFFFFF';
+      case 'green':
         return '#2E7D32';
+      case 'purple':
+        return '#8B008B';
+      case 'rose':
+        return '#FFB6C1';
       default:
         return colors.textMuted;
     }
   };
 
-  const renderFilterChip = (filter: FeastFilter) => {
-    const isSelected = selectedFilters.includes(filter);
-    const feastColor = getFeastColor(filter);
+  const renderFilterChip = (filterItem: { value: FeastFilter; label: string }) => {
+    const isSelected = selectedFilters.includes(filterItem.value);
+    const feastColor = getFeastColor(filterItem.value);
+    const isWhite = filterItem.value === 'white';
 
     return (
       <Pressable
-        key={filter}
-        onPress={() => onToggleFilter(filter)}
+        key={filterItem.value}
+        onPress={() => onToggleFilter(filterItem.value)}
         style={({ pressed }) => [
           styles.filterChip,
           {
             backgroundColor: isSelected ? feastColor : colors.surface,
-            borderColor: isSelected ? feastColor : colors.border,
+            borderColor: isSelected ? (isWhite ? '#000000' : feastColor) : colors.border,
+            borderWidth: isSelected ? 2 : 1,
             opacity: pressed ? 0.7 : 1,
           },
         ]}
@@ -72,20 +80,24 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <View
           style={[
             styles.filterDot,
-            { backgroundColor: feastColor, marginRight: 6 },
+            { 
+              backgroundColor: feastColor,
+              borderWidth: isWhite ? 1 : 0,
+              borderColor: isWhite ? '#000000' : 'transparent',
+              marginRight: 6 
+            },
           ]}
         />
         <Text
           style={[
             styles.filterText,
-            { color: isSelected ? '#FFFFFF' : colors.text, marginRight: 6 },
+            { 
+              color: isSelected && isWhite ? '#000000' : isSelected ? '#FFFFFF' : colors.text,
+            },
           ]}
         >
-          {filter}
+          {filterItem.label}
         </Text>
-        {isSelected && (
-          <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-        )}
       </Pressable>
     );
   };
@@ -137,8 +149,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           )}
         </Pressable>
 
-        {/* Feast Type Filters */}
-        {feastTypes.map(renderFilterChip)}
+        {/* Color Filters */}
+        {colorFilters.map(renderFilterChip)}
       </ScrollView>
 
       {compact && hasActiveFilters && (

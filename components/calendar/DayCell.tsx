@@ -5,6 +5,8 @@ import { useTheme } from '../ThemeProvider';
 import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
 import { parseISO, format } from 'date-fns';
 
+export type FeastColorFilter = 'red' | 'white' | 'green' | 'purple' | 'rose';
+
 interface DayCellProps {
   date?: {
     dateString: string;
@@ -14,6 +16,8 @@ interface DayCellProps {
   onPress?: (date?: any) => void;
   size?: 'small' | 'medium' | 'large' | 'xlarge';
   showFeastName?: boolean;
+  colorFilters?: FeastColorFilter[];
+  dominicanOnly?: boolean;
 }
 
 const DayCell: React.FC<DayCellProps> = ({
@@ -22,6 +26,8 @@ const DayCell: React.FC<DayCellProps> = ({
   onPress,
   size = 'medium',
   showFeastName = false,
+  colorFilters = [],
+  dominicanOnly = false,
 }) => {
   const { colorScheme } = useTheme();
   const [dayContent, setDayContent] = useState<any>(null);
@@ -33,31 +39,59 @@ const DayCell: React.FC<DayCellProps> = ({
       const liturgicalDay = calendarService.getLiturgicalDay(selectedDate);
 
       if (liturgicalDay.feasts.length > 0) {
-        // Get the highest rank feast for this date
-        const primaryFeast = liturgicalDay.feasts.reduce((highest, current) => {
-          const rankOrder: { [key: string]: number } = {
-            Solemnity: 1,
-            Feast: 2,
-            Memorial: 3,
-            'Optional Memorial': 4,
-            Ferial: 5,
-          };
-          const currentRank = rankOrder[current.rank] || 5;
-          const highestRank = rankOrder[highest.rank] || 5;
-          return currentRank < highestRank ? current : highest;
-        }, liturgicalDay.feasts[0]);
+        // Apply filters to feasts
+        let feasts = [...liturgicalDay.feasts];
+        
+        // Apply Dominican filter
+        if (dominicanOnly) {
+          feasts = feasts.filter(feast => feast.isDominican);
+        }
+        
+        // Apply color filters
+        if (colorFilters.length > 0) {
+          feasts = feasts.filter(feast => {
+            const feastColor = feast.color?.toLowerCase() || '';
+            return colorFilters.some(filter => {
+              if (filter === 'purple') return feastColor === 'purple' || feastColor === 'violet';
+              if (filter === 'rose') return feastColor === 'rose' || feastColor === 'pink';
+              return feastColor === filter;
+            });
+          });
+        }
+        
+        // Only show content if there are feasts after filtering
+        if (feasts.length > 0) {
+          // Get the highest rank feast for this date
+          const primaryFeast = feasts.reduce((highest, current) => {
+            const rankOrder: { [key: string]: number } = {
+              Solemnity: 1,
+              Feast: 2,
+              Memorial: 3,
+              'Optional Memorial': 4,
+              Ferial: 5,
+            };
+            const currentRank = rankOrder[current.rank] || 5;
+            const highestRank = rankOrder[highest.rank] || 5;
+            return currentRank < highestRank ? current : highest;
+          }, feasts[0]);
 
-        const hasDominicanFeast = liturgicalDay.feasts.some(feast => feast.isDominican);
+          const hasDominicanFeast = feasts.some(feast => feast.isDominican);
 
-        setDayContent({
-          primaryFeast,
-          hasDominicanFeast,
-          feastCount: liturgicalDay.feasts.length,
-          isDominican: hasDominicanFeast,
-        });
+          setDayContent({
+            primaryFeast,
+            hasDominicanFeast,
+            feastCount: feasts.length,
+            isDominican: hasDominicanFeast,
+          });
+        } else {
+          // No feasts after filtering
+          setDayContent(null);
+        }
+      } else {
+        setDayContent(null);
       }
     }
-  }, [date?.dateString]);
+  }, [date?.dateString, colorFilters, dominicanOnly]);
 
   const isToday = date?.dateString === format(new Date(), 'yyyy-MM-dd');
   const isSelected = marking?.selected;
@@ -65,6 +99,32 @@ const DayCell: React.FC<DayCellProps> = ({
 
   const colors = useMemo(() => {
     const currentColors = Colors[colorScheme ?? 'light'];
+
+    // Map liturgical color names to hex codes
+    const getLiturgicalColorHex = (colorName: string | undefined): string => {
+      if (!colorName) return currentColors.textMuted;
+      const color = colorName.toLowerCase();
+      switch (color) {
+        case 'red':
+          return '#DC143C';
+        case 'white':
+          return '#FFFFFF';
+        case 'green':
+          return '#2E7D32';
+        case 'purple':
+        case 'violet':
+          return '#8B008B';
+        case 'rose':
+        case 'pink':
+          return '#FFB6C1';
+        case 'gold':
+          return '#FFD700';
+        default:
+          return currentColors.textMuted;
+      }
+    };
+
+    const feastColor = dayContent?.primaryFeast ? getLiturgicalColorHex(dayContent.primaryFeast.color) : currentColors.textMuted;
 
     return {
       backgroundColor: (() => {
@@ -79,11 +139,7 @@ const DayCell: React.FC<DayCellProps> = ({
         if (hasFeasts) return currentColors.text;
         return currentColors.textMuted;
       })(),
-      feastIndicatorColor: (() => {
-        if (dayContent?.hasDominicanFeast) return currentColors.primary;
-        if (dayContent?.primaryFeast) return dayContent.primaryFeast.color;
-        return currentColors.textMuted;
-      })(),
+      feastIndicatorColor: feastColor,
     };
   }, [isSelected, isToday, hasFeasts, dayContent, colorScheme, size]);
 
@@ -155,50 +211,39 @@ const DayCell: React.FC<DayCellProps> = ({
       ]}
       onPress={() => onPress?.(date)}
     >
-      {/* Day Number - Top Left with Dominican Indicator next to it */}
+      {/* Day Number - Top Left */}
       <View style={styles.topLeftSection}>
         <Text style={[styles.dayNumber, dayNumberSize, { color: colors.textColor }]}>
           {date?.day}
         </Text>
-        
-        {/* Dominican Indicator - next to day number */}
-        {hasFeasts && dayContent.isDominican && (
-          <View
-            style={[
-              styles.dominicanBadge,
-              { backgroundColor: Colors[colorScheme ?? 'light'].dominicanBlack },
-            ]}
-          >
-            <Text style={[styles.dominicanBadgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              OP
-            </Text>
-          </View>
-        )}
       </View>
 
-      {/* Feast Level Indicator - Position depends on cell size */}
+      {/* Feast Level Indicator - Always Top Right */}
       {hasFeasts && (
-        <View style={size !== 'small' ? styles.topRightSection : styles.bottomLeftSection}>
+        <View style={styles.topRightSection}>
           <View
             style={[
               styles.rankBadge,
-              size === 'xlarge' ? styles.rankBadgeLarge : {},
+              size === 'large' && styles.rankBadgeLarge,
+              size === 'xlarge' && styles.rankBadgeXLarge,
               { 
                 backgroundColor: colors.feastIndicatorColor,
-                borderColor: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
-                             colors.feastIndicatorColor?.toLowerCase() === 'white' 
+                borderColor: colors.feastIndicatorColor === '#FFFFFF' || 
+                             colors.feastIndicatorColor === '#FFD700' // White or Gold
                   ? '#000000' 
                   : 'rgba(255,255,255,0.3)',
+                borderWidth: 1,
               },
             ]}
           >
             <Text
               style={[
                 styles.rankText,
-                size === 'xlarge' ? styles.rankTextLarge : {},
+                size === 'large' && styles.rankTextLarge,
+                size === 'xlarge' && styles.rankTextXLarge,
                 {
-                  color: colors.feastIndicatorColor?.toLowerCase() === '#ffffff' || 
-                         colors.feastIndicatorColor?.toLowerCase() === 'white'
+                  color: colors.feastIndicatorColor === '#FFFFFF' || 
+                         colors.feastIndicatorColor === '#FFD700' // White or Gold
                     ? '#000000'
                     : '#FFFFFF',
                 },
@@ -210,18 +255,45 @@ const DayCell: React.FC<DayCellProps> = ({
         </View>
       )}
 
+      {/* Dominican Indicator - Bottom Left */}
+      {hasFeasts && dayContent.isDominican && (
+        <View style={styles.bottomLeftSection}>
+          <View
+            style={[
+              styles.dominicanBadge,
+              size === 'large' && styles.dominicanBadgeLarge,
+              size === 'xlarge' && styles.dominicanBadgeXLarge,
+              { backgroundColor: Colors[colorScheme ?? 'light'].dominicanBlack },
+            ]}
+          >
+            <Text style={[
+              styles.dominicanBadgeText,
+              size === 'large' && styles.dominicanBadgeTextLarge,
+              size === 'xlarge' && styles.dominicanBadgeTextXLarge,
+              { color: Colors[colorScheme ?? 'light'].dominicanWhite }
+            ]}>
+              OP
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Multiple Feasts Indicator - Bottom Right */}
       {hasFeasts && dayContent.feastCount > 1 && (
         <View style={styles.bottomRightSection}>
           <View
             style={[
               styles.multipleFeastsIndicator,
+              size === 'large' && styles.multipleFeastsIndicatorLarge,
+              size === 'xlarge' && styles.multipleFeastsIndicatorXLarge,
               { backgroundColor: Colors[colorScheme ?? 'light'].surface },
             ]}
           >
             <Text
               style={[
                 styles.multipleFeastsText,
+                size === 'large' && styles.multipleFeastsTextLarge,
+                size === 'xlarge' && styles.multipleFeastsTextXLarge,
                 { color: colors.textColor },
               ]}
             >
@@ -284,8 +356,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     // top: 4,
     left: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   topRightSection: {
     position: 'absolute',
@@ -353,9 +423,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rankBadgeLarge: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     borderRadius: 5,
+  },
+  rankBadgeXLarge: {
+    width: 26,
+    height: 26,
+    borderRadius: 6,
   },
   rankText: {
     fontSize: 9,
@@ -363,7 +438,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
   rankTextLarge: {
-    fontSize: 11,
+    fontSize: 12,
+  },
+  rankTextXLarge: {
+    fontSize: 14,
   },
   dominicanBadge: {
     width: 18,
@@ -371,12 +449,27 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    top: 2
+  },
+  dominicanBadgeLarge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+  },
+  dominicanBadgeXLarge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
   },
   dominicanBadgeText: {
     fontSize: 8,
     fontWeight: '700',
     fontFamily: 'Georgia',
+  },
+  dominicanBadgeTextLarge: {
+    fontSize: 9,
+  },
+  dominicanBadgeTextXLarge: {
+    fontSize: 11,
   },
   dominicanSymbol: {
     fontSize: 12,
@@ -388,10 +481,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.4)',
   },
+  multipleFeastsIndicatorLarge: {
+    borderRadius: 7,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  multipleFeastsIndicatorXLarge: {
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
   multipleFeastsText: {
     fontSize: 12,
     fontWeight: '600',
     fontFamily: 'Georgia',
+  },
+  multipleFeastsTextLarge: {
+    fontSize: 14,
+  },
+  multipleFeastsTextXLarge: {
+    fontSize: 16,
   },
   feastName: {
     fontFamily: 'Georgia',

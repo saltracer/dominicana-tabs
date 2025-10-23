@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
-import DayCell from './DayCell';
+import DayCell, { FeastColorFilter } from './DayCell';
 import { format, subDays, addDays } from 'date-fns';
 
 interface CalendarGridProps {
@@ -12,6 +12,8 @@ interface CalendarGridProps {
   onDayPress: (day: any) => void;
   cellSize?: 'small' | 'medium' | 'large' | 'xlarge';
   showFeastNames?: boolean;
+  colorFilters?: FeastColorFilter[];
+  dominicanOnly?: boolean;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -20,6 +22,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   onDayPress,
   cellSize = 'medium',
   showFeastNames = false,
+  colorFilters = [],
+  dominicanOnly = false,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -35,6 +39,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
             {...props}
             size={cellSize}
             showFeastName={showFeastNames}
+            colorFilters={colorFilters}
+            dominicanOnly={dominicanOnly}
           />
         )}
         theme={{
