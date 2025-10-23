@@ -39,6 +39,7 @@ export default function SaintsScreen() {
   const platformStyles = getPlatformStyles(isWeb);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [activeFilters, setActiveFilters] = useState<FilterOption[]>([]);
   const [activeRankFilters, setActiveRankFilters] = useState<RankFilter[]>([]);
   const [activeTypeFilters, setActiveTypeFilters] = useState<TypeFilter[]>([]);
@@ -141,22 +142,28 @@ export default function SaintsScreen() {
 
     // Sort
     filtered.sort((a, b) => {
+      let comparison = 0;
       switch (sortBy) {
         case 'name':
-          return a.name.localeCompare(b.name);
+          comparison = a.name.localeCompare(b.name);
+          break;
         case 'feast_day':
-          return a.feast_day.localeCompare(b.feast_day);
+          comparison = a.feast_day.localeCompare(b.feast_day);
+          break;
         case 'birth_year':
-          return (b.birth_year || 0) - (a.birth_year || 0);
+          comparison = (a.birth_year || 0) - (b.birth_year || 0);
+          break;
         case 'death_year':
-          return (b.death_year || 0) - (a.death_year || 0);
+          comparison = (a.death_year || 0) - (b.death_year || 0);
+          break;
         default:
           return 0;
       }
+      return sortDirection === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [searchQuery, sortBy, activeFilters, activeRankFilters, activeTypeFilters, activeEraFilters]);
+  }, [searchQuery, sortBy, sortDirection, activeFilters, activeRankFilters, activeTypeFilters, activeEraFilters]);
 
   const displayedSaints = useMemo(() => {
     return filteredAndSortedSaints.slice(0, displayedCount);
@@ -477,6 +484,17 @@ export default function SaintsScreen() {
     );
   };
 
+  const handleSortPress = (sort: SortOption) => {
+    if (sortBy === sort) {
+      // Toggle direction if clicking the same sort option
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Change sort option and reset to ascending
+      setSortBy(sort);
+      setSortDirection('asc');
+    }
+  };
+
   const renderSortButton = (sort: SortOption, label: string, icon: string) => {
     const isActive = sortBy === sort;
     const isMobileView = !shouldShowSidebar;
@@ -495,7 +513,7 @@ export default function SaintsScreen() {
               : Colors[colorScheme ?? 'light'].border
           }
         ]}
-        onPress={() => setSortBy(sort)}
+        onPress={() => handleSortPress(sort)}
       >
         <Ionicons 
           name={icon as any} 
@@ -515,6 +533,14 @@ export default function SaintsScreen() {
         ]}>
           {label}
         </Text>
+        {isActive && (
+          <Ionicons 
+            name={sortDirection === 'asc' ? 'arrow-up' : 'arrow-down'} 
+            size={isMobileView ? 14 : 16} 
+            color={Colors[colorScheme ?? 'light'].dominicanWhite}
+            style={{ marginLeft: 4 }}
+          />
+        )}
       </TouchableOpacity>
     );
   };
