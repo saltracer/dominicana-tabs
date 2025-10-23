@@ -64,6 +64,7 @@
 - [x] scrolling footer
 - [ ] support text resizing
 - [ ] support device rotation on native (focusing on a responsive design)
+- [ ] support linking directly to tabs (like linking to a particular day on the calendar list view)
 
 ## Admin
 - [ ] Allow the Rosary Audio to be renamed
