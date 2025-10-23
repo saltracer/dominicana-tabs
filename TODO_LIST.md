@@ -44,9 +44,9 @@
 - [ ] Books need to have versions (for when epubs are updated and users are already reading an other epub) and for when books are pulled from the library but as still "owned" by users.
 
 ## Community
-- [ ] Calendar is ugly
+- [x] Calendar is ugly
 - [ ] Saints don't list all, the scrolling stops?
-- [ ] The province map doesn't show the continent filters on mobile. Appears to be behind the feast banner.
+- [x] The province map doesn't show the continent filters on mobile. Appears to be behind the feast banner.
 
 ## Preaching
 - [ ] Subscribe to blogs
@@ -57,7 +57,7 @@
 - [x] Admin console
 - [ ] Look for opportunities to refactor
 - [x] fix the user profile sub page titling
-- [ ] scrolling footer
+- [x] scrolling footer
 - [ ] support text resizing
 
 ## Admin
