@@ -146,7 +146,7 @@ export default function SaintsScreen() {
 
   if (!liturgicalDay) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
         <CommunityNavigation activeTab="saints" />
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -277,12 +277,12 @@ export default function SaintsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
       <CommunityNavigation activeTab="saints" />
       
       <View style={[platformStyles.tabContent, { flex: 1 }]}>
         {/* Search Bar */}
-        <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
+        <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border, marginTop: 0 }]}>
           <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
           <TextInput
             style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
