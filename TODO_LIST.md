@@ -63,6 +63,7 @@
 - [x] fix the user profile sub page titling
 - [x] scrolling footer
 - [ ] support text resizing
+- [ ] support device rotation on native (focusing on a responsive design)
 
 ## Admin
 - [ ] Allow the Rosary Audio to be renamed
