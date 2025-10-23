@@ -736,38 +736,38 @@ export default function SaintsScreen() {
                   
                   {/* All badges under the date */}
                   <View style={styles.dateBadgesContainer}>
-                    {selectedSaint.is_doctor && (
-                      <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-                        <Text style={[styles.badgeText, { color: 'black'/* Colors[colorScheme ?? 'light'].dominicanBlack */ }]}>
-                          Doctor
-                        </Text>
-                      </View>
-                    )}
-                    {selectedSaint.is_dominican && (
-                      <View style={[styles.dominicanBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-                        <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                          Dominican
-                        </Text>
-                      </View>
-                    )}
-                    {selectedSaint.color && (
+                    {selectedSaint.rank && (
                       <View style={[
-                        styles.colorBadge, 
+                        styles.rankBadge, 
                         { 
-                          backgroundColor: getLiturgicalColor(selectedSaint.color),
-                          borderWidth: selectedSaint.color === 'White' ? 1 : 0,
-                          borderColor: selectedSaint.color === 'White' ? '#666666' : 'transparent',
+                          backgroundColor: selectedSaint.color ? getLiturgicalColor(selectedSaint.color) : getRankColor(selectedSaint.rank),
+                          borderWidth: selectedSaint.color?.toLowerCase() === 'white' ? 1 : 0,
+                          borderColor: Colors[colorScheme ?? 'light'].border,
                         }
                       ]}>
                         <Text style={[
                           styles.badgeText, 
                           { 
-                            color: selectedSaint.color === 'White' 
-                              ? '#000000' 
-                              : Colors[colorScheme ?? 'light'].dominicanWhite 
+                            color: selectedSaint.color?.toLowerCase() === 'white' 
+                              ? 'black' 
+                              : 'white' 
                           }
                         ]}>
-                          {selectedSaint.color.charAt(0).toUpperCase() + selectedSaint.color.slice(1)}
+                          {selectedSaint.rank.split(' ')[0]}
+                        </Text>
+                      </View>
+                    )}
+                    {selectedSaint.is_doctor && (
+                      <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+                        <Text style={[styles.badgeText, { color: 'black' }]}>
+                          Doctor
+                        </Text>
+                      </View>
+                    )}
+                    {selectedSaint.is_dominican && (
+                      <View style={[styles.dominicanBadge, { backgroundColor: Colors[colorScheme ?? 'light'].text }]}>
+                        <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].background }]}>
+                          OP
                         </Text>
                       </View>
                     )}
@@ -972,6 +972,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
     marginBottom: 8,
+  },
+  dateBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    gap: 6,
   },
   section: {
     marginBottom: 24,

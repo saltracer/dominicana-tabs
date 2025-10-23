@@ -154,38 +154,38 @@ export const SaintContentRenderer: React.FC<SaintContentRendererProps> = ({
           
           {/* Badges */}
           <View style={styles.badgesContainer}>
-            {saint.is_dominican && (
-              <View style={[styles.dominicanBadge, { backgroundColor: colors.primary }]}>
-                <Text style={[styles.badgeText, { color: 'white' }]}>
-                  Dominican
-                </Text>
-              </View>
-            )}
-            {saint.is_doctor && (
-              <View style={[styles.doctorBadge, { backgroundColor: colors.accent }]}>
-                <Text style={[styles.badgeText, { color: colors.dominicanWhite }]}>
-                  Doctor of the Church
-                </Text>
-              </View>
-            )}
-            {!!saint.color && (
+            {saint.rank && (
               <View style={[
-                styles.colorBadge, 
+                styles.rankBadge, 
                 { 
-                  backgroundColor: getLiturgicalColor(saint.color),
-                  borderWidth: saint.color.toLowerCase() === 'white' ? 1 : 0,
-                  borderColor: saint.color.toLowerCase() === 'white' ? '#666666' : 'transparent',
+                  backgroundColor: saint.color ? getLiturgicalColor(saint.color) : colors.secondary,
+                  borderWidth: saint.color?.toLowerCase() === 'white' ? 1 : 0,
+                  borderColor: colors.border,
                 }
               ]}>
                 <Text style={[
                   styles.badgeText, 
                   { 
-                    color: saint.color.toLowerCase() === 'white' 
+                    color: saint.color?.toLowerCase() === 'white' 
                       ? 'black' 
                       : 'white' 
                   }
                 ]}>
-                  {saint.color.charAt(0).toUpperCase() + saint.color.slice(1)}
+                  {saint.rank.split(' ')[0]}
+                </Text>
+              </View>
+            )}
+            {saint.is_doctor && (
+              <View style={[styles.doctorBadge, { backgroundColor: colors.accent }]}>
+                <Text style={[styles.badgeText, { color: 'black' }]}>
+                  Doctor
+                </Text>
+              </View>
+            )}
+            {saint.is_dominican && (
+              <View style={[styles.dominicanBadge, { backgroundColor: colors.text }]}>
+                <Text style={[styles.badgeText, { color: colors.background }]}>
+                  OP
                 </Text>
               </View>
             )}
@@ -397,6 +397,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: 8,
+  },
+  rankBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 4,
   },
   dominicanBadge: {
     borderRadius: 12,
