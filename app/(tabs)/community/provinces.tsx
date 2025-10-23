@@ -7,7 +7,7 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { useCalendar } from '../../../components/CalendarContext';
@@ -23,6 +23,7 @@ import ProvincesMap from '../../../components/ProvincesMap';
 export default function ProvincesScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
+  const insets = useSafeAreaInsets();
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(null);
 
 
@@ -30,6 +31,11 @@ export default function ProvincesScreen() {
   const handleProvinceSelect = (province: Province) => {
     setSelectedProvince(province);
   };
+
+  // Calculate dynamic margin for feast banner
+  // Feast banner position is: bottom: 60 + Math.max(insets.bottom, 10)
+  // Plus feast banner height (~75px) = total space needed
+  const feastBannerMargin = 45 + Math.max(insets.bottom, 10) + 0; // 15px for feast banner content + padding
 
   if (!liturgicalDay) {
     return (
@@ -49,7 +55,7 @@ export default function ProvincesScreen() {
       <CommunityNavigation activeTab="provinces" />
       
       {/* Map takes full remaining space */}
-      <View style={styles.mapContainer}>
+      <View style={[styles.mapContainer, { marginBottom: feastBannerMargin }]}>
         <ProvincesMap onProvinceSelect={handleProvinceSelect} />
       </View>
 
@@ -61,5 +67,8 @@ const styles = StyleSheet.create({
   // Include all shared styles
   ...CommunityStyles,
   
-  // No unique local styles needed for this component
+  // Dynamic margin is applied inline based on safe area insets
+  mapContainer: {
+    flex: 1,
+  },
 });
