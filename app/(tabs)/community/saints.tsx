@@ -280,23 +280,40 @@ export default function SaintsScreen() {
       onPress={() => handleSaintPress(saint)}
     >
       <View style={styles.saintHeader}>
-        {/* Doctor badge - top left */}
-        {saint.is_doctor && (
-          <View style={[styles.doctorBadge, styles.topLeftBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-            <Text style={[styles.badgeText, { color: 'black'/* Colors[colorScheme ?? 'light'].dominicanWhite */ }]}>
-              Doctor
+        {/* Rank badge with liturgical color - top left */}
+        {saint.rank && (
+          <View style={[styles.rankBadge, styles.topLeftBadge, { 
+            backgroundColor: saint.color ? getLiturgicalColor(saint.color) : getRankColor(saint.rank),
+            borderWidth: saint.color?.toLowerCase() === 'white' ? 1 : 0,
+            borderColor: Colors[colorScheme ?? 'light'].border,
+          }]}>
+            <Text style={[styles.badgeText, { 
+              color: saint.color?.toLowerCase() === 'white' ? 'black' : Colors[colorScheme ?? 'light'].dominicanWhite 
+            }]}>
+              {saint.rank.split(' ')[0]}
             </Text>
           </View>
         )}
         
-        {/* Dominican badge - top right */}
-        {saint.is_dominican && (
-          <View style={[styles.dominicanBadge, styles.topRightBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-            <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-              OP
-            </Text>
-          </View>
-        )}
+        {/* Doctor and Dominican badges - top right (stacked) */}
+        <View style={[styles.topRightBadgeContainer]}>
+          {saint.is_doctor && (
+            <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+              <Text style={[styles.badgeText, { color: 'black' }]}>
+                Doctor
+              </Text>
+            </View>
+          )}
+          {saint.is_dominican && (
+            <View style={[styles.dominicanBadge, { 
+              backgroundColor: Colors[colorScheme ?? 'light'].text,
+            }]}>
+              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].background }]}>
+                OP
+              </Text>
+            </View>
+          )}
+        </View>
         
         <Ionicons 
           name="person-circle" 
@@ -310,6 +327,7 @@ export default function SaintsScreen() {
       <Text style={[styles.saintFeastDay, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
         {formatFeastDay(saint.feast_day)}
       </Text>
+
       {saint.patronage && (
         <Text style={[styles.saintPatronage, { color: Colors[colorScheme ?? 'light'].textMuted }]} numberOfLines={2}>
           {saint.patronage.split(',').slice(0, 2).join(', ')}
@@ -912,6 +930,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     fontFamily: 'Georgia',
+  },
+  topRightBadgeContainer: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    flexDirection: 'column', // Stack vertically on native (always smaller cards)
+    alignItems: 'flex-end', // Align to right edge
+    gap: 4,
+    zIndex: 1,
+  },
+  rankBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   saintDetailHeader: {
     flexDirection: 'row',

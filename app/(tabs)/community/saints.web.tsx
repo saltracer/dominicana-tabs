@@ -328,37 +328,49 @@ export default function SaintsScreen() {
         onPress={() => handleSaintPress(saint)}
       >
         <View style={styles.saintHeader}>
-          {/* Doctor badge - top left */}
-          {saint.is_doctor && (
-            <View style={[styles.doctorBadge, styles.topLeftBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
-              <Text style={[styles.badgeText, { color: 'black' }]}>
-                Doctor
+          {/* Rank badge with liturgical color - top left */}
+          {saint.rank && (
+            <View style={[styles.rankBadge, styles.topLeftBadge, { 
+              backgroundColor: saint.color ? getLiturgicalColor(saint.color) : getRankColor(saint.rank),
+              borderWidth: saint.color?.toLowerCase() === 'white' ? 1 : 0,
+              borderColor: Colors[colorScheme ?? 'light'].border,
+            }]}>
+              <Text style={[styles.badgeText, { 
+                color: saint.color?.toLowerCase() === 'white' ? 'black' : Colors[colorScheme ?? 'light'].dominicanWhite 
+              }]}>
+                {saint.rank.split(' ')[0]}
               </Text>
             </View>
           )}
           
-          {/* Dominican badge - top right */}
-          {saint.is_dominican && (
-            <View style={[styles.dominicanBadge, styles.topRightBadge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
-              <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-                OP
-              </Text>
-            </View>
-          )}
+          {/* Doctor and Dominican badges - top right */}
+          <View style={[
+            styles.topRightBadgeContainer,
+            { flexDirection: isMobileView ? 'column' : 'row', alignItems: 'flex-end' }
+          ]}>
+            {saint.is_doctor && (
+              <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
+                <Text style={[styles.badgeText, { color: 'black' }]}>
+                  Doctor
+                </Text>
+              </View>
+            )}
+            {saint.is_dominican && (
+              <View style={[styles.dominicanBadge, { 
+                backgroundColor: Colors[colorScheme ?? 'light'].text,
+              }]}>
+                <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].background }]}>
+                  OP
+                </Text>
+              </View>
+            )}
+          </View>
           
           <Ionicons 
             name="person-circle" 
             size={isMobileView ? 40 : 48} 
             color={Colors[colorScheme ?? 'light'].primary} 
           />
-
-          {/* Liturgical color indicator - only on desktop */}
-          {!isMobileView && saint.color && (
-            <View style={[
-              styles.colorIndicator, 
-              { backgroundColor: getLiturgicalColor(saint.color) }
-            ]} />
-          )}
         </View>
 
         <Text style={[styles.saintName, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
@@ -1179,6 +1191,21 @@ const styles = StyleSheet.create({
     width: 24,
     height: 3,
     borderRadius: 2,
+  },
+
+  topRightBadgeContainer: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    // flexDirection set dynamically via inline styles (column on mobile, row on desktop)
+    gap: 4,
+    zIndex: 1,
+  },
+
+  rankBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
 
   patronageRow: {
