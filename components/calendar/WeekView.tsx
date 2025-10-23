@@ -50,8 +50,8 @@ const WeekView: React.FC<WeekViewProps> = ({
     }
   }, [cellSize]);
 
-  // Determine if we should show feast name based on size
-  const showFeastName = cellSize !== 'small';
+  // Always show feast names
+  const showFeastName = true;
 
   // Auto-scroll to selected date when it changes or when week changes
   useEffect(() => {

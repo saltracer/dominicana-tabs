@@ -61,8 +61,8 @@ export default function CalendarScreenWeb() {
     return 'large';
   }, [isMobile, isTablet, isWide]);
 
-  // Show feast names on wide desktop
-  const showFeastNames = isWide;
+  // Show feast names in month view on large/xlarge cells
+  const showFeastNames = cellSize === 'large' || cellSize === 'xlarge';
 
   // Sync currentWeekDate when selectedDate changes (e.g., when a day is clicked)
   useEffect(() => {

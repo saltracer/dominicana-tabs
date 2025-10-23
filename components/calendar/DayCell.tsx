@@ -304,17 +304,18 @@ const DayCell: React.FC<DayCellProps> = ({
       )}
 
       {/* Center Content - Feast Name */}
-      {hasFeasts && size !== 'small' && (size === 'medium' || size === 'large' || size === 'xlarge') && !!dayContent?.primaryFeast && (
+      {hasFeasts && showFeastName && (size === 'large' || size === 'xlarge' || size === 'medium' || size === 'small') && !!dayContent?.primaryFeast && (
         <View style={styles.centerContent}>
           <Text
             style={[
               styles.feastName,
+              size === 'small' && styles.feastNameSmall,
               size === 'medium' && styles.feastNameMedium,
               size === 'large' && styles.feastNameLarge,
               size === 'xlarge' && styles.feastNameXLarge,
               { color: colors.textColor }
             ]}
-            numberOfLines={size === 'medium' ? 2 : size === 'large' ? 3 : 4}
+            numberOfLines={size === 'small' ? 1 : size === 'medium' ? 2 : size === 'large' ? 3 : 4}
           >
             {dayContent.primaryFeast.name}
           </Text>
@@ -508,19 +509,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     lineHeight: 14,
   },
+  feastNameSmall: {
+    fontSize: 11,
+    fontWeight: '500',
+    //lineHeight: 9,
+  },
   feastNameMedium: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '500',
   },
   feastNameLarge: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
-    lineHeight: 15,
+    //lineHeight: 15,
   },
   feastNameXLarge: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    lineHeight: 17,
+    //lineHeight: 17,
   },
 });
 
