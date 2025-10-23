@@ -65,6 +65,7 @@
 - [ ] support text resizing
 - [ ] support device rotation on native (focusing on a responsive design)
 - [ ] support linking directly to tabs (like linking to a particular day on the calendar list view)
+- [ ] the profile should be a bottom drawer or a modal. The page change is weird.
 
 ## Admin
 - [ ] Allow the Rosary Audio to be renamed
