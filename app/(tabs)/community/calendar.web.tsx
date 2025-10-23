@@ -42,6 +42,10 @@ export default function CalendarScreenWeb() {
   const [dominicanOnly, setDominicanOnly] = useState(false);
   const [currentWeekDate, setCurrentWeekDate] = useState<Date>(selectedDate || new Date()); // Track which week is being viewed
   const userClosedPanel = useRef(false); // Track if user explicitly closed the panel
+  
+  // FAB state for list view
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
+  const scrollContainerRef = useRef<any>(null);
 
   // Responsive breakpoints
   const isMobile = width < 768;
@@ -229,6 +233,24 @@ export default function CalendarScreenWeb() {
   const handleSearchSelect = (date: Date) => {
     handleDayPress({ dateString: format(date, 'yyyy-MM-dd') });
   };
+  
+  // Handle scroll for FAB in list view
+  const handleScroll = useCallback((event: any) => {
+    if (viewMode !== 'list') return;
+    
+    const scrollY = event.nativeEvent?.contentOffset?.y || 0;
+    const shouldShow = scrollY > 500;
+    
+    if (shouldShow !== showScrollToTop) {
+      setShowScrollToTop(shouldShow);
+    }
+  }, [viewMode, showScrollToTop]);
+  
+  const scrollToTop = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ y: 0, animated: true });
+    }
+  }, []);
 
   // Create filtered liturgicalDay based on active filters
   const filteredLiturgicalDay = useMemo(() => {
@@ -282,12 +304,16 @@ export default function CalendarScreenWeb() {
   const shouldStackVertically = (isMobile || isTablet) || !showFeastDetail || viewMode === 'week';
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ flexGrow: 1 }}
-    >
-      {/* Main Content Container */}
+    <>
+      <ScrollView
+        ref={scrollContainerRef}
+        style={[styles.container, { backgroundColor: colors.background }]}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        {/* Main Content Container */}
       <View
         style={[
           styles.mainContentContainer,
@@ -331,7 +357,10 @@ export default function CalendarScreenWeb() {
           </View>
 
           {/* Calendar View Container */}
-          <View style={[styles.calendarContainer, { backgroundColor: colors.card }]}>
+          <View style={[
+            styles.calendarContainer, 
+            { backgroundColor: colors.card }
+          ]}>
             {viewMode === 'month' && (
               <CalendarGrid
                 currentDate={liturgicalDay?.date || format(new Date(), 'yyyy-MM-dd')}
@@ -451,8 +480,38 @@ export default function CalendarScreenWeb() {
         ) : null}
       </View>
 
-      <Footer />
-    </ScrollView>
+        <Footer />
+      </ScrollView>
+      
+      {/* Floating Action Button - List View Only - Fixed to viewport */}
+      {viewMode === 'list' && (
+        <div
+          style={{
+            position: 'fixed',
+            right: shouldShowSideBySide ? 'calc(40% + 40px)' : '40px',
+            bottom: '120px',
+            width: '56px',
+            height: '56px',
+            borderRadius: '28px',
+            backgroundColor: colors.primary,
+            opacity: showScrollToTop ? 0.5 : 0,
+            pointerEvents: showScrollToTop ? 'auto' : 'none',
+            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+            zIndex: 9999,
+            transition: 'opacity 0.2s ease, right 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+          onClick={scrollToTop}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = showScrollToTop ? '0.5' : '0')}
+        >
+          <Ionicons name="arrow-up" size={24} color={colors.dominicanWhite} />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -473,6 +532,7 @@ const styles = StyleSheet.create({
   mainContentContainer: {
     flex: 1,
     padding: 16,
+    position: 'relative' as any, // For FAB absolute positioning
   },
   sideBySideLayout: {
     flexDirection: 'row',
@@ -481,6 +541,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 300, // Reduced from 400 to support 390px screens
     marginRight: 20,
+    position: 'relative' as any, // For FAB absolute positioning
   },
   searchSection: {
     marginBottom: 16,
@@ -509,6 +570,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    overflow: 'visible' as any,
+    position: 'relative' as any,
   },
   feastPanelSide: {
     overflow: 'hidden',

@@ -232,6 +232,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     borderRadius: 12,
+    position: 'relative' as any,
   },
   listContent: {
     paddingBottom: 20,

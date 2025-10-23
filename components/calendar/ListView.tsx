@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
+import { View, Text, StyleSheet, SectionList, Pressable, Animated, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../ThemeProvider';
 import LiturgicalCalendarService from '../../services/LiturgicalCalendar';
@@ -37,6 +38,11 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
   // Track loaded years and sections with state for dynamic loading
   const [sections, setSections] = React.useState<Section[]>([]);
   const loadedYears = useRef<Set<number>>(new Set());
+  
+  // FAB state
+  const [showFab, setShowFab] = React.useState(false);
+  const fabOpacity = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(0);
 
   // Generate list of feasts for a specific year
   const generateFeastsForYear = useCallback((year: number): Section[] => {
@@ -107,6 +113,40 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
       setIsContentReady(true);
     }
   };
+
+  // Handle scroll position for FAB visibility
+  const handleScroll = useCallback((event: any) => {
+    const currentScrollY = event.nativeEvent?.contentOffset?.y || 0;
+    scrollY.current = currentScrollY;
+    
+    // Show FAB when scrolled down more than 500px
+    const shouldShow = currentScrollY > 500;
+    
+    if (shouldShow !== showFab) {
+      setShowFab(shouldShow);
+      Animated.timing(fabOpacity, {
+        toValue: shouldShow ? 0.5 : 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [showFab, fabOpacity]);
+
+  // Scroll to top function
+  const scrollToTop = useCallback(() => {
+    const scrollResponder = (sectionListRef.current as any)?.getScrollResponder?.();
+    if (scrollResponder) {
+      scrollResponder.scrollTo({ y: 0, animated: true });
+    } else if (sectionListRef.current) {
+      // Fallback for web
+      sectionListRef.current.scrollToLocation({
+        sectionIndex: 0,
+        itemIndex: 0,
+        animated: true,
+        viewPosition: 0,
+      });
+    }
+  }, []);
 
   // Scroll to selected date when content is ready
   useEffect(() => {
@@ -400,6 +440,8 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
         removeClippedSubviews={false}
         // getItemLayout={getItemLayout} // DISABLED: Let SectionList auto-measure for accurate positioning
         onContentSizeChange={handleContentSizeChange}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.8} // Load next year when user is 80% through the list
         onScrollToIndexFailed={(info) => {
@@ -489,6 +531,31 @@ const ListView: React.FC<ListViewProps> = ({ currentDate, selectedDate, onDayPre
           }
         }}
       />
+      
+      {/* Floating Action Button - Scroll to Top */}
+      <Animated.View 
+        pointerEvents={showFab ? 'auto' : 'none'}
+        style={[
+          styles.fab,
+          {
+            backgroundColor: colors.primary,
+            opacity: fabOpacity,
+          },
+        ]}
+      >
+        <Pressable
+          onPress={scrollToTop}
+          disabled={!showFab}
+          style={({ pressed }) => [
+            styles.fabButton,
+            {
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Ionicons name="arrow-up" size={24} color={colors.dominicanWhite} />
+        </Pressable>
+      </Animated.View>
     </View>
   );
 };
@@ -497,6 +564,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     borderRadius: 12,
+    ...(Platform.OS === 'web' && {
+      position: 'relative' as any,
+      overflow: 'visible' as any,
+    }),
   },
   listContent: {
     paddingBottom: 300, // Ensure last items are fully visible above tab bar
@@ -578,6 +649,30 @@ const styles = StyleSheet.create({
   rankLabel: {
     fontSize: 13,
     fontFamily: 'Georgia',
+  },
+  fab: {
+    position: 'absolute' as 'absolute',
+    right: 20,
+    bottom: 100,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  fabButton: {
+    width: '100%' as const,
+    height: '100%' as const,
+    alignItems: 'center' as 'center',
+    justifyContent: 'center' as 'center',
+    borderRadius: 28,
+    ...(Platform.OS === 'web' && {
+      cursor: 'pointer',
+    } as any),
   },
 });
 
