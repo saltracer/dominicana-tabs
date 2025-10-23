@@ -310,6 +310,8 @@ export default function SaintsScreen() {
   const renderSaintCard = ({ item: saint }: { item: Saint }) => {
     const isSelected = selectedSaint?.id === saint.id;
     const isMobileView = !shouldShowSidebar;
+    // Stack badges if cards are narrow (mobile, or when detail panel is open making cards smaller)
+    const shouldStackBadges = isMobileView || shouldShowSideBySide || numColumns > 3;
     
     return (
       <TouchableOpacity
@@ -320,7 +322,8 @@ export default function SaintsScreen() {
             borderWidth: isSelected ? 2 : 1,
             borderColor: isSelected ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].border,
             width: getCardWidth(),
-            marginHorizontal: numColumns === 1 ? 0 : 8,
+            minWidth: 170, // Prevent cards from getting too narrow and causing badge overlap
+            marginHorizontal: numColumns === 1 ? 0 : (shouldShowSideBySide ? 4 : 8),
             padding: isMobileView ? 12 : 16,
             minHeight: isMobileView ? 180 : 280,
           }
@@ -346,7 +349,7 @@ export default function SaintsScreen() {
           {/* Doctor and Dominican badges - top right */}
           <View style={[
             styles.topRightBadgeContainer,
-            { flexDirection: isMobileView ? 'column' : 'row', alignItems: 'flex-end' }
+            { flexDirection: shouldStackBadges ? 'column' : 'row', alignItems: 'flex-end' }
           ]}>
             {saint.is_doctor && (
               <View style={[styles.doctorBadge, { backgroundColor: Colors[colorScheme ?? 'light'].accent }]}>
@@ -688,21 +691,50 @@ export default function SaintsScreen() {
   const shouldShowSideBySide = (isDesktop || isWide) && selectedSaint !== null;
   const shouldUseModal = (isMobile || isTablet) && selectedSaint !== null;
   
-  // Determine number of columns based on screen width
+  // Determine number of columns based on screen width and detail panel state
   const numColumns = useMemo(() => {
     if (isMobile) return 1;
     if (isTablet) return 2;
-    if (isWide) return 4;
-    return 3; // desktop
-  }, [isMobile, isTablet, isWide]);
+    
+    // Calculate effective width when detail panel is open
+    const effectiveWidth = shouldShowSideBySide ? width * 0.6 : width;
+    
+    // Account for sidebar if present
+    const contentWidth = shouldShowSidebar ? effectiveWidth - 280 : effectiveWidth;
+    
+    // Account for padding
+    const paddingTotal = 48; // 24px on each side
+    const availableWidth = contentWidth - paddingTotal;
+    
+    // Minimum card width with margins
+    const minCardWidth = 170;
+    const cardMargin = shouldShowSideBySide ? 8 : 16; // 4px each side = 8px total, or 8px each = 16px
+    
+    // Calculate max columns that fit
+    if (isWide) {
+      const maxCols = Math.floor(availableWidth / (minCardWidth + cardMargin));
+      return Math.min(4, Math.max(1, maxCols));
+    }
+    
+    // Desktop
+    const maxCols = Math.floor(availableWidth / (minCardWidth + cardMargin));
+    return Math.min(3, Math.max(1, maxCols));
+  }, [isMobile, isTablet, isWide, shouldShowSideBySide, width, shouldShowSidebar]);
 
   // Calculate card width based on columns and available space
   const getCardWidth = (): '100%' | `${number}%` | undefined => {
     if (numColumns === 1) return '100%';
     // Use fixed percentages for each column configuration
-    if (numColumns === 2) return '48%'; // ~50% with gap
-    if (numColumns === 3) return '31%'; // ~33% with gap
-    if (numColumns === 4) return '23%'; // ~25% with gap
+    // Slightly smaller widths when detail panel is open to account for reduced container width
+    if (shouldShowSideBySide) {
+      if (numColumns === 2) return '47%'; // ~50% with gap, tighter
+      if (numColumns === 3) return '30%'; // ~33% with gap, tighter
+      if (numColumns === 4) return '22%'; // ~25% with gap, tighter
+    } else {
+      if (numColumns === 2) return '48%'; // ~50% with gap
+      if (numColumns === 3) return '31%'; // ~33% with gap
+      if (numColumns === 4) return '23%'; // ~25% with gap
+    }
     return undefined;
   };
 
@@ -846,6 +878,12 @@ export default function SaintsScreen() {
                   })
                 : '100%',
               paddingHorizontal: isMobile ? 12 : isTablet ? 16 : 24,
+              paddingRight: shouldShowSideBySide 
+                ? slideAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [isMobile ? 12 : isTablet ? 16 : 24, 32],
+                  })
+                : (isMobile ? 12 : isTablet ? 16 : 24),
             }
           ]}
         >
@@ -986,7 +1024,7 @@ export default function SaintsScreen() {
 
           {/* Saints Grid */}
           <FlatList
-            key={numColumns} // Force re-render when columns change
+            key={`${numColumns}-${shouldShowSideBySide}`} // Force re-render when columns change or panel opens
             style={{ flex: 1 }}
             data={displayedSaints}
             renderItem={renderSaintCard}
