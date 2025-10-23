@@ -36,7 +36,7 @@ export default function SaintsScreen() {
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
   const [selectedSaint, setSelectedSaint] = useState<Saint | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [displayedCount, setDisplayedCount] = useState(20);
   const itemsPerPage = 20;
 
   const filteredAndSortedSaints = useMemo(() => {
@@ -78,12 +78,20 @@ export default function SaintsScreen() {
     return filtered;
   }, [searchQuery, sortBy, filterBy]);
 
-  const paginatedSaints = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedSaints.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedSaints, currentPage]);
+  const displayedSaints = useMemo(() => {
+    return filteredAndSortedSaints.slice(0, displayedCount);
+  }, [filteredAndSortedSaints, displayedCount]);
 
-  const totalPages = Math.ceil(filteredAndSortedSaints.length / itemsPerPage);
+  // Reset displayed count when filters/search/sort changes
+  useEffect(() => {
+    setDisplayedCount(20);
+  }, [searchQuery, sortBy, filterBy]);
+
+  const handleLoadMore = () => {
+    if (displayedCount < filteredAndSortedSaints.length) {
+      setDisplayedCount(prev => prev + itemsPerPage);
+    }
+  };
 
   const handleSaintPress = (saint: Saint) => {
     setSelectedSaint(saint);
@@ -269,10 +277,10 @@ export default function SaintsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       <CommunityNavigation activeTab="saints" />
       
-      <View style={platformStyles.tabContent}>
+      <View style={[platformStyles.tabContent, { flex: 1 }]}>
         {/* Search Bar */}
         <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
           <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
@@ -330,13 +338,15 @@ export default function SaintsScreen() {
 
         {/* Saints Grid */}
         <FlatList
-          data={paginatedSaints}
+          data={displayedSaints}
           renderItem={renderSaintCard}
           keyExtractor={(item) => item.id}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.gridContainer}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="search" size={48} color={Colors[colorScheme ?? 'light'].textMuted} />
@@ -345,62 +355,22 @@ export default function SaintsScreen() {
               </Text>
             </View>
           }
+          ListFooterComponent={
+            displayedCount < filteredAndSortedSaints.length ? (
+              <View style={styles.loadingMore}>
+                <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Showing {displayedCount} of {filteredAndSortedSaints.length} saints
+                </Text>
+              </View>
+            ) : filteredAndSortedSaints.length > 0 ? (
+              <View style={styles.loadingMore}>
+                <Text style={[styles.loadingMoreText, { color: Colors[colorScheme ?? 'light'].textMuted }]}>
+                  All {filteredAndSortedSaints.length} saints loaded
+                </Text>
+              </View>
+            ) : null
+          }
         />
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <View style={styles.pagination}>
-            <TouchableOpacity
-              style={[
-                platformStyles.paginationButton,
-                { 
-                  backgroundColor: currentPage === 1 
-                    ? Colors[colorScheme ?? 'light'].border 
-                    : Colors[colorScheme ?? 'light'].primary,
-                  borderColor: Colors[colorScheme ?? 'light'].border
-                }
-              ]}
-              onPress={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              <Ionicons 
-                name="chevron-back" 
-                size={20} 
-                color={currentPage === 1 
-                  ? Colors[colorScheme ?? 'light'].textMuted 
-                  : Colors[colorScheme ?? 'light'].dominicanWhite
-                } 
-              />
-            </TouchableOpacity>
-            
-            <Text style={[styles.paginationText, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {currentPage} of {totalPages}
-            </Text>
-            
-            <TouchableOpacity
-              style={[
-                platformStyles.paginationButton,
-                { 
-                  backgroundColor: currentPage === totalPages 
-                    ? Colors[colorScheme ?? 'light'].border 
-                    : Colors[colorScheme ?? 'light'].primary,
-                  borderColor: Colors[colorScheme ?? 'light'].border
-                }
-              ]}
-              onPress={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              <Ionicons 
-                name="chevron-forward" 
-                size={20} 
-                color={currentPage === totalPages 
-                  ? Colors[colorScheme ?? 'light'].textMuted 
-                  : Colors[colorScheme ?? 'light'].dominicanWhite
-                } 
-              />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {/* Saint Detail Modal */}
@@ -706,5 +676,14 @@ const styles = StyleSheet.create({
   infoValue: {
     fontSize: 14,
     fontFamily: 'Georgia',
+  },
+  loadingMore: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingMoreText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
   },
 });
