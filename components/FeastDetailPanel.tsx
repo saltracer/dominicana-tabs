@@ -65,28 +65,20 @@ const FeastDetailPanel: React.FC<FeastDetailPanelProps> = ({
           <View style={[
             styles.seasonInfo, 
             { 
-              backgroundColor: getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark'),
-              borderWidth: liturgicalDay.season.color.toLowerCase() === 'white' ? 1 : 0,
-              borderColor: liturgicalDay.season.color.toLowerCase() === 'white' ? '#666666' : 'transparent',
-              // shadowColor: '#000',
-              // shadowOffset: {
-              //   width: 0,
-              //   height: 2,
-              // },
-              // shadowOpacity: 0.25,
-              // shadowRadius: 3.84,
-              // elevation: 1,
+              backgroundColor: getLiturgicalColorHex(liturgicalDay.season.color, colorScheme === 'dark'),
+              borderWidth: (liturgicalDay.season.color.toLowerCase() === 'white' || liturgicalDay.season.color.toLowerCase() === 'gold') ? 1 : 0,
+              borderColor: (liturgicalDay.season.color.toLowerCase() === 'white' || liturgicalDay.season.color.toLowerCase() === 'gold') ? '#666666' : 'transparent',
             }
           ]}>
             <View style={styles.seasonHeader}>
               <Text style={[styles.seasonName, { 
-                color: liturgicalDay.season.color.toLowerCase() === 'white' ? '#000000' : '#FFFFFF' 
+                color: (liturgicalDay.season.color.toLowerCase() === 'white' || liturgicalDay.season.color.toLowerCase() === 'gold') ? '#000000' : '#FFFFFF' 
               }]}>
                 {liturgicalDay.season.name}
               </Text>
             </View>
             <Text style={[styles.seasonWeek, { 
-              color: liturgicalDay.season.color.toLowerCase() === 'white' ? '#000000' : '#FFFFFF' 
+              color: (liturgicalDay.season.color.toLowerCase() === 'white' || liturgicalDay.season.color.toLowerCase() === 'gold') ? '#000000' : '#FFFFFF' 
             }]}>
               {liturgicalDay.weekString || `Week ${liturgicalDay.week}`}
             </Text>

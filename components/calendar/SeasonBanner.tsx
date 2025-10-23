@@ -18,9 +18,10 @@ const SeasonBanner: React.FC<SeasonBannerProps> = ({
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const backgroundColor = getLiturgicalColorHex(seasonName, colorScheme === 'dark');
+  const backgroundColor = getLiturgicalColorHex(seasonColor, colorScheme === 'dark');
   const isWhite = seasonColor.toLowerCase() === 'white';
-  const textColor = isWhite ? '#000000' : '#FFFFFF';
+  const isGold = seasonColor.toLowerCase() === 'gold';
+  const textColor = (isWhite || isGold) ? '#000000' : '#FFFFFF';
 
   return (
     <View
@@ -28,8 +29,8 @@ const SeasonBanner: React.FC<SeasonBannerProps> = ({
         compact ? styles.compactContainer : styles.container,
         {
           backgroundColor,
-          borderWidth: isWhite ? 1 : 0,
-          borderColor: isWhite ? '#CCCCCC' : 'transparent',
+          borderWidth: (isWhite || isGold) ? 1 : 0,
+          borderColor: (isWhite || isGold) ? '#CCCCCC' : 'transparent',
         },
       ]}
     >
