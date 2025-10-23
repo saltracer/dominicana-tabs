@@ -27,6 +27,9 @@ import Footer from '../../../components/Footer.web';
 
 type SortOption = 'name' | 'feast_day' | 'birth_year' | 'death_year';
 type FilterOption = 'dominican' | 'doctor' | 'martyr' | 'virgin' | 'founder';
+type RankFilter = 'solemnity' | 'feast' | 'memorial' | 'optional_memorial';
+type TypeFilter = 'universal' | 'dominican_only' | 'both';
+type EraFilter = 'ancient' | 'medieval' | 'modern' | 'contemporary';
 
 export default function SaintsScreen() {
   const { colorScheme } = useTheme();
@@ -37,6 +40,9 @@ export default function SaintsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('name');
   const [activeFilters, setActiveFilters] = useState<FilterOption[]>([]);
+  const [activeRankFilters, setActiveRankFilters] = useState<RankFilter[]>([]);
+  const [activeTypeFilters, setActiveTypeFilters] = useState<TypeFilter[]>([]);
+  const [activeEraFilters, setActiveEraFilters] = useState<EraFilter[]>([]);
   const [selectedSaint, setSelectedSaint] = useState<Saint | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(24);
@@ -77,7 +83,60 @@ export default function SaintsScreen() {
         }
       });
 
-      return matchesSearch && matchesFilter;
+      // Rank filter - if no rank filters active, show all ranks
+      // If rank filters are active, saint must match at least one rank (OR logic within ranks)
+      const matchesRank = activeRankFilters.length === 0 || activeRankFilters.some(rankFilter => {
+        switch (rankFilter) {
+          case 'solemnity':
+            return saint.rank === CelebrationRank.SOLEMNITY;
+          case 'feast':
+            return saint.rank === CelebrationRank.FEAST;
+          case 'memorial':
+            return saint.rank === CelebrationRank.MEMORIAL;
+          case 'optional_memorial':
+            return saint.rank === CelebrationRank.OPTIONAL_MEMORIAL;
+          default:
+            return false;
+        }
+      });
+
+      // Type filter - if no type filters active, show all types
+      // If type filters are active, saint must match at least one type (OR logic within types)
+      const matchesType = activeTypeFilters.length === 0 || activeTypeFilters.some(typeFilter => {
+        switch (typeFilter) {
+          case 'universal':
+            return saint.type === 'universal';
+          case 'dominican_only':
+            return saint.type === 'dominican';
+          case 'both':
+            return saint.type === 'both';
+          default:
+            return false;
+        }
+      });
+
+      // Era filter - if no era filters active, show all eras
+      // If era filters are active, saint must match at least one era (OR logic within eras)
+      const matchesEra = activeEraFilters.length === 0 || activeEraFilters.some(eraFilter => {
+        // Use death_year as primary, fall back to birth_year if available
+        const year = saint.death_year || saint.birth_year;
+        if (!year) return false;
+
+        switch (eraFilter) {
+          case 'ancient':
+            return year < 500;
+          case 'medieval':
+            return year >= 500 && year < 1500;
+          case 'modern':
+            return year >= 1500 && year < 1800;
+          case 'contemporary':
+            return year >= 1800;
+          default:
+            return false;
+        }
+      });
+
+      return matchesSearch && matchesFilter && matchesRank && matchesType && matchesEra;
     });
 
     // Sort
@@ -97,7 +156,7 @@ export default function SaintsScreen() {
     });
 
     return filtered;
-  }, [searchQuery, sortBy, activeFilters]);
+  }, [searchQuery, sortBy, activeFilters, activeRankFilters, activeTypeFilters, activeEraFilters]);
 
   const displayedSaints = useMemo(() => {
     return filteredAndSortedSaints.slice(0, displayedCount);
@@ -106,7 +165,7 @@ export default function SaintsScreen() {
   // Reset displayed count when filters/search/sort changes
   useEffect(() => {
     setDisplayedCount(24);
-  }, [searchQuery, sortBy, activeFilters]);
+  }, [searchQuery, sortBy, activeFilters, activeRankFilters, activeTypeFilters, activeEraFilters]);
 
   const handleLoadMore = () => {
     if (displayedCount < filteredAndSortedSaints.length) {
@@ -344,8 +403,35 @@ export default function SaintsScreen() {
     );
   };
 
+  const handleToggleRankFilter = (filter: RankFilter) => {
+    setActiveRankFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter) 
+        : [...prev, filter]
+    );
+  };
+
+  const handleToggleTypeFilter = (filter: TypeFilter) => {
+    setActiveTypeFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter) 
+        : [...prev, filter]
+    );
+  };
+
+  const handleToggleEraFilter = (filter: EraFilter) => {
+    setActiveEraFilters(prev => 
+      prev.includes(filter) 
+        ? prev.filter(f => f !== filter) 
+        : [...prev, filter]
+    );
+  };
+
   const handleClearAllFilters = () => {
     setActiveFilters([]);
+    setActiveRankFilters([]);
+    setActiveTypeFilters([]);
+    setActiveEraFilters([]);
     setSearchQuery('');
   };
 
@@ -433,6 +519,132 @@ export default function SaintsScreen() {
     );
   };
 
+  const renderRankFilterButton = (filter: RankFilter, label: string, icon: string) => {
+    const isActive = activeRankFilters.includes(filter);
+    const isMobileView = !shouldShowSidebar;
+    
+    return (
+      <TouchableOpacity
+        key={filter}
+        style={[
+          isMobileView ? styles.mobileFilterButton : styles.sidebarFilterButton,
+          { 
+            backgroundColor: isActive 
+              ? Colors[colorScheme ?? 'light'].secondary 
+              : isMobileView ? Colors[colorScheme ?? 'light'].surface : 'transparent',
+            borderColor: isActive
+              ? Colors[colorScheme ?? 'light'].secondary
+              : Colors[colorScheme ?? 'light'].border
+          }
+        ]}
+        onPress={() => handleToggleRankFilter(filter)}
+      >
+        <Ionicons 
+          name={icon as any} 
+          size={isMobileView ? 16 : 18} 
+          color={isActive 
+            ? Colors[colorScheme ?? 'light'].dominicanWhite 
+            : Colors[colorScheme ?? 'light'].textSecondary
+          } 
+        />
+        <Text style={[
+          isMobileView ? styles.mobileFilterButtonText : styles.sidebarButtonText,
+          { 
+            color: isActive 
+              ? Colors[colorScheme ?? 'light'].dominicanWhite 
+              : Colors[colorScheme ?? 'light'].text
+          }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderTypeFilterButton = (filter: TypeFilter, label: string, icon: string) => {
+    const isActive = activeTypeFilters.includes(filter);
+    const isMobileView = !shouldShowSidebar;
+    
+    return (
+      <TouchableOpacity
+        key={filter}
+        style={[
+          isMobileView ? styles.mobileFilterButton : styles.sidebarFilterButton,
+          { 
+            backgroundColor: isActive 
+              ? Colors[colorScheme ?? 'light'].accent 
+              : isMobileView ? Colors[colorScheme ?? 'light'].surface : 'transparent',
+            borderColor: isActive
+              ? Colors[colorScheme ?? 'light'].accent
+              : Colors[colorScheme ?? 'light'].border
+          }
+        ]}
+        onPress={() => handleToggleTypeFilter(filter)}
+      >
+        <Ionicons 
+          name={icon as any} 
+          size={isMobileView ? 16 : 18} 
+          color={isActive 
+            ? Colors[colorScheme ?? 'light'].dominicanWhite 
+            : Colors[colorScheme ?? 'light'].textSecondary
+          } 
+        />
+        <Text style={[
+          isMobileView ? styles.mobileFilterButtonText : styles.sidebarButtonText,
+          { 
+            color: isActive 
+              ? Colors[colorScheme ?? 'light'].dominicanWhite 
+              : Colors[colorScheme ?? 'light'].text
+          }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderEraFilterButton = (filter: EraFilter, label: string, icon: string) => {
+    const isActive = activeEraFilters.includes(filter);
+    const isMobileView = !shouldShowSidebar;
+    
+    return (
+      <TouchableOpacity
+        key={filter}
+        style={[
+          isMobileView ? styles.mobileFilterButton : styles.sidebarFilterButton,
+          { 
+            backgroundColor: isActive 
+              ? '#8B7355' 
+              : isMobileView ? Colors[colorScheme ?? 'light'].surface : 'transparent',
+            borderColor: isActive
+              ? '#8B7355'
+              : Colors[colorScheme ?? 'light'].border
+          }
+        ]}
+        onPress={() => handleToggleEraFilter(filter)}
+      >
+        <Ionicons 
+          name={icon as any} 
+          size={isMobileView ? 16 : 18} 
+          color={isActive 
+            ? Colors[colorScheme ?? 'light'].dominicanWhite 
+            : Colors[colorScheme ?? 'light'].textSecondary
+          } 
+        />
+        <Text style={[
+          isMobileView ? styles.mobileFilterButtonText : styles.sidebarButtonText,
+          { 
+            color: isActive 
+              ? Colors[colorScheme ?? 'light'].dominicanWhite 
+              : Colors[colorScheme ?? 'light'].text
+          }
+        ]}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   // Determine responsive layout
   const shouldShowSidebar = isDesktop || isWide; // Only show sidebar on desktop and wider
   const shouldShowSideBySide = isDesktop && selectedSaint !== null;
@@ -461,7 +673,10 @@ export default function SaintsScreen() {
       {/* Main Layout - Sidebar + Content */}
       <View style={[
         styles.mainLayout,
-        { flexDirection: shouldShowSidebar ? 'row' : 'column' }
+        { 
+          flexDirection: shouldShowSidebar ? 'row' : 'column',
+          height: '100%' as any,
+        }
       ]}>
         {/* Left Sidebar - Filters (hidden on mobile/tablet) */}
         {shouldShowSidebar && (
@@ -470,7 +685,12 @@ export default function SaintsScreen() {
             borderRightColor: Colors[colorScheme ?? 'light'].border,
             width: isTablet ? 220 : 280, // Narrower sidebar on tablet
           }]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              showsVerticalScrollIndicator={true}
+              style={{ flex: 1, height: '100%' as any }}
+              contentContainerStyle={styles.sidebarScrollContent}
+              nestedScrollEnabled={true}
+            >
               {/* Sidebar Title */}
               <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
                 Filters
@@ -512,6 +732,38 @@ export default function SaintsScreen() {
               {renderFilterButton('founder', 'Founders', 'build')}
             </View>
 
+            {/* Filter by Celebration Rank */}
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Celebration Rank {activeRankFilters.length > 0 && `(${activeRankFilters.length})`}
+              </Text>
+              {renderRankFilterButton('solemnity', 'Solemnity', 'star')}
+              {renderRankFilterButton('feast', 'Feast', 'sunny')}
+              {renderRankFilterButton('memorial', 'Memorial', 'bookmark')}
+              {renderRankFilterButton('optional_memorial', 'Optional Memorial', 'bookmark-outline')}
+            </View>
+
+            {/* Filter by Calendar Type */}
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Calendar Type {activeTypeFilters.length > 0 && `(${activeTypeFilters.length})`}
+              </Text>
+              {renderTypeFilterButton('universal', 'Universal', 'globe')}
+              {renderTypeFilterButton('dominican_only', 'Dominican Only', 'book')}
+              {renderTypeFilterButton('both', 'Both Calendars', 'albums')}
+            </View>
+
+            {/* Filter by Era */}
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Historical Era {activeEraFilters.length > 0 && `(${activeEraFilters.length})`}
+              </Text>
+              {renderEraFilterButton('ancient', 'Ancient (< 500)', 'hourglass')}
+              {renderEraFilterButton('medieval', 'Medieval (500-1500)', 'shield')}
+              {renderEraFilterButton('modern', 'Modern (1500-1800)', 'library')}
+              {renderEraFilterButton('contemporary', 'Contemporary (1800+)', 'newspaper')}
+            </View>
+
             {/* Sort by */}
             <View style={styles.sidebarSection}>
               <Text style={[styles.sidebarSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
@@ -524,7 +776,7 @@ export default function SaintsScreen() {
             </View>
 
             {/* Clear All Filters */}
-            {(activeFilters.length > 0 || searchQuery !== '') && (
+            {(activeFilters.length > 0 || activeRankFilters.length > 0 || activeTypeFilters.length > 0 || activeEraFilters.length > 0 || searchQuery !== '') && (
               <TouchableOpacity
                 style={[styles.clearButton, { borderColor: Colors[colorScheme ?? 'light'].border }]}
                 onPress={handleClearAllFilters}
@@ -596,7 +848,7 @@ export default function SaintsScreen() {
                       <Text style={[styles.mobileFilterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
                         Filter by Category {activeFilters.length > 0 && `(${activeFilters.length})`}
                       </Text>
-                      {(activeFilters.length > 0 || searchQuery !== '') && (
+                      {(activeFilters.length > 0 || activeRankFilters.length > 0 || activeTypeFilters.length > 0 || activeEraFilters.length > 0 || searchQuery !== '') && (
                         <TouchableOpacity onPress={handleClearAllFilters}>
                           <Text style={[styles.clearAllText, { color: Colors[colorScheme ?? 'light'].primary }]}>
                             Clear All
@@ -615,6 +867,56 @@ export default function SaintsScreen() {
                       {renderFilterButton('martyr', 'Martyrs', 'flame')}
                       {renderFilterButton('virgin', 'Virgins', 'heart')}
                       {renderFilterButton('founder', 'Founders', 'build')}
+                    </ScrollView>
+                  </View>
+
+                  <View style={styles.mobileFilterSection}>
+                    <Text style={[styles.mobileFilterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Celebration Rank {activeRankFilters.length > 0 && `(${activeRankFilters.length})`}
+                    </Text>
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false} 
+                      style={styles.mobileFilterScroll}
+                      contentContainerStyle={styles.mobileFilterScrollContent}
+                    >
+                      {renderRankFilterButton('solemnity', 'Solemnity', 'star')}
+                      {renderRankFilterButton('feast', 'Feast', 'sunny')}
+                      {renderRankFilterButton('memorial', 'Memorial', 'bookmark')}
+                      {renderRankFilterButton('optional_memorial', 'Optional', 'bookmark-outline')}
+                    </ScrollView>
+                  </View>
+
+                  <View style={styles.mobileFilterSection}>
+                    <Text style={[styles.mobileFilterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Calendar Type {activeTypeFilters.length > 0 && `(${activeTypeFilters.length})`}
+                    </Text>
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false} 
+                      style={styles.mobileFilterScroll}
+                      contentContainerStyle={styles.mobileFilterScrollContent}
+                    >
+                      {renderTypeFilterButton('universal', 'Universal', 'globe')}
+                      {renderTypeFilterButton('dominican_only', 'Dominican', 'book')}
+                      {renderTypeFilterButton('both', 'Both', 'albums')}
+                    </ScrollView>
+                  </View>
+
+                  <View style={styles.mobileFilterSection}>
+                    <Text style={[styles.mobileFilterSectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                      Historical Era {activeEraFilters.length > 0 && `(${activeEraFilters.length})`}
+                    </Text>
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false} 
+                      style={styles.mobileFilterScroll}
+                      contentContainerStyle={styles.mobileFilterScrollContent}
+                    >
+                      {renderEraFilterButton('ancient', 'Ancient', 'hourglass')}
+                      {renderEraFilterButton('medieval', 'Medieval', 'shield')}
+                      {renderEraFilterButton('modern', 'Modern', 'library')}
+                      {renderEraFilterButton('contemporary', 'Contemporary', 'newspaper')}
                     </ScrollView>
                   </View>
 
@@ -767,8 +1069,15 @@ const styles = StyleSheet.create({
   sidebar: {
     width: 280,
     borderRightWidth: 1,
-    paddingVertical: 20,
+    overflow: 'hidden' as any,
+    height: '100%' as any,
+    flexShrink: 0,
+  },
+
+  sidebarScrollContent: {
+    paddingTop: 20,
     paddingHorizontal: 16,
+    paddingBottom: 300, // Extra padding at bottom to ensure all content is scrollable
   },
 
   sidebarTitle: {
