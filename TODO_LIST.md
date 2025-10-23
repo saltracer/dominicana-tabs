@@ -47,7 +47,10 @@
 - [x] Calendar is ugly
 - [x] Saints don't list all, the scrolling stops?
 - [x] The province map doesn't show the continent filters on mobile. Appears to be behind the feast banner.
-- [ ] Saints page on web isn't responsive
+- [x] Saints page on web isn't responsive
+- [ ] Extract books from saints; link saints books to library
+- [ ] Import dominican calendar
+- [ ] Import general calendar
 
 ## Preaching
 - [ ] Subscribe to blogs
