@@ -43,6 +43,7 @@
 - [x] Book categories should be tags not single options
 - [ ] Books need to have versions (for when epubs are updated and users are already reading an other epub) and for when books are pulled from the library but as still "owned" by users.
 - [ ] Add Encycclical text and reading
+- [ ] Ensure "Anonymous" books can be added, such as the Didache
 
 ## Community
 - [x] Calendar is ugly
@@ -66,7 +67,7 @@
 - [ ] support text resizing
 - [ ] support device rotation on native (focusing on a responsive design)
 - [ ] support linking directly to tabs (like linking to a particular day on the calendar list view)
-- [ ] the profile should be a bottom drawer or a modal. The page change is weird.
+- [x] the profile should be a bottom drawer or a modal. The page change is weird.
 
 ## Admin
 - [ ] Allow the Rosary Audio to be renamed
@@ -76,6 +77,10 @@
 ### Books to add
  - [x] st Patrick’s autobiography 
  - [x] st Benedict’s biography by st Gregory 
+ - [ ] Didache
+ - [ ] Eusebius' history
+ - [ ] Review Fr Augustine's OP Laity list.
+ - [ ] Look for books from other lay branches
 
 
 ## Future Extensibility of Admin Section
