@@ -11,9 +11,11 @@ import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider, useCalendar } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ProfilePanelProvider, useProfilePanel } from '@/contexts/ProfilePanelContext';
 import { Colors } from '@/constants/Colors';
 import FeastBanner from '@/components/FeastBanner.web';
 import MobileMenu from '@/components/MobileMenu.web';
+import ProfilePanelContainerWeb from '@/components/ProfilePanel/ProfilePanelContainer.web';
 import LiturgicalCalendarService from '@/services/LiturgicalCalendar';
 import { LiturgicalDay } from '@/types';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
@@ -68,7 +70,10 @@ export default function RootLayout() {
       <AuthProvider>
         <CalendarProvider>
           <BibleProvider>
-            <RootLayoutNav />
+            <ProfilePanelProvider>
+              <RootLayoutNav />
+              <ProfilePanelContainerWeb />
+            </ProfilePanelProvider>
           </BibleProvider>
         </CalendarProvider>
       </AuthProvider>
@@ -81,6 +86,7 @@ function RootLayoutNav() {
   const { liturgicalDay } = useCalendar();
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdminAuth();
+  const { openPanel } = useProfilePanel();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const isDesktop = useIsDesktop();
@@ -646,7 +652,7 @@ function RootLayoutNav() {
                         }}
                         onClick={() => {
                           closeUserDropdown();
-                          router.push('/profile/quick' as any);
+                          openPanel('quick');
                         }}
                       >
                         <Ionicons name="settings-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
@@ -672,7 +678,7 @@ function RootLayoutNav() {
                         }}
                         onClick={() => {
                           closeUserDropdown();
-                          router.push('/profile/account' as any);
+                          openPanel('account');
                         }}
                       >
                         <Ionicons name="person-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
