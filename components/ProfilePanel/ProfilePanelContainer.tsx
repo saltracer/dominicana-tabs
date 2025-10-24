@@ -142,23 +142,6 @@ export default function ProfilePanelContainer() {
             />
           </View>
 
-          {/* Logout Button */}
-          <View style={[styles.footer, { borderTopColor: Colors[colorScheme ?? 'light'].border }]}>
-            <TouchableOpacity
-              style={[styles.logoutButton, { backgroundColor: Colors[colorScheme ?? 'light'].error }]}
-              onPress={() => {
-                closePanel();
-                // TODO: Handle logout
-              }}
-              accessibilityLabel="Logout"
-              accessibilityRole="button"
-            >
-              <Ionicons name="log-out-outline" size={20} color="white" />
-              <View style={styles.logoutButtonText}>
-                <Text style={styles.logoutText}>Logout</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
         </SafeAreaView>
       </Animated.View>
     </Modal>
@@ -202,28 +185,5 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 8,
     marginBottom: 8,
-  },
-  footer: {
-    padding: 24,
-    borderTopWidth: 1,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    gap: 12,
-  },
-  logoutButtonText: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  logoutText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
   },
 });

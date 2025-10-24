@@ -6,12 +6,14 @@ import { router } from 'expo-router';
 import { useTheme } from '../../components/ThemeProvider';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
+import { useProfilePanel } from '../../contexts/ProfilePanelContext';
 import { Colors } from '../../constants/Colors';
 
 export default function AccountScreen() {
   const { colorScheme } = useTheme();
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdminAuth();
+  const { closePanel } = useProfilePanel();
 
   const displayName = profile?.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'User';
   const displayEmail = profile?.email || user?.email || '';
@@ -134,7 +136,10 @@ export default function AccountScreen() {
                 Administration
               </Text>
 
-              <TouchableOpacity style={styles.actionButton} onPress={() => router.push('/admin')}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => {
+                closePanel();
+                router.push('/admin');
+              }}>
                 <View style={styles.actionButtonContent}>
                   <Ionicons name="shield-checkmark-outline" size={20} color={Colors[colorScheme ?? 'light'].primary} />
                   <Text style={[styles.actionButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
