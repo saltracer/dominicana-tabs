@@ -58,7 +58,7 @@ export default function LaudsScreen() {
   return (
     <SwipeNavigationWrapper currentHour="lauds">
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right', 'top', 'bottom']}>
-        <ScrollView 
+      <ScrollView 
           ref={scrollViewRef}
           style={styles.scrollView} 
           showsVerticalScrollIndicator={false} 

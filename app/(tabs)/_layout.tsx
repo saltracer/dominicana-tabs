@@ -56,6 +56,7 @@ function TabLayoutContent() {
           ...getTabBarStyle({
             colorScheme: colorScheme ?? 'light',
             insets,
+            isHidden: shouldHideUI,
           }),
           // Apply scroll-based animation only in liturgy hours
           ...(isInLiturgyHours && {
@@ -182,7 +183,7 @@ export default function TabLayout() {
     <ReadingProvider>
       <ScrollProvider>
         <TabLayoutContent />
-      </ScrollProvider>
+      </ScrollProvider> 
     </ReadingProvider>
   );
 }
