@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,7 +34,13 @@ export default function LaudsScreen() {
   const { scrollViewRef, handleScroll } = useLiturgyScroll(50);
   
   // Test scroll context
-  const { isScrollingDown, shouldHideUI } = useScrollContext();
+  const { isScrollingDown, shouldHideUI, setScrollingDown } = useScrollContext();
+  
+  // Handle tap to toggle UI visibility
+  const handleTap = () => {
+    console.log('Tap detected! Current shouldHideUI:', shouldHideUI, 'Toggling to:', !shouldHideUI);
+    setScrollingDown(!shouldHideUI);
+  };
   
 
   if (!liturgicalDay) {
@@ -59,6 +66,8 @@ export default function LaudsScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
+        <TouchableWithoutFeedback onPress={handleTap}>
+          <View style={{ flex: 1 }}>
         {/* Clean Header */}
         <View style={styles.cleanHeader}>
           <TouchableOpacity
@@ -293,6 +302,8 @@ export default function LaudsScreen() {
 
         {/* Footer - Web only */}
         {Platform.OS === 'web' && <Footer />}
+          </View>
+        </TouchableWithoutFeedback>
       </ScrollView>
       
       {/* Prayer Hour Picker Modal */}
