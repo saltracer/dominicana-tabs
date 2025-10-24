@@ -88,7 +88,7 @@ export default function AdminLayoutWeb() {
             })}
           </View>
 
-          {/* Footer */}
+          {/* Footer
           <View style={[styles.sidebarFooter, { borderTopColor: Colors[colorScheme ?? 'light'].border }]}>
             <View style={styles.userInfo}>
               <View style={[styles.avatarSmall, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
@@ -101,7 +101,7 @@ export default function AdminLayoutWeb() {
             <TouchableOpacity style={styles.logoutButton} onPress={() => router.push('/profile/account' as any)}>
               <Ionicons name="arrow-back" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         {/* Main Content */}
