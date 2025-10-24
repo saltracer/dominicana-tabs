@@ -42,6 +42,7 @@
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
 - [x] Book categories should be tags not single options
 - [ ] Books need to have versions (for when epubs are updated and users are already reading an other epub) and for when books are pulled from the library but as still "owned" by users.
+- [ ] Add Encycclical text and reading
 
 ## Community
 - [x] Calendar is ugly
