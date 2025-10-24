@@ -17,7 +17,7 @@ import { useProfilePanel } from '@/contexts/ProfilePanelContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import ProfileHeader from './ProfileHeader';
 import SettingsNavigation from './SettingsNavigation';
-import SettingsContent from './SettingsContent';
+import SettingsContent from './SettingsContent.web';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

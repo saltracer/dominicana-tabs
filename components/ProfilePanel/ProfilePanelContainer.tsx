@@ -17,7 +17,7 @@ import { Colors } from '@/constants/Colors';
 import { useTheme } from '@/components/ThemeProvider';
 import { useProfilePanel } from '@/contexts/ProfilePanelContext';
 import ProfileHeader from './ProfileHeader';
-import SettingsContentNative from './SettingsContentNative';
+import SettingsContentNative from './SettingsContent.native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -110,7 +110,11 @@ export default function ProfilePanelContainer() {
       statusBarTranslucent
     >
       {/* Backdrop */}
-      <Animated.View style={[styles.backdrop, { opacity }]} activeOpacity={1} onPress={closePanel} />
+      <TouchableOpacity 
+        style={[styles.backdrop, { opacity }]} 
+        activeOpacity={1} 
+        onPress={closePanel}
+      />
 
       {/* Modal Sheet */}
       <Animated.View

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/Colors';
-import { useTheme } from '@/components/ThemeProvider';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { Colors } from '../../constants/Colors';
+import { useTheme } from '../../components/ThemeProvider';
+import { useAdminAuth } from '../../hooks/useAdminAuth';
 
 // Import the existing settings components
 import QuickSettingsScreen from '../../app/profile/quick';
