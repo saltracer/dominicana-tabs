@@ -108,12 +108,23 @@ function RootLayoutNav() {
 
 
   useEffect(() => {
-    const handleGlobalClick = () => {
-      setCommunityDropdownOpen(false);
-      setPreachingDropdownOpen(false);
-      setStudyDropdownOpen(false);
-      setPrayerDropdownOpen(false);
-      setUserDropdownOpen(false);
+    const handleGlobalClick = (event: MouseEvent) => {
+      // Check if click is inside any dropdown container
+      const target = event.target as Element;
+      const isInsideDropdown = 
+        (communityDropdownRef.current && (communityDropdownRef.current as any).contains?.(target)) ||
+        (preachingDropdownRef.current && (preachingDropdownRef.current as any).contains?.(target)) ||
+        (studyDropdownRef.current && (studyDropdownRef.current as any).contains?.(target)) ||
+        (prayerDropdownRef.current && (prayerDropdownRef.current as any).contains?.(target)) ||
+        (userDropdownRef.current && (userDropdownRef.current as any).contains?.(target));
+
+      if (!isInsideDropdown) {
+        setCommunityDropdownOpen(false);
+        setPreachingDropdownOpen(false);
+        setStudyDropdownOpen(false);
+        setPrayerDropdownOpen(false);
+        setUserDropdownOpen(false);
+      }
     };
 
     if (communityDropdownOpen || preachingDropdownOpen || studyDropdownOpen || prayerDropdownOpen || userDropdownOpen) {
@@ -129,7 +140,7 @@ function RootLayoutNav() {
     }
   }, [communityDropdownOpen, preachingDropdownOpen, studyDropdownOpen, prayerDropdownOpen, userDropdownOpen]);
 
-  // Close user dropdown when profile panel opens or closes
+  // Close user dropdown when profile panel opens
   useEffect(() => {
     if (isPanelOpen) {
       setUserDropdownOpen(false);
@@ -198,14 +209,17 @@ function RootLayoutNav() {
   };
 
   const toggleUserDropdown = () => {
-    setUserDropdownOpen(!userDropdownOpen);
-    // Close other dropdowns
-    if (!userDropdownOpen) {
-      setCommunityDropdownOpen(false);
-      setPreachingDropdownOpen(false);
-      setStudyDropdownOpen(false);
-      setPrayerDropdownOpen(false);
-    }
+    setUserDropdownOpen(prev => {
+      const newValue = !prev;
+      // Close other dropdowns when opening
+      if (newValue) {
+        setCommunityDropdownOpen(false);
+        setPreachingDropdownOpen(false);
+        setStudyDropdownOpen(false);
+        setPrayerDropdownOpen(false);
+      }
+      return newValue;
+    });
   };
 
   const closeUserDropdown = () => {
@@ -638,107 +652,76 @@ function RootLayoutNav() {
                   
                   {userDropdownOpen && (
                     <View style={[styles.dropdownMenu, styles.userDropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={() => {
-                          closeUserDropdown();
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([
+                          styles.dropdownItem,
+                          {
+                            backgroundColor: 'transparent',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 10,
+                          }
+                        ])}
+                        onPress={() => {
                           openPanel('quick');
                         }}
                       >
                         <Ionicons name="settings-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Quick Settings</Text>
-                      </div>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={() => {
-                          closeUserDropdown();
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([
+                          styles.dropdownItem,
+                          {
+                            backgroundColor: 'transparent',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 10,
+                          }
+                        ])}
+                        onPress={() => {
                           openPanel('account');
                         }}
                       >
                         <Ionicons name="person-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>View Profile</Text>
-                      </div>
+                      </TouchableOpacity>
                       {isAdmin && (
                         <Link href="/admin" asChild>
-                          <div 
-                            style={{
-                              padding: '12px 16px',
-                              borderBottom: '2px solid #E0E0E0',
-                              backgroundColor: 'transparent',
-                              cursor: 'pointer',
-                              transition: 'background-color 0.15s ease',
-                              display: 'flex',
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: '10px',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#F5F5F5';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
-                            onClick={closeUserDropdown}
+                          <TouchableOpacity 
+                            style={StyleSheet.flatten([
+                              styles.dropdownItem,
+                              {
+                                borderBottomWidth: 2,
+                                borderBottomColor: '#E0E0E0',
+                                backgroundColor: 'transparent',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 10,
+                              }
+                            ])}
+                            onPress={closeUserDropdown}
                           >
                             <Ionicons name="shield-checkmark-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
                             <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Admin</Text>
-                          </div>
+                          </TouchableOpacity>
                         </Link>
                       )}
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={handleLogout}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([
+                          styles.dropdownItem,
+                          {
+                            backgroundColor: 'transparent',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 10,
+                          }
+                        ])}
+                        onPress={handleLogout}
                       >
                         <Ionicons name="log-out-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Logout</Text>
-                      </div>
+                      </TouchableOpacity>
                     </View>
                   )}
                 </View>

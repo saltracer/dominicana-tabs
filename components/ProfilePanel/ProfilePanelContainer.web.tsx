@@ -121,6 +121,8 @@ export default function ProfilePanelContainerWeb() {
     }
   };
 
+  // Don't render the container at all when closed and animation is complete
+  // @ts-ignore - __getValue() exists in React Native Animated but isn't in types
   if (!isPanelOpen && opacity.__getValue() === 0) return null;
 
   return (
@@ -129,6 +131,7 @@ export default function ProfilePanelContainerWeb() {
       <Animated.View
         style={[styles.backdrop, { opacity: backdropOpacity }]}
         onTouchStart={handleBackdropClick}
+        pointerEvents={isPanelOpen ? 'auto' : 'none'}
       />
 
       {/* Slide-over Panel */}
