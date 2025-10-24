@@ -55,7 +55,9 @@ export default function PrayerLayout() {
           fontFamily: 'System',
           fontWeight: '700',
         },
-        contentStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background }
+        contentStyle: { backgroundColor: Colors[colorScheme ?? 'light'].background },
+        // Disable default animations - we'll handle them with custom wrapper
+        animation: 'none',
       }}
     >
       <Stack.Screen 

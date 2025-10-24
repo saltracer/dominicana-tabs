@@ -41,7 +41,7 @@ export default function SextScreen() {
 
   return (
     <SwipeNavigationWrapper currentHour="sext">
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right', 'top', 'bottom']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Clean Header */}
         <View style={styles.cleanHeader}>

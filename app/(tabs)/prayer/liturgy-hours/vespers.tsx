@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
+import { useLiturgyScroll } from '../../../../hooks/useLiturgyScroll';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerNavButtons from '../../../../components/PrayerNavButtons';
@@ -26,6 +27,9 @@ export default function VespersScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
   const [showQuickPicker, setShowQuickPicker] = useState(false);
+  
+  // Scroll behavior for UI hiding/showing
+  const { scrollViewRef, handleScroll } = useLiturgyScroll(50);
 
   if (!liturgicalDay) {
     return (
@@ -41,8 +45,15 @@ export default function VespersScreen() {
 
   return (
     <SwipeNavigationWrapper currentHour="vespers">
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right', 'top', 'bottom']}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         {/* Clean Header */}
         <View style={styles.cleanHeader}>
           <TouchableOpacity

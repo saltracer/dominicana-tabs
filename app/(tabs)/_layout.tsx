@@ -2,7 +2,7 @@ import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, Tabs, usePathname } from 'expo-router';
-import { Pressable, View, StyleSheet, Image, Text, Platform } from 'react-native';
+import { Pressable, View, StyleSheet, Image, Text, Platform, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors } from '@/constants/Colors';
@@ -10,6 +10,7 @@ import { GlobalStyles } from '@/styles/GlobalStyles';
 import { useTheme } from '@/components/ThemeProvider';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useCalendar } from '@/components/CalendarContext';
+import { useScrollContext, ScrollProvider } from '@/contexts/ScrollContext';
 import FeastBanner from '@/components/FeastBanner';
 import { ReadingProvider, useReading } from '@/contexts/ReadingContext';
 import { getTabBarStyle } from '@/utils/tabBarStyles';
@@ -35,9 +36,15 @@ function TabLayoutContent() {
   const { liturgicalDay } = useCalendar();
   const pathname = usePathname();
   const { isReading } = useReading();
+  const { shouldHideUI, bottomNavTranslateY, feastBannerTranslateY } = useScrollContext();
   
   // Check if we're in a book reader (hide feast banner when reading)
   const isInBookReader = isReading;
+  
+  // Check if we're in liturgy hours (where scroll-based UI hiding applies)
+  const isInLiturgyHours = pathname.includes('/prayer/liturgy-hours/');
+  
+  
 
   return (
     <View style={styles.container}>
@@ -45,10 +52,16 @@ function TabLayoutContent() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].text,
         tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].textMuted,
-        tabBarStyle: getTabBarStyle({
-          colorScheme: colorScheme ?? 'light',
-          insets,
-        }),
+        tabBarStyle: {
+          ...getTabBarStyle({
+            colorScheme: colorScheme ?? 'light',
+            insets,
+          }),
+          // Apply scroll-based animation only in liturgy hours
+          ...(isInLiturgyHours && {
+            transform: [{ translateY: bottomNavTranslateY }],
+          })
+        },
         tabBarLabelStyle: {
           fontFamily: 'System',
           fontSize: 12,
@@ -123,9 +136,18 @@ function TabLayoutContent() {
       
       {/* Feast Banner positioned above tab bar - hide when in book reader */}
       {liturgicalDay && !isInBookReader && (
-        <View style={[styles.feastBannerContainer, { bottom: 60 + Math.max(insets.bottom, 10) }]}>
+        <Animated.View 
+          style={[
+            styles.feastBannerContainer, 
+            { bottom: 60 + Math.max(insets.bottom, 10) },
+            // Apply scroll-based animation only in liturgy hours
+            isInLiturgyHours && {
+              transform: [{ translateY: feastBannerTranslateY }],
+            }
+          ]}
+        >
           <FeastBanner liturgicalDay={liturgicalDay} />
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -158,7 +180,9 @@ const styles = StyleSheet.create({
 export default function TabLayout() {
   return (
     <ReadingProvider>
-      <TabLayoutContent />
+      <ScrollProvider>
+        <TabLayoutContent />
+      </ScrollProvider>
     </ReadingProvider>
   );
 }

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Platform } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { Platform, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
 /**
  * useScrollPosition Hook
  * 
  * A hook to track the current scroll position of the window.
- * Only works on web platform.
+ * Works on both web and native platforms.
  * 
  * @returns object with scroll position (x, y) and scrolled state
  * 
@@ -51,6 +51,43 @@ export function useScrollPosition() {
   }, []);
 
   return scrollPosition;
+}
+
+/**
+ * useScrollPositionNative Hook
+ * 
+ * A hook to track scroll position on native platforms using ScrollView events.
+ * 
+ * @param threshold - Scroll threshold in pixels (default: 10)
+ * @returns object with scroll position and handlers
+ * 
+ * @example
+ * const { scrollY, isScrolled, onScroll } = useScrollPositionNative(50);
+ * // Use onScroll in ScrollView: <ScrollView onScroll={onScroll} />
+ */
+export function useScrollPositionNative(threshold: number = 10) {
+  const [scrollPosition, setScrollPosition] = useState({
+    scrollX: 0,
+    scrollY: 0,
+    isScrolled: false,
+  });
+
+  const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset } = event.nativeEvent;
+    const scrollY = contentOffset.y;
+    const scrollX = contentOffset.x;
+    
+    setScrollPosition({
+      scrollX,
+      scrollY,
+      isScrolled: scrollY > threshold,
+    });
+  }, [threshold]);
+
+  return {
+    ...scrollPosition,
+    onScroll,
+  };
 }
 
 /**

@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
+import { useLiturgyScroll } from '../../../../hooks/useLiturgyScroll';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerNavButtons from '../../../../components/PrayerNavButtons';
 import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
@@ -32,6 +33,9 @@ function ComplineScreenContent() {
   const [language, setLanguage] = useState<LanguageCode>('en');
   const [isInitialized, setIsInitialized] = useState(false);
   const [showQuickPicker, setShowQuickPicker] = useState(false);
+  
+  // Scroll behavior for UI hiding/showing
+  const { scrollViewRef, handleScroll } = useLiturgyScroll(50);
 
   // Early return if theme is not available
   if (!theme) {
@@ -115,8 +119,15 @@ function ComplineScreenContent() {
 
   return (
     <SwipeNavigationWrapper currentHour="compline">
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 160 }}>
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right', 'top', 'bottom']}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 160 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         {/* Clean Header */}
         <View style={styles.cleanHeader}>
           <TouchableOpacity
