@@ -1,15 +1,13 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { View, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { ReadingProgressProvider } from '../../../contexts/ReadingProgressContext';
-import { useProfilePanel } from '../../../contexts/ProfilePanelContext';
 
 export default function StudyLayout() {
   const { colorScheme } = useTheme();
-  const { openPanel } = useProfilePanel();
   
   // Memoize header components to prevent re-renders
   const headerLeftComponent = useMemo(() => (
@@ -32,7 +30,7 @@ export default function StudyLayout() {
 
   const headerRightComponent = useMemo(() => (
     <TouchableOpacity 
-      onPress={() => openPanel('quick')}
+      onPress={() => router.push('/profile')}
       style={{ marginRight: 15 }}
       activeOpacity={0.6}
     >
@@ -42,7 +40,7 @@ export default function StudyLayout() {
         color={Colors[colorScheme ?? 'light'].text}
       />
     </TouchableOpacity>
-  ), [colorScheme, openPanel]);
+  ), [colorScheme]);
   
   return (
     <ReadingProgressProvider>

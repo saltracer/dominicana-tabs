@@ -11,8 +11,6 @@ import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider, useCalendar } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { ProfilePanelProvider } from '@/contexts/ProfilePanelContext';
-import ProfilePanelContainerWeb from '@/components/ProfilePanel/ProfilePanelContainer.web';
 import { Colors } from '@/constants/Colors';
 import FeastBanner from '@/components/FeastBanner.web';
 import MobileMenu from '@/components/MobileMenu.web';
@@ -21,7 +19,6 @@ import { LiturgicalDay } from '@/types';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useIsMobile, useIsTablet, useIsDesktop, useMediaQuery } from '@/hooks/useMediaQuery';
 import { useIsScrolled } from '@/hooks/useScrollPosition';
-import { useProfilePanel } from '@/contexts/ProfilePanelContext';
 
 // Import web-specific CSS
 if (Platform.OS === 'web') {
@@ -71,9 +68,7 @@ export default function RootLayout() {
       <AuthProvider>
         <CalendarProvider>
           <BibleProvider>
-            <ProfilePanelProvider>
-              <RootLayoutNav />
-            </ProfilePanelProvider>
+            <RootLayoutNav />
           </BibleProvider>
         </CalendarProvider>
       </AuthProvider>
@@ -86,7 +81,6 @@ function RootLayoutNav() {
   const { liturgicalDay } = useCalendar();
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdminAuth();
-  const { openPanel } = useProfilePanel();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const isDesktop = useIsDesktop();
@@ -652,7 +646,7 @@ function RootLayoutNav() {
                         }}
                         onClick={() => {
                           closeUserDropdown();
-                          openPanel('quick');
+                          router.push('/profile/quick' as any);
                         }}
                       >
                         <Ionicons name="settings-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
@@ -678,7 +672,7 @@ function RootLayoutNav() {
                         }}
                         onClick={() => {
                           closeUserDropdown();
-                          openPanel('account');
+                          router.push('/profile/account' as any);
                         }}
                       >
                         <Ionicons name="person-outline" size={18} color={Colors[colorScheme ?? 'light'].text} />
@@ -766,9 +760,6 @@ function RootLayoutNav() {
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>
         </View>
-
-        {/* Profile Panel */}
-        <ProfilePanelContainerWeb />
 
       </View>
     </SafeAreaProvider>
