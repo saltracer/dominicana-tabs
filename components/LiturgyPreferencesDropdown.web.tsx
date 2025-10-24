@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 4,
     maxHeight: 300,
-    zIndex: 1000,
+    zIndex: 20000, // Higher than panel z-index
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 8,

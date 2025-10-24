@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { useTheme } from '@/components/ThemeProvider';
 import { useProfilePanel } from '@/contexts/ProfilePanelContext';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useIsMobile, useIsTablet } from '@/hooks/useMediaQuery';
 import ProfileHeader from './ProfileHeader';
 import SettingsNavigation from './SettingsNavigation';
 import SettingsContent from './SettingsContent.web';
@@ -26,8 +26,8 @@ export default function ProfilePanelContainerWeb() {
   const { isPanelOpen, closePanel, activeCategory, setActiveCategory } = useProfilePanel();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const isMobile = useMediaQuery(768);
-  const isTablet = useMediaQuery(1024);
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   
   const translateX = useRef(new Animated.Value(SCREEN_WIDTH)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -36,7 +36,7 @@ export default function ProfilePanelContainerWeb() {
   const getPanelWidth = () => {
     if (isMobile) return '100%';
     if (isTablet) return '90%';
-    return 480; // Desktop fixed width
+    return 800; // Desktop fixed width - wider for better content display
   };
 
   const panelWidth = getPanelWidth();
@@ -148,13 +148,22 @@ export default function ProfilePanelContainerWeb() {
           <ProfileHeader onClose={closePanel} />
 
           {/* Navigation and Content */}
-          <View style={styles.contentContainer}>
-            <SettingsNavigation
-              activeCategory={activeCategory}
+          <View style={[
+            styles.contentContainer,
+            isMobile && styles.contentContainerMobile
+          ]}>
+            {!isMobile && (
+              <SettingsNavigation
+                activeCategory={activeCategory}
+                onNavigate={handleNavigate}
+              />
+            )}
+            
+            <SettingsContent 
+              activeCategory={activeCategory} 
+              isMobile={isMobile}
               onNavigate={handleNavigate}
             />
-            
-            <SettingsContent activeCategory={activeCategory} />
           </View>
 
         </View>
@@ -194,6 +203,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
     pointerEvents: 'auto', // Clicks on panel are handled
+    overflow: 'hidden', // Prevent content from overflowing
   },
   safeArea: {
     flex: 1,
@@ -201,5 +211,9 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     flexDirection: 'row',
+    minHeight: 0, // Important for flex scrolling
+  },
+  contentContainerMobile: {
+    flexDirection: 'column',
   },
 });

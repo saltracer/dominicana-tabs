@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/Colors';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 interface SettingsNavigationProps {
   activeCategory: string;
@@ -23,9 +24,14 @@ const settingsCategories = [
 export default function SettingsNavigation({ activeCategory, onNavigate }: SettingsNavigationProps) {
   const { colorScheme } = useTheme();
   const { isAdmin } = useAdminAuth();
+  const isTablet = useMediaQuery(1024);
 
   return (
-    <View style={[styles.container, { borderRightColor: Colors[colorScheme ?? 'light'].border }]}>
+    <View style={[
+      styles.container, 
+      { borderRightColor: Colors[colorScheme ?? 'light'].border },
+      isTablet && styles.containerTablet
+    ]}>
       <View style={styles.navigation}>
         {settingsCategories.map((category) => {
           const isActive = activeCategory === category.id;
@@ -118,6 +124,9 @@ const styles = StyleSheet.create({
     width: 260,
     borderRightWidth: 1,
     backgroundColor: 'transparent',
+  },
+  containerTablet: {
+    width: 220, // Slightly narrower on tablet
   },
   navigation: {
     paddingVertical: 8,

@@ -86,7 +86,7 @@ function RootLayoutNav() {
   const { liturgicalDay } = useCalendar();
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdminAuth();
-  const { openPanel } = useProfilePanel();
+  const { openPanel, isPanelOpen } = useProfilePanel();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const isDesktop = useIsDesktop();
@@ -129,6 +129,12 @@ function RootLayoutNav() {
     }
   }, [communityDropdownOpen, preachingDropdownOpen, studyDropdownOpen, prayerDropdownOpen, userDropdownOpen]);
 
+  // Close user dropdown when profile panel opens or closes
+  useEffect(() => {
+    if (isPanelOpen) {
+      setUserDropdownOpen(false);
+    }
+  }, [isPanelOpen]);
 
 
   const toggleCommunityDropdown = () => {
