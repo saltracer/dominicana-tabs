@@ -336,64 +336,28 @@ function RootLayoutNav() {
                   <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
                     
                     <Link href="/(tabs)/prayer/liturgy" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closePrayerDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closePrayerDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Liturgy of the Hours</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                     <Link href="/(tabs)/prayer/rosary" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closePrayerDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closePrayerDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Rosary</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                     <Link href="/(tabs)/prayer/devotions" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closePrayerDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closePrayerDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Devotions</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                   </View>
                 )}
@@ -423,44 +387,20 @@ function RootLayoutNav() {
                 {studyDropdownOpen && (
                   <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
                     <Link href="/(tabs)/study/bible" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closeStudyDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closeStudyDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Bible</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                     <Link href="/(tabs)/study/library" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closeStudyDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closeStudyDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Library</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                   </View>
                 )}
@@ -490,64 +430,28 @@ function RootLayoutNav() {
                 {communityDropdownOpen && (
                   <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
                     <Link href="/(tabs)/community/calendar" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closeCommunityDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closeCommunityDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Calendar</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                     <Link href="/(tabs)/community/saints" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closeCommunityDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closeCommunityDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Saints</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                     <Link href="/(tabs)/community/provinces" asChild>
-                      <div 
-                        style={{
-                          padding: '12px 16px',
-                          borderBottom: '1px solid #F0F0F0',
-                          backgroundColor: 'transparent',
-                          cursor: 'pointer',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#F5F5F5';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'transparent';
-                        }}
-                        onClick={closeCommunityDropdown}
+                      <TouchableOpacity 
+                        style={StyleSheet.flatten([styles.dropdownItem])}
+                        onPress={closeCommunityDropdown}
                       >
                         <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Provinces</Text>
-                      </div>
+                      </TouchableOpacity>
                     </Link>
                   </View>
                 )}
@@ -576,48 +480,24 @@ function RootLayoutNav() {
                 
                 {preachingDropdownOpen && (
                   <View style={[styles.dropdownMenu, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderColor: Colors[colorScheme ?? 'light'].border }]}>
-                    <div 
-                      style={{
-                        padding: '12px 16px',
-                        borderBottom: '1px solid #F0F0F0',
-                        backgroundColor: 'transparent',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#F5F5F5';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                      onClick={() => {
+                    <TouchableOpacity 
+                      style={StyleSheet.flatten([styles.dropdownItem])}
+                      onPress={() => {
                         closePreachingDropdown();
                         router.push('/(tabs)/preaching/podcasts' as any);
                       }}
                     >
                       <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Podcasts</Text>
-                    </div>
-                    <div 
-                      style={{
-                        padding: '12px 16px',
-                        borderBottom: '1px solid #F0F0F0',
-                        backgroundColor: 'transparent',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#F5F5F5';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                      onClick={() => {
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={StyleSheet.flatten([styles.dropdownItem])}
+                      onPress={() => {
                         closePreachingDropdown();
                         router.push('/(tabs)/preaching/blogs' as any);
                       }}
                     >
                       <Text style={[styles.dropdownItemText, { color: Colors[colorScheme ?? 'light'].text }]}>Blog & Reflections</Text>
-                    </div>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
