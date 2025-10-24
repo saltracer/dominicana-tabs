@@ -4,8 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useTheme } from '../../components/ThemeProvider';
 import { useAuth } from '../../contexts/AuthContext';
@@ -75,6 +77,59 @@ export default function QuickSettingsScreen() {
             </View>
           ) : liturgyPreferences ? (
             <>
+              {/* Theme Mode */}
+              <View style={[styles.settingCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
+                <Text style={[styles.settingLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  Theme Mode
+                </Text>
+                <Text style={[styles.settingDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Choose your preferred color scheme
+                </Text>
+                <View style={styles.themeOptions}>
+                  {([
+                    { mode: 'light', icon: 'sunny', label: 'Light' },
+                    { mode: 'dark', icon: 'moon', label: 'Dark' },
+                    { mode: 'system', icon: 'settings', label: 'System' }
+                  ] as const).map(({ mode, icon, label }) => (
+                    <TouchableOpacity
+                      key={mode}
+                      style={[
+                        styles.themeOption,
+                        {
+                          backgroundColor: themeMode === mode 
+                            ? Colors[colorScheme ?? 'light'].primary + '15' 
+                            : 'transparent',
+                          borderColor: themeMode === mode 
+                            ? Colors[colorScheme ?? 'light'].primary 
+                            : Colors[colorScheme ?? 'light'].border,
+                        },
+                      ]}
+                      onPress={() => setThemeMode(mode)}
+                    >
+                      <Ionicons 
+                        name={icon} 
+                        size={20} 
+                        color={themeMode === mode 
+                          ? Colors[colorScheme ?? 'light'].primary 
+                          : Colors[colorScheme ?? 'light'].textSecondary
+                        } 
+                      />
+                      <Text style={[
+                        styles.themeOptionText,
+                        {
+                          color: themeMode === mode 
+                            ? Colors[colorScheme ?? 'light'].primary 
+                            : Colors[colorScheme ?? 'light'].text,
+                          fontWeight: themeMode === mode ? '600' : '400',
+                        },
+                      ]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
               <LiturgyPreferencesDropdown
                 label="Primary Language"
                 description="Main language for liturgical content"
@@ -143,6 +198,35 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
+  },
+  settingLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    marginBottom: 16,
+  },
+  themeOptions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  themeOptionText: {
+    fontSize: 15,
+    fontFamily: 'Georgia',
   },
   loadingText: {
     fontSize: 14,

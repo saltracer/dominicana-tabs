@@ -15,6 +15,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { spacing } from '@/constants/Spacing';
+import { useProfilePanel } from '@/contexts/ProfilePanelContext';
 
 interface MobileMenuProps {
   visible: boolean;
@@ -36,6 +37,7 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
   const { colorScheme } = useTheme();
   const { user, profile, signOut } = useAuth();
   const { isAdmin } = useAdminAuth();
+  const { openPanel } = useProfilePanel();
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const slideAnim = React.useRef(new Animated.Value(-100)).current;
 
@@ -238,9 +240,12 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
               <TouchableOpacity
                 style={styles.userMenuItem}
-                onPress={() => handleNavigation('/profile/quick')}
+                onPress={() => {
+                  onClose();
+                  openPanel('quick');
+                }}
                 accessibilityLabel="Quick Settings"
-                accessibilityRole="link"
+                accessibilityRole="button"
               >
                 <Ionicons
                   name="settings-outline"
@@ -255,9 +260,12 @@ export default function MobileMenu({ visible, onClose }: MobileMenuProps) {
 
               <TouchableOpacity
                 style={styles.userMenuItem}
-                onPress={() => handleNavigation('/profile/account')}
+                onPress={() => {
+                  onClose();
+                  openPanel('account');
+                }}
                 accessibilityLabel="View Profile"
-                accessibilityRole="link"
+                accessibilityRole="button"
               >
                 <Ionicons
                   name="person-outline"

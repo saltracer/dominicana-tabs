@@ -18,6 +18,8 @@ import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ProfilePanelProvider } from '@/contexts/ProfilePanelContext';
+import ProfilePanelContainer from '@/components/ProfilePanel/ProfilePanelContainer';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -70,7 +72,9 @@ export default function RootLayout() {
       <AuthProvider>
         <CalendarProvider>
           <BibleProvider>
-            <RootLayoutNav />
+            <ProfilePanelProvider>
+              <RootLayoutNav />
+            </ProfilePanelProvider>
           </BibleProvider>
         </CalendarProvider>
       </AuthProvider>
@@ -87,11 +91,13 @@ function RootLayoutNav() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false,
             headerBackButtonDisplayMode: "minimal", }} />
-          <Stack.Screen name="profile" options={{ headerShown: false }} />
           <Stack.Screen name="admin" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
         </Stack>
+        
+        {/* Profile Panel */}
+        <ProfilePanelContainer />
       </NavigationThemeProvider>
     </SafeAreaProvider>
   );
