@@ -5,26 +5,28 @@
 - [x] On the web, the profile page should be a menu dropdown, not a page modal
 
 ## Prayer
-- More content
-- devotions need to be built. With audio. 
-- Vespers or Lauds ... need to prove the design
-- Redesign Rosary
-- Rosary Audio
- - [ ] implement cache invalidation and redownload of audio files -testing phase
- - [ ] Rosary final prayer needs to be split into individual prayers and combined 
- - [ ] Add preferences for final prayers
- - [x] allow specific voices to be clear, obviously 
- - [x] reimplement expo-audio for an iOS/android compatible solution 
- - [x] get audio playback displaying as part of the iOS/android audio experience 
- - [x] add a setting to explicitly clear the cache
- - [x] create admin only cms front end web only
- - [x] create a voice for John Henry Newman 
- - [x] a voice for Therese
- - [x] a voice for Francis de Sales
- - [x] a voice for Hildegard
- - [ ] generate the rosary audio for the different voices
- - [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
- - [ ] text highlighting?
+- [ ] More content
+- [ ] devotions need to be built. With audio. 
+- [ ] Vespers or Lauds ... need to prove the design
+- [x] Redesign Rosary
+- [x] Rosary Audio
+- [ ] implement cache invalidation and redownload of audio files -testing phase
+- [ ] Rosary final prayer needs to be split into individual prayers and combined 
+- [ ] Add preferences for final prayers
+- [x] allow specific voices to be clear, obviously 
+- [x] reimplement expo-audio for an iOS/android compatible solution 
+- [x] get audio playback displaying as part of the iOS/android audio experience 
+- [x] add a setting to explicitly clear the cache
+- [x] create admin only cms front end web only
+- [x] create a voice for John Henry Newman 
+- [x] a voice for Therese
+- [x] a voice for Francis de Sales
+- [x] a voice for Hildegard
+- [ ] generate the rosary audio for the different voices
+- [ ] Only show audio button for pages/books/rosary mysteris that have audio
+- [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
+- [ ] text highlighting as the audio is read
+- [ ] Redesign Prayer section navigation on native
 
 
 ## Study
