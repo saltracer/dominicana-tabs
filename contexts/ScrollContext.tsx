@@ -56,23 +56,23 @@ export function ScrollProvider({ children }: ScrollProviderProps) {
   }, [bottomNavTranslateY, feastBannerTranslateY, isScrollingDown]);
   
   const setNearBottom = useCallback((nearBottom: boolean) => {
-    setIsNearBottom(nearBottom);
+    setIsNearBottom(false);
     
-    // If near bottom, show UI regardless of scroll direction
-    if (nearBottom) {
-      Animated.parallel([
-        Animated.timing(bottomNavTranslateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(feastBannerTranslateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+    // // If near bottom, show UI regardless of scroll direction
+    // if (nearBottom) {
+    //   Animated.parallel([
+    //     Animated.timing(bottomNavTranslateY, {
+    //       toValue: 0,
+    //       duration: 300,
+    //       useNativeDriver: true,
+    //     }),
+    //     Animated.timing(feastBannerTranslateY, {
+    //       toValue: 0,
+    //       duration: 300,
+    //       useNativeDriver: true,
+    //     }),
+    //   ]).start();
+    // }
   }, [bottomNavTranslateY, feastBannerTranslateY]);
   
   const resetScrollState = useCallback(() => {
