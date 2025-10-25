@@ -41,16 +41,19 @@ export default function BeadCounter({
   React.useEffect(() => {
     const currentBeadRef = beadRefs.current[currentBeadId];
     if (currentBeadRef && scrollViewRef.current) {
-      currentBeadRef.measureLayout(
-        scrollViewRef.current as any,
-        (_left, top) => {
-          scrollViewRef.current?.scrollTo({
-            y: top - 250, // Offset to center in view
-            animated: true,
-          });
-        },
-        () => {} // Error callback
-      );
+      // Small delay to prevent aggressive scrolling
+      setTimeout(() => {
+        currentBeadRef.measureLayout(
+          scrollViewRef.current as any,
+          (_left, top) => {
+            scrollViewRef.current?.scrollTo({
+              y: Math.max(0, top - 80), // Smaller offset to keep bead visible
+              animated: true,
+            });
+          },
+          () => {} // Error callback
+        );
+      }, 50);
     }
   }, [currentBeadId]);
 
