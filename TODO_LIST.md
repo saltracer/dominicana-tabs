@@ -62,6 +62,7 @@
 
 ## Other
 - [ ] Carplay
+- [ ] Widget support
 - [x] Admin console
 - [ ] Look for opportunities to refactor
 - [x] fix the user profile sub page titling
