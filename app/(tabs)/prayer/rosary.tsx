@@ -31,6 +31,7 @@ import { bibleService } from '../../../services/BibleService';
 import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryData';
 import { UserLiturgyPreferencesService } from '../../../services/UserLiturgyPreferencesService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useProfilePanel } from '../../../contexts/ProfilePanelContext';
 import { useRosaryAudio } from '../../../hooks/useRosaryAudio';
 import RosaryAudioControls from '../../../components/RosaryAudioControls';
 
@@ -38,6 +39,7 @@ export default function RosaryScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
   const { user } = useAuth();
+  const { isPanelOpen } = useProfilePanel();
   
   // State management
   const [selectedMystery, setSelectedMystery] = useState<MysterySet>(getTodaysMystery());
@@ -263,8 +265,16 @@ export default function RosaryScreen() {
     };
   }, [user?.id, loadUserPreferences]);
 
-  // For native, we rely on useFocusEffect to refresh when user returns to screen
-  // This is more efficient than polling and works well with React Navigation
+  // For native, detect when profile panel closes and refresh preferences
+  const [wasPanelOpen, setWasPanelOpen] = useState(false);
+  useEffect(() => {
+    if (wasPanelOpen && !isPanelOpen && user?.id) {
+      // Profile panel was just closed, refresh preferences
+      console.log('[Rosary Native] Profile panel closed, refreshing preferences');
+      loadUserPreferences();
+    }
+    setWasPanelOpen(isPanelOpen);
+  }, [isPanelOpen, wasPanelOpen, user?.id, loadUserPreferences]);
 
   const loadBibleVerse = async (decadeNumber: number) => {
     setLoadingVerse(true);
