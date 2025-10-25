@@ -15,6 +15,7 @@ import { Calendar } from 'react-native-calendars';
 import { Colors, getLiturgicalColorHex } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
+import { useScrollContext } from '../contexts/ScrollContext';
 import { LiturgicalDay } from '../types';
 import { parseISO, format } from 'date-fns';
 
@@ -28,6 +29,7 @@ export default function FeastBanner({
   showDatePicker = true
 }: FeastBannerProps) {
   const { colorScheme } = useTheme();
+  const { shouldHideUI } = useScrollContext();
   const { selectedDate, setSelectedDate } = useCalendar();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -127,7 +129,11 @@ export default function FeastBanner({
     : getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark');
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }]}>
+    <View style={[
+      styles.container, 
+      { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard },
+      shouldHideUI && { display: 'none' }
+    ]}>
       <View style={styles.bannerContent}>
                 {/* Carousel Container */}
         <View style={styles.carouselContainer}>
