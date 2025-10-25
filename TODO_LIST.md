@@ -27,6 +27,7 @@
 - [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
 - [ ] text highlighting as the audio is read
 - [x] Redesign Prayer section navigation on native
+- [ ] Get exsurge working on the web
 
 
 ## Study
