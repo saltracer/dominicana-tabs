@@ -55,3 +55,15 @@ export interface AudioSettings {
   playBellSounds: boolean;
 }
 
+export interface FinalPrayerConfig {
+  id: string;
+  order: number;
+}
+
+export interface FinalPrayerMetadata {
+  id: string;
+  name: string;
+  textKey: string;
+  traditional: boolean;
+}
+

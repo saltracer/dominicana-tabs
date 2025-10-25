@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { UserLiturgyPreferences } from '../types/liturgy-types';
+import { FinalPrayerConfig } from '../types/rosary-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface UserLiturgyPreferencesData {
@@ -25,6 +26,7 @@ export interface UserLiturgyPreferencesData {
   rosary_voice?: string; // Voice for rosary audio playback
   show_mystery_meditations?: boolean; // Show or hide mystery meditations in rosary (default: true)
   audio_playback_speed?: number; // Rosary audio playback speed (0.5 - 2.0, default: 1.0)
+  rosary_final_prayers?: FinalPrayerConfig[]; // Customizable final prayers for rosary
   created_at?: string;
   updated_at?: string;
 }
@@ -219,6 +221,11 @@ export class UserLiturgyPreferencesService {
       rosary_voice: 'alphonsus', // Default rosary voice
       show_mystery_meditations: true, // Default to showing mystery meditations
       audio_playback_speed: 1.0, // Default playback speed (normal)
+      rosary_final_prayers: [
+        { id: 'hail_holy_queen', order: 1 },
+        { id: 'versicle_response', order: 2 },
+        { id: 'rosary_prayer', order: 3 }
+      ]
     };
 
     try {

@@ -22,7 +22,7 @@ import { useCalendar } from '../../../components/CalendarContext';
 import BeadCounter from '../../../components/BeadCounter';
 import RosaryDecadeSelector from '../../../components/RosaryDecadeSelector';
 import RosaryMysteryCarousel from '../../../components/RosaryMysteryCarousel';
-import { RosaryBead, RosaryForm, MysterySet, AudioSettings } from '../../../types/rosary-types';
+import { RosaryBead, RosaryForm, MysterySet, AudioSettings, FinalPrayerConfig } from '../../../types/rosary-types';
 import Footer from '../../../components/Footer.web';
 import { rosaryService } from '../../../services/RosaryService';
 import { bibleService } from '../../../services/BibleService';
@@ -51,6 +51,11 @@ export default function RosaryWebScreen() {
   const [rosaryVoice, setRosaryVoice] = useState<string>('alphonsus');
   const [showMysteryMeditations, setShowMysteryMeditations] = useState<boolean>(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [finalPrayersConfig, setFinalPrayersConfig] = useState<FinalPrayerConfig[]>([
+    { id: 'hail_holy_queen', order: 1 },
+    { id: 'versicle_response', order: 2 },
+    { id: 'rosary_prayer', order: 3 }
+  ]);
   
   // Audio state
   const [audioSettings, setAudioSettings] = useState<AudioSettings>({
@@ -160,12 +165,12 @@ export default function RosaryWebScreen() {
   useEffect(() => {
     // Check if current liturgical season is Lent or Holy Week
     const isLentSeason = liturgicalDay?.season.name === 'Lent' || liturgicalDay?.season.name === 'Holy Week';
-    const generatedBeads = rosaryService.generateRosaryBeads(rosaryForm, selectedMystery, isLentSeason);
+    const generatedBeads = rosaryService.generateRosaryBeads(rosaryForm, selectedMystery, isLentSeason, finalPrayersConfig);
     setBeads(generatedBeads);
     if (generatedBeads.length > 0 && !currentBeadId) {
       setCurrentBeadId(generatedBeads[0].id);
     }
-  }, [rosaryForm, selectedMystery, liturgicalDay]);
+  }, [rosaryForm, selectedMystery, liturgicalDay, finalPrayersConfig]);
 
   // Load Bible verse for current mystery announcement (only if meditations enabled)
   useEffect(() => {
@@ -233,6 +238,7 @@ export default function RosaryWebScreen() {
     selectedMystery, // Joyful, Sorrowful, etc.
     rosaryVoice, // Voice selection
     isLentSeason, // Affects Alleluia
+    finalPrayersConfig, // Final prayers configuration
     // Note: Don't include audioSettings.isEnabled or isPraying to avoid infinite loop
   ]);
 
@@ -248,6 +254,10 @@ export default function RosaryWebScreen() {
         setShowMysteryMeditations(prefs?.show_mystery_meditations ?? true);
         // Load playback speed preference (default to 1.0 if not set)
         setPlaybackSpeed(prefs?.audio_playback_speed ?? 1.0);
+        // Load final prayers configuration (default to traditional 3 prayers if not set)
+        if (prefs?.rosary_final_prayers) {
+          setFinalPrayersConfig(prefs.rosary_final_prayers);
+        }
       } catch (error) {
         console.error('Error loading rosary preferences:', error);
       }

@@ -3,15 +3,15 @@
  * Generates the complete rosary bead structure for prayer navigation
  */
 
-import { RosaryBead, RosaryForm, MysterySet } from '../types/rosary-types';
-import { PRAYER_TEXTS, ROSARY_MYSTERIES } from '../constants/rosaryData';
+import { RosaryBead, RosaryForm, MysterySet, FinalPrayerConfig } from '../types/rosary-types';
+import { PRAYER_TEXTS, ROSARY_MYSTERIES, FINAL_PRAYERS } from '../constants/rosaryData';
 import { isLent } from '../assets/data/calendar/liturgical-seasons';
 
 export class RosaryService {
   /**
    * Generate all beads for a complete rosary
    */
-  generateRosaryBeads(form: RosaryForm, mysterySet: MysterySet, isLentSeason?: boolean): RosaryBead[] {
+  generateRosaryBeads(form: RosaryForm, mysterySet: MysterySet, isLentSeason?: boolean, finalPrayers?: FinalPrayerConfig[]): RosaryBead[] {
     const beads: RosaryBead[] = [];
     let order = 0;
 
@@ -245,16 +245,32 @@ export class RosaryService {
       }
     }
 
-    // Final prayers
-    beads.push({
-      id: 'closing-final-prayer',
-      type: 'our-father',
-      title: 'Final Prayer',
-      text: PRAYER_TEXTS.finalPrayer,
-      order: order++,
-      decadeNumber: 6,
-        audioFile: 'assets/audio/rosary/final-prayer.m4a'
-    });
+    // Final prayers - multiple beads based on user preferences
+    const finalPrayersConfig = finalPrayers || [
+      { id: 'hail_holy_queen', order: 1 },
+      { id: 'versicle_response', order: 2 },
+      { id: 'rosary_prayer', order: 3 }
+    ];
+
+    // Sort by order and generate beads
+    finalPrayersConfig
+      .sort((a, b) => a.order - b.order)
+      .forEach((prayerConfig) => {
+        const prayerMeta = FINAL_PRAYERS.find(p => p.id === prayerConfig.id);
+        if (!prayerMeta) return;
+        
+        const textKey = prayerMeta.textKey as keyof typeof PRAYER_TEXTS;
+        
+        beads.push({
+          id: `closing-${prayerConfig.id}`,
+          type: 'our-father',
+          title: prayerMeta.name,
+          text: PRAYER_TEXTS[textKey],
+          order: order++,
+          decadeNumber: 6,
+          audioFile: `assets/audio/rosary/${prayerConfig.id}.m4a`
+        });
+      });
 
     return beads;
   }

@@ -3,6 +3,8 @@
 ## Profiles
 - [x] Redesign the prefences page, as the organization doesn't make sense and not all of them are used. The initial idea is that they would be organized by "section"of the app (eg prayer, study, etc)
 - [x] On the web, the profile page should be a menu dropdown, not a page modal
+- [ ] The native (and check web) needs to support login via the profile button
+- [ ] When logged in, the profile button should be "primary" in color. When logged out it should be "grey".
 
 ## Prayer
 - [ ] More content
@@ -40,6 +42,7 @@
 - [x] Redeisgn how the bible is accessed
 - [x] keep books downloaded
 - [x] cache the book covers
+- [ ] Double check the book cover cache, it seems to re-load them every time I open the screen
 - [x] Add a setting to remove the download
 - [x] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?

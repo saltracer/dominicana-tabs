@@ -109,7 +109,13 @@ async function loadPrayerData() {
       'glory-be-4': prayers.gloryBe_audio_text,
       'glory-be-5': prayers.gloryBe_audio_text,
       'fatima-prayer': prayers.fatimaPrayer_audio_text,
-      'hail-holy-queen': prayers.finalPrayer_audio_text.split('...')[0] + '.', // Just the Hail Holy Queen part
+      'hail-holy-queen': prayers.hailHolyQueen_audio_text,
+      'versicle-response': prayers.versicleResponse_audio_text,
+      'rosary-prayer': prayers.rosaryPrayer_audio_text,
+      'st-michael': prayers.stMichaelPrayer_audio_text,
+      'memorare': prayers.memorare_audio_text,
+      'prayer-departed': prayers.prayerForDeparted_audio_text,
+      'prayer-pope': prayers.prayerForPope_audio_text,
       'final-prayer': prayers.finalPrayer_audio_text,
       'dominican-opening-1': prayers.dominicanOpening1_audio_text,
       'dominican-opening-2': prayers.dominicanOpening2_audio_text,
@@ -193,6 +199,12 @@ const CORE_PRAYERS = [
   'glory-be-5',
   'fatima-prayer',
   'hail-holy-queen',
+  'versicle-response',
+  'rosary-prayer',
+  'st-michael',
+  'memorare',
+  'prayer-departed',
+  'prayer-pope',
   'final-prayer',
   'dominican-opening-1',
   'dominican-opening-2',
@@ -205,6 +217,17 @@ const CORE_PRAYERS = [
   'dominican-glory-be-5',
   'alleluia',
   'faith-hope-charity'
+];
+
+// Final prayers list for --final-prayers option
+const FINAL_PRAYERS = [
+  'hail-holy-queen',
+  'versicle-response',
+  'rosary-prayer',
+  'st-michael',
+  'memorare',
+  'prayer-departed',
+  'prayer-pope'
 ];
 
 class RosaryAudioGenerator {
@@ -417,6 +440,25 @@ class RosaryAudioGenerator {
   }
 
   /**
+   * Generate all final prayers for a voice
+   */
+  async generateFinalPrayers(voiceName, options = {}) {
+    console.log(`\n🙏 Generating all final prayers for ${voiceName}...\n`);
+    
+    const results = [];
+    for (const prayerName of FINAL_PRAYERS) {
+      const result = await this.generatePrayer(voiceName, prayerName, options);
+      results.push({ prayer: prayerName, ...result });
+      
+      if (options.delay && FINAL_PRAYERS.indexOf(prayerName) < FINAL_PRAYERS.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, options.delay));
+      }
+    }
+    
+    return results;
+  }
+
+  /**
    * Generate all 5 decades of a specific mystery set (e.g., all Joyful mysteries)
    */
   async generateMysterySet(voiceName, mysteryType, options = {}) {
@@ -596,6 +638,9 @@ async function main() {
       case '--all-prayers':
         options.allPrayers = true;
         break;
+      case '--final-prayers':
+        options.finalPrayers = true;
+        break;
       case '--all-mysteries':
         options.allMysteries = true;
         break;
@@ -677,6 +722,11 @@ async function main() {
         overwrite: options.overwrite,
         delay: options.delay
       });
+    } else if (options.finalPrayers) {
+      results = await generator.generateFinalPrayers(options.voice, {
+        overwrite: options.overwrite,
+        delay: options.delay
+      });
     } else if (options.allMysteries) {
       results = await generator.generateAllMysteries(options.voice, {
         overwrite: options.overwrite,
@@ -740,6 +790,7 @@ Options:
   --decade <number>       Decade number (1-5, use with --mystery)
   --mystery-set <type>    Generate all 5 decades of a mystery set (joyful, sorrowful, glorious, luminous)
   --all-prayers           Generate all core prayers
+  --final-prayers         Generate all final prayers (7 prayers)
   --all-mysteries         Generate all mystery decades (full version)
   --all-short-mysteries   Generate all short mystery decades
   --short                 Generate short version (use with --mystery, --mystery-set, or --all-mysteries)
@@ -771,6 +822,9 @@ Examples:
 
   # Generate all prayers for one voice
   node scripts/generate-rosary-audio.js --voice teresa --all-prayers
+
+  # Generate all final prayers for one voice
+  node scripts/generate-rosary-audio.js --voice alphonsus --final-prayers
 
   # Generate all full mysteries
   node scripts/generate-rosary-audio.js --voice alphonsus --all-mysteries

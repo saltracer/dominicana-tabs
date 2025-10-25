@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Colors } from '../../constants/Colors';
 import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropdown.web';
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle.web';
+import RosaryFinalPrayersEditor from '../../components/RosaryFinalPrayersEditor.web';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 
 export default function PrayerSettingsScreen() {
@@ -182,6 +183,43 @@ export default function PrayerSettingsScreen() {
                 icon="speedometer"
               />
             )}
+
+            {/* Rosary Section */}
+            <Text style={[styles.subsectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Rosary
+            </Text>
+
+            <LiturgyPreferencesDropdown
+              label="Rosary Voice"
+              description="Select the narrator voice for audio-guided rosary"
+              value={liturgyPreferences.rosary_voice || 'alphonsus'}
+              options={[
+                { label: 'Alphonsus', value: 'alphonsus' },
+                { label: 'Catherine', value: 'catherine' },
+              ]}
+              onValueChange={(value) => updateLiturgyPreference('rosary_voice', value)}
+              icon="mic-outline"
+            />
+
+            <LiturgyPreferencesToggle
+              label="Show Mystery Meditations"
+              description="Display full meditations or brief announcements"
+              value={liturgyPreferences.show_mystery_meditations ?? true}
+              onValueChange={(value) => updateLiturgyPreference('show_mystery_meditations', value)}
+              icon="book-outline"
+            />
+
+            <RosaryFinalPrayersEditor
+              userId={user.id}
+              initialConfig={liturgyPreferences.rosary_final_prayers || [
+                { id: 'hail_holy_queen', order: 1 },
+                { id: 'versicle_response', order: 2 },
+                { id: 'rosary_prayer', order: 3 }
+              ]}
+              onSave={async (config) => {
+                await updateLiturgyPreference('rosary_final_prayers', config);
+              }}
+            />
           </View>
         </View>
       ) : (

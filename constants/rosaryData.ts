@@ -254,9 +254,43 @@ export const PRAYER_TEXTS = {
   hailMaryHope: 'Hail Mary (for the virtue of Hope)',
   hailMaryCharity: 'Hail Mary (for the virtue of Charity)',
   
+  // Split from existing finalPrayer - Traditional prayers
+  hailHolyQueen: 'Hail, Holy Queen, Mother of Mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve; to thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us, and after this our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary.',
+  hailHolyQueen_audio_text: 'Hail, Holy Queen, Mother of Mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve; to thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us, and after this our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary.',
+
+  versicleResponse: 'V. Pray for us, O Holy Mother of God.\n\nR. That we may be made worthy of the promises of Christ.',
+  versicleResponse_audio_text: 'Pray for us, O Holy Mother of God, that we may be made worthy of the promises of Christ.',
+
+  rosaryPrayer: 'O God, whose only-begotten Son, by His life, death, and resurrection, has purchased for us the rewards of eternal life, grant, we beseech Thee, that meditating upon these mysteries of the Most Holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through the same Christ Our Lord. Amen.',
+  rosaryPrayer_audio_text: 'O God, whose only-begotten Son, by His life, death, and resurrection, has purchased for us the rewards of eternal life, grant, we beseech Thee, that meditating upon these mysteries of the Most Holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through the same Christ Our Lord. Amen.',
+
+  // New optional prayers
+  stMichaelPrayer: 'St. Michael the Archangel, defend us in battle. Be our protection against the wickedness and snares of the devil. May God rebuke him, we humbly pray; and do thou, O Prince of the Heavenly Host, by the power of God, thrust into hell Satan and all the evil spirits who prowl about the world seeking the ruin of souls. Amen.',
+  stMichaelPrayer_audio_text: 'St. Michael the Archangel, defend us in battle. Be our protection against the wickedness and snares of the devil. May God rebuke him, we humbly pray; and do thou, O Prince of the Heavenly Host, by the power of God, thrust into hell Satan and all the evil spirits who prowl about the world seeking the ruin of souls. Amen.',
+
+  memorare: 'Remember, O most gracious Virgin Mary, that never was it known that anyone who fled to thy protection, implored thy help, or sought thy intercession was left unaided. Inspired with this confidence, I fly unto thee, O Virgin of virgins, my Mother. To thee do I come, before thee I stand, sinful and sorrowful. O Mother of the Word Incarnate, despise not my petitions, but in thy mercy hear and answer me. Amen.',
+  memorare_audio_text: 'Remember, O most gracious Virgin Mary, that never was it known that anyone who fled to thy protection, implored thy help, or sought thy intercession was left unaided. Inspired with this confidence, I fly unto thee, O Virgin of virgins, my Mother. To thee do I come, before thee I stand, sinful and sorrowful. O Mother of the Word Incarnate, despise not my petitions, but in thy mercy hear and answer me. Amen.',
+
+  prayerForDeparted: 'Eternal rest grant unto them, O Lord, and let perpetual light shine upon them. May the souls of the faithful departed, through the mercy of God, rest in peace. Amen.',
+  prayerForDeparted_audio_text: 'Eternal rest grant unto them, O Lord, and let perpetual light shine upon them. May the souls of the faithful departed, through the mercy of God, rest in peace. Amen.',
+
+  prayerForPope: 'V. Let us pray for our Holy Father, Pope Leo.\n\nR. May the Lord preserve him, give him life, and make him blessed upon the earth, and deliver him not to the will of his enemies.\n\nV. Let us pray.\n\nR. O God, shepherd and ruler of all the faithful, look down in mercy upon Thy servant, Leo, whom Thou hast appointed to preside over Thy Church. Grant, we beseech Thee, that both by word and example he may edify all those over whom he has charge, so that together with the flock entrusted to him, he may attain everlasting life. Through Christ our Lord. Amen.',
+  prayerForPope_audio_text: 'Let us pray for our Holy Father, Pope Leo. May the Lord preserve him, give him life, and make him blessed upon the earth, and deliver him not to the will of his enemies... Let us pray... O God, shepherd and ruler of all the faithful, look down in mercy upon Thy servant, Leo, whom Thou hast appointed to preside over Thy Church. Grant, we beseech Thee, that both by word and example he may edify all those over whom he has charge, so that together with the flock entrusted to him, he may attain everlasting life. Through Christ our Lord. Amen.',
+
+  // Keep the original finalPrayer for backwards compatibility during transition
   finalPrayer: 'Hail, Holy Queen, Mother of Mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve; to thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us, and after this our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary.\n\nV. Pray for us, O Holy Mother of God.\n\nR. That we may be made worthy of the promises of Christ.\n\nO God, whose only-begotten Son, by His life, death, and resurrection, has purchased for us the rewards of eternal life, grant, we beseech Thee, that meditating upon these mysteries of the Most Holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through the same Christ Our Lord. Amen.',
   finalPrayer_audio_text: 'Hail, Holy Queen, Mother of Mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve; to thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious advocate, thine eyes of mercy toward us, and after this our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary... Pray for us, O Holy Mother of God, that we may be made worthy of the promises of Christ... O God, whose only-begotten Son, by His life, death, and resurrection, has purchased for us the rewards of eternal life, grant, we beseech Thee, that meditating upon these mysteries of the Most Holy Rosary of the Blessed Virgin Mary, we may imitate what they contain and obtain what they promise, through the same Christ Our Lord. Amen.'
 };
+
+export const FINAL_PRAYERS = [
+  { id: 'hail_holy_queen', name: 'Hail, Holy Queen', textKey: 'hailHolyQueen', traditional: true },
+  { id: 'versicle_response', name: 'Versicle & Response', textKey: 'versicleResponse', traditional: true },
+  { id: 'rosary_prayer', name: 'Rosary Prayer', textKey: 'rosaryPrayer', traditional: true },
+  { id: 'st_michael', name: 'Prayer to St. Michael', textKey: 'stMichaelPrayer', traditional: false },
+  { id: 'memorare', name: 'The Memorare', textKey: 'memorare', traditional: false },
+  { id: 'prayer_departed', name: 'Prayer for the Faithful Departed', textKey: 'prayerForDeparted', traditional: false },
+  { id: 'prayer_pope', name: 'Prayer for the Pope', textKey: 'prayerForPope', traditional: false }
+];
 
 export function getTodaysMystery(): MysterySet {
   const today = new Date().getDay();
