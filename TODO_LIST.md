@@ -12,9 +12,10 @@
 - [ ] Vespers or Lauds ... need to prove the design
 - [x] Redesign Rosary
 - [x] Rosary Audio
+- [ ] Rosary on web is not responsive
 - [ ] implement cache invalidation and redownload of audio files -testing phase
-- [ ] Rosary final prayer needs to be split into individual prayers and combined 
-- [ ] Add preferences for final prayers
+- [x] Rosary final prayer needs to be split into individual prayers and combined 
+- [x] Add preferences for final prayers
 - [x] allow specific voices to be clear, obviously 
 - [x] reimplement expo-audio for an iOS/android compatible solution 
 - [x] get audio playback displaying as part of the iOS/android audio experience 

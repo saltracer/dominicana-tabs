@@ -375,6 +375,35 @@ export default function RosaryScreen() {
     }
   };
 
+  // Helper function to check for failed audio files
+  const checkForFailedAudioFiles = async () => {
+    const failedFiles: { beadId: string; title: string; audioFile: string }[] = [];
+    
+    for (const bead of beads) {
+      if (bead.audioFile) {
+        try {
+          // Try to check if the audio file exists/loads
+          const response = await fetch(bead.audioFile, { method: 'HEAD' });
+          if (!response.ok) {
+            failedFiles.push({
+              beadId: bead.id,
+              title: bead.title,
+              audioFile: bead.audioFile
+            });
+          }
+        } catch (error) {
+          failedFiles.push({
+            beadId: bead.id,
+            title: bead.title,
+            audioFile: bead.audioFile
+          });
+        }
+      }
+    }
+    
+    return failedFiles;
+  };
+
   const handleAudioToggle = async () => {
     // Check if user is authenticated before enabling audio
     if (!audioSettings.isEnabled) {
@@ -415,6 +444,13 @@ export default function RosaryScreen() {
         
         setIsAudioPaused(false);
         console.log('[Rosary] Audio queue initialized and playing from current bead');
+        
+        // Check for failed audio files and log them
+        const failedAudioFiles = await checkForFailedAudioFiles();
+        if (failedAudioFiles.length > 0) {
+          console.warn('[Rosary] Failed audio files:', failedAudioFiles);
+          console.warn('[Rosary] Missing audio files:', failedAudioFiles.map(f => f.audioFile).join(', '));
+        }
       } catch (error) {
         console.error('[Rosary] Failed to initialize audio:', error);
         Alert.alert('Audio Error', 'Failed to load audio files. Please try again.');

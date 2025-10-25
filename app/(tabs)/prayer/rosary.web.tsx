@@ -29,7 +29,7 @@ import { bibleService } from '../../../services/BibleService';
 import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryData';
 import { UserLiturgyPreferencesService } from '../../../services/UserLiturgyPreferencesService';
 import { useAuth } from '../../../contexts/AuthContext';
-import { useRosaryAudio } from '../../../hooks/useRosaryAudio';
+import { useRosaryAudio } from '../../../hooks/useRosaryAudio.web';
 import RosaryAudioControls from '../../../components/RosaryAudioControls.web';
 
 export default function RosaryWebScreen() {
@@ -420,6 +420,35 @@ export default function RosaryWebScreen() {
     }
   };
 
+  // Helper function to check for failed audio files
+  const checkForFailedAudioFiles = async () => {
+    const failedFiles: { beadId: string; title: string; audioFile: string }[] = [];
+    
+    for (const bead of beads) {
+      if (bead.audioFile) {
+        try {
+          // Try to check if the audio file exists/loads
+          const response = await fetch(bead.audioFile, { method: 'HEAD' });
+          if (!response.ok) {
+            failedFiles.push({
+              beadId: bead.id,
+              title: bead.title,
+              audioFile: bead.audioFile
+            });
+          }
+        } catch (error) {
+          failedFiles.push({
+            beadId: bead.id,
+            title: bead.title,
+            audioFile: bead.audioFile
+          });
+        }
+      }
+    }
+    
+    return failedFiles;
+  };
+
   const handleAudioToggle = async () => {
     // Check if user is authenticated before enabling audio
     if (!audioSettings.isEnabled) {
@@ -465,6 +494,13 @@ export default function RosaryWebScreen() {
         
         setIsAudioPaused(false);
         console.log('[Rosary Web] Audio queue initialized and playing from current bead');
+        
+        // Check for failed audio files and log them
+        const failedAudioFiles = await checkForFailedAudioFiles();
+        if (failedAudioFiles.length > 0) {
+          console.warn('[Rosary Web] Failed audio files:', failedAudioFiles);
+          console.warn('[Rosary Web] Missing audio files:', failedAudioFiles.map(f => f.audioFile).join(', '));
+        }
       } catch (error) {
         console.error('[Rosary Web] Failed to initialize audio:', error);
         alert('Audio Error: Failed to load audio files. Please try again.');
