@@ -245,32 +245,48 @@ export class RosaryService {
       }
     }
 
-    // Final prayers - multiple beads based on user preferences
+    // Final prayers - single bead on medallion with all selected prayers
     const finalPrayersConfig = finalPrayers || [
       { id: 'hail_holy_queen', order: 1 },
       { id: 'versicle_response', order: 2 },
       { id: 'rosary_prayer', order: 3 }
     ];
 
-    // Sort by order and generate beads
-    finalPrayersConfig
+    // Sort by order and combine all selected prayers into one text
+    const selectedPrayers = finalPrayersConfig
       .sort((a, b) => a.order - b.order)
-      .forEach((prayerConfig) => {
+      .map((prayerConfig) => {
         const prayerMeta = FINAL_PRAYERS.find(p => p.id === prayerConfig.id);
-        if (!prayerMeta) return;
+        if (!prayerMeta) return null;
         
         const textKey = prayerMeta.textKey as keyof typeof PRAYER_TEXTS;
-        
-        beads.push({
-          id: `closing-${prayerConfig.id}`,
-          type: 'our-father',
-          title: prayerMeta.name,
+        return {
+          name: prayerMeta.name,
           text: PRAYER_TEXTS[textKey],
-          order: order++,
-          decadeNumber: 6,
           audioFile: `assets/audio/rosary/${prayerConfig.id}.m4a`
-        });
+        };
+      })
+      .filter(Boolean);
+
+    if (selectedPrayers.length > 0) {
+      // Combine all prayers into one text
+      const combinedText = selectedPrayers
+        .map(prayer => prayer.text)
+        .join('\n\n');
+      
+      // Create single final prayer bead on medallion
+      beads.push({
+        id: 'final-prayers',
+        type: 'our-father', // This represents the medallion
+        title: 'Final Prayers',
+        text: combinedText,
+        order: order++,
+        decadeNumber: 6, // Medallion is at the center
+        audioFile: selectedPrayers.length === 1 
+          ? selectedPrayers[0].audioFile 
+          : 'assets/audio/rosary/final-prayer.m4a' // Use combined audio if multiple prayers
       });
+    }
 
     return beads;
   }
