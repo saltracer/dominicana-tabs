@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +15,7 @@ import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
 import { useLiturgyScroll } from '../../../../hooks/useLiturgyScroll';
+import { useScrollContext } from '../../../../contexts/ScrollContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerNavButtons from '../../../../components/PrayerNavButtons';
@@ -30,6 +32,15 @@ export default function VespersScreen() {
   
   // Scroll behavior for UI hiding/showing
   const { scrollViewRef, handleScroll } = useLiturgyScroll(50);
+  
+  // Test scroll context
+  const { isScrollingDown, shouldHideUI, setScrollingDown } = useScrollContext();
+  
+  // Handle tap to toggle UI visibility
+  const handleTap = () => {
+    console.log('Tap detected! Current shouldHideUI:', shouldHideUI, 'Toggling to:', !shouldHideUI);
+    setScrollingDown(!shouldHideUI);
+  };
 
   if (!liturgicalDay) {
     return (
@@ -54,6 +65,8 @@ export default function VespersScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
+      <TouchableWithoutFeedback onPress={handleTap}>
+        <View style={{ flex: 1 }}>
         {/* Clean Header */}
         <View style={styles.cleanHeader}>
           <TouchableOpacity
@@ -288,6 +301,8 @@ export default function VespersScreen() {
 
         {/* Footer - Web only */}
         {Platform.OS === 'web' && <Footer />}
+        </View>
+      </TouchableWithoutFeedback>
       </ScrollView>
       
       {/* Prayer Hour Picker Modal */}

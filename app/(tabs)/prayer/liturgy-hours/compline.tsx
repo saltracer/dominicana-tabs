@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +15,7 @@ import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
 import { useLiturgyScroll } from '../../../../hooks/useLiturgyScroll';
+import { useScrollContext } from '../../../../contexts/ScrollContext';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerNavButtons from '../../../../components/PrayerNavButtons';
 import SwipeNavigationWrapper from '../../../../components/SwipeNavigationWrapper';
@@ -36,6 +38,15 @@ function ComplineScreenContent() {
   
   // Scroll behavior for UI hiding/showing
   const { scrollViewRef, handleScroll } = useLiturgyScroll(50);
+  
+  // Test scroll context
+  const { isScrollingDown, shouldHideUI, setScrollingDown } = useScrollContext();
+  
+  // Handle tap to toggle UI visibility
+  const handleTap = () => {
+    console.log('Tap detected! Current shouldHideUI:', shouldHideUI, 'Toggling to:', !shouldHideUI);
+    setScrollingDown(!shouldHideUI);
+  };
 
   // Early return if theme is not available
   if (!theme) {
@@ -128,6 +139,8 @@ function ComplineScreenContent() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
+      <TouchableWithoutFeedback onPress={handleTap}>
+        <View style={{ flex: 1 }}>
         {/* Clean Header */}
         <View style={styles.cleanHeader}>
           <TouchableOpacity
@@ -374,6 +387,8 @@ function ComplineScreenContent() {
 
         {/* Footer - Web only */}
         {Platform.OS === 'web' && <Footer />}
+        </View>
+      </TouchableWithoutFeedback>
       </ScrollView>
       
       {/* Prayer Hour Picker Modal */}

@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +14,8 @@ import { router } from 'expo-router';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { useCalendar } from '../../../../components/CalendarContext';
+import { useLiturgyScroll } from '../../../../hooks/useLiturgyScroll';
+import { useScrollContext } from '../../../../contexts/ScrollContext';
 import FeastBanner from '../../../../components/FeastBanner';
 import PrayerNavigation from '../../../../components/PrayerNavigation';
 import PrayerNavButtons from '../../../../components/PrayerNavButtons';
@@ -26,6 +29,18 @@ export default function SextScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
   const [showQuickPicker, setShowQuickPicker] = useState(false);
+  
+  // Scroll behavior for UI hiding/showing
+  const { scrollViewRef, handleScroll } = useLiturgyScroll(50);
+  
+  // Test scroll context
+  const { isScrollingDown, shouldHideUI, setScrollingDown } = useScrollContext();
+  
+  // Handle tap to toggle UI visibility
+  const handleTap = () => {
+    console.log('Tap detected! Current shouldHideUI:', shouldHideUI, 'Toggling to:', !shouldHideUI);
+    setScrollingDown(!shouldHideUI);
+  };
 
   if (!liturgicalDay) {
     return (
@@ -42,7 +57,16 @@ export default function SextScreen() {
   return (
     <SwipeNavigationWrapper currentHour="sext">
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right', 'top', 'bottom']}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView 
+        ref={scrollViewRef}
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120 }}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+      <TouchableWithoutFeedback onPress={handleTap}>
+        <View style={{ flex: 1 }}>
         {/* Clean Header */}
         <View style={styles.cleanHeader}>
           <TouchableOpacity
@@ -242,6 +266,8 @@ export default function SextScreen() {
 
         {/* Footer - Web only */}
         {Platform.OS === 'web' && <Footer />}
+        </View>
+      </TouchableWithoutFeedback>
       </ScrollView>
       
       {/* Prayer Hour Picker Modal */}
