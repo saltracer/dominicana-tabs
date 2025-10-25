@@ -26,7 +26,7 @@
 - [ ] Only show audio button for pages/books/rosary mysteris that have audio
 - [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
 - [ ] text highlighting as the audio is read
-- [ ] Redesign Prayer section navigation on native
+- [x] Redesign Prayer section navigation on native
 
 
 ## Study
