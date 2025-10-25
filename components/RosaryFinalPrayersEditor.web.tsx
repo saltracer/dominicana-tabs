@@ -109,6 +109,13 @@ export default function RosaryFinalPrayersEditor({
 
       await onSave(enabledPrayers);
       setHasChanges(false);
+      
+      // Dispatch custom event to notify rosary screen of changes
+      const event = new CustomEvent('rosaryPreferencesChanged', {
+        detail: { type: 'rosary_final_prayers', config: enabledPrayers }
+      });
+      window.dispatchEvent(event);
+      
       Alert.alert('Success', 'Final prayers saved successfully');
     } catch (error) {
       console.error('Error saving final prayers:', error);

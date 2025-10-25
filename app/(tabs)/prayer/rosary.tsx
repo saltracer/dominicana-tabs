@@ -212,6 +212,8 @@ export default function RosaryScreen() {
     if (user?.id) {
       try {
         const prefs = await UserLiturgyPreferencesService.getUserPreferences(user.id);
+        console.log('[Rosary Native] Loading preferences:', prefs?.rosary_final_prayers);
+        
         if (prefs?.rosary_voice) {
           setRosaryVoice(prefs.rosary_voice);
         }
@@ -221,6 +223,7 @@ export default function RosaryScreen() {
         setPlaybackSpeed(prefs?.audio_playback_speed ?? 1.0);
         // Load final prayers configuration (default to traditional 3 prayers if not set)
         if (prefs?.rosary_final_prayers) {
+          console.log('[Rosary Native] Setting final prayers config:', prefs.rosary_final_prayers);
           setFinalPrayersConfig(prefs.rosary_final_prayers);
         }
       } catch (error) {
@@ -235,6 +238,33 @@ export default function RosaryScreen() {
       loadUserPreferences();
     }, [loadUserPreferences])
   );
+
+  // Refresh preferences when user returns from profile settings
+  // This is more efficient than polling and only triggers when needed
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.id) {
+        // Small delay to ensure profile changes have been saved
+        setTimeout(() => {
+          loadUserPreferences();
+        }, 1000);
+      }
+    };
+
+    // Listen for visibility changes (when user returns to tab)
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+    
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
+    };
+  }, [user?.id, loadUserPreferences]);
+
+  // For native, we rely on useFocusEffect to refresh when user returns to screen
+  // This is more efficient than polling and works well with React Navigation
 
   const loadBibleVerse = async (decadeNumber: number) => {
     setLoadingVerse(true);

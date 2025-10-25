@@ -247,6 +247,8 @@ export default function RosaryWebScreen() {
     if (user?.id) {
       try {
         const prefs = await UserLiturgyPreferencesService.getUserPreferences(user.id);
+        console.log('[Rosary Web] Loading preferences:', prefs?.rosary_final_prayers);
+        
         if (prefs?.rosary_voice) {
           setRosaryVoice(prefs.rosary_voice);
         }
@@ -256,6 +258,7 @@ export default function RosaryWebScreen() {
         setPlaybackSpeed(prefs?.audio_playback_speed ?? 1.0);
         // Load final prayers configuration (default to traditional 3 prayers if not set)
         if (prefs?.rosary_final_prayers) {
+          console.log('[Rosary Web] Setting final prayers config:', prefs.rosary_final_prayers);
           setFinalPrayersConfig(prefs.rosary_final_prayers);
         }
       } catch (error) {
@@ -270,6 +273,54 @@ export default function RosaryWebScreen() {
       loadUserPreferences();
     }, [loadUserPreferences])
   );
+
+  // Refresh preferences when user returns from profile settings
+  // Use multiple detection methods for better reliability on web
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.id) {
+        // Small delay to ensure profile changes have been saved
+        setTimeout(() => {
+          loadUserPreferences();
+        }, 1000);
+      }
+    };
+
+    const handleFocus = () => {
+      if (user?.id) {
+        // Small delay to ensure profile changes have been saved
+        setTimeout(() => {
+          loadUserPreferences();
+        }, 1000);
+      }
+    };
+
+    // Listen for multiple events to catch user returning from profile
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user?.id, loadUserPreferences]);
+
+  // Listen for custom preference change events
+  useEffect(() => {
+    const handlePreferenceChange = (event: CustomEvent) => {
+      if (event.detail?.type === 'rosary_final_prayers' && user?.id) {
+        console.log('[Rosary Web] Preference change detected, reloading...');
+        loadUserPreferences();
+      }
+    };
+
+    // Listen for custom events from profile settings
+    window.addEventListener('rosaryPreferencesChanged', handlePreferenceChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('rosaryPreferencesChanged', handlePreferenceChange as EventListener);
+    };
+  }, [user?.id, loadUserPreferences]);
 
   const loadBibleVerse = async (decadeNumber: number) => {
     setLoadingVerse(true);

@@ -108,6 +108,10 @@ export default function RosaryFinalPrayersEditor({
 
       await onSave(enabledPrayers);
       setHasChanges(false);
+      
+      // For native, the useFocusEffect in rosary screen will handle refresh
+      // when user navigates back from profile settings
+      
       Alert.alert('Success', 'Final prayers saved successfully');
     } catch (error) {
       console.error('Error saving final prayers:', error);
