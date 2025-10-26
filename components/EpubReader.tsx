@@ -47,6 +47,10 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [showAnnotationsList, setShowAnnotationsList] = useState(false);
   const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(null);
+  
+  // FAB visibility state (sync with ReadiumView header)
+  const [showFab, setShowFab] = useState(false);
+  const fabTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced progress saving
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,6 +89,33 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       return () => clearTimeout(timer);
     }
   }, [navigationTarget]);
+
+  // Handle FAB visibility (sync with ReadiumView header behavior)
+  const handleReaderTap = () => {
+    // Toggle FAB visibility on tap
+    setShowFab(prev => !prev);
+    
+    // Clear existing timeout
+    if (fabTimeoutRef.current) {
+      clearTimeout(fabTimeoutRef.current);
+    }
+    
+    // If FAB is now visible, set timer to hide it after 3 seconds
+    if (!showFab) {
+      fabTimeoutRef.current = setTimeout(() => {
+        setShowFab(false);
+      }, 3000);
+    }
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (fabTimeoutRef.current) {
+        clearTimeout(fabTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Track if current page is bookmarked (re-compute when location or bookmarks change)
   const [isPageBookmarked, setIsPageBookmarked] = useState(false);
@@ -608,25 +639,30 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
           </View>
         )}
         
-        <ReadiumView 
-          ref={(ref: any) => {
-            if (ref && !readiumViewRef) {
-              setReadiumViewRef(ref);
-            }
-          }}
-          file={{ 
-            url: localFilePath,
-            initialLocation: initialLocation
-          }}
-          location={navigationTarget} // Use location prop for navigation
+        <TouchableOpacity 
           style={styles.readiumView}
-          preferences={{
-            // fontSize: 100, // Default font size percentage
-            // fontFamily: 'serif',
-            // pageMargins: 15, // Page margins
-            theme: colorScheme === 'dark' ? 'dark' : 'light',
-          }}
-          onLocationChange={(locator) => {
+          onPress={handleReaderTap}
+          activeOpacity={1}
+        >
+          <ReadiumView 
+            ref={(ref: any) => {
+              if (ref && !readiumViewRef) {
+                setReadiumViewRef(ref);
+              }
+            }}
+            file={{ 
+              url: localFilePath,
+              initialLocation: initialLocation
+            }}
+            location={navigationTarget} // Use location prop for navigation
+            style={styles.readiumView}
+            preferences={{
+              // fontSize: 100, // Default font size percentage
+              // fontFamily: 'serif',
+              // pageMargins: 15, // Page margins
+              theme: colorScheme === 'dark' ? 'dark' : 'light',
+            }}
+            onLocationChange={(locator) => {
           const newHref = locator?.href;
           const oldHref = currentLocation?.href;
           const newProgression = locator?.locations?.totalProgression || 0;
@@ -670,6 +706,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
         console.log('Table of contents loaded:', toc);
       }}
         />
+        </TouchableOpacity>
       </View>
 
       {/* Annotation Overlay - Outside main container for proper z-index */}
@@ -680,6 +717,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
           onRemoveBookmark={handleRemoveBookmark}
           onAddHighlight={handleAddHighlight}
           onViewAnnotations={handleViewAnnotations}
+          visible={showFab}
         />
       </View>
 

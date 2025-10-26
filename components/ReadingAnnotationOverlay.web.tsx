@@ -16,6 +16,7 @@ interface ReadingAnnotationOverlayProps {
   onAddHighlight: () => void;
   onViewAnnotations: () => void;
   disabled?: boolean;
+  visible?: boolean;
 }
 
 export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> = ({
@@ -25,6 +26,7 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
   onAddHighlight,
   onViewAnnotations,
   disabled = false,
+  visible = true,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -64,6 +66,11 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
     },
   ];
 
+  // Don't render if not visible
+  if (!visible) {
+    return null;
+  }
+
   return (
     <View style={[styles.container, disabled && styles.disabled]}>
       {/* Action Buttons (shown when expanded) */}
@@ -86,7 +93,7 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
         style={[
           styles.fab,
           { 
-            backgroundColor: colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.94)' : 'rgba(140, 21, 21, 0.94)',
+            backgroundColor: colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.4)' : 'rgba(140, 21, 21, 0.4)',
           }
         ]}
         onPress={toggleExpanded}

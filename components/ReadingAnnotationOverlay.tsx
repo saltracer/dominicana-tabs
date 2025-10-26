@@ -18,6 +18,7 @@ interface ReadingAnnotationOverlayProps {
   onAddHighlight: () => void;
   onViewAnnotations: () => void;
   disabled?: boolean;
+  visible?: boolean;
 }
 
 export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> = ({
@@ -27,6 +28,7 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
   onAddHighlight,
   onViewAnnotations,
   disabled = false,
+  visible = true,
 }) => {
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -82,6 +84,11 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
       label: 'View All',
     },
   ];
+
+  // Don't render if not visible
+  if (!visible) {
+    return null;
+  }
 
   return (
     <View style={[styles.container, disabled && styles.disabled]} pointerEvents={disabled ? 'none' : 'auto'}>
@@ -140,12 +147,12 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
         style={[
           styles.fab,
           { 
-            backgroundColor: colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.94)' : 'rgba(140, 21, 21, 0.94)',
+            backgroundColor: colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.4)' : 'rgba(140, 21, 21, 0.4)',
             shadowColor: colors.primary,
           }
         ]}
         onPress={toggleExpanded}
-        activeOpacity={0.9}
+        activeOpacity={1}
       >
         <Animated.View
           style={{
@@ -187,8 +194,8 @@ const styles = StyleSheet.create({
     zIndex: 1, // Below action buttons (10) but above everything else
   },
   fab: {
-    width: 56,
-    height: 56,
+    width: 50,
+    height: 50,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
