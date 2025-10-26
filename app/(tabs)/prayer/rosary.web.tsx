@@ -421,32 +421,13 @@ export default function RosaryWebScreen() {
   };
 
   // Helper function to check for failed audio files
-  const checkForFailedAudioFiles = async () => {
-    const failedFiles: { beadId: string; title: string; audioFile: string }[] = [];
-    
-    for (const bead of beads) {
-      if (bead.audioFile) {
-        try {
-          // Try to check if the audio file exists/loads
-          const response = await fetch(bead.audioFile, { method: 'HEAD' });
-          if (!response.ok) {
-            failedFiles.push({
-              beadId: bead.id,
-              title: bead.title,
-              audioFile: bead.audioFile
-            });
-          }
-        } catch (error) {
-          failedFiles.push({
-            beadId: bead.id,
-            title: bead.title,
-            audioFile: bead.audioFile
-          });
-        }
-      }
-    }
-    
-    return failedFiles;
+  const checkForFailedAudioFiles = async (): Promise<{ beadId: string; title: string; audioFile: string }[]> => {
+    // On web, we don't check for failed audio files because:
+    // 1. We use signed Supabase URLs which are generated on-demand
+    // 2. The bead.audioFile contains internal paths, not the actual signed URLs
+    // 3. The audio service already handles failed URLs during queue building
+    console.log('[Rosary Web] Skipping audio file check (web uses signed URLs)');
+    return [];
   };
 
   const handleAudioToggle = async () => {

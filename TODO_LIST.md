@@ -26,7 +26,7 @@
 - [x] a voice for Francis de Sales
 - [x] a voice for Hildegard
 - [ ] generate the rosary audio for the different voices
-- [ ] Only show audio button for pages/books/rosary mysteris that have audio
+- [ ] Only show audio button for pages/books/rosary mysterys that have audio
 - [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
 - [ ] text highlighting as the audio is read
 - [x] Redesign Prayer section navigation on native
