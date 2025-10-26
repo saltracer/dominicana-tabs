@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +37,13 @@ export default function RosaryWebScreen() {
   const { colorScheme } = useTheme();
   const { liturgicalDay } = useCalendar();
   const { user } = useAuth();
+  const { width } = useWindowDimensions();
+  
+  // Responsive breakpoints (matching saints and calendar pages)
+  const isMobile = width < 768;
+  const isTablet = width >= 768 && width < 1024;
+  const isDesktop = width >= 1024;
+  const isWide = width >= 1440;
   
   // State management
   const [selectedMystery, setSelectedMystery] = useState<MysterySet>(getTodaysMystery());
@@ -663,9 +671,11 @@ export default function RosaryWebScreen() {
           <Text style={[styles.toolbarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
             {rosaryForm === 'dominican' ? 'Dominican' : 'Standard'} Rosary
           </Text>
-          <Text style={[styles.toolbarSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            {selectedMystery} • {progress}% • Use ← → arrow keys
-          </Text>
+          {!isMobile && (
+            <Text style={[styles.toolbarSubtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              {selectedMystery} • {progress}% • Use ← → arrow keys
+            </Text>
+          )}
         </View>
 
         <View style={styles.toolbarRight}>
@@ -698,78 +708,89 @@ export default function RosaryWebScreen() {
         />
       </View>
 
-      {/* 3-Column Desktop Layout */}
+      {/* Desktop/Tablet/Mobile Layout */}
       <View style={styles.desktopContainer}>
-        {/* Left Sidebar: Decade Navigation & Progress */}
-        <View style={[styles.leftSidebar, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-          <View style={styles.sidebarSection}>
-            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Decades
-            </Text>
-            <View style={styles.decadeGrid}>
-              {[1, 2, 3, 4, 5].map(decade => (
-                <TouchableOpacity
-                  key={decade}
-                  style={[
-                    styles.decadeGridButton,
-                    {
-                      backgroundColor: getCurrentDecade() === decade
-                        ? Colors[colorScheme ?? 'light'].primary
-                        : Colors[colorScheme ?? 'light'].card,
-                    },
-                  ]}
-                  onPress={() => jumpToDecade(decade)}
-                >
-                  <Text
+        {/* Left Sidebar: Decade Navigation & Progress (hidden on mobile) */}
+        {isDesktop && (
+          <View style={[styles.leftSidebar, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Decades
+              </Text>
+              <View style={styles.decadeGrid}>
+                {[1, 2, 3, 4, 5].map(decade => (
+                  <TouchableOpacity
+                    key={decade}
                     style={[
-                      styles.decadeGridText,
+                      styles.decadeGridButton,
                       {
-                        color: getCurrentDecade() === decade
-                          ? Colors[colorScheme ?? 'light'].dominicanWhite
-                          : Colors[colorScheme ?? 'light'].text,
+                        backgroundColor: getCurrentDecade() === decade
+                          ? Colors[colorScheme ?? 'light'].primary
+                          : Colors[colorScheme ?? 'light'].card,
                       },
                     ]}
+                    onPress={() => jumpToDecade(decade)}
                   >
-                    {decade}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.decadeGridText,
+                        {
+                          color: getCurrentDecade() === decade
+                            ? Colors[colorScheme ?? 'light'].dominicanWhite
+                            : Colors[colorScheme ?? 'light'].text,
+                        },
+                      ]}
+                    >
+                      {decade}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
 
-          <View style={styles.sidebarSection}>
-            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Progress
-            </Text>
-            <View style={styles.progressCircle}>
-              <Text style={[styles.progressPercentage, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                {progress}%
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Progress
+              </Text>
+              <View style={styles.progressCircle}>
+                <Text style={[styles.progressPercentage, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                  {progress}%
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.sidebarSection}>
+              <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Shortcuts
+              </Text>
+              <Text style={[styles.shortcutText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                ← → Navigate{'\n'}
+                1-5 Jump Decade{'\n'}
+                Space Audio{'\n'}
+                Esc Exit
               </Text>
             </View>
           </View>
-
-          <View style={styles.sidebarSection}>
-            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Shortcuts
-            </Text>
-            <Text style={[styles.shortcutText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              ← → Navigate{'\n'}
-              1-5 Jump Decade{'\n'}
-              Space Audio{'\n'}
-              Esc Exit
-            </Text>
-          </View>
-        </View>
+        )}
 
         {/* Center: Prayer Content */}
         <View style={styles.centerContent}>
           <ScrollView 
             style={styles.prayerScroll}
-            contentContainerStyle={styles.prayerScrollContent}
+            contentContainerStyle={
+              isMobile 
+                ? styles.prayerScrollContentMobile 
+                : isTablet 
+                ? styles.prayerScrollContentTablet 
+                : styles.prayerScrollContent
+            }
           >
             {currentBead && (
               <View>
-                <Text style={[styles.prayerTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                <Text style={[
+                  isMobile ? styles.prayerTitleMobile : isTablet ? styles.prayerTitleTablet : styles.prayerTitle, 
+                  { color: Colors[colorScheme ?? 'light'].text }
+                ]}>
                   {currentBead.title}
                 </Text>
                 {(currentBead.decadeNumber ?? 0) > 0 && (currentBead.decadeNumber ?? 0) <= 5 && (
@@ -860,18 +881,20 @@ export default function RosaryWebScreen() {
           </View>
         </View>
 
-        {/* Right Sidebar: Full Bead Visualization */}
-        <View style={[styles.rightSidebar, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-          <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Rosary Beads
-          </Text>
-          <BeadCounter
-            beads={beads}
-            currentBeadId={currentBeadId}
-            completedBeadIds={completedBeadIds}
-            onBeadPress={navigateToBead}
-          />
-        </View>
+        {/* Right Sidebar: Full Bead Visualization (tablet and desktop only) */}
+        {(isTablet || isDesktop) && (
+          <View style={[styles.rightSidebar, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <Text style={[styles.sidebarTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Rosary Beads
+            </Text>
+            <BeadCounter
+              beads={beads}
+              currentBeadId={currentBeadId}
+              completedBeadIds={completedBeadIds}
+              onBeadPress={navigateToBead}
+            />
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -1091,8 +1114,34 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
+  prayerScrollContentMobile: {
+    padding: 16,
+    maxWidth: '100%',
+    alignSelf: 'center',
+    width: '100%',
+  },
+  prayerScrollContentTablet: {
+    padding: 24,
+    maxWidth: 900,
+    alignSelf: 'center',
+    width: '100%',
+  },
   prayerTitle: {
     fontSize: 28,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  prayerTitleMobile: {
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  prayerTitleTablet: {
+    fontSize: 26,
     fontWeight: '700',
     fontFamily: 'Georgia',
     marginBottom: 20,
