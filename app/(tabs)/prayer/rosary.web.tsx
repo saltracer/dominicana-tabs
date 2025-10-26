@@ -102,7 +102,16 @@ export default function RosaryWebScreen() {
   // Navigation callbacks - with audio, skip tracks in queue; without audio, manual navigation
   const nextBead = useCallback(() => {
     if (audioSettings.isEnabled) {
+      // Skip audio to next track
       rosaryAudio.skipToNext();
+      
+      // Also manually advance the visual bead immediately
+      const next = rosaryService.getNextBead(beads, currentBeadId);
+      if (next) {
+        console.log('[Rosary Web] Manually advancing bead from', currentBeadId, 'to', next.id);
+        setCompletedBeadIds([...completedBeadIds, currentBeadId]);
+        setCurrentBeadId(next.id);
+      }
     } else {
       const next = rosaryService.getNextBead(beads, currentBeadId);
       if (next) {
@@ -114,7 +123,16 @@ export default function RosaryWebScreen() {
 
   const previousBead = useCallback(() => {
     if (audioSettings.isEnabled) {
+      // Skip audio to previous track
       rosaryAudio.skipToPrevious();
+      
+      // Also manually go back to the previous visual bead immediately
+      const prev = rosaryService.getPreviousBead(beads, currentBeadId);
+      if (prev) {
+        console.log('[Rosary Web] Manually going back to bead', prev.id);
+        setCompletedBeadIds(completedBeadIds.filter(id => id !== currentBeadId && id !== prev.id));
+        setCurrentBeadId(prev.id);
+      }
     } else {
       const prev = rosaryService.getPreviousBead(beads, currentBeadId);
       if (prev) {

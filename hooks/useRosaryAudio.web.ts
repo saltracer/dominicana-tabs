@@ -425,11 +425,28 @@ export function useRosaryAudio({
     try {
       await TrackPlayer.skipToNext();
       console.log('[useRosaryAudio Web] Skipped to next track');
+      
+      // Manually trigger track change update after skip
+      setTimeout(async () => {
+        try {
+          const activeTrack = await TrackPlayer.getActiveTrack();
+          console.log('[useRosaryAudio Web] Active track after skip:', activeTrack?.index);
+          if (activeTrack?.index !== undefined && onTrackChange) {
+            const beadId = beadIdMapRef.current.get(activeTrack.index);
+            if (beadId) {
+              console.log('[useRosaryAudio Web] Manually triggering onTrackChange for bead:', beadId);
+              onTrackChange(beadId, activeTrack.index);
+            }
+          }
+        } catch (err) {
+          console.warn('[useRosaryAudio Web] Failed to get active track after skip:', err);
+        }
+      }, 50);
     } catch (error) {
       console.error('[useRosaryAudio Web] Failed to skip to next:', error);
       throw error;
     }
-  }, []);
+  }, [onTrackChange]);
 
   /**
    * Skip to previous track
@@ -438,11 +455,28 @@ export function useRosaryAudio({
     try {
       await TrackPlayer.skipToPrevious();
       console.log('[useRosaryAudio Web] Skipped to previous track');
+      
+      // Manually trigger track change update after skip
+      setTimeout(async () => {
+        try {
+          const activeTrack = await TrackPlayer.getActiveTrack();
+          console.log('[useRosaryAudio Web] Active track after skip:', activeTrack?.index);
+          if (activeTrack?.index !== undefined && onTrackChange) {
+            const beadId = beadIdMapRef.current.get(activeTrack.index);
+            if (beadId) {
+              console.log('[useRosaryAudio Web] Manually triggering onTrackChange for bead:', beadId);
+              onTrackChange(beadId, activeTrack.index);
+            }
+          }
+        } catch (err) {
+          console.warn('[useRosaryAudio Web] Failed to get active track after skip:', err);
+        }
+      }, 50);
     } catch (error) {
       console.error('[useRosaryAudio Web] Failed to skip to previous:', error);
       throw error;
     }
-  }, []);
+  }, [onTrackChange]);
 
   /**
    * Skip to specific track index
