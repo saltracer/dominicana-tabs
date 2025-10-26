@@ -4,11 +4,15 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { useTheme } from '../../../components/ThemeProvider';
 import { useProfilePanel } from '../../../contexts/ProfilePanelContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useRouter } from 'expo-router';
 import { Colors } from '../../../constants/Colors';
 
 export default function PreachingLayout() {
   const { colorScheme } = useTheme();
   const { openPanel } = useProfilePanel();
+  const { user } = useAuth();
+  const router = useRouter();
   
   // Memoize header components to prevent re-renders
   const headerLeftComponent = useMemo(() => (
@@ -31,7 +35,13 @@ export default function PreachingLayout() {
 
   const headerRightComponent = useMemo(() => (
     <TouchableOpacity 
-      onPress={() => openPanel('quick')}
+      onPress={() => {
+        if (user) {
+          openPanel('quick');
+        } else {
+          router.push('/auth');
+        }
+      }}
       style={{ marginRight: 15 }}
       activeOpacity={0.6}
     >
@@ -41,7 +51,7 @@ export default function PreachingLayout() {
         color={Colors[colorScheme ?? 'light'].text}
       />
     </TouchableOpacity>
-  ), [colorScheme, openPanel]);
+  ), [colorScheme, openPanel, user, router]);
   
   return (
     <Stack
