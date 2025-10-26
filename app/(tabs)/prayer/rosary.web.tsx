@@ -233,6 +233,9 @@ export default function RosaryWebScreen() {
         // Rebuild the queue with new settings
         await rosaryAudio.initializeQueue();
         
+        // Re-apply playback speed after queue rebuild
+        await rosaryAudio.setSpeed(playbackSpeed);
+        
         // Try to resume at a similar position (or restart if not possible)
         if (currentTrackIndex > 0 && currentTrackIndex < beads.length) {
           console.log('[Rosary Web] Attempting to resume at track', currentTrackIndex);
@@ -256,9 +259,20 @@ export default function RosaryWebScreen() {
     selectedMystery, // Joyful, Sorrowful, etc.
     rosaryVoice, // Voice selection
     isLentSeason, // Affects Alleluia
-    finalPrayersConfig, // Final prayers configuration
+    // Note: finalPrayersConfig is excluded - it only changes when user modifies preferences, which triggers profile refresh
     // Note: Don't include audioSettings.isEnabled or isPraying to avoid infinite loop
+    // Note: playbackSpeed is not included here - it's applied separately in the effect below
   ]);
+
+  // Apply playback speed when it changes (if audio is enabled and playing)
+  useEffect(() => {
+    const applySpeed = async () => {
+      if (audioSettings.isEnabled && rosaryAudio) {
+        await rosaryAudio.setSpeed(playbackSpeed);
+      }
+    };
+    applySpeed();
+  }, [playbackSpeed, audioSettings.isEnabled, rosaryAudio]);
 
   // Load user's rosary preferences
   const loadUserPreferences = useCallback(async () => {
@@ -390,11 +404,17 @@ export default function RosaryWebScreen() {
     setIsAudioPaused(false);
   };
 
-  const navigateToBead = (beadId: string) => {
+  const navigateToBead = async (beadId: string) => {
     setCurrentBeadId(beadId);
     const currentIndex = beads.findIndex(b => b.id === beadId);
     const completedIds = beads.slice(0, currentIndex).map(b => b.id);
     setCompletedBeadIds(completedIds);
+    
+    // If audio is enabled, also jump to that bead in the audio queue
+    if (audioSettings.isEnabled) {
+      console.log('[Rosary Web] Jumping audio to bead:', beadId);
+      await rosaryAudio.skipToBead(beadId);
+    }
   };
 
 
