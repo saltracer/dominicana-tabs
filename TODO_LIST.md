@@ -3,8 +3,8 @@
 ## Profiles
 - [x] Redesign the prefences page, as the organization doesn't make sense and not all of them are used. The initial idea is that they would be organized by "section"of the app (eg prayer, study, etc)
 - [x] On the web, the profile page should be a menu dropdown, not a page modal
-- [ ] The native (and check web) needs to support login via the profile button
-- [ ] When logged in, the profile button should be "primary" in color. When logged out it should be "grey".
+- [x] The native (and check web) needs to support login via the profile button
+- [x] When logged in, the profile button should be "primary" in color. When logged out it should be "grey".
 
 ## Prayer
 - [ ] More content

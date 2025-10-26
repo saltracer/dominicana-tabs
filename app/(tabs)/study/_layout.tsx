@@ -49,7 +49,7 @@ export default function StudyLayout() {
       <Ionicons
         name="person-circle"
         size={28}
-        color={Colors[colorScheme ?? 'light'].text}
+        color={user ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].text}
       />
     </TouchableOpacity>
   ), [colorScheme, openPanel, user, router]);
