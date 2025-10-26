@@ -95,7 +95,6 @@ export default function RosaryWebScreen() {
       console.log('[Rosary Web] Queue complete - Rosary finished!');
       setIsPraying(false);
       setAudioSettings(prev => ({ ...prev, isEnabled: false }));
-      alert('Rosary Complete! You have completed the rosary. May God bless you!');
     },
   });
 

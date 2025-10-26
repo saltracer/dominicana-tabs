@@ -260,19 +260,25 @@ export class RosaryService {
         if (!prayerMeta) return null;
         
         const textKey = prayerMeta.textKey as keyof typeof PRAYER_TEXTS;
+        // Convert prayer ID to audio filename (underscores to hyphens)
+        const audioFileName = prayerConfig.id.replace(/_/g, '-');
         return {
           name: prayerMeta.name,
           text: PRAYER_TEXTS[textKey],
-          audioFile: `assets/audio/rosary/${prayerConfig.id}.m4a`
+          audioFile: `assets/audio/rosary/${audioFileName}.m4a`
         };
       })
-      .filter(Boolean);
+      .filter((prayer): prayer is NonNullable<typeof prayer> => prayer !== null);
 
     if (selectedPrayers.length > 0) {
       // Combine all prayers into one text
       const combinedText = selectedPrayers
         .map(prayer => prayer.text)
         .join('\n\n');
+      
+      // For audio, we need to generate a combined audio file
+      // Use a special identifier that includes all selected prayers
+      const audioFiles = selectedPrayers.map(p => p.audioFile).join('|');
       
       // Create single final prayer bead on medallion
       beads.push({
@@ -284,7 +290,7 @@ export class RosaryService {
         decadeNumber: 6, // Medallion is at the center
         audioFile: selectedPrayers.length === 1 
           ? selectedPrayers[0].audioFile 
-          : 'assets/audio/rosary/final-prayer.m4a' // Use combined audio if multiple prayers
+          : `assets/audio/rosary/combined:${audioFiles}` // Indicate multiple audio files to combine
       });
     }
 

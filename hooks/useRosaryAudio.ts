@@ -260,6 +260,35 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
         continue; // Skip normal processing for this bead
       }
       
+      // Check if this is a combined audio (multiple prayers)
+      if (audioFile.startsWith('assets/audio/rosary/combined:')) {
+        // Extract individual audio files
+        const audioFileList = audioFile.replace('assets/audio/rosary/combined:', '').split('|');
+        console.log('[useRosaryAudio] Creating combined audio from:', audioFileList);
+        
+        // Add each individual audio file as a separate track
+        // TrackPlayer will play them sequentially
+        for (const individualAudio of audioFileList) {
+          const uri = await RosaryAudioDownloadService.getAudioFileUri(voice, individualAudio);
+          if (uri) {
+            tracks.push({
+              url: uri,
+              title: bead.title, // Keep the combined title
+              artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
+              album: mysteryName,
+              beadId: bead.id, // Same bead ID for all tracks
+            });
+            beadIdMapRef.current.set(trackIndex, bead.id);
+            trackIndex++;
+          }
+        }
+        // Map the bead to the first track of the sequence
+        if (!beadToTrackMapRef.current.has(bead.id)) {
+          beadToTrackMapRef.current.set(bead.id, trackIndex - audioFileList.length);
+        }
+        continue;
+      }
+      
       // Regular prayer - download and add to queue
       const uri = await RosaryAudioDownloadService.getAudioFileUri(voice, audioFile);
       

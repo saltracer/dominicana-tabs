@@ -68,6 +68,14 @@ export class RosaryAudioDownloadService {
       'assets/audio/rosary/dominican-opening-3.m4a': 'dominican-opening-3.m4a',
       'assets/audio/rosary/dominican-opening-glory-be.m4a': 'dominican-opening-glory-be.m4a',
       'assets/audio/rosary/alleluia.m4a': 'alleluia.m4a',
+      // Individual final prayers
+      'assets/audio/rosary/hail_holy_queen.m4a': 'hail-holy-queen.m4a',
+      'assets/audio/rosary/versicle_response.m4a': 'versicle-response.m4a',
+      'assets/audio/rosary/rosary_prayer.m4a': 'rosary-prayer.m4a',
+      'assets/audio/rosary/st_michael.m4a': 'st-michael.m4a',
+      'assets/audio/rosary/memorare.m4a': 'memorare.m4a',
+      'assets/audio/rosary/prayer_departed.m4a': 'prayer-departed.m4a',
+      'assets/audio/rosary/prayer_pope.m4a': 'prayer-pope.m4a',
     };
 
     const mappedFile = pathMappings[fileName];
