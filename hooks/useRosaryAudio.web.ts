@@ -222,12 +222,17 @@ export function useRosaryAudio({
     const totalBeads = beads.length;
     setDownloadProgress({ current: 0, total: totalBeads });
 
+    let downloadCount = 0;
+
     for (const bead of beads) {
       const audioFile = bead.audioFile;
       if (!audioFile) {
         console.warn(`[useRosaryAudio Web] No audio file for bead: ${bead.title}`);
         continue;
       }
+      
+      downloadCount++;
+      setDownloadProgress({ current: downloadCount, total: totalBeads });
 
       // Handle special cases for web
       if (bead.id === 'faith-hope-charity') {
