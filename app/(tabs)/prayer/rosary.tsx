@@ -99,7 +99,6 @@ export default function RosaryScreen() {
       console.log('[Rosary] Queue complete - Rosary finished!');
       setIsPraying(false);
       setAudioSettings(prev => ({ ...prev, isEnabled: false }));
-      Alert.alert('Rosary Complete', 'You have completed the rosary. May God bless you!');
     },
   });
 
@@ -326,12 +325,18 @@ export default function RosaryScreen() {
     setIsAudioPaused(false);
   };
 
-  const navigateToBead = (beadId: string) => {
+  const navigateToBead = async (beadId: string) => {
     setCurrentBeadId(beadId);
     // Mark all previous beads as completed
     const currentIndex = beads.findIndex(b => b.id === beadId);
     const completedIds = beads.slice(0, currentIndex).map(b => b.id);
     setCompletedBeadIds(completedIds);
+    
+    // If audio is enabled, also jump to that bead in the audio queue
+    if (audioSettings.isEnabled) {
+      console.log('[Rosary Native] Jumping audio to bead:', beadId);
+      await rosaryAudio.skipToBead(beadId);
+    }
   };
 
 
