@@ -12,8 +12,8 @@
 - [ ] Vespers or Lauds ... need to prove the design
 - [x] Redesign Rosary
 - [x] Rosary Audio
-- [ ] Rosary on web is not responsive
-- [ ] implement cache invalidation and redownload of audio files -testing phase
+- [x] Rosary on web is not responsive
+- [x] implement cache invalidation and redownload of audio files -testing phase
 - [x] Rosary final prayer needs to be split into individual prayers and combined 
 - [x] Add preferences for final prayers
 - [x] allow specific voices to be clear, obviously 
