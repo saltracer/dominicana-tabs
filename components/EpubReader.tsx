@@ -6,6 +6,7 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,6 +54,9 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   const [showFab, setShowFab] = useState(false);
   const fabTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Touch tracking for distinguishing taps from swipes
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
   // Debounced progress saving
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,22 +95,55 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
     }
   }, [navigationTarget]);
 
-  // Handle FAB visibility (sync with ReadiumView header behavior)
-  const handleReaderTap = () => {
-    // Toggle FAB visibility on tap
-    setShowFab(prev => !prev);
+  // Handle touch events to distinguish taps from swipes
+  const handlePressIn = (event: any) => {
+    console.log('🔘 Press in detected');
+    const { pageX, pageY } = event.nativeEvent;
+    touchStartRef.current = {
+      x: pageX,
+      y: pageY,
+      time: Date.now()
+    };
+  };
+
+  const handlePressOut = (event: any) => {
+    console.log('🔘 Press out detected');
+    if (!touchStartRef.current) return;
+
+    const { pageX, pageY } = event.nativeEvent;
+    const deltaX = Math.abs(pageX - touchStartRef.current.x);
+    const deltaY = Math.abs(pageY - touchStartRef.current.y);
+    const deltaTime = Date.now() - touchStartRef.current.time;
     
-    // // Clear existing timeout
-    // if (fabTimeoutRef.current) {
-    //   clearTimeout(fabTimeoutRef.current);
-    // }
+    console.log('🔘 Touch analysis:', { deltaX, deltaY, deltaTime });
     
-    // // If FAB is now visible, set timer to hide it after 3 seconds
-    // if (!showFab) {
-    //   fabTimeoutRef.current = setTimeout(() => {
-    //     setShowFab(false);
-    //   }, 3000);
-    // }
+    // Consider it a tap if:
+    // - Movement is less than 15 pixels
+    // - Duration is less than 300ms
+    const isTap = deltaX < 15 && deltaY < 15 && deltaTime < 300;
+    
+    console.log('🔘 Is tap?', isTap);
+    
+    if (isTap) {
+      console.log('🔘 Tapping FAB toggle');
+      // Toggle FAB visibility on tap
+      setShowFab(prev => !prev);
+      
+      // Clear existing timeout
+      if (fabTimeoutRef.current) {
+        clearTimeout(fabTimeoutRef.current);
+      }
+      
+      // If FAB is now visible, set timer to hide it after 3 seconds
+      if (!showFab) {
+        fabTimeoutRef.current = setTimeout(() => {
+          setShowFab(false);
+        }, 3000);
+      }
+    }
+    
+    // Reset touch tracking
+    touchStartRef.current = null;
   };
 
   // Cleanup timeout on unmount
@@ -650,23 +687,23 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
           </View>
         )}
         
-        <TouchableOpacity 
-          style={styles.readiumView}
-          onPress={handleReaderTap}
-          activeOpacity={1}
+        <TouchableWithoutFeedback 
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
         >
-          <ReadiumView 
-            ref={(ref: any) => {
-              if (ref && !readiumViewRef) {
-                setReadiumViewRef(ref);
-              }
-            }}
-            file={{ 
-              url: localFilePath,
-              initialLocation: initialLocation
-            }}
-            location={navigationTarget} // Use location prop for navigation
-            style={styles.readiumView}
+          <View style={styles.readiumView}>
+            <ReadiumView 
+              ref={(ref: any) => {
+                if (ref && !readiumViewRef) {
+                  setReadiumViewRef(ref);
+                }
+              }}
+              file={{ 
+                url: localFilePath,
+                initialLocation: initialLocation
+              }}
+              location={navigationTarget} // Use location prop for navigation
+              style={styles.readiumView}
             preferences={{
               // fontSize: 100, // Default font size percentage
               // fontFamily: 'serif',
@@ -717,7 +754,8 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
         console.log('Table of contents loaded:', toc);
       }}
         />
-        </TouchableOpacity>
+          </View>
+        </TouchableWithoutFeedback>
       </View>
 
       {/* Annotation Overlay - Outside main container for proper z-index */}
