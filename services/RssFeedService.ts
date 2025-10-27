@@ -4,6 +4,7 @@
  */
 
 import { XMLParser } from 'fast-xml-parser';
+import { Platform } from 'react-native';
 import { ParsedRssFeed, ParsedRssEpisode } from '../types/podcast-types';
 
 export class RssFeedService {
@@ -23,17 +24,96 @@ export class RssFeedService {
   }
 
   /**
+   * Get CORS proxy URL if needed
+   * Uses Supabase Edge Function for web platform when encountering CORS issues
+   */
+  private static getProxiedUrl(url: string): string {
+    // Only use proxy on web platform where CORS is enforced
+    if (Platform.OS === 'web') {
+      // Use Supabase Edge Function as proxy
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+      if (supabaseUrl) {
+        return `${supabaseUrl}/functions/v1/proxy-rss?url=${encodeURIComponent(url)}`;
+      }
+      
+      // Fallback to public proxy (not recommended for production)
+      const proxyUrl = process.env.EXPO_PUBLIC_CORS_PROXY_URL || 'https://api.allorigins.win/get?url=';
+      return proxyUrl + encodeURIComponent(url);
+    }
+    return url;
+  }
+
+  /**
+   * Fetch with retry and CORS handling
+   */
+  private static async fetchWithFallback(url: string): Promise<string> {
+    let lastError: Error | null = null;
+
+    // First attempt: direct fetch
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch RSS feed: ${response.statusText}`);
+      }
+      return await response.text();
+    } catch (error) {
+      lastError = error as Error;
+      console.warn('Direct fetch failed, trying CORS proxy...', error);
+    }
+
+    // Second attempt: use CORS proxy (only on web)
+    if (Platform.OS === 'web') {
+      try {
+        const proxiedUrl = this.getProxiedUrl(url);
+        
+        // Add Supabase auth header if using Supabase Edge Function
+        const headers: HeadersInit = {};
+        if (proxiedUrl.includes('/functions/v1/proxy-rss')) {
+          const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+          if (supabaseKey) {
+            headers['Authorization'] = `Bearer ${supabaseKey}`;
+            headers['apikey'] = supabaseKey;
+            console.log('Adding auth headers for edge function:', { 
+              hasAuth: !!headers['Authorization'],
+              hasApikey: !!headers['apikey'],
+              keyLength: supabaseKey.length
+            });
+          } else {
+            console.warn('No SUPABASE_ANON_KEY found in environment');
+          }
+        }
+        
+        console.log('Fetching via proxy:', proxiedUrl);
+        const response = await fetch(proxiedUrl, { headers });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch via proxy: ${response.statusText}`);
+        }
+
+        // Check if response is wrapped in JSON (allorigins format)
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          const json = await response.json();
+          // allorigins.win wraps the content in {contents: "..."}
+          return json.contents || json.content || JSON.stringify(json);
+        }
+        
+        return await response.text();
+      } catch (error) {
+        console.error('CORS proxy also failed:', error);
+        // Fall through to throw the original error
+      }
+    }
+
+    throw new Error(`Failed to fetch RSS feed: ${lastError?.message || 'Unknown error'}`);
+  }
+
+  /**
    * Parse RSS feed from URL
    */
   static async parseRssFeed(rssUrl: string): Promise<ParsedRssFeed> {
     try {
-      // Fetch the RSS feed
-      const response = await fetch(rssUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch RSS feed: ${response.statusText}`);
-      }
-
-      const xmlText = await response.text();
+      const xmlText = await this.fetchWithFallback(rssUrl);
       return this.parseRssXml(xmlText);
     } catch (error) {
       console.error('Error parsing RSS feed:', error);
