@@ -51,6 +51,7 @@
 - [ ] Books need to have versions (for when epubs are updated and users are already reading an other epub) and for when books are pulled from the library but as still "owned" by users.
 - [ ] Add Encycclical text and reading
 - [ ] Ensure "Anonymous" books can be added, such as the Didache
+- [ ] Hide the dynamic island and battery and such in immersive mode
 
 ## Community
 - [x] Calendar is ugly
@@ -82,6 +83,10 @@
 - [ ] Test book uploads. All aspects of CRUD
 - [ ] Text user creation and signup workflows. All aspects of CRUD for users. From admin and user perspective.
 
+## User Workflow
+- [ ] How do users subscribe? How do I upsell in the app?
+- [ ] Test and validate the user signup and email validation process
+
 ### Books to add
  - [x] st Patrick’s autobiography 
  - [x] st Benedict’s biography by st Gregory 
@@ -89,6 +94,9 @@
  - [ ] Eusebius' history
  - [ ] Review Fr Augustine's OP Laity list.
  - [ ] Look for books from other lay branches
+ - [ ] Books by John Henry Newmann
+ - [ ] The Cure of Ars epub
+ - [ ] Alonso Rodriguqez, the Practice of perfection book
 
 
 ## Future Extensibility of Admin Section

@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { ReadiumView } from 'react-native-readium';
 import { File, Directory, Paths } from 'expo-file-system';
@@ -114,6 +115,14 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       if (fabTimeoutRef.current) {
         clearTimeout(fabTimeoutRef.current);
       }
+    };
+  }, []);
+
+  // Hide status bar when EPUB reader is active
+  useEffect(() => {
+    // Status bar will be hidden by the StatusBar component below
+    return () => {
+      // Status bar will be restored when component unmounts
     };
   }, []);
 
@@ -624,6 +633,8 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
 
   return (
     <>
+      {/* Hide status bar when FAB is hidden for immersive reading experience */}
+      <StatusBar hidden={!showFab} />
       <View style={styles.container}>
         {/* Bookmark Ribbon Indicator */}
         {isPageBookmarked && (
