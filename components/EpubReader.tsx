@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
   bookmarkRibbonContainer: {
     position: 'absolute',
     top: 0,
-    right: 16,
+    right: 32,
     zIndex: 100,
   },
   bookmarkRibbon: {
