@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { AdminPodcastService, CreatePodcastData } from '../../../services/AdminPodcastService';
+import { usePodcastCategories } from '../../../hooks/usePodcastCategories';
 
 export default function NewPodcastWebScreen() {
   const { colorScheme } = useTheme();
@@ -31,7 +32,7 @@ export default function NewPodcastWebScreen() {
     language: 'en',
   });
 
-  const commonCategories = ['Religion', 'Christianity', 'Catholicism', 'Theology', 'Spirituality', 'Philosophy', 'History'];
+  const { categories: commonCategories, loading: categoriesLoading } = usePodcastCategories();
 
   const handlePreviewRss = async () => {
     if (!rssUrl.trim()) {

@@ -17,6 +17,7 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { Colors } from '../../../constants/Colors';
 import { AdminPodcastService, UpdatePodcastData } from '../../../services/AdminPodcastService';
 import { Podcast, PodcastEpisode } from '../../../types';
+import { usePodcastCategories } from '../../../hooks/usePodcastCategories';
 
 export default function EditPodcastScreen() {
   const { colorScheme } = useTheme();
@@ -38,7 +39,7 @@ export default function EditPodcastScreen() {
     isActive: true,
   });
 
-  const commonCategories = ['Religion', 'Christianity', 'Catholicism', 'Theology', 'Spirituality', 'Philosophy', 'History'];
+  const { categories: commonCategories, loading: categoriesLoading } = usePodcastCategories();
 
   useEffect(() => {
     if (id) {
