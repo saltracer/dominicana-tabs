@@ -98,6 +98,7 @@
  - [ ] Books by John Henry Newmann
  - [ ] The Cure of Ars epub
  - [ ] Alonso Rodriguqez, the Practice of perfection book
+ - [ ] Fiction books?
 
 
 ## Future Extensibility of Admin Section
