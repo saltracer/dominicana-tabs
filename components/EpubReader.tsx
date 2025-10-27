@@ -25,6 +25,7 @@ import { ReadingAnnotationOverlay } from './ReadingAnnotationOverlay';
 import { HighlightColorPicker } from './HighlightColorPicker';
 import { AnnotationNoteEditor } from './AnnotationNoteEditor';
 import { AnnotationsListView } from './AnnotationsListView';
+import { BookCacheService } from '../services/BookCacheService';
 
 interface EpubReaderProps {
   book: Book;
@@ -277,22 +278,13 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
     loadSavedProgress();
     loadEpubFile();
     
-    // Cleanup function to delete downloaded file when component unmounts or book changes
+    // Cleanup function - don't delete cached files, keep them for reuse
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      if (localFilePath) {
-        try {
-          const file = new File(localFilePath);
-          if (file.exists) {
-            console.log('Cleaning up EPUB file:', localFilePath);
-            file.delete();
-          }
-        } catch (error: any) {
-          console.warn('Failed to delete EPUB file:', error);
-        }
-      }
+      // Note: We keep the cached EPUB file for future use
+      console.log('📚 EpubReader unmounting, keeping cached file for reuse');
     };
   }, [book, localFilePath]);
 
@@ -339,66 +331,21 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
         throw new Error('No EPUB file available for this book');
       }
 
-      // Clean up any existing file for this book first
-      const fileName = `${book.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.epub`;
-      const existingFile = new File(Paths.cache, fileName);
-      if (existingFile.exists) {
-        console.log('Cleaning up existing file before new download');
-        existingFile.delete();
+      console.log('📚 Loading EPUB for book:', book.id, book.title);
+
+      // Use BookCacheService to get cached file or download if needed
+      const cachedPath = await BookCacheService.downloadEpub(book, (progress) => {
+        console.log('📥 Download progress:', Math.round(progress * 100) + '%');
+      });
+
+      if (!cachedPath) {
+        throw new Error('Failed to get EPUB file path');
       }
 
-      // Extract file path from the URL
-      const urlPath = book.epubPath;
-      let filePath = '';
-      
-      if (urlPath.includes('/storage/v1/object/')) {
-        const parts = urlPath.split('/storage/v1/object/');
-        if (parts.length > 1) {
-          const pathParts = parts[1].split('/');
-          if (pathParts.length > 2) {
-            filePath = pathParts.slice(2).join('/'); // Remove 'public' and bucket name
-          }
-        }
-      }
-
-      console.log('Original URL:', urlPath);
-      console.log('Extracted file path:', filePath);
-
-      // Generate signed URL for private storage access
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-        .from('epub_files')
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
-
-      if (signedUrlError) {
-        console.error('Error generating signed URL:', signedUrlError);
-        throw new Error('Failed to generate download URL');
-      }
-
-      if (!signedUrlData?.signedUrl) {
-        throw new Error('No download URL available');
-      }
-
-      console.log('Generated signed URL:', signedUrlData.signedUrl);
-
-      // Download the EPUB file locally using the new FileSystem API
-      const outputFile = new File(Paths.cache, fileName);
-      
-      console.log('Downloading EPUB to:', outputFile.uri);
-      
-      // Use File.downloadFileAsync for downloading
-      const downloadedFile = await File.downloadFileAsync(
-        signedUrlData.signedUrl,
-        outputFile
-      );
-
-      if (!downloadedFile.exists) {
-        throw new Error('Download failed - file does not exist');
-      }
-
-      console.log('EPUB downloaded successfully to:', downloadedFile.uri);
-      setLocalFilePath(downloadedFile.uri);
+      console.log('✅ EPUB ready at:', cachedPath);
+      setLocalFilePath(cachedPath);
     } catch (err) {
-      console.error('Error loading EPUB file:', err);
+      console.error('❌ Error loading EPUB file:', err);
       setError(err instanceof Error ? err.message : 'Failed to load EPUB file');
     } finally {
       setLoading(false);

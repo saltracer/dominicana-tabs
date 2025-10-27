@@ -171,12 +171,14 @@ export const useBooks = () => {
 
       // Cache cover art for mobile (on web, just use original URL)
       let coverImageUrl = data.cover_image;
+      console.log('🖼️ Original cover URL:', coverImageUrl);
       if (Platform.OS !== 'web' && data.cover_image) {
         try {
           const cachedUrl = await CoverArtCacheService.cacheCoverArt(
             String(data.id),
             data.cover_image
           );
+          console.log('🖼️ Cached cover URL:', cachedUrl);
           if (cachedUrl) {
             coverImageUrl = cachedUrl;
           }
@@ -185,6 +187,7 @@ export const useBooks = () => {
           // Fall back to original URL if caching fails
         }
       }
+      console.log('🖼️ Final cover URL:', coverImageUrl);
 
       return {
         id: data.id,

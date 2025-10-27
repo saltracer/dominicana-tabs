@@ -54,12 +54,15 @@ class CoverArtCacheServiceClass {
 
       // Check if already cached and valid
       const cachedPath = await this.getCachedCover(bookId);
+      console.log('🔍 Checking cache for book:', bookId, 'cached path:', cachedPath);
       if (cachedPath) {
         // Check if needs update
         const needsUpdate = await this.checkForCoverUpdates(bookId, imageUrl);
+        console.log('🔍 Needs update?', needsUpdate);
         if (!needsUpdate) {
           // Update access time
           await this.updateAccessTime(bookId);
+          console.log('✅ Using cached cover:', cachedPath);
           return cachedPath;
         }
       }
@@ -142,6 +145,7 @@ class CoverArtCacheServiceClass {
       await this.saveMetadata(metadata);
 
       console.log('Cover art cached:', bookId, size, 'bytes');
+      console.log('Cached cover path:', localPath);
       return localPath;
     } catch (error) {
       console.error('Error downloading cover:', error);
@@ -171,6 +175,7 @@ class CoverArtCacheServiceClass {
         return null;
       }
 
+      console.log('Returning cached cover path:', filePath);
       return filePath;
     } catch (error) {
       console.error('Error getting cached cover:', error);
