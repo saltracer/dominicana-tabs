@@ -62,6 +62,7 @@
 - [ ] Extract books from saints; link saints books to library
 - [ ] Import dominican calendar
 - [ ] Import general calendar
+- [ ] Are sundays ferial days?
 
 ## Preaching
 - [ ] Subscribe to blogs
