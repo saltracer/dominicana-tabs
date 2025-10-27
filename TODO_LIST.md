@@ -43,7 +43,7 @@
 - [x] Redeisgn how the bible is accessed
 - [x] keep books downloaded
 - [x] cache the book covers
-- [ ] Double check the book cover cache, it seems to re-load them every time I open the screen
+- [x] Double check the book cover cache, it seems to re-load them every time I open the screen
 - [x] Add a setting to remove the download
 - [x] Add a admin only, web only, CMS to manage the books and their covers and other metadata
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
@@ -51,7 +51,7 @@
 - [ ] Books need to have versions (for when epubs are updated and users are already reading an other epub) and for when books are pulled from the library but as still "owned" by users.
 - [ ] Add Encycclical text and reading
 - [ ] Ensure "Anonymous" books can be added, such as the Didache
-- [ ] Hide the dynamic island and battery and such in immersive mode
+- [x] Hide the dynamic island and battery and such in immersive mode
 
 ## Community
 - [x] Calendar is ugly
