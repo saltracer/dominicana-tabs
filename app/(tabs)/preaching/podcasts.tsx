@@ -2,7 +2,7 @@
  * Podcasts Page - Native
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ export default function PodcastsScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('library');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   // Load curated podcasts
   const { podcasts: libraryPodcasts, loading: libraryLoading, refetch: refetchLibrary } = usePodcasts({
@@ -43,6 +44,13 @@ export default function PodcastsScreen() {
 
   // Load user subscriptions (only if authenticated)
   const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = usePodcastSubscriptions();
+
+  // Track initial load completion
+  useEffect(() => {
+    if (!libraryLoading && !subsLoading && !hasLoadedOnce) {
+      setHasLoadedOnce(true);
+    }
+  }, [libraryLoading, subsLoading, hasLoadedOnce]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -149,7 +157,7 @@ export default function PodcastsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {loading ? (
+        {loading && !hasLoadedOnce ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
             <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
