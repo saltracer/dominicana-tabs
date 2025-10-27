@@ -38,8 +38,10 @@ export default function PodcastDetailWebScreen() {
   const [podcast, setPodcast] = useState<PodcastWithEpisodes | null>(null);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
-  const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed } = usePodcastSubscriptions();
+  const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
   const { currentEpisode, playEpisode, pause, resume, isPlaying, isPaused } = usePodcastPlayer();
+  
+  const isSubscribed = subscriptions.some(s => s.id === id);
 
   useEffect(() => {
     if (id) {
@@ -73,8 +75,7 @@ export default function PodcastDetailWebScreen() {
       return;
     }
 
-    const subscribed = await checkIsSubscribed(id!);
-    if (subscribed) {
+    if (isSubscribed) {
       const success = await unsubscribe(id!);
       if (success) {
         Alert.alert('Unsubscribed', 'You have unsubscribed from this podcast.');
@@ -204,8 +205,14 @@ export default function PodcastDetailWebScreen() {
             style={[styles.subscribeButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
             onPress={handleSubscribe}
           >
-            <Ionicons name="add-circle-outline" size={20} color="#fff" />
-            <Text style={styles.subscribeButtonText}>Subscribe</Text>
+            <Ionicons 
+              name={isSubscribed ? "checkmark-circle-outline" : "add-circle-outline"} 
+              size={20} 
+              color="#fff" 
+            />
+            <Text style={styles.subscribeButtonText}>
+              {isSubscribed ? 'Subscribed' : 'Subscribe'}
+            </Text>
           </TouchableOpacity>
         )}
 
