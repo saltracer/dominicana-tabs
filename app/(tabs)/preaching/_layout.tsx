@@ -101,7 +101,14 @@ export default function PreachingLayout() {
         options={{
           headerTitle: 'Podcast',
           headerBackTitle: '',
-          headerLeft: () => headerLeftComponent,
+          headerRight: () => headerRightComponent,
+        }}
+      />
+      <Stack.Screen 
+        name="episode/[id]" 
+        options={{
+          headerTitle: 'Episode',
+          headerBackTitle: '',
           headerRight: () => headerRightComponent,
         }}
       />
