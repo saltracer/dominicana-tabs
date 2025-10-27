@@ -41,9 +41,9 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
     setIsExpanded(false);
   };
 
-  const cardBg = colorScheme === 'dark' ? 'rgba(32, 29, 29, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+  const cardBg = colorScheme === 'dark' ? 'rgba(32, 29, 29, 0.4)' : 'rgba(255, 255, 255, 0.4)';
   // Primary color with opacity for bookmarked state
-  const primaryWithOpacity = colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.95)' : 'rgba(140, 21, 21, 0.95)';
+  const primaryWithOpacity = colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.4)' : 'rgba(140, 21, 21, 0.4)';
   
   const actionButtons = [
     {

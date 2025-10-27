@@ -57,9 +57,9 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
     toggleExpanded();
   };
 
-  const cardBg = colorScheme === 'dark' ? 'rgba(32, 29, 29, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+  const cardBg = colorScheme === 'dark' ? 'rgba(32, 29, 29, 0.4)' : 'rgba(255, 255, 255, 0.4)';
   // Primary color with opacity for bookmarked state
-  const primaryWithOpacity = colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.95)' : 'rgba(140, 21, 21, 0.95)';
+  const primaryWithOpacity = colorScheme === 'dark' ? 'rgba(184, 84, 80, 0.4)' : 'rgba(140, 21, 21, 0.4)';
   
   const actionButtons = [
     {
@@ -134,7 +134,7 @@ export const ReadingAnnotationOverlay: React.FC<ReadingAnnotationOverlayProps> =
                 console.log('🔘 Button tapped:', button.label);
                 handleAction(button.action, button.label);
               }}
-              activeOpacity={0.7}
+              activeOpacity={1}
             >
               <Ionicons name={button.icon as any} size={22} color={button.color} />
             </TouchableOpacity>
