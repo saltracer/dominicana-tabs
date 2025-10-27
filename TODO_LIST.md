@@ -52,6 +52,7 @@
 - [ ] Add Encycclical text and reading
 - [ ] Ensure "Anonymous" books can be added, such as the Didache
 - [x] Hide the dynamic island and battery and such in immersive mode
+- [ ] Back button on the reader in dark mode is still dark
 
 ## Community
 - [x] Calendar is ugly
