@@ -131,16 +131,16 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
       setShowFab(prev => !prev);
       
       // Clear existing timeout
-      if (fabTimeoutRef.current) {
-        clearTimeout(fabTimeoutRef.current);
-      }
+      // if (fabTimeoutRef.current) {
+      //   clearTimeout(fabTimeoutRef.current);
+      // }
       
       // If FAB is now visible, set timer to hide it after 3 seconds
-      if (!showFab) {
-        fabTimeoutRef.current = setTimeout(() => {
-          setShowFab(false);
-        }, 3000);
-      }
+      // if (!showFab) {
+      //   fabTimeoutRef.current = setTimeout(() => {
+      //     setShowFab(false);
+      //   }, 3000);
+      // }
     }
     
     // Reset touch tracking
