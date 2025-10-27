@@ -100,6 +100,7 @@
  - [ ] The Cure of Ars epub
  - [ ] Alonso Rodriguqez, the Practice of perfection book
  - [ ] Fiction books?
+ - [ ] Ven Louis of Genada books/teachings
 
 
 ## Future Extensibility of Admin Section

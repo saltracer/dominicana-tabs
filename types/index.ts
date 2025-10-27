@@ -534,3 +534,6 @@ export {
   getComponentForDay,
   isDayOfWeekVariations
 } from './compline-types';
+
+// Export podcast types
+export * from './podcast-types';

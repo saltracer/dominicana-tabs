@@ -81,6 +81,18 @@ export default function AdminLayout() {
           name="rosary/upload" 
           options={{ title: 'Upload Audio' }} 
         />
+        <Stack.Screen 
+          name="podcasts/index" 
+          options={{ title: 'Manage Podcasts' }} 
+        />
+        <Stack.Screen 
+          name="podcasts/new" 
+          options={{ title: 'Add New Podcast' }} 
+        />
+        <Stack.Screen 
+          name="podcasts/[id]" 
+          options={{ title: 'Edit Podcast' }} 
+        />
       </Stack>
     </AdminGuard>
   );

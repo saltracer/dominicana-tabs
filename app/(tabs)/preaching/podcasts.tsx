@@ -2,22 +2,84 @@
  * Podcasts Page - Native
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  TextInput,
+  RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { PreachingStyles } from '../../../styles';
 import PreachingNavigation from '../../../components/PreachingNavigation';
+import { PodcastCard } from '../../../components/PodcastCard';
+import { usePodcasts } from '../../../hooks/usePodcasts';
+import { usePodcastSubscriptions } from '../../../hooks/usePodcastSubscriptions';
+import { useAuth } from '../../../contexts/AuthContext';
+
+type TabType = 'library' | 'subscriptions';
 
 export default function PodcastsScreen() {
   const { colorScheme } = useTheme();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabType>('library');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Load curated podcasts
+  const { podcasts: libraryPodcasts, loading: libraryLoading, refetch: refetchLibrary } = usePodcasts({
+    search: searchQuery,
+    limit: 50,
+  });
+
+  // Load user subscriptions (only if authenticated)
+  const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = usePodcastSubscriptions();
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchLibrary(), user ? refetchSubs() : Promise.resolve()]);
+    setRefreshing(false);
+  };
+
+  const handleSubscribe = async (podcastId: string) => {
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to subscribe to podcasts.');
+      return;
+    }
+
+    const isSubscribed = subscriptions.some(s => s.id === podcastId);
+    if (isSubscribed) {
+      const success = await unsubscribe(podcastId);
+      if (success) {
+        Alert.alert('Unsubscribed', 'You have unsubscribed from this podcast.');
+      }
+    } else {
+      const success = await subscribe(podcastId);
+      if (success) {
+        Alert.alert('Subscribed', 'You are now subscribed to this podcast.');
+      }
+    }
+  };
+
+  const handlePodcastPress = (podcastId: string) => {
+    router.push(`/(tabs)/preaching/podcast/${podcastId}`);
+  };
+
+  const isSubscribed = (podcastId: string) => {
+    return subscriptions.some(s => s.id === podcastId);
+  };
+
+  const displayPodcasts = activeTab === 'library' ? libraryPodcasts : subscriptions;
+  const loading = activeTab === 'library' ? libraryLoading : subsLoading;
 
   return (
     <SafeAreaView 
@@ -27,148 +89,176 @@ export default function PodcastsScreen() {
       {/* Navigation Control */}
       <PreachingNavigation activeTab="podcasts" />
 
+      {/* Tabs */}
+      <View style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'library' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
+          ]}
+          onPress={() => setActiveTab('library')}
+        >
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
+          ]}>
+            Curated Library
+          </Text>
+        </TouchableOpacity>
+        {user && (
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'subscriptions' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setActiveTab('subscriptions')}
+          >
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
+            ]}>
+              My Subscriptions ({subscriptions.length})
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Search Bar */}
+      <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+        <TextInput
+          style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
+          placeholder="Search podcasts..."
+          placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* Content */}
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={{ paddingBottom: 120 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
-        <View style={styles.contentContainer}>
-          <View style={styles.placeholderContainer}>
-            <View style={[styles.iconCircle, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-              <Ionicons name="mic" size={64} color={Colors[colorScheme ?? 'light'].primary} />
-            </View>
-            
-            <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Podcasts
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+            <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              Loading podcasts...
             </Text>
-            
-            <Text style={[styles.comingSoon, { color: Colors[colorScheme ?? 'light'].primary }]}>
-              Coming Soon
-            </Text>
-            
-            <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              We're working on bringing you homilies, spiritual talks, and theological discussions from 
-              Dominican friars around the world. Check back soon for inspiring audio content.
-            </Text>
-
-            <View style={[styles.featureList, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-              <Text style={[styles.featureTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-                What's Coming:
-              </Text>
-              
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors[colorScheme ?? 'light'].primary} />
-                <Text style={[styles.featureText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Weekly homilies from Dominican preachers
-                </Text>
-              </View>
-              
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors[colorScheme ?? 'light'].primary} />
-                <Text style={[styles.featureText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Theological discussions and lectures
-                </Text>
-              </View>
-              
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors[colorScheme ?? 'light'].primary} />
-                <Text style={[styles.featureText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Spiritual reflections and meditations
-                </Text>
-              </View>
-              
-              <View style={styles.featureItem}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors[colorScheme ?? 'light'].primary} />
-                <Text style={[styles.featureText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                  Lives of Dominican saints
-                </Text>
-              </View>
-            </View>
           </View>
-        </View>
+        ) : displayPodcasts.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="radio-outline" size={64} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              {activeTab === 'library' 
+                ? 'No podcasts found' 
+                : 'No subscriptions yet'}
+            </Text>
+            <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              {activeTab === 'library'
+                ? 'Try adjusting your search or check back later for new content.'
+                : 'Browse the curated library to discover podcasts to subscribe to.'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.podcastsContainer}>
+            {displayPodcasts.map((podcast) => (
+              <PodcastCard
+                key={podcast.id}
+                podcast={podcast}
+                onPress={() => handlePodcastPress(podcast.id)}
+                onSubscribe={handleSubscribe}
+                isSubscribed={isSubscribed(podcast.id)}
+                showSubscribeButton={activeTab === 'library'}
+              />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  ...PreachingStyles,
   container: {
     flex: 1,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Georgia',
   },
   scrollView: {
     flex: 1,
   },
-  contentContainer: {
+  loadingContainer: {
     flex: 1,
-  },
-  placeholderContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
-  },
-  iconCircle: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingVertical: 48,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
     fontFamily: 'Georgia',
-    marginBottom: 16,
-    textAlign: 'center',
   },
-  comingSoon: {
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingVertical: 60,
+  },
+  emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginBottom: 24,
+    marginTop: 16,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  description: {
+  emptyDescription: {
     fontSize: 16,
-    lineHeight: 24,
     fontFamily: 'Georgia',
     textAlign: 'center',
-    marginBottom: 40,
+    lineHeight: 24,
   },
-  featureList: {
-    padding: 24,
-    borderRadius: 12,
-    width: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 16,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    gap: 12,
-  },
-  featureText: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    flex: 1,
+  podcastsContainer: {
+    padding: 16,
   },
 });
 

@@ -18,6 +18,7 @@ export default function AdminLayoutWeb() {
     { path: '/admin/books', label: 'Books', icon: 'book' as const },
     { path: '/admin/lists', label: 'Lists', icon: 'list' as const },
     { path: '/admin/rosary', label: 'Rosary Audio', icon: 'musical-notes' as const },
+    { path: '/admin/podcasts', label: 'Podcasts', icon: 'radio' as const },
   ];
 
   // Check if nav item is active, with special handling for dashboard
