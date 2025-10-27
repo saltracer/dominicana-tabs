@@ -788,8 +788,8 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   bookmarkRibbon: {
-    width: 40,
-    height: 70,
+    width: 30,
+    height: 60,
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingTop: 12,
@@ -809,8 +809,8 @@ const styles = StyleSheet.create({
     height: 0,
     backgroundColor: 'transparent',
     borderStyle: 'solid',
-    borderTopWidth: 20,
-    borderRightWidth: 20,
+    borderTopWidth: 15,
+    borderRightWidth: 15,
     borderBottomWidth: 0,
     borderLeftWidth: 0,
     borderTopColor: 'red', // Will be overridden inline
@@ -821,8 +821,8 @@ const styles = StyleSheet.create({
     height: 0,
     backgroundColor: 'transparent',
     borderStyle: 'solid',
-    borderTopWidth: 20,
-    borderLeftWidth: 20,
+    borderTopWidth: 15,
+    borderLeftWidth: 15,
     borderBottomWidth: 0,
     borderRightWidth: 0,
     borderTopColor: 'red', // Will be overridden inline
