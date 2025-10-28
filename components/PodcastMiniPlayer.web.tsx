@@ -24,9 +24,11 @@ export default function PodcastMiniPlayer() {
     isLoading,
     position,
     duration,
+    playbackSpeed,
     playEpisode,
     pause,
     resume,
+    setSpeed,
   } = usePodcastPlayer();
 
   const [podcast, setPodcast] = useState<Podcast | null>(null);
@@ -81,6 +83,14 @@ export default function PodcastMiniPlayer() {
     router.push(`/(tabs)/preaching/episode/${currentEpisode.id}`);
   };
 
+  const handleSpeedPress = () => {
+    // Cycle through common speeds: 0.75x -> 1.0x -> 1.25x -> 1.5x -> 2.0x -> 0.75x
+    const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+    const currentIndex = speeds.findIndex(speed => Math.abs(speed - playbackSpeed) < 0.01);
+    const nextIndex = (currentIndex + 1) % speeds.length;
+    setSpeed(speeds[nextIndex]);
+  };
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -96,7 +106,7 @@ export default function PodcastMiniPlayer() {
     <TouchableOpacity
       style={[
         styles.container,
-        { backgroundColor: Colors[colorScheme ?? 'light'].surface }
+        { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }
       ]}
       onPress={handlePress}
       activeOpacity={0.8}
@@ -152,12 +162,16 @@ export default function PodcastMiniPlayer() {
         )}
       </TouchableOpacity>
 
-      {/* Speed Indicator */}
-      <View style={styles.speedContainer}>
-        <Text style={[styles.speedText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-          1.0x
+      {/* Speed Control */}
+      <TouchableOpacity 
+        style={styles.speedContainer}
+        onPress={handleSpeedPress}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.speedText, { color: Colors[colorScheme ?? 'light'].text }]}>
+          {playbackSpeed}x
         </Text>
-      </View>
+      </TouchableOpacity>
 
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
@@ -211,7 +225,8 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 4,
+    minWidth: 0, // Allow text to truncate properly
   },
   episodeTitle: {
     fontSize: 14,
@@ -234,11 +249,17 @@ const styles = StyleSheet.create({
     transition: 'opacity 0.2s ease',
   },
   speedContainer: {
-    marginRight: 8,
+    marginRight: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    minWidth: 28,
+    alignItems: 'center',
   },
   speedText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     fontFamily: 'Georgia',
   },
   progressContainer: {

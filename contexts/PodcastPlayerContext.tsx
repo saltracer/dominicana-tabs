@@ -26,9 +26,11 @@ interface PodcastPlayerContextType {
   
   // Playback state
   isPlaying: boolean;
+  isPaused: boolean;
   isLoading: boolean;
   position: number;
   duration: number;
+  playbackSpeed: number;
   progress: PodcastPlaybackProgress | null;
   
   // Controls
@@ -40,9 +42,6 @@ interface PodcastPlayerContextType {
   
   // Progress
   progressPercentage: number;
-  
-  // State
-  isPaused: boolean;
 }
 
 const PodcastPlayerContext = createContext<PodcastPlayerContextType | undefined>(undefined);
@@ -56,6 +55,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const [isPaused, setIsPaused] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [progress, setProgress] = useState<PodcastPlaybackProgress | null>(null);
   const [preferences, setPreferences] = useState<any>(null);
   
@@ -73,6 +73,10 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     try {
       const prefs = await UserLiturgyPreferencesService.getUserPreferences(user.id);
       setPreferences(prefs);
+      // Set default speed from preferences
+      if (prefs?.podcast_default_speed) {
+        setPlaybackSpeed(prefs.podcast_default_speed);
+      }
     } catch (error) {
       console.error('[PodcastPlayerContext] Error loading preferences:', error);
     }
@@ -202,6 +206,8 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       
       // Apply saved speed or default speed
       const savedSpeed = data.playbackSpeed || preferences?.podcast_default_speed || 1.0;
+      setPlaybackSpeed(savedSpeed);
+      
       if (Platform.OS === 'web' && audio) {
         audio.playbackRate = savedSpeed;
       } else if (Platform.OS !== 'web' && TrackPlayer) {
@@ -405,6 +411,8 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   }, [audio]);
 
   const setSpeed = useCallback(async (speed: number) => {
+    setPlaybackSpeed(speed);
+    
     if (Platform.OS === 'web') {
       if (audio) {
         audio.playbackRate = speed;
@@ -431,9 +439,11 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const value: PodcastPlayerContextType = {
     currentEpisode,
     isPlaying,
+    isPaused,
     isLoading,
     position,
     duration,
+    playbackSpeed,
     progress,
     playEpisode,
     pause,
@@ -441,7 +451,6 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     seek,
     setSpeed,
     progressPercentage,
-    isPaused,
   };
 
   return (
