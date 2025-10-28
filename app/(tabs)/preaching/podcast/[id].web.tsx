@@ -22,6 +22,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 import Footer from '../../../../components/Footer.web';
+import HtmlRenderer from '../../../../components/HtmlRenderer';
 import { useIsMobile, useIsTablet, useIsDesktop } from '../../../../hooks/useMediaQuery';
 
 export default function PodcastDetailWebScreen() {
@@ -172,9 +173,11 @@ export default function PodcastDetailWebScreen() {
               </Text>
             )}
             {podcast.description && (
-              <Text style={[styles.descriptionPreview, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={3}>
-                {podcast.description}
-              </Text>
+              <HtmlRenderer 
+                htmlContent={podcast.description}
+                maxLines={3}
+                style={[styles.descriptionPreview, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
+              />
             )}
           </View>
         </View>
@@ -182,9 +185,10 @@ export default function PodcastDetailWebScreen() {
         {/* Description */}
         {!isMobile && podcast.description && (
           <View style={styles.descriptionContainer}>
-            <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {podcast.description}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={podcast.description}
+              style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}
+            />
           </View>
         )}
 

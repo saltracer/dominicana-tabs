@@ -21,6 +21,7 @@ import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptio
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
+import HtmlRenderer from '../../../../components/HtmlRenderer';
 
 export default function PodcastDetailScreen() {
   const { colorScheme } = useTheme();
@@ -171,9 +172,10 @@ export default function PodcastDetailScreen() {
         {/* Description */}
         {podcast.description && (
           <View style={styles.descriptionContainer}>
-            <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {podcast.description}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={podcast.description}
+              style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}
+            />
           </View>
         )}
 

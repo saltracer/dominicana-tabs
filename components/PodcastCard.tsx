@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Podcast } from '../types';
 import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
+import HtmlRenderer from './HtmlRenderer';
 
 interface PodcastCardProps {
   podcast: Podcast;
@@ -50,9 +51,11 @@ export function PodcastCard({
             </View>
           )}
           <View style={styles.compactInfo}>
-            <Text style={[styles.compactTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
-              {podcast.title}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={podcast.title}
+              maxLines={1}
+              style={[styles.compactTitle, { color: Colors[colorScheme ?? 'light'].text }]}
+            />
             {podcast.author && (
               <Text style={[styles.compactAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>
                 {podcast.author}
@@ -103,9 +106,11 @@ export function PodcastCard({
         )}
         <View style={styles.info}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
-              {podcast.title}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={podcast.title}
+              maxLines={2}
+              style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}
+            />
             {showSubscribeButton && onSubscribe && (
               <TouchableOpacity
                 style={[
@@ -133,9 +138,11 @@ export function PodcastCard({
             </Text>
           )}
           {podcast.description && (
-            <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={2}>
-              {podcast.description}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={podcast.description}
+              maxLines={2}
+              style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
+            />
           )}
           {podcast.categories && podcast.categories.length > 0 && (
             <View style={styles.categories}>

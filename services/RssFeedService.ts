@@ -18,6 +18,16 @@ export class RssFeedService {
         parseAttributeValue: true,
         textNodeName: '#text',
         trimValues: true,
+        // Ensure proper UTF-8 handling
+        processEntities: true,
+        htmlEntities: true,
+        // Handle CDATA sections properly
+        parseTagValue: true,
+        parseNodeValue: true,
+        // Preserve text content from CDATA
+        preserveOrder: false,
+        // Handle complex HTML content
+        unpairedTags: ['br', 'hr', 'img', 'input', 'meta', 'link'],
       });
     }
     return RssFeedService.parser;
@@ -55,7 +65,9 @@ export class RssFeedService {
       if (!response.ok) {
         throw new Error(`Failed to fetch RSS feed: ${response.statusText}`);
       }
-      return await response.text();
+      // Ensure UTF-8 decoding
+      const text = await response.text();
+      return text;
     } catch (error) {
       lastError = error as Error;
       console.warn('Direct fetch failed, trying CORS proxy...', error);
@@ -90,7 +102,9 @@ export class RssFeedService {
           return json.contents || json.content || JSON.stringify(json);
         }
         
-        return await response.text();
+        // Ensure UTF-8 decoding
+        const text = await response.text();
+        return text;
       } catch (error) {
         console.error('CORS proxy also failed:', error);
         // Fall through to throw the original error
@@ -137,9 +151,9 @@ export class RssFeedService {
     const channel = rss.channel;
     
     // Extract podcast metadata
-    const title = channel.title?.['#text'] || channel.title || '';
-    const description = channel.description?.['#text'] || channel.description || channel['itunes:subtitle']?.['#text'] || '';
-    const author = channel['itunes:author']?.['#text'] || channel['itunes:author'] || channel['dc:creator']?.['#text'] || '';
+    const title = this.prepareHtmlContent(channel.title?.['#text'] || channel.title || '');
+    const description = this.prepareHtmlContent(channel.description?.['#text'] || channel.description || channel['itunes:subtitle']?.['#text'] || '');
+    const author = this.prepareHtmlContent(channel['itunes:author']?.['#text'] || channel['itunes:author'] || channel['dc:creator']?.['#text'] || '');
     const link = this.extractUrl(channel.link?.['#text'] || channel.link);
     const language = channel.language?.['#text'] || channel.language || 'en';
     
@@ -170,9 +184,9 @@ export class RssFeedService {
    * Parse Atom format
    */
   private static parseAtomFormat(feed: any): ParsedRssFeed {
-    const title = feed.title?.['#text'] || feed.title || '';
-    const description = feed.subtitle?.['#text'] || feed.subtitle || feed.description?.['#text'] || '';
-    const author = feed.author?.name?.['#text'] || feed.author?.name || '';
+    const title = this.prepareHtmlContent(feed.title?.['#text'] || feed.title || '');
+    const description = this.prepareHtmlContent(feed.subtitle?.['#text'] || feed.subtitle || feed.description?.['#text'] || '');
+    const author = this.prepareHtmlContent(feed.author?.name?.['#text'] || feed.author?.name || '');
     const link = this.extractAtomLink(feed.link);
     const language = feed['@_xml:lang'] || 'en';
     
@@ -196,11 +210,33 @@ export class RssFeedService {
   }
 
   /**
+   * Clean and prepare HTML content for rendering
+   * The XML parser should handle UTF-8 entities automatically with processEntities: true
+   */
+  private static prepareHtmlContent(html: string): string {
+    if (!html) return '';
+    
+    // Handle double-encoded entities (like &amp;amp; -> &amp; -> &)
+    let text = html
+      .replace(/&amp;amp;/g, '&amp;')
+      .replace(/&amp;lt;/g, '&lt;')
+      .replace(/&amp;gt;/g, '&gt;')
+      .replace(/&amp;quot;/g, '&quot;')
+      .replace(/&amp;#39;/g, '&#39;')
+      .replace(/&amp;nbsp;/g, '&nbsp;');
+    
+    // Clean up extra whitespace but preserve intentional formatting
+    text = text.replace(/\s+/g, ' ').trim();
+    
+    return text;
+  }
+
+  /**
    * Parse RSS episode/item
    */
   private static parseRssEpisode(item: any): ParsedRssEpisode {
-    const title = item.title?.['#text'] || item.title || '';
-    const description = item.description?.['#text'] || item.description || item['content:encoded']?.['#text'] || '';
+    const title = this.prepareHtmlContent(item.title?.['#text'] || item.title || '');
+    const description = this.prepareHtmlContent(item.description?.['#text'] || item.description || item['content:encoded']?.['#text'] || '');
     
     // Extract enclosure (audio URL)
     const enclosure = Array.isArray(item.enclosure) ? item.enclosure[0] : item.enclosure;
@@ -245,8 +281,8 @@ export class RssFeedService {
    * Parse Atom entry
    */
   private static parseAtomEntry(entry: any): ParsedRssEpisode {
-    const title = entry.title?.['#text'] || entry.title || '';
-    const description = entry.summary?.['#text'] || entry.summary || entry.content?.['#text'] || '';
+    const title = this.prepareHtmlContent(entry.title?.['#text'] || entry.title || '');
+    const description = this.prepareHtmlContent(entry.summary?.['#text'] || entry.summary || entry.content?.['#text'] || '');
     
     // Extract link with rel="enclosure" or type audio
     let audioUrl = '';

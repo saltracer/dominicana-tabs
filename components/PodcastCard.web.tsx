@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Podcast } from '../types';
 import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
+import HtmlRenderer from './HtmlRenderer';
 
 interface PodcastCardProps {
   podcast: Podcast;
@@ -56,9 +57,11 @@ export function PodcastCard({
         
         <View style={styles.info}>
           <View style={styles.header}>
-            <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
-              {podcast.title}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={podcast.title}
+              maxLines={2}
+              style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}
+            />
             {showSubscribeButton && onSubscribe && (
               <TouchableOpacity
                 style={[
@@ -88,9 +91,11 @@ export function PodcastCard({
           )}
           
           {podcast.description && (
-            <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={3}>
-              {podcast.description}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={podcast.description}
+              maxLines={3}
+              style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
+            />
           )}
           
           {podcast.categories && podcast.categories.length > 0 && (

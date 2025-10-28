@@ -20,6 +20,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastEpisode, Podcast } from '../../../../types';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
+import HtmlRenderer from '../../../../components/HtmlRenderer';
 
 const SPEED_OPTIONS = [
   { value: 0.75, label: '0.75x - Slow' },
@@ -343,9 +344,10 @@ export default function EpisodeDetailScreen() {
         {/* Description */}
         {episode.description && (
           <View style={styles.descriptionContainer}>
-            <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {episode.description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()}
-            </Text>
+            <HtmlRenderer 
+              htmlContent={episode.description}
+              style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}
+            />
           </View>
         )}
       </ScrollView>

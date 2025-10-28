@@ -16,6 +16,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastEpisode, Podcast } from '../../../../types';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
+import HtmlRenderer from '../../../../components/HtmlRenderer';
 import { useIsMobile, useIsTablet } from '../../../../hooks/useMediaQuery';
 
 export default function EpisodeDetailWebScreen() {
@@ -284,14 +285,9 @@ export default function EpisodeDetailWebScreen() {
             {/* Description */}
             {episode.description && (
               <View style={styles.descriptionContainer}>
-                <div 
-                  style={{
-                    color: Colors[colorScheme ?? 'light'].text,
-                    fontSize: 16,
-                    lineHeight: '26px',
-                    fontFamily: 'Georgia',
-                  }}
-                  dangerouslySetInnerHTML={{ __html: episode.description }}
+                <HtmlRenderer 
+                  htmlContent={episode.description}
+                  style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}
                 />
               </View>
             )}

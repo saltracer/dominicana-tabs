@@ -5,6 +5,7 @@ import { PodcastEpisode } from '../types';
 import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
 import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
+import HtmlRenderer from './HtmlRenderer';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -143,9 +144,11 @@ export function EpisodeListItem({
         </View>
 
         {episode.description && (
-          <Text style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={2}>
-            {episode.description}
-          </Text>
+          <HtmlRenderer 
+            htmlContent={episode.description} 
+            maxLines={2}
+            style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
+          />
         )}
 
         <View style={styles.meta}>
