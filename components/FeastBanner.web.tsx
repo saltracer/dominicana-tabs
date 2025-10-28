@@ -310,7 +310,7 @@ export default function FeastBanner({
                         : Colors[colorScheme ?? 'light'].dominicanWhite 
                     }
                   )}>
-                    {primaryFeast.rank}
+                    {primaryFeast.rank.split(' ')[0]}
                   </Text>
                 </View>
                 <View style={styles.feastTextContainer}>
