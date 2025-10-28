@@ -20,7 +20,7 @@ import { PodcastWithEpisodes, PodcastEpisode } from '../../../../types';
 import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptions';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
-import { usePodcastPlayer } from '../../../../hooks/usePodcastPlayer';
+import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 
 export default function PodcastDetailScreen() {
   const { colorScheme } = useTheme();
@@ -87,15 +87,20 @@ export default function PodcastDetailScreen() {
   };
 
   const handlePlayEpisode = async (episode: PodcastEpisode) => {
+    console.log('[PodcastDetail] handlePlayEpisode called with episode:', episode.title);
     if (currentEpisode?.id === episode.id) {
       if (isPlaying) {
+        console.log('[PodcastDetail] Pausing current episode');
         pause();
       } else if (isPaused) {
+        console.log('[PodcastDetail] Resuming paused episode');
         resume();
       } else {
+        console.log('[PodcastDetail] Playing current episode');
         await playEpisode(episode);
       }
     } else {
+      console.log('[PodcastDetail] Playing new episode:', episode.title);
       await playEpisode(episode);
     }
   };

@@ -27,6 +27,15 @@ export interface UserLiturgyPreferencesData {
   show_mystery_meditations?: boolean; // Show or hide mystery meditations in rosary (default: true)
   audio_playback_speed?: number; // Rosary audio playback speed (0.5 - 2.0, default: 1.0)
   rosary_final_prayers?: FinalPrayerConfig[]; // Customizable final prayers for rosary
+  // Podcast settings
+  podcast_downloads_enabled?: boolean; // Enable podcast downloads (default: true)
+  podcast_max_downloads?: number; // Maximum number of downloaded episodes (default: 10)
+  podcast_auto_download?: boolean; // Auto-download new episodes (default: false)
+  podcast_download_quality?: string; // Download quality: low, medium, high (default: high)
+  podcast_wifi_only?: boolean; // Download over WiFi only (default: true)
+  podcast_background_playback?: boolean; // Background playback (default: true)
+  podcast_auto_play_next?: boolean; // Auto-play next episode (default: false)
+  podcast_default_speed?: number; // Default playback speed (0.5-3.0, default: 1.0)
   created_at?: string;
   updated_at?: string;
 }
@@ -346,6 +355,29 @@ export class UserLiturgyPreferencesService {
         { value: 1, label: 'Slow' },
         { value: 2, label: 'Normal' },
         { value: 3, label: 'Fast' },
+      ],
+      // Podcast settings
+      podcastDownloadQualities: [
+        { value: 'low', label: 'Low (64 kbps)' },
+        { value: 'medium', label: 'Medium (128 kbps)' },
+        { value: 'high', label: 'High (256 kbps)' },
+      ],
+      podcastMaxDownloads: [
+        { value: 5, label: '5 episodes' },
+        { value: 10, label: '10 episodes' },
+        { value: 20, label: '20 episodes' },
+        { value: 50, label: '50 episodes' },
+        { value: 100, label: '100 episodes' },
+      ],
+      podcastSpeeds: [
+        { value: 0.5, label: '0.5x - Slow' },
+        { value: 0.75, label: '0.75x - Slower' },
+        { value: 1.0, label: '1.0x - Normal' },
+        { value: 1.25, label: '1.25x - Faster' },
+        { value: 1.5, label: '1.5x - Fast' },
+        { value: 2.0, label: '2.0x - Very Fast' },
+        { value: 2.5, label: '2.5x - Very Fast' },
+        { value: 3.0, label: '3.0x - Fastest' },
       ],
     };
   }

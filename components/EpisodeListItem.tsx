@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PodcastEpisode } from '../types';
 import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
+import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -25,6 +26,25 @@ export function EpisodeListItem({
   showProgress = true,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
+  const { 
+    isDownloadsEnabled, 
+    isEpisodeDownloaded, 
+    getDownloadState, 
+    downloadEpisode, 
+    deleteDownloadedEpisode 
+  } = usePodcastDownloads();
+
+  // Download state and handlers
+  const isDownloaded = isEpisodeDownloaded(episode.id);
+  const downloadState = getDownloadState(episode.id);
+
+  const handleDownload = async () => {
+    if (isDownloaded) {
+      await deleteDownloadedEpisode(episode.id);
+    } else {
+      await downloadEpisode(episode);
+    }
+  };
 
   const formatDuration = (seconds?: number): string => {
     if (!seconds) return '';
@@ -94,6 +114,32 @@ export function EpisodeListItem({
               color={isPlaying || isPaused ? '#fff' : Colors[colorScheme ?? 'light'].primary}
             />
           </TouchableOpacity>
+          
+          {/* Download Button */}
+          {isDownloadsEnabled && (
+            <TouchableOpacity
+              style={[
+                styles.downloadButton,
+                {
+                  backgroundColor: isDownloaded
+                    ? Colors[colorScheme ?? 'light'].primary
+                    : Colors[colorScheme ?? 'light'].surface,
+                }
+              ]}
+              onPress={handleDownload}
+              disabled={downloadState.status === 'downloading'}
+            >
+              {downloadState.status === 'downloading' ? (
+                <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+              ) : (
+                <Ionicons
+                  name={isDownloaded ? 'checkmark-circle' : 'cloud-download-outline'}
+                  size={18}
+                  color={isDownloaded ? '#fff' : Colors[colorScheme ?? 'light'].textSecondary}
+                />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
 
         {episode.description && (
@@ -187,6 +233,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  downloadButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   description: {
     fontSize: 13,

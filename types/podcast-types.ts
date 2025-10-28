@@ -52,6 +52,7 @@ export interface PodcastPlaybackProgress {
   duration?: number;
   completed: boolean;
   lastPlayedAt: string;
+  playbackSpeed?: number;
 }
 
 export interface PodcastWithEpisodes extends Podcast {

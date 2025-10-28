@@ -354,11 +354,21 @@ export default function ProfileScreen() {
 
           <SettingsCard
             title="Preaching"
-            description="Content preferences"
-            preview="Coming soon"
+            description="Podcast and sermon preferences"
+            preview={liturgyPreferences ? 
+              `Downloads: ${liturgyPreferences.podcast_downloads_enabled ? 'On' : 'Off'}, Max: ${liturgyPreferences.podcast_max_downloads || 10}, Speed: ${liturgyPreferences.podcast_default_speed || 1.0}x` 
+              : preferencesLoading ? 'Loading...' : 'Not available'
+            }
             icon="megaphone"
             onPress={() => router.push('/profile/preaching')}
-            disabled={true}
+          />
+
+          <SettingsCard
+            title="Downloaded Episodes"
+            description="Manage offline podcast episodes"
+            preview="View and manage downloads"
+            icon="cloud-download"
+            onPress={() => router.push('/profile/downloads')}
           />
 
           <SettingsCard

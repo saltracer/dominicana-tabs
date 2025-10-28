@@ -66,7 +66,11 @@
 
 ## Preaching
 - [ ] Subscribe to blogs
-- [ ] Subscribe to podcasts
+- [x] Subscribe to podcasts
+- [ ] Podcasts - Support playlists
+- [ ] Podcasts - Create a downloaded podcasts section
+- [ ] Create podcast specific preferences
+
 
 ## Other
 - [ ] Carplay

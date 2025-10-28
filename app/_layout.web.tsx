@@ -11,6 +11,7 @@ import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider, useCalendar } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { PodcastPlayerProvider } from '@/contexts/PodcastPlayerContext';
 import { ProfilePanelProvider, useProfilePanel } from '@/contexts/ProfilePanelContext';
 import { Colors } from '@/constants/Colors';
 import FeastBanner from '@/components/FeastBanner.web';
@@ -68,14 +69,16 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <CalendarProvider>
-          <BibleProvider>
-            <ProfilePanelProvider>
-              <RootLayoutNav />
-              <ProfilePanelContainerWeb />
-            </ProfilePanelProvider>
-          </BibleProvider>
-        </CalendarProvider>
+        <PodcastPlayerProvider>
+          <CalendarProvider>
+            <BibleProvider>
+              <ProfilePanelProvider>
+                <RootLayoutNav />
+                <ProfilePanelContainerWeb />
+              </ProfilePanelProvider>
+            </BibleProvider>
+          </CalendarProvider>
+        </PodcastPlayerProvider>
       </AuthProvider>
     </ThemeProvider>
   );

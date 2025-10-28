@@ -18,6 +18,8 @@ import { useCalendar } from './CalendarContext';
 import { useScrollContext } from '../contexts/ScrollContext';
 import { LiturgicalDay } from '../types';
 import { parseISO, format } from 'date-fns';
+import PodcastMiniPlayer from './PodcastMiniPlayer';
+import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
@@ -31,10 +33,26 @@ export default function FeastBanner({
   const { colorScheme } = useTheme();
   const { shouldHideUI } = useScrollContext();
   const { selectedDate, setSelectedDate } = useCalendar();
+  const { currentEpisode, isPlaying, isPaused, isLoading } = usePodcastPlayer();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Determine if we should show the podcast player
+  // Show if there's a current episode and it's either playing, paused, or loading
+  const showPodcastPlayer = currentEpisode && (isPlaying || isPaused || isLoading);
+  
+  // Debug logging
+  console.log('[FeastBanner] Podcast player state:', {
+    currentEpisode: currentEpisode?.title,
+    isPlaying,
+    isPaused,
+    isLoading,
+    showPodcastPlayer,
+    hasCurrentEpisode: !!currentEpisode,
+    episodeId: currentEpisode?.id
+  });
 
   const navigateToPreviousDay = () => {
     const currentDate = parseISO(liturgicalDay.date);
@@ -148,7 +166,14 @@ export default function FeastBanner({
             }}
             style={styles.carouselScrollView}
           >
-            {/* Saint/Feast Section - FIRST */}
+            {/* Podcast Player Section - FIRST (when playing) */}
+            {showPodcastPlayer && (
+              <View style={styles.carouselItem}>
+                <PodcastMiniPlayer />
+              </View>
+            )}
+            
+            {/* Saint/Feast Section */}
             <View style={styles.carouselItem}>
               {/* <View style={styles.carouselSection}> */}
                 {primaryFeast ? (
@@ -271,36 +296,57 @@ export default function FeastBanner({
           
           {/* Carousel Indicators */}
           <View style={styles.carouselIndicators}>
+            {/* Podcast Player Indicator (only when visible) */}
+            {showPodcastPlayer && (
+              <TouchableOpacity
+                style={[
+                  styles.carouselDot,
+                  { 
+                    backgroundColor: currentCarouselIndex === 0 
+                      ? Colors[colorScheme ?? 'light'].primary 
+                      : Colors[colorScheme ?? 'light'].textMuted 
+                  }
+                ]}
+                onPress={() => {
+                  scrollViewRef.current?.scrollTo({ x: 0, animated: true });
+                  setCurrentCarouselIndex(0);
+                }}
+                activeOpacity={0.7}
+              />
+            )}
+            
+            {/* Saint/Feast Indicator */}
             <TouchableOpacity
               style={[
                 styles.carouselDot,
                 { 
-                  backgroundColor: currentCarouselIndex === 0 
+                  backgroundColor: currentCarouselIndex === (showPodcastPlayer ? 1 : 0)
                     ? Colors[colorScheme ?? 'light'].primary 
                     : Colors[colorScheme ?? 'light'].textMuted 
                 }
               ]}
               onPress={() => {
-                // Scroll to saint/feast section (index 0)
-                scrollViewRef.current?.scrollTo({ x: 0, animated: true });
-                setCurrentCarouselIndex(0);
+                const targetIndex = showPodcastPlayer ? 1 : 0;
+                scrollViewRef.current?.scrollTo({ x: targetIndex * Dimensions.get('window').width, animated: true });
+                setCurrentCarouselIndex(targetIndex);
               }}
               activeOpacity={0.7}
             />
+            
+            {/* Date Section Indicator */}
             <TouchableOpacity
               style={[
                 styles.carouselDot,
                 { 
-                  backgroundColor: currentCarouselIndex === 1 
+                  backgroundColor: currentCarouselIndex === (showPodcastPlayer ? 2 : 1)
                     ? Colors[colorScheme ?? 'light'].primary 
                     : Colors[colorScheme ?? 'light'].textMuted 
                 }
               ]}
               onPress={() => {
-                // Scroll to date section (index 1)
-                const screenWidth = Dimensions.get('window').width;
-                scrollViewRef.current?.scrollTo({ x: screenWidth, animated: true });
-                setCurrentCarouselIndex(1);
+                const targetIndex = showPodcastPlayer ? 2 : 1;
+                scrollViewRef.current?.scrollTo({ x: targetIndex * Dimensions.get('window').width, animated: true });
+                setCurrentCarouselIndex(targetIndex);
               }}
               activeOpacity={0.7}
             />

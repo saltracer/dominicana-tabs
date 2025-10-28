@@ -17,6 +17,7 @@ import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { PodcastPlayerProvider } from '@/contexts/PodcastPlayerContext';
 import { RosaryPlaybackService } from '@/services/RosaryPlaybackService';
 import { AudioVersionService } from '@/services/AudioVersionService';
 import { RosaryAudioDownloadService } from '@/services/RosaryAudioDownloadService';
@@ -141,11 +142,13 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <CalendarProvider>
-          <BibleProvider>
-            <ThemedNavigation />
-          </BibleProvider>
-        </CalendarProvider>
+        <PodcastPlayerProvider>
+          <CalendarProvider>
+            <BibleProvider>
+              <ThemedNavigation />
+            </BibleProvider>
+          </CalendarProvider>
+        </PodcastPlayerProvider>
       </AuthProvider>
     </ThemeProvider>
   );

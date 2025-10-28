@@ -19,6 +19,8 @@ import { Celebration } from '../types/celebrations-types';
 import { parseISO, format } from 'date-fns';
 import { useIsMobile, useIsTablet } from '@/hooks/useMediaQuery';
 import { spacing } from '@/constants/Spacing';
+import PodcastMiniPlayer from './PodcastMiniPlayer.web';
+import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
@@ -31,6 +33,7 @@ export default function FeastBanner({
 }: FeastBannerProps) {
   const { colorScheme } = useTheme();
   const { selectedDate, setSelectedDate } = useCalendar();
+  const { currentEpisode, isPlaying, isPaused, isLoading } = usePodcastPlayer();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
@@ -38,6 +41,19 @@ export default function FeastBanner({
   const [carouselIndex, setCarouselIndex] = useState(0); // 0 = date, 1 = feast
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+
+  // Determine if we should show the podcast player
+  // Show if there's a current episode and it's either playing, paused, or loading
+  const showPodcastPlayer = currentEpisode && (isPlaying || isPaused || isLoading);
+  
+  // Debug logging
+  console.log('[FeastBanner.web] Podcast player state:', {
+    currentEpisode: currentEpisode?.title,
+    isPlaying,
+    isPaused,
+    isLoading,
+    showPodcastPlayer
+  });
 
   const navigateToPreviousDay = () => {
     const currentDate = parseISO(liturgicalDay.date);
@@ -265,6 +281,13 @@ export default function FeastBanner({
             </View>
           )}
           
+          {/* Podcast Player Section - Only on mobile when playing */}
+          {isMobile && showPodcastPlayer && carouselIndex === 2 && (
+            <View style={Object.assign({}, styles.rightSection, { flex: 1, alignItems: 'center' })}>
+              <PodcastMiniPlayer />
+            </View>
+          )}
+          
           {/* Feast Section - Hidden on mobile when carousel is on date view */}
           {primaryFeast && (!isMobile || carouselIndex === 1) && (
             <View style={Object.assign({}, styles.rightSection, isMobile ? { flex: 1, alignItems: 'center' } : {})}>
@@ -324,7 +347,7 @@ export default function FeastBanner({
         </View>
 
         {/* Mobile Carousel Indicators */}
-        {isMobile && primaryFeast && (
+        {isMobile && (primaryFeast || showPodcastPlayer) && (
           <View style={styles.carouselIndicators}>
             <TouchableOpacity
               style={Object.assign(
@@ -336,16 +359,30 @@ export default function FeastBanner({
               accessibilityLabel="View date navigation"
               accessibilityRole="button"
             />
-            <TouchableOpacity
-              style={Object.assign(
-                {},
-                styles.carouselDot,
-                carouselIndex === 1 ? { backgroundColor: Colors[colorScheme ?? 'light'].primary, width: 20 } : { backgroundColor: Colors[colorScheme ?? 'light'].border, width: 8 }
-              )}
-              onPress={() => setCarouselIndex(1)}
-              accessibilityLabel="View feast information"
-              accessibilityRole="button"
-            />
+            {primaryFeast && (
+              <TouchableOpacity
+                style={Object.assign(
+                  {},
+                  styles.carouselDot,
+                  carouselIndex === 1 ? { backgroundColor: Colors[colorScheme ?? 'light'].primary, width: 20 } : { backgroundColor: Colors[colorScheme ?? 'light'].border, width: 8 }
+                )}
+                onPress={() => setCarouselIndex(1)}
+                accessibilityLabel="View feast information"
+                accessibilityRole="button"
+              />
+            )}
+            {showPodcastPlayer && (
+              <TouchableOpacity
+                style={Object.assign(
+                  {},
+                  styles.carouselDot,
+                  carouselIndex === 2 ? { backgroundColor: Colors[colorScheme ?? 'light'].primary, width: 20 } : { backgroundColor: Colors[colorScheme ?? 'light'].border, width: 8 }
+                )}
+                onPress={() => setCarouselIndex(2)}
+                accessibilityLabel="View podcast player"
+                accessibilityRole="button"
+              />
+            )}
           </View>
         )}
       </View>

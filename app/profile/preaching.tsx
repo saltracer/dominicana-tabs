@@ -1,12 +1,84 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../components/ThemeProvider';
 import { Colors } from '../../constants/Colors';
+import { useTheme } from '../../components/ThemeProvider';
+import { useAuth } from '../../contexts/AuthContext';
+import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropdown';
+import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
+import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 
 export default function PreachingSettingsScreen() {
   const { colorScheme } = useTheme();
+  const { user } = useAuth();
+  const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
+  const [preferencesLoading, setPreferencesLoading] = useState(false);
+
+  const availableOptions = UserLiturgyPreferencesService.getAvailableOptions();
+
+  const loadLiturgyPreferences = async () => {
+    if (!user?.id) return;
+    
+    setPreferencesLoading(true);
+    try {
+      const { cached, fresh } = await UserLiturgyPreferencesService.getUserPreferencesWithCache(user.id);
+      if (cached) setLiturgyPreferences(cached);
+      const freshPreferences = await fresh;
+      if (freshPreferences) setLiturgyPreferences(freshPreferences);
+    } catch (error) {
+      console.error('Error loading liturgy preferences:', error);
+    } finally {
+      setPreferencesLoading(false);
+    }
+  };
+
+  const updateLiturgyPreference = async (key: keyof UserLiturgyPreferencesData, value: any) => {
+    if (!user?.id || !liturgyPreferences) return;
+    
+    try {
+      const updatedPreferences = { ...liturgyPreferences, [key]: value };
+      setLiturgyPreferences(updatedPreferences);
+      
+      await UserLiturgyPreferencesService.updateUserPreferences(user.id, updatedPreferences);
+    } catch (error) {
+      console.error('Error updating preference:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadLiturgyPreferences();
+  }, [user?.id]);
+
+  if (preferencesLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            Loading preferences...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!liturgyPreferences) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            Unable to load preferences
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -16,20 +88,92 @@ export default function PreachingSettingsScreen() {
             Preaching Settings
           </Text>
           <Text style={[styles.subtitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            Configure preferences for sermons, reflections, and preaching content
+            Configure preferences for podcasts, sermons, and preaching content
           </Text>
 
-          {/* Coming Soon Card */}
-          <View style={[styles.comingSoonCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}>
-            <View style={[styles.iconContainer, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-              <Ionicons name="megaphone" size={48} color={Colors[colorScheme ?? 'light'].primary} />
-            </View>
-            <Text style={[styles.comingSoonTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Coming Soon
+          {/* Download Settings Section */}
+          <View style={styles.section}>
+            <Text style={[styles.subsectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Downloads
             </Text>
-            <Text style={[styles.comingSoonText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              Preaching settings will be available in a future update.
+
+            <LiturgyPreferencesToggle
+              label="Enable Downloads"
+              description="Allow downloading podcast episodes for offline listening"
+              value={liturgyPreferences.podcast_downloads_enabled ?? true}
+              onValueChange={(value) => updateLiturgyPreference('podcast_downloads_enabled', value)}
+              icon="download"
+            />
+
+            {liturgyPreferences.podcast_downloads_enabled && (
+              <>
+                <LiturgyPreferencesDropdown
+                  label="Max Downloads"
+                  description="Maximum number of episodes to keep downloaded"
+                  value={liturgyPreferences.podcast_max_downloads ?? 10}
+                  options={availableOptions.podcastMaxDownloads}
+                  onValueChange={(value) => updateLiturgyPreference('podcast_max_downloads', value)}
+                  icon="list"
+                />
+
+                <LiturgyPreferencesDropdown
+                  label="Download Quality"
+                  description="Audio quality for downloaded episodes"
+                  value={liturgyPreferences.podcast_download_quality ?? 'high'}
+                  options={availableOptions.podcastDownloadQualities}
+                  onValueChange={(value) => updateLiturgyPreference('podcast_download_quality', value)}
+                  icon="musical-notes"
+                />
+
+                <LiturgyPreferencesToggle
+                  label="WiFi Only"
+                  description="Only download episodes when connected to WiFi"
+                  value={liturgyPreferences.podcast_wifi_only ?? true}
+                  onValueChange={(value) => updateLiturgyPreference('podcast_wifi_only', value)}
+                  icon="wifi"
+                />
+
+                <LiturgyPreferencesToggle
+                  label="Auto-Download"
+                  description="Automatically download new episodes from subscribed podcasts"
+                  value={liturgyPreferences.podcast_auto_download ?? false}
+                  onValueChange={(value) => updateLiturgyPreference('podcast_auto_download', value)}
+                  icon="cloud-download"
+                />
+              </>
+            )}
+          </View>
+
+          {/* Playback Settings Section */}
+          <View style={styles.section}>
+            <Text style={[styles.subsectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Playback
             </Text>
+
+            <LiturgyPreferencesToggle
+              label="Background Playback"
+              description="Continue playing when app is in background"
+              value={liturgyPreferences.podcast_background_playback ?? true}
+              onValueChange={(value) => updateLiturgyPreference('podcast_background_playback', value)}
+              icon="play-circle"
+            />
+
+            <LiturgyPreferencesToggle
+              label="Auto-Play Next"
+              description="Automatically play next episode when current one ends"
+              value={liturgyPreferences.podcast_auto_play_next ?? false}
+              onValueChange={(value) => updateLiturgyPreference('podcast_auto_play_next', value)}
+              icon="play-skip-forward"
+            />
+
+            <LiturgyPreferencesDropdown
+              label="Default Speed"
+              description="Default playback speed for new episodes"
+              value={liturgyPreferences.podcast_default_speed ?? 1.0}
+              options={availableOptions.podcastSpeeds}
+              onValueChange={(value) => updateLiturgyPreference('podcast_default_speed', value)}
+              icon="speedometer"
+            />
           </View>
         </View>
       </ScrollView>
@@ -58,35 +202,34 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     marginBottom: 24,
   },
-  comingSoonCard: {
-    padding: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  section: {
+    marginBottom: 32,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+  subsectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
     marginBottom: 16,
   },
-  comingSoonTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    marginBottom: 8,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  comingSoonText: {
+  loadingText: {
     fontSize: 16,
     fontFamily: 'Georgia',
-    textAlign: 'center',
-    lineHeight: 24,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    fontFamily: 'Georgia',
   },
 });
 

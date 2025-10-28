@@ -20,7 +20,7 @@ import { PodcastWithEpisodes, PodcastEpisode } from '../../../../types';
 import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptions';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
-import { usePodcastPlayer } from '../../../../hooks/usePodcastPlayer';
+import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 import Footer from '../../../../components/Footer.web';
 import { useIsMobile, useIsTablet, useIsDesktop } from '../../../../hooks/useMediaQuery';
 
@@ -93,15 +93,20 @@ export default function PodcastDetailWebScreen() {
   };
 
   const handlePlayEpisode = async (episode: PodcastEpisode) => {
+    console.log('[PodcastDetail.web] handlePlayEpisode called with episode:', episode.title);
     if (currentEpisode?.id === episode.id) {
       if (isPlaying) {
+        console.log('[PodcastDetail.web] Pausing current episode');
         pause();
       } else if (isPaused) {
+        console.log('[PodcastDetail.web] Resuming paused episode');
         resume();
       } else {
+        console.log('[PodcastDetail.web] Playing current episode');
         await playEpisode(episode);
       }
     } else {
+      console.log('[PodcastDetail.web] Playing new episode:', episode.title);
       await playEpisode(episode);
     }
   };

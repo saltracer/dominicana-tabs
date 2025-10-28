@@ -65,6 +65,7 @@ export class PodcastPlaybackService {
       duration: data.duration || undefined,
       completed: data.completed,
       lastPlayedAt: data.last_played_at,
+      playbackSpeed: data.playback_speed,
     };
   }
 
@@ -87,6 +88,29 @@ export class PodcastPlaybackService {
       }, {
         onConflict: 'user_id,episode_id',
       });
+  }
+
+  /**
+   * Save playback speed for an episode
+   */
+  static async saveSpeed(episodeId: string, speed: number): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('podcast_playback_progress')
+      .upsert({
+        user_id: user.id,
+        episode_id: episodeId,
+        playback_speed: speed,
+        last_played_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,episode_id',
+      });
+
+    if (error) {
+      console.error('Error saving playback speed:', error);
+    }
   }
 
   /**

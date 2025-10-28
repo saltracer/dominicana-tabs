@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { PodcastEpisode, PodcastPlaybackProgress } from '../types';
 import { PodcastPlaybackService } from '../services/PodcastPlaybackService';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './AuthContext';
 import { Platform } from 'react-native';
-import { usePodcastDownloads } from './usePodcastDownloads';
+import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 
 // Conditionally import TrackPlayer only on native
 let TrackPlayer: any = null;
@@ -20,7 +20,7 @@ if (Platform.OS !== 'web') {
   }
 }
 
-interface UsePodcastPlayerReturn {
+interface PodcastPlayerContextType {
   // Current episode
   currentEpisode: PodcastEpisode | null;
   
@@ -29,28 +29,25 @@ interface UsePodcastPlayerReturn {
   isLoading: boolean;
   position: number;
   duration: number;
-  isPaused: boolean;
-  
-  // Progress
   progress: PodcastPlaybackProgress | null;
-  progressPercentage: number;
   
   // Controls
   playEpisode: (episode: PodcastEpisode) => Promise<void>;
-  pause: () => void;
-  resume: () => void;
-  seek: (position: number) => void;
-  setSpeed: (speed: number) => void;
+  pause: () => Promise<void>;
+  resume: () => Promise<void>;
+  seek: (position: number) => Promise<void>;
+  setSpeed: (speed: number) => Promise<void>;
   
-  // Progress management
-  saveProgress: () => Promise<void>;
-  markCompleted: () => Promise<void>;
+  // Progress
+  progressPercentage: number;
   
-  // Simple HTML5 audio for web (basic implementation)
-  audio: HTMLAudioElement | null;
+  // State
+  isPaused: boolean;
 }
 
-export function usePodcastPlayer(): UsePodcastPlayerReturn {
+const PodcastPlayerContext = createContext<PodcastPlayerContextType | undefined>(undefined);
+
+export function PodcastPlayerProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { getDownloadedEpisodePath } = usePodcastDownloads();
   const [currentEpisode, setCurrentEpisode] = useState<PodcastEpisode | null>(null);
@@ -73,61 +70,44 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
   // Load user preferences
   const loadPreferences = useCallback(async () => {
     if (!user?.id) return;
-    
     try {
       const prefs = await UserLiturgyPreferencesService.getUserPreferences(user.id);
       setPreferences(prefs);
     } catch (error) {
-      console.error('[usePodcastPlayer] Error loading preferences:', error);
+      console.error('[PodcastPlayerContext] Error loading preferences:', error);
     }
   }, [user?.id]);
 
   // Initialize TrackPlayer on native
   const initializeTrackPlayer = useCallback(async () => {
     if (Platform.OS === 'web' || isInitializedRef.current || !TrackPlayer) return;
-    
     try {
-      console.log('[usePodcastPlayer] Initializing TrackPlayer...');
-      
       // Wait for TrackPlayer to be ready
       let attempts = 0;
-      while (attempts < 50) {
-        try {
-          const state = await TrackPlayer.getPlaybackState();
-          if (state) break;
-        } catch (e) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
+      while (!(await TrackPlayer.getState()) && attempts < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
       }
       
       // Configure capabilities with background playback support
       const backgroundPlayback = preferences?.podcast_background_playback ?? true;
-      
       await TrackPlayer.updateOptions({
         capabilities: [
-          'play', 
-          'pause', 
-          'seekTo', 
-          'skipToNext', 
-          'skipToPrevious'
+          'play', 'pause', 'seekTo', 'skipToNext', 'skipToPrevious'
         ],
         compactCapabilities: ['play', 'pause'],
         notificationCapabilities: ['play', 'pause', 'skipToNext'],
         progressUpdateEventInterval: 1,
-        // Background playback configuration
         android: {
           appKilledPlaybackBehavior: backgroundPlayback ? 'ContinuePlayback' : 'StopPlaybackAndRemoveNotification',
         },
-        // iOS audio session configuration
         iosCategory: backgroundPlayback ? 'playback' : 'soloAmbient',
         iosCategoryOptions: backgroundPlayback ? ['allowBluetooth', 'allowBluetoothA2DP'] : [],
       });
-      
       isInitializedRef.current = true;
-      console.log('[usePodcastPlayer] TrackPlayer initialized with background playback:', backgroundPlayback);
+      console.log('[PodcastPlayerContext] TrackPlayer initialized with background playback:', backgroundPlayback);
     } catch (error) {
-      console.error('[usePodcastPlayer] TrackPlayer initialization error:', error);
+      console.error('[PodcastPlayerContext] TrackPlayer initialization error:', error);
     }
   }, [preferences?.podcast_background_playback]);
 
@@ -136,9 +116,14 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
     initializeTrackPlayer();
   }, [initializeTrackPlayer]);
 
+  // Load preferences on mount
+  useEffect(() => {
+    loadPreferences();
+  }, [loadPreferences]);
+
   // Debug state changes
   useEffect(() => {
-    console.log('[usePodcastPlayer] State changed:', {
+    console.log('[PodcastPlayerContext] State changed:', {
       currentEpisode: currentEpisode?.title,
       isPlaying,
       isPaused,
@@ -162,7 +147,7 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
       try {
         // Listen for play state changes
         TrackPlayer.addEventListener('playback-state', (data: any) => {
-          console.log('[usePodcastPlayer] TrackPlayer playback-state:', data);
+          console.log('[PodcastPlayerContext] TrackPlayer playback-state:', data);
           if (data.state === 'playing') {
             setIsPlaying(true);
             setIsPaused(false);
@@ -177,12 +162,12 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
 
         // Listen for track changes
         TrackPlayer.addEventListener('playback-track-changed', (data: any) => {
-          console.log('[usePodcastPlayer] TrackPlayer track-changed:', data);
+          console.log('[PodcastPlayerContext] TrackPlayer track-changed:', data);
         });
 
-        console.log('[usePodcastPlayer] TrackPlayer event listeners set up');
+        console.log('[PodcastPlayerContext] TrackPlayer event listeners set up');
       } catch (error) {
-        console.error('[usePodcastPlayer] Error setting up TrackPlayer events:', error);
+        console.error('[PodcastPlayerContext] Error setting up TrackPlayer events:', error);
       }
     };
 
@@ -196,28 +181,18 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
     }
   }, [currentEpisode, user]);
 
-  // Auto-save progress every 10 seconds
-  useEffect(() => {
-    if (!currentEpisode || !isPlaying || !user) return;
-
-    const interval = setInterval(() => {
-      saveProgress();
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [currentEpisode, isPlaying, user, position, duration]);
-
   const loadProgress = async (episodeId: string) => {
     try {
       const data = await PodcastPlaybackService.getProgress(episodeId);
       if (!data) return;
-      
       setProgress(data);
       setPosition(data.position);
       setDuration(data.duration || 0);
       
-      // Seek to saved position on native
-      if (Platform.OS !== 'web' && TrackPlayer && data.position > 0) {
+      // Seek to saved position if we have audio/TrackPlayer
+      if (Platform.OS === 'web' && audio) {
+        audio.currentTime = data.position;
+      } else if (Platform.OS !== 'web' && TrackPlayer) {
         try {
           await TrackPlayer.seekTo(data.position);
         } catch (e) {
@@ -255,28 +230,28 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
   }, [currentEpisode, user, progress]);
 
   const playEpisode = useCallback(async (episode: PodcastEpisode) => {
-    console.log('[usePodcastPlayer] playEpisode called with:', episode.title);
-    console.log('[usePodcastPlayer] Platform.OS:', Platform.OS);
+    console.log('[PodcastPlayerContext] playEpisode called with:', episode.title);
+    console.log('[PodcastPlayerContext] Platform.OS:', Platform.OS);
     setIsLoading(true);
     
     try {
       // Check if episode is downloaded first
-      console.log('[usePodcastPlayer] Getting downloaded path for episode:', episode.id);
+      console.log('[PodcastPlayerContext] Getting downloaded path for episode:', episode.id);
       const downloadedPath = await getDownloadedEpisodePath(episode.id);
       const audioUrl = downloadedPath || episode.audioUrl;
-      console.log('[usePodcastPlayer] Using audio URL:', audioUrl);
+      console.log('[PodcastPlayerContext] Using audio URL:', audioUrl);
       
       if (Platform.OS === 'web') {
-        console.log('[usePodcastPlayer] Web platform - setting up HTML5 audio');
+        console.log('[PodcastPlayerContext] Web platform - setting up HTML5 audio');
         // Web implementation with HTML5 Audio
         if (audio) {
           audio.pause();
           setAudio(null);
         }
         
-        console.log('[usePodcastPlayer] Setting current episode:', episode.title);
+        console.log('[PodcastPlayerContext] Setting current episode:', episode.title);
         setCurrentEpisode(episode);
-        console.log('[usePodcastPlayer] Set current episode:', episode.title);
+        console.log('[PodcastPlayerContext] Set current episode:', episode.title);
         
         const newAudio = new Audio(audioUrl);
         
@@ -295,24 +270,24 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
         });
         
         newAudio.addEventListener('play', () => {
-          console.log('[usePodcastPlayer] Audio play event');
+          console.log('[PodcastPlayerContext] Audio play event');
           setIsPlaying(true);
           setIsPaused(false);
         });
         
         newAudio.addEventListener('pause', () => {
-          console.log('[usePodcastPlayer] Audio pause event');
+          console.log('[PodcastPlayerContext] Audio pause event');
           setIsPlaying(false);
           setIsPaused(true);
         });
         
         try {
           await newAudio.play();
-          console.log('[usePodcastPlayer] Audio play successful');
+          console.log('[PodcastPlayerContext] Audio play successful');
           setIsPlaying(true);
           setIsPaused(false);
         } catch (playError) {
-          console.log('[usePodcastPlayer] Autoplay prevented:', playError);
+          console.log('[PodcastPlayerContext] Autoplay prevented:', playError);
           // Even if autoplay fails, we should show the mini player
           // The user can manually start playback
           setIsPlaying(false);
@@ -322,24 +297,24 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
         
         setAudio(newAudio);
       } else {
-        console.log('[usePodcastPlayer] Native platform - setting up TrackPlayer');
+        console.log('[PodcastPlayerContext] Native platform - setting up TrackPlayer');
         // Native implementation with TrackPlayer
         if (!TrackPlayer) {
-          console.warn('[usePodcastPlayer] TrackPlayer not available on native');
+          console.warn('[PodcastPlayerContext] TrackPlayer not available on native');
           setIsLoading(false);
           return;
         }
 
-        console.log('[usePodcastPlayer] Stopping current playback');
+        console.log('[PodcastPlayerContext] Stopping current playback');
         // Stop current playback
         try {
           await TrackPlayer.stop();
           await TrackPlayer.reset();
         } catch (e) {
-          console.warn('[usePodcastPlayer] Error stopping current playback:', e);
+          console.warn('[PodcastPlayerContext] Error stopping current playback:', e);
         }
 
-        console.log('[usePodcastPlayer] Adding episode to TrackPlayer queue');
+        console.log('[PodcastPlayerContext] Adding episode to TrackPlayer queue');
         // Add episode to queue
         await TrackPlayer.add({
           id: episode.id,
@@ -350,27 +325,27 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
           duration: episode.duration,
         });
 
-        console.log('[usePodcastPlayer] Loading saved progress');
+        console.log('[PodcastPlayerContext] Loading saved progress');
         // Load saved progress
         const savedProgress = await PodcastPlaybackService.getProgress(episode.id);
         if (savedProgress && savedProgress.position > 0) {
           await TrackPlayer.seekTo(savedProgress.position);
         }
 
-        console.log('[usePodcastPlayer] Starting playback');
+        console.log('[PodcastPlayerContext] Starting playback');
         // Start playing
         await TrackPlayer.play();
         
-        console.log('[usePodcastPlayer] Setting current episode:', episode.title);
+        console.log('[PodcastPlayerContext] Setting current episode:', episode.title);
         setCurrentEpisode(episode);
-        console.log('[usePodcastPlayer] Set current episode:', episode.title);
+        console.log('[PodcastPlayerContext] Set current episode:', episode.title);
         setIsPlaying(true);
         setIsLoading(false);
-        console.log('[usePodcastPlayer] Native playback setup complete');
+        console.log('[PodcastPlayerContext] Native playback setup complete');
         
         // Add a small delay to ensure state is updated
         setTimeout(() => {
-          console.log('[usePodcastPlayer] State after delay:', {
+          console.log('[PodcastPlayerContext] State after delay:', {
             currentEpisode: currentEpisode?.title,
             isPlaying,
             isPaused
@@ -378,8 +353,8 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
         }, 100);
       }
     } catch (err) {
-      console.error('[usePodcastPlayer] Error playing episode:', err);
-      console.error('[usePodcastPlayer] Error details:', err);
+      console.error('[PodcastPlayerContext] Error playing episode:', err);
+      console.error('[PodcastPlayerContext] Error details:', err);
       setIsLoading(false);
     }
   }, [audio, markCompleted, getDownloadedEpisodePath]);
@@ -415,15 +390,16 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
     }
   }, [audio]);
 
-  const seek = useCallback(async (pos: number) => {
+  const seek = useCallback(async (position: number) => {
     if (Platform.OS === 'web') {
       if (audio) {
-        audio.currentTime = pos;
-        setPosition(pos);
+        audio.currentTime = position;
+        setPosition(position);
       }
     } else {
       if (TrackPlayer) {
-        await TrackPlayer.seekTo(pos);
+        await TrackPlayer.seekTo(position);
+        setPosition(position);
       }
     }
   }, [audio]);
@@ -444,44 +420,41 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
       try {
         await PodcastPlaybackService.saveSpeed(currentEpisode.id, speed);
       } catch (error) {
-        console.error('[usePodcastPlayer] Error saving speed:', error);
+        console.error('[PodcastPlayerContext] Error saving speed:', error);
       }
     }
   }, [audio, currentEpisode, user]);
 
-  const saveProgress = useCallback(async () => {
-    if (!currentEpisode || !user) return;
-    
-    try {
-      await PodcastPlaybackService.saveProgress(
-        currentEpisode.id,
-        position,
-        duration,
-        false
-      );
-    } catch (err) {
-      console.error('Error saving progress:', err);
-    }
-  }, [currentEpisode, user, position, duration]);
-
+  // Calculate progress percentage
   const progressPercentage = duration > 0 ? (position / duration) * 100 : 0;
 
-  return {
+  const value: PodcastPlayerContextType = {
     currentEpisode,
     isPlaying,
     isLoading,
     position,
     duration,
-    isPaused,
     progress,
-    progressPercentage,
     playEpisode,
     pause,
     resume,
     seek,
     setSpeed,
-    saveProgress,
-    markCompleted,
-    audio,
+    progressPercentage,
+    isPaused,
   };
+
+  return (
+    <PodcastPlayerContext.Provider value={value}>
+      {children}
+    </PodcastPlayerContext.Provider>
+  );
+}
+
+export function usePodcastPlayer(): PodcastPlayerContextType {
+  const context = useContext(PodcastPlayerContext);
+  if (context === undefined) {
+    throw new Error('usePodcastPlayer must be used within a PodcastPlayerProvider');
+  }
+  return context;
 }

@@ -54,6 +54,10 @@ export default function ProfileLayout() {
         options={{ title: 'Preaching Settings' }} 
       />
       <Stack.Screen 
+        name="downloads" 
+        options={{ title: 'Downloaded Episodes' }} 
+      />
+      <Stack.Screen 
         name="application" 
         options={{ title: 'Application Settings' }} 
       />

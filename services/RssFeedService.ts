@@ -73,17 +73,9 @@ export class RssFeedService {
           if (supabaseKey) {
             headers['Authorization'] = `Bearer ${supabaseKey}`;
             headers['apikey'] = supabaseKey;
-            console.log('Adding auth headers for edge function:', { 
-              hasAuth: !!headers['Authorization'],
-              hasApikey: !!headers['apikey'],
-              keyLength: supabaseKey.length
-            });
-          } else {
-            console.warn('No SUPABASE_ANON_KEY found in environment');
           }
         }
         
-        console.log('Fetching via proxy:', proxiedUrl);
         const response = await fetch(proxiedUrl, { headers });
         
         if (!response.ok) {
