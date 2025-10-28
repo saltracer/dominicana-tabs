@@ -44,9 +44,22 @@ export default function EpisodeDetailScreen() {
   const [showSpeedModal, setShowSpeedModal] = useState(false);
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
+  const titleStyle = useMemo(() => [
+    styles.episodeTitle,
+    { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
+
   const descriptionStyle = useMemo(() => [
     styles.description, 
     { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
+
+  const podcastBadgeStyle = useMemo(() => [
+    styles.podcastBadge,
+    { 
+      backgroundColor: Colors[colorScheme ?? 'light'].surface,
+      borderColor: Colors[colorScheme ?? 'light'].border 
+    }
   ], [colorScheme]);
 
   const {
@@ -160,109 +173,117 @@ export default function EpisodeDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header Section */}
+        <View style={[styles.headerSection, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+          {/* Artwork */}
+          <View style={styles.artworkContainer}>
+            {episode.artworkUrl || podcast.artworkUrl ? (
+              <Image
+                source={{ uri: episode.artworkUrl || podcast.artworkUrl }}
+                style={styles.artwork}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.artworkPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                <Ionicons name="radio" size={80} color={Colors[colorScheme ?? 'light'].primary} />
+              </View>
+            )}
+          </View>
 
-        {/* Artwork */}
-        <View style={styles.artworkContainer}>
-          {episode.artworkUrl || podcast.artworkUrl ? (
-            <Image
-              source={{ uri: episode.artworkUrl || podcast.artworkUrl }}
-              style={styles.artwork}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[styles.artworkPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-              <Ionicons name="radio" size={80} color={Colors[colorScheme ?? 'light'].primary} />
-            </View>
-          )}
-        </View>
-
-        {/* Podcast Info */}
-        <TouchableOpacity
-          style={styles.podcastInfo}
-          onPress={() => router.push(`/(tabs)/preaching/podcast/${podcast.id}`)}
-        >
-          <Text style={[styles.podcastTitle, { color: Colors[colorScheme ?? 'light'].primary }]}>
-            {podcast.title}
-          </Text>
-          {podcast.author && (
-            <Text style={[styles.podcastAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {podcast.author}
+          {/* Podcast Badge */}
+          <TouchableOpacity
+            style={podcastBadgeStyle}
+            onPress={() => router.push(`/(tabs)/preaching/podcast/${podcast.id}`)}
+          >
+            <Text style={[styles.podcastBadgeText, { color: Colors[colorScheme ?? 'light'].text }]}>
+              {podcast.title}
             </Text>
-          )}
-        </TouchableOpacity>
+            <Ionicons name="chevron-forward" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+          </TouchableOpacity>
 
-        {/* Episode Title */}
-        <Text style={[styles.episodeTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-          {episode.title}
-        </Text>
+          {/* Episode Title */}
+          <HtmlRenderer 
+            htmlContent={episode.title}
+            maxLines={3}
+            style={titleStyle}
+          />
 
-        {/* Episode Meta */}
-        <View style={styles.metaContainer}>
-          {episode.publishedAt && (
-            <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {new Date(episode.publishedAt).toLocaleDateString()}
-              </Text>
-            </View>
-          )}
-          {episode.duration && (
-            <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {Math.floor(episode.duration / 60)} minutes
-              </Text>
-            </View>
-          )}
+          {/* Episode Meta */}
+          <View style={styles.metaContainer}>
+            {episode.publishedAt && (
+              <View style={styles.metaItem}>
+                <Ionicons name="calendar-outline" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  {new Date(episode.publishedAt).toLocaleDateString()}
+                </Text>
+              </View>
+            )}
+            {episode.duration && (
+              <View style={styles.metaItem}>
+                <Ionicons name="time-outline" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  {Math.floor(episode.duration / 60)} minutes
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Playback Controls */}
-        <View style={styles.controlsContainer}>
-          {/* Progress Bar with Controls */}
-          <View style={styles.progressContainer}>
-            {/* Play Button */}
+        <View style={[styles.playbackSection, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+          {/* Main Play Button */}
+          <View style={styles.playButtonContainer}>
             <TouchableOpacity
-              style={[styles.playButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+              style={[styles.mainPlayButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
               onPress={handlePlay}
               disabled={playerLoading}
             >
               {playerLoading && isCurrentEpisode ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff" size="large" />
               ) : (
                 <Ionicons
                   name={isPlayingCurrent ? 'pause' : 'play'}
-                  size={24}
+                  size={32}
                   color="#fff"
                 />
               )}
             </TouchableOpacity>
+          </View>
 
-            {/* Progress Bar */}
-            <View style={styles.progressBarContainer}>
+          {/* Progress Section */}
+          <View style={styles.progressSection}>
+            {/* Time Display */}
+            <View style={styles.timeRow}>
               <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                 {formatTime(isCurrentEpisode ? position : 0)}
               </Text>
-              <View
-                style={[styles.sliderTrack, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-                onLayout={(e) => {
-                  setSliderWidth(e.nativeEvent.layout.width);
+              <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                {formatTime(duration || episode.duration || 0)}
+              </Text>
+            </View>
+
+            {/* Progress Bar */}
+            <View
+              style={[styles.progressBar, { backgroundColor: Colors[colorScheme ?? 'light'].border }]}
+              onLayout={(e) => {
+                setSliderWidth(e.nativeEvent.layout.width);
+              }}
+            >
+              <TouchableOpacity
+                style={{ flex: 1 }}
+                onPressIn={(e) => {
+                  if (!isCurrentEpisode || !duration) return;
+                  const touchX = e.nativeEvent.locationX;
+                  const percentage = touchX / sliderWidth;
+                  const seekPosition = percentage * duration;
+                  handleSeek(Math.max(0, Math.min(seekPosition, duration)));
                 }}
+                disabled={!isCurrentEpisode}
+                activeOpacity={1}
               >
-                <TouchableOpacity
-                  style={{ flex: 1 }}
-                  onPressIn={(e) => {
-                    if (!isCurrentEpisode || !duration) return;
-                    const touchX = e.nativeEvent.locationX;
-                    const percentage = touchX / sliderWidth;
-                    const seekPosition = percentage * duration;
-                    handleSeek(Math.max(0, Math.min(seekPosition, duration)));
-                  }}
-                  disabled={!isCurrentEpisode}
-                  activeOpacity={1}
-                >
                 <View
                   style={[
-                    styles.sliderFill,
+                    styles.progressFill,
                     {
                       width: `${isCurrentEpisode && duration > 0 ? (position / duration) * 100 : 0}%`,
                       backgroundColor: Colors[colorScheme ?? 'light'].primary,
@@ -271,31 +292,41 @@ export default function EpisodeDetailScreen() {
                 />
                 <View
                   style={[
-                    styles.sliderThumb,
+                    styles.progressThumb,
                     {
                       left: `${isCurrentEpisode && duration > 0 ? (position / duration) * 100 : 0}%`,
                       backgroundColor: Colors[colorScheme ?? 'light'].primary,
                     }
                   ]}
                 />
-                </TouchableOpacity>
-              </View>
-              <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {formatTime(duration || episode.duration || 0)}
-              </Text>
+              </TouchableOpacity>
             </View>
+          </View>
 
-            {/* Speed Control */}
+          {/* Secondary Controls */}
+          <View style={[styles.secondaryControls, { borderTopColor: Colors[colorScheme ?? 'light'].border }]}>
             <TouchableOpacity
               onPress={() => setShowSpeedModal(true)}
-              style={[styles.speedButton, { 
-                backgroundColor: Colors[colorScheme ?? 'light'].surface,
-                borderColor: Colors[colorScheme ?? 'light'].border 
-              }]}
+              style={[styles.controlButton, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
             >
-              <Ionicons name="speedometer" size={20} color={Colors[colorScheme ?? 'light'].text} />
-              <Text style={[styles.speedText, { color: Colors[colorScheme ?? 'light'].text }]}>
+              <Ionicons name="speedometer" size={20} color={Colors[colorScheme ?? 'light'].primary} />
+              <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].text }]}>
                 {selectedSpeed}x
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Placeholder for future controls */}
+            <TouchableOpacity style={[styles.controlButton, { backgroundColor: Colors[colorScheme ?? 'light'].background, opacity: 0.5 }]} disabled>
+              <Ionicons name="add-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                Queue
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={[styles.controlButton, { backgroundColor: Colors[colorScheme ?? 'light'].background, opacity: 0.5 }]} disabled>
+              <Ionicons name="ellipsis-horizontal" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              <Text style={[styles.controlButtonText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                More
               </Text>
             </TouchableOpacity>
           </View>
@@ -349,7 +380,10 @@ export default function EpisodeDetailScreen() {
 
         {/* Description */}
         {episode.description && (
-          <View style={styles.descriptionContainer}>
+          <View style={[styles.descriptionContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <Text style={[styles.descriptionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              About this episode
+            </Text>
             <HtmlRenderer 
               htmlContent={episode.description}
               style={descriptionStyle}
@@ -383,126 +417,179 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 40,
   },
+  headerSection: {
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    marginBottom: 16,
+    borderRadius: 20,
+    marginHorizontal: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
   artworkContainer: {
     alignItems: 'center',
-    marginVertical: 24,
+    marginBottom: 20,
   },
   artwork: {
-    width: width - 80,
-    height: width - 80,
-    borderRadius: 12,
+    width: 200,
+    height: 200,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   artworkPlaceholder: {
-    width: width - 80,
-    height: width - 80,
-    borderRadius: 12,
+    width: 200,
+    height: 200,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
-  podcastInfo: {
+  podcastBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 20,
+    alignSelf: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  podcastTitle: {
-    fontSize: 16,
+  podcastBadgeText: {
+    fontSize: 15,
     fontWeight: '600',
     fontFamily: 'Georgia',
-  },
-  podcastAuthor: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginTop: 4,
   },
   episodeTitle: {
     fontSize: 22,
     fontWeight: '700',
     fontFamily: 'Georgia',
     textAlign: 'center',
-    paddingHorizontal: 24,
+    lineHeight: 30,
+    paddingHorizontal: 16,
     marginBottom: 16,
   },
   metaContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 24,
-    marginBottom: 32,
+    marginBottom: 8,
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   metaText: {
     fontSize: 14,
     fontFamily: 'Georgia',
+    fontWeight: '500',
   },
-  controlsContainer: {
+  playbackSection: {
+    paddingVertical: 24,
     paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 24,
-  },
-  progressBarContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  sliderTrack: {
-    flex: 1,
-    height: 20,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  sliderFill: {
-    position: 'absolute',
-    left: 0,
-    top: 7,
-    height: 6,
-    borderRadius: 3,
-  },
-  sliderThumb: {
-    position: 'absolute',
-    top: 2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    marginLeft: -9,
+    marginBottom: 16,
+    borderRadius: 20,
+    marginHorizontal: 16,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
-  timeText: {
-    fontSize: 12,
-    fontFamily: 'Georgia',
-    minWidth: 40,
+  playButtonContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  playButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  mainPlayButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  speedButton: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 4,
+  progressSection: {
+    marginBottom: 20,
   },
-  speedText: {
-    fontSize: 14,
-    fontWeight: '600',
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressThumb: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    top: -6,
+    marginLeft: -10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  timeText: {
+    fontSize: 13,
     fontFamily: 'Georgia',
+    fontWeight: '500',
+  },
+  secondaryControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingTop: 20,
+    borderTopWidth: 1,
+    marginTop: 8,
+  },
+  controlButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 6,
+    borderRadius: 12,
+    minWidth: 80,
+  },
+  controlButtonText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+    fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
@@ -540,11 +627,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
   descriptionContainer: {
+    paddingVertical: 24,
     paddingHorizontal: 24,
+    marginBottom: 16,
+    borderRadius: 20,
+    marginHorizontal: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  descriptionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   description: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
     fontFamily: 'Georgia',
+    lineHeight: 24,
   },
 });
+
