@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PodcastEpisode } from '../types';
@@ -17,7 +17,7 @@ interface EpisodeListItemProps {
   showProgress?: boolean;
 }
 
-export function EpisodeListItem({
+export const EpisodeListItem = React.memo(function EpisodeListItem({
   episode,
   onPress,
   onPlay,
@@ -27,6 +27,18 @@ export function EpisodeListItem({
   showProgress = true,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
+
+  // Memoize theme-dependent styles
+  const themeStyles = useMemo(() => {
+    const theme = colorScheme ?? 'light';
+    return {
+      card: { backgroundColor: Colors[theme].card },
+      text: Colors[theme].text,
+      textSecondary: Colors[theme].textSecondary,
+      primary: Colors[theme].primary,
+      border: Colors[theme].border,
+    };
+  }, [colorScheme]);
   const { 
     isDownloadsEnabled, 
     isEpisodeDownloaded, 
@@ -72,28 +84,28 @@ export function EpisodeListItem({
     return date.toLocaleDateString();
   };
 
-  const handlePlay = (e: any) => {
+  const handlePlay = useCallback((e: any) => {
     e?.stopPropagation();
     if (onPlay) {
       onPlay();
     }
-  };
+  }, [onPlay]);
 
   const hasProgress = showProgress && progress > 0 && progress < 1;
 
   return (
     <TouchableOpacity
-      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+      style={[styles.container, themeStyles.card]}
       onPress={onPress}
     >
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.titleContainer}>
-            <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
+            <Text style={[styles.title, { color: themeStyles.text }]} numberOfLines={2}>
               {episode.title}
             </Text>
             {(isPlaying || isPaused) && (
-              <View style={[styles.playingIndicator, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
+              <View style={[styles.playingIndicator, { backgroundColor: themeStyles.primary }]}>
                 <Ionicons name="radio" size={12} color="#fff" />
               </View>
             )}
@@ -103,7 +115,7 @@ export function EpisodeListItem({
               styles.playButton,
               {
                 backgroundColor: isPlaying || isPaused
-                  ? Colors[colorScheme ?? 'light'].primary
+                  ? themeStyles.primary
                   : Colors[colorScheme ?? 'light'].surface,
               }
             ]}
@@ -112,7 +124,7 @@ export function EpisodeListItem({
             <Ionicons
               name={isPaused ? 'play' : isPlaying ? 'pause' : 'play'}
               size={20}
-              color={isPlaying || isPaused ? '#fff' : Colors[colorScheme ?? 'light'].primary}
+              color={isPlaying || isPaused ? '#fff' : themeStyles.primary}
             />
           </TouchableOpacity>
           
@@ -123,7 +135,7 @@ export function EpisodeListItem({
                 styles.downloadButton,
                 {
                   backgroundColor: isDownloaded
-                    ? Colors[colorScheme ?? 'light'].primary
+                    ? themeStyles.primary
                     : Colors[colorScheme ?? 'light'].surface,
                 }
               ]}
@@ -131,12 +143,12 @@ export function EpisodeListItem({
               disabled={downloadState.status === 'downloading'}
             >
               {downloadState.status === 'downloading' ? (
-                <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].primary} />
+                <ActivityIndicator size="small" color={themeStyles.primary} />
               ) : (
                 <Ionicons
                   name={isDownloaded ? 'checkmark-circle' : 'cloud-download-outline'}
                   size={18}
-                  color={isDownloaded ? '#fff' : Colors[colorScheme ?? 'light'].textSecondary}
+                  color={isDownloaded ? '#fff' : themeStyles.textSecondary}
                 />
               )}
             </TouchableOpacity>
@@ -147,23 +159,23 @@ export function EpisodeListItem({
           <HtmlRenderer 
             htmlContent={episode.description} 
             maxLines={2}
-            style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
+            style={[styles.description, { color: themeStyles.textSecondary }]}
           />
         )}
 
         <View style={styles.meta}>
           {episode.publishedAt && (
             <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={14} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              <Ionicons name="calendar-outline" size={14} color={themeStyles.textSecondary} />
+              <Text style={[styles.metaText, { color: themeStyles.textSecondary }]}>
                 {formatDate(episode.publishedAt)}
               </Text>
             </View>
           )}
           {episode.duration && (
             <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={14} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+              <Ionicons name="time-outline" size={14} color={themeStyles.textSecondary} />
+              <Text style={[styles.metaText, { color: themeStyles.textSecondary }]}>
                 {formatDuration(episode.duration)}
               </Text>
             </View>
@@ -178,7 +190,7 @@ export function EpisodeListItem({
                   styles.progressFill,
                   {
                     width: `${progress * 100}%`,
-                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
+                    backgroundColor: themeStyles.primary,
                   }
                 ]}
               />
@@ -188,7 +200,7 @@ export function EpisodeListItem({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

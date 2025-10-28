@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Podcast } from '../types';
@@ -15,7 +15,7 @@ interface PodcastCardProps {
   compact?: boolean;
 }
 
-export function PodcastCard({
+export const PodcastCard = React.memo(function PodcastCard({
   podcast,
   onPress,
   onSubscribe,
@@ -25,17 +25,29 @@ export function PodcastCard({
 }: PodcastCardProps) {
   const { colorScheme } = useTheme();
 
-  const handleSubscribe = (e: any) => {
+  const handleSubscribe = useCallback((e: any) => {
     e?.stopPropagation();
     if (onSubscribe) {
       onSubscribe(podcast.id);
     }
-  };
+  }, [onSubscribe, podcast.id]);
+
+  // Memoize theme-dependent styles
+  const themeStyles = useMemo(() => {
+    const theme = colorScheme ?? 'light';
+    return {
+      card: { backgroundColor: Colors[theme].card },
+      primary: Colors[theme].primary,
+      text: Colors[theme].text,
+      textSecondary: Colors[theme].textSecondary,
+      primary20: Colors[theme].primary + '20',
+    };
+  }, [colorScheme]);
 
   if (compact) {
     return (
       <TouchableOpacity
-        style={[styles.compactCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+        style={[styles.compactCard, themeStyles.card]}
         onPress={onPress}
       >
         <View style={styles.compactContent}>
@@ -46,18 +58,18 @@ export function PodcastCard({
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.compactArtworkPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-              <Ionicons name="radio" size={24} color={Colors[colorScheme ?? 'light'].primary} />
+            <View style={[styles.compactArtworkPlaceholder, { backgroundColor: themeStyles.primary20 }]}>
+              <Ionicons name="radio" size={24} color={themeStyles.primary} />
             </View>
           )}
           <View style={styles.compactInfo}>
             <HtmlRenderer 
               htmlContent={podcast.title}
               maxLines={1}
-              style={[styles.compactTitle, { color: Colors[colorScheme ?? 'light'].text }]}
+              style={[styles.compactTitle, { color: themeStyles.text }]}
             />
             {podcast.author && (
-              <Text style={[styles.compactAuthor, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>
+              <Text style={[styles.compactAuthor, { color: themeStyles.textSecondary }]} numberOfLines={1}>
                 {podcast.author}
               </Text>
             )}
@@ -68,9 +80,9 @@ export function PodcastCard({
                 styles.subscribeButton,
                 { 
                   backgroundColor: isSubscribed 
-                    ? Colors[colorScheme ?? 'light'].primary 
+                    ? themeStyles.primary 
                     : 'transparent',
-                  borderColor: Colors[colorScheme ?? 'light'].primary,
+                  borderColor: themeStyles.primary,
                 }
               ]}
               onPress={handleSubscribe}
@@ -78,7 +90,7 @@ export function PodcastCard({
               <Ionicons
                 name={isSubscribed ? 'checkmark' : 'add'}
                 size={20}
-                color={isSubscribed ? '#fff' : Colors[colorScheme ?? 'light'].primary}
+                color={isSubscribed ? '#fff' : themeStyles.primary}
               />
             </TouchableOpacity>
           )}
@@ -89,7 +101,7 @@ export function PodcastCard({
 
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+      style={[styles.card, themeStyles.card]}
       onPress={onPress}
     >
       <View style={styles.content}>
@@ -100,8 +112,8 @@ export function PodcastCard({
             resizeMode="cover"
           />
         ) : (
-          <View style={[styles.artworkPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-            <Ionicons name="radio" size={40} color={Colors[colorScheme ?? 'light'].primary} />
+          <View style={[styles.artworkPlaceholder, { backgroundColor: themeStyles.primary20 }]}>
+            <Ionicons name="radio" size={40} color={themeStyles.primary} />
           </View>
         )}
         <View style={styles.info}>
@@ -109,7 +121,7 @@ export function PodcastCard({
             <HtmlRenderer 
               htmlContent={podcast.title}
               maxLines={2}
-              style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}
+              style={[styles.title, { color: themeStyles.text }]}
             />
             {showSubscribeButton && onSubscribe && (
               <TouchableOpacity
@@ -117,9 +129,9 @@ export function PodcastCard({
                   styles.subscribeButton,
                   { 
                     backgroundColor: isSubscribed 
-                      ? Colors[colorScheme ?? 'light'].primary 
+                      ? themeStyles.primary 
                       : 'transparent',
-                    borderColor: Colors[colorScheme ?? 'light'].primary,
+                    borderColor: themeStyles.primary,
                   }
                 ]}
                 onPress={handleSubscribe}
@@ -127,13 +139,13 @@ export function PodcastCard({
                 <Ionicons
                   name={isSubscribed ? 'checkmark' : 'add'}
                   size={18}
-                  color={isSubscribed ? '#fff' : Colors[colorScheme ?? 'light'].primary}
+                  color={isSubscribed ? '#fff' : themeStyles.primary}
                 />
               </TouchableOpacity>
             )}
           </View>
           {podcast.author && (
-            <Text style={[styles.author, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>
+            <Text style={[styles.author, { color: themeStyles.textSecondary }]} numberOfLines={1}>
               {podcast.author}
             </Text>
           )}
@@ -141,7 +153,7 @@ export function PodcastCard({
             <HtmlRenderer 
               htmlContent={podcast.description}
               maxLines={2}
-              style={[styles.description, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
+              style={[styles.description, { color: themeStyles.textSecondary }]}
             />
           )}
           {podcast.categories && podcast.categories.length > 0 && (
@@ -149,9 +161,9 @@ export function PodcastCard({
               {podcast.categories.slice(0, 2).map((category) => (
                 <View
                   key={category}
-                  style={[styles.categoryTag, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}
+                  style={[styles.categoryTag, { backgroundColor: themeStyles.primary20 }]}
                 >
-                  <Text style={[styles.categoryText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                  <Text style={[styles.categoryText, { color: themeStyles.primary }]}>
                     {category}
                   </Text>
                 </View>
@@ -162,7 +174,7 @@ export function PodcastCard({
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
