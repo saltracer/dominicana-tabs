@@ -265,7 +265,7 @@ export default function PodcastsWebScreen() {
             </Text>
           </View>
         ) : (
-          <View style={[styles.podcastsGrid, { width: '100%', flexWrap: 'wrap' }]}>
+          <View style={styles.podcastsGrid}>
             {dataType === 'podcasts' ? (
               (displayData as any[]).map((podcast) => (
                 <View key={podcast.id} style={{ width: columnWidth as any, padding: isMobile ? 8 : 12 }}>
@@ -437,7 +437,9 @@ const styles = StyleSheet.create({
   },
   podcastsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 16,
+    padding: 16,
   },
   playlistCard: {
     flexDirection: 'row',

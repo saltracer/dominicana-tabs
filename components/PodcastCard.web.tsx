@@ -61,7 +61,7 @@ export const PodcastCard = React.memo(function PodcastCard({
       ]}
       onPress={onPress}
     >
-      <View style={styles.content}>
+      <View style={styles.artworkContainer}>
         {podcast.artworkUrl ? (
           <Image
             source={{ uri: podcast.artworkUrl }}
@@ -73,62 +73,55 @@ export const PodcastCard = React.memo(function PodcastCard({
             <Ionicons name="radio" size={40} color={themeStyles.primary} />
           </View>
         )}
+        {showSubscribeButton && onSubscribe && (
+          <TouchableOpacity
+            style={[
+              styles.subscribeButton,
+              { 
+                backgroundColor: isSubscribed 
+                  ? themeStyles.primary 
+                  : 'rgba(0,0,0,0.6)',
+                borderColor: isSubscribed ? themeStyles.primary : 'transparent',
+              }
+            ]}
+            onPress={handleSubscribe}
+          >
+            <Ionicons
+              name={isSubscribed ? 'checkmark' : 'add'}
+              size={18}
+              color={isSubscribed ? '#fff' : '#fff'}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+      
+      <View style={styles.content}>
+        <HtmlRenderer 
+          htmlContent={podcast.title}
+          maxLines={2}
+          style={titleStyle}
+        />
         
-        <View style={styles.info}>
-          <View style={styles.header}>
-            <HtmlRenderer 
-              htmlContent={podcast.title}
-              maxLines={2}
-              style={titleStyle}
-            />
-            {showSubscribeButton && onSubscribe && (
-              <TouchableOpacity
-                style={[
-                  styles.subscribeButton,
-                  { 
-                    backgroundColor: isSubscribed 
-                      ? themeStyles.primary 
-                      : 'transparent',
-                    borderColor: themeStyles.primary,
-                  }
-                ]}
-                onPress={handleSubscribe}
-              >
-                <Ionicons
-                  name={isSubscribed ? 'checkmark' : 'add'}
-                  size={18}
-                  color={isSubscribed ? '#fff' : themeStyles.primary}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {podcast.author && (
-            <Text style={[styles.author, { color: themeStyles.textSecondary }]} numberOfLines={1}>
-              {podcast.author}
-            </Text>
-          )}
-          
-          {podcast.description && (
-            <HtmlRenderer 
-              htmlContent={podcast.description}
-              maxLines={3}
-              style={descriptionStyle}
-            />
-          )}
-          
+        {podcast.author && (
+          <Text style={[styles.author, { color: themeStyles.textSecondary }]} numberOfLines={1}>
+            {podcast.author}
+          </Text>
+        )}
+        
+        <View style={styles.metadata}>
           {podcast.categories && podcast.categories.length > 0 && (
-            <View style={styles.categories}>
-              {podcast.categories.slice(0, 2).map((category) => (
-                <View
-                  key={category}
-                  style={[styles.categoryTag, { backgroundColor: themeStyles.primary20 }]}
-                >
-                  <Text style={[styles.categoryText, { color: themeStyles.primary }]}>
-                    {category}
-                  </Text>
-                </View>
-              ))}
+            <View style={[styles.categoryTag, { backgroundColor: themeStyles.primary20 }]}>
+              <Text style={[styles.categoryText, { color: themeStyles.primary }]}>
+                {podcast.categories[0]}
+              </Text>
+            </View>
+          )}
+          {(podcast as any).episodeCount !== undefined && (
+            <View style={styles.episodeCount}>
+              <Ionicons name="musical-notes" size={12} color={themeStyles.textSecondary} />
+              <Text style={[styles.episodeCountText, { color: themeStyles.textSecondary }]}>
+                {(podcast as any).episodeCount} eps
+              </Text>
             </View>
           )}
         </View>
@@ -140,7 +133,7 @@ export const PodcastCard = React.memo(function PodcastCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -148,60 +141,73 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   cardHovered: {
-    transform: [{ translateY: -4 }],
+    transform: [{ scale: 1.02 }],
     elevation: 6,
     shadowOpacity: 0.15,
     shadowRadius: 8,
   },
+  artworkContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
   content: {
-    gap: 12,
+    flexDirection: 'column',
   },
   artwork: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   artworkPlaceholder: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   info: {
-    gap: 8,
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 8,
+    marginBottom: 4,
   },
   title: {
-    flex: 1,
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    minHeight: 44, // Accommodate 2 lines
+    marginBottom: 4,
+    lineHeight: 20,
   },
   subscribeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
     width: 32,
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    flexShrink: 0,
   },
   author: {
     fontSize: 14,
     fontFamily: 'Georgia',
+    marginBottom: 8,
   },
   description: {
     fontSize: 13,
     fontFamily: 'Georgia',
     lineHeight: 18,
-    minHeight: 54, // Accommodate 3 lines
+    marginBottom: 8,
+  },
+  metadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
   },
   categories: {
     flexDirection: 'row',
@@ -211,11 +217,20 @@ const styles = StyleSheet.create({
   categoryTag: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 12,
   },
   categoryText: {
     fontSize: 11,
     fontFamily: 'Georgia',
     fontWeight: '600',
+  },
+  episodeCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  episodeCountText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
   },
 });

@@ -13,7 +13,8 @@ export function usePodcasts(filters: PodcastFilters = {}) {
     try {
       setLoading(true);
       setError(null);
-      const result = await PodcastService.listPodcasts(filters, { page, limit: 20 });
+      const limit = filters.limit || 20;
+      const result = await PodcastService.listPodcasts(filters, { page, limit });
       setPodcasts(result.podcasts);
       setTotalPages(result.totalPages);
     } catch (err) {

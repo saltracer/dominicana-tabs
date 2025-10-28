@@ -133,7 +133,7 @@ export class PodcastService {
         .from('podcast_episodes')
         .select('*')
         .eq('podcast_id', id)
-        .order('published_at', { ascending: false, nullsLast: true });
+        .order('published_at', { ascending: false, nullsFirst: false });
 
       if (episodesError) {
         console.error('Error fetching episodes:', episodesError);
@@ -175,7 +175,7 @@ export class PodcastService {
       .from('podcast_episodes')
       .select('*')
       .eq('podcast_id', podcastId)
-      .order('published_at', { ascending: false, nullsLast: true })
+      .order('published_at', { ascending: false, nullsFirst: false })
       .limit(limit);
 
     if (error) {

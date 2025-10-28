@@ -2,17 +2,19 @@
  * Podcasts Page - Native
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
   RefreshControl,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -37,6 +39,12 @@ export default function PodcastsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  // Calculate number of columns for grid layout
+  const numColumns = useMemo(() => {
+    const { width } = Dimensions.get('window');
+    return width < 600 ? 2 : width < 900 ? 3 : 4;
+  }, []);
 
   // Load curated podcasts
   const { podcasts: libraryPodcasts, loading: libraryLoading, refetch: refetchLibrary } = usePodcasts({
@@ -108,6 +116,7 @@ export default function PodcastsScreen() {
   };
 
   const { data: displayData, loading, type: dataType } = getDisplayData();
+
 
   return (
     <SafeAreaView 
@@ -205,60 +214,74 @@ export default function PodcastsScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView 
-        style={styles.scrollView} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-      >
-        {loading && !hasLoadedOnce ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
-            <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              Loading podcasts...
-            </Text>
-          </View>
-        ) : displayData.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons 
-              name={
-                activeTab === 'library' ? 'radio-outline' :
-                activeTab === 'subscriptions' ? 'person-outline' :
-                activeTab === 'playlists' ? 'list-outline' :
-                'list'
-              } 
-              size={64} 
-              color={Colors[colorScheme ?? 'light'].textSecondary} 
-            />
-            <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {activeTab === 'library' && 'No podcasts found'}
-              {activeTab === 'subscriptions' && 'No subscriptions yet'}
-              {activeTab === 'playlists' && 'No playlists yet'}
-              {activeTab === 'queue' && 'Queue is empty'}
-            </Text>
-            <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {activeTab === 'library' && 'Try adjusting your search or check back later for new content.'}
-              {activeTab === 'subscriptions' && 'Browse the curated library to discover podcasts to subscribe to.'}
-              {activeTab === 'playlists' && 'Create your first playlist to organize your favorite episodes.'}
-              {activeTab === 'queue' && 'Add episodes to your queue to see them here.'}
-            </Text>
-          </View>
-        ) : (
+      {loading && !hasLoadedOnce ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            Loading podcasts...
+          </Text>
+        </View>
+      ) : displayData.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons 
+            name={
+              activeTab === 'library' ? 'radio-outline' :
+              activeTab === 'subscriptions' ? 'person-outline' :
+              activeTab === 'playlists' ? 'list-outline' :
+              'list'
+            } 
+            size={64} 
+            color={Colors[colorScheme ?? 'light'].textSecondary} 
+          />
+          <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+            {activeTab === 'library' && 'No podcasts found'}
+            {activeTab === 'subscriptions' && 'No subscriptions yet'}
+            {activeTab === 'playlists' && 'No playlists yet'}
+            {activeTab === 'queue' && 'Queue is empty'}
+          </Text>
+          <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            {activeTab === 'library' && 'Try adjusting your search or check back later for new content.'}
+            {activeTab === 'subscriptions' && 'Browse the curated library to discover podcasts to subscribe to.'}
+            {activeTab === 'playlists' && 'Create your first playlist to organize your favorite episodes.'}
+            {activeTab === 'queue' && 'Add episodes to your queue to see them here.'}
+          </Text>
+        </View>
+      ) : dataType === 'podcasts' ? (
+        <FlatList
+          data={displayData as any[]}
+          numColumns={numColumns}
+          key={numColumns} // Force re-render when columns change
+          renderItem={({ item: podcast }) => (
+            <View style={{ flex: 1, marginHorizontal: 6 }}>
+              <PodcastCard
+                podcast={podcast}
+                onPress={() => handlePodcastPress(podcast.id)}
+                onSubscribe={handleSubscribe}
+                isSubscribed={isSubscribed(podcast.id)}
+                showSubscribeButton={activeTab === 'library'}
+              />
+            </View>
+          )}
+          keyExtractor={(item) => item.id}
+          style={{ flex: 1 }}
+          contentContainerStyle={[styles.podcastsContainer, { paddingBottom: 120 }]}
+          columnWrapperStyle={numColumns > 1 ? styles.podcastRow : undefined}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        />
+      ) : (
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        >
           <View style={styles.podcastsContainer}>
-            {dataType === 'podcasts' ? (
-              (displayData as any[]).map((podcast) => (
-                <PodcastCard
-                  key={podcast.id}
-                  podcast={podcast}
-                  onPress={() => handlePodcastPress(podcast.id)}
-                  onSubscribe={handleSubscribe}
-                  isSubscribed={isSubscribed(podcast.id)}
-                  showSubscribeButton={activeTab === 'library'}
-                />
-              ))
-            ) : dataType === 'playlists' ? (
+            {dataType === 'playlists' ? (
               (displayData as any[]).map((playlist) => (
                 <TouchableOpacity
                   key={playlist.id}
@@ -308,8 +331,8 @@ export default function PodcastsScreen() {
               ))
             ) : null}
           </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -390,6 +413,12 @@ const styles = StyleSheet.create({
   },
   podcastsContainer: {
     padding: 16,
+  },
+  podcastRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 0,
+    marginBottom: 12,
   },
   playlistCard: {
     flexDirection: 'row',

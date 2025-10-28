@@ -120,7 +120,7 @@ export const PodcastCard = React.memo(function PodcastCard({
       style={[styles.card, themeStyles.card]}
       onPress={onPress}
     >
-      <View style={styles.content}>
+      <View style={styles.artworkContainer}>
         {podcast.artworkUrl ? (
           <Image
             source={{ uri: podcast.artworkUrl }}
@@ -132,58 +132,52 @@ export const PodcastCard = React.memo(function PodcastCard({
             <Ionicons name="radio" size={40} color={themeStyles.primary} />
           </View>
         )}
-        <View style={styles.info}>
-          <View style={styles.header}>
-            <HtmlRenderer 
-              htmlContent={podcast.title}
-              maxLines={2}
-              style={fullTitleStyle}
+        {showSubscribeButton && onSubscribe && (
+          <TouchableOpacity
+            style={[
+              styles.subscribeButton,
+              { 
+                backgroundColor: isSubscribed 
+                  ? themeStyles.primary 
+                  : 'rgba(0,0,0,0.6)',
+                borderColor: isSubscribed ? themeStyles.primary : 'transparent',
+              }
+            ]}
+            onPress={handleSubscribe}
+          >
+            <Ionicons
+              name={isSubscribed ? 'checkmark' : 'add'}
+              size={18}
+              color={isSubscribed ? '#fff' : '#fff'}
             />
-            {showSubscribeButton && onSubscribe && (
-              <TouchableOpacity
-                style={[
-                  styles.subscribeButton,
-                  { 
-                    backgroundColor: isSubscribed 
-                      ? themeStyles.primary 
-                      : 'transparent',
-                    borderColor: themeStyles.primary,
-                  }
-                ]}
-                onPress={handleSubscribe}
-              >
-                <Ionicons
-                  name={isSubscribed ? 'checkmark' : 'add'}
-                  size={18}
-                  color={isSubscribed ? '#fff' : themeStyles.primary}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-          {podcast.author && (
-            <Text style={[styles.author, { color: themeStyles.textSecondary }]} numberOfLines={1}>
-              {podcast.author}
-            </Text>
-          )}
-          {podcast.description && (
-            <HtmlRenderer 
-              htmlContent={podcast.description}
-              maxLines={2}
-              style={descriptionStyle}
-            />
-          )}
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.content}>
+        <HtmlRenderer 
+          htmlContent={podcast.title}
+          maxLines={2}
+          style={fullTitleStyle}
+        />
+        {podcast.author && (
+          <Text style={[styles.author, { color: themeStyles.textSecondary }]} numberOfLines={1}>
+            {podcast.author}
+          </Text>
+        )}
+        <View style={styles.metadata}>
           {podcast.categories && podcast.categories.length > 0 && (
-            <View style={styles.categories}>
-              {podcast.categories.slice(0, 2).map((category) => (
-                <View
-                  key={category}
-                  style={[styles.categoryTag, { backgroundColor: themeStyles.primary20 }]}
-                >
-                  <Text style={[styles.categoryText, { color: themeStyles.primary }]}>
-                    {category}
-                  </Text>
-                </View>
-              ))}
+            <View style={[styles.categoryTag, { backgroundColor: themeStyles.primary20 }]}>
+              <Text style={[styles.categoryText, { color: themeStyles.primary }]}>
+                {podcast.categories[0]}
+              </Text>
+            </View>
+          )}
+          {(podcast as any).episodeCount !== undefined && (
+            <View style={styles.episodeCount}>
+              <Ionicons name="musical-notes" size={12} color={themeStyles.textSecondary} />
+              <Text style={[styles.episodeCountText, { color: themeStyles.textSecondary }]}>
+                {(podcast as any).episodeCount} eps
+              </Text>
             </View>
           )}
         </View>
@@ -195,7 +189,7 @@ export const PodcastCard = React.memo(function PodcastCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
@@ -208,9 +202,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginVertical: 6,
   },
+  artworkContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
   content: {
-    flexDirection: 'row',
-    gap: 12,
+    flexDirection: 'column',
   },
   compactContent: {
     flexDirection: 'row',
@@ -218,14 +215,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   artwork: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
   },
   artworkPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -254,11 +251,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    flex: 1,
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginRight: 8,
+    marginBottom: 4,
   },
   compactTitle: {
     fontSize: 15,
@@ -268,7 +264,7 @@ const styles = StyleSheet.create({
   author: {
     fontSize: 14,
     fontFamily: 'Georgia',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   compactAuthor: {
     fontSize: 13,
@@ -280,6 +276,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 18,
   },
+  metadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
   categories: {
     flexDirection: 'row',
     gap: 6,
@@ -288,20 +290,31 @@ const styles = StyleSheet.create({
   categoryTag: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 12,
   },
   categoryText: {
     fontSize: 11,
     fontFamily: 'Georgia',
     fontWeight: '600',
   },
+  episodeCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  episodeCountText: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+  },
   subscribeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    flexShrink: 0,
   },
 });
