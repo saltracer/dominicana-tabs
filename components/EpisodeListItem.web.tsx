@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PodcastEpisode } from '../types';
@@ -27,6 +27,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   showProgress = true,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
+  const [isHovered, setIsHovered] = useState(false);
 
   // Memoize theme-dependent styles
   const themeStyles = useMemo(() => {
@@ -39,6 +40,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
       border: Colors[theme].border,
     };
   }, [colorScheme]);
+
   const { 
     isDownloadsEnabled, 
     isEpisodeDownloaded, 
@@ -95,8 +97,14 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
 
   return (
     <TouchableOpacity
-      style={[styles.container, themeStyles.card]}
+      style={[
+        styles.container, 
+        themeStyles.card,
+        isHovered && styles.containerHovered,
+      ]}
       onPress={onPress}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <View style={styles.content}>
         <View style={styles.header}>
@@ -216,6 +224,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  containerHovered: {
+    transform: [{ scale: 1.02 }],
+    elevation: 6,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   content: {
     gap: 12,
@@ -256,6 +272,8 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
   },
   downloadButton: {
     width: 40,
@@ -263,6 +281,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
   },
   description: {
     fontSize: 13,

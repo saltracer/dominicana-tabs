@@ -24,6 +24,7 @@ import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 import { usePodcastPreferences } from '../../../../hooks/usePodcastPreferences';
 import Footer from '../../../../components/Footer.web';
 import HtmlRenderer from '../../../../components/HtmlRenderer';
+import PodcastPreferencesModal from '../../../../components/PodcastPreferencesModal.web';
 import { useIsMobile, useIsTablet, useIsDesktop } from '../../../../hooks/useMediaQuery';
 
 export default function PodcastDetailWebScreen() {
@@ -39,6 +40,8 @@ export default function PodcastDetailWebScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [podcast, setPodcast] = useState<PodcastWithEpisodes | null>(null);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
   const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
   const { currentEpisode, playEpisode, pause, resume, isPlaying, isPaused } = usePodcastPlayer();
@@ -163,21 +166,23 @@ export default function PodcastDetailWebScreen() {
       }
     >
       <View style={[styles.content, { maxWidth: isDesktop ? 1000 : '100%' }]}>
-        {/* Podcast Header */}
-        <View style={[styles.header, { flexDirection: isMobile ? 'column' : 'row' }]}>
+        {/* Podcast Header - Vertical Layout */}
+        <View style={styles.header}>
+          {/* Artwork */}
           {podcast.artworkUrl ? (
             <Image
               source={{ uri: podcast.artworkUrl }}
-              style={[styles.artwork, isMobile && styles.artworkMobile]}
+              style={[styles.artwork, isDesktop && styles.artworkDesktop]}
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.artworkPlaceholder, isMobile && styles.artworkMobile, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-              <Ionicons name="radio" size={64} color={Colors[colorScheme ?? 'light'].primary} />
+            <View style={[styles.artworkPlaceholder, isDesktop && styles.artworkDesktop, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+              <Ionicons name="radio" size={isDesktop ? 80 : 64} color={Colors[colorScheme ?? 'light'].primary} />
             </View>
           )}
 
-          <View style={[styles.headerInfo, isMobile && styles.headerInfoMobile]}>
+          {/* Podcast Info */}
+          <View style={styles.headerInfo}>
             <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
               {podcast.title}
             </Text>
@@ -191,23 +196,45 @@ export default function PodcastDetailWebScreen() {
                 {podcast.episodeCount} episodes
               </Text>
             )}
-            {podcast.description && (
-              <HtmlRenderer 
-                htmlContent={podcast.description}
-                maxLines={3}
-                style={descriptionPreviewStyle}
-              />
+          </View>
+
+          {/* Action Bar */}
+          <View style={styles.actionBar}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setShowPreferencesModal(true)}
+            >
+              <Ionicons name="settings-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="share-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            </TouchableOpacity>
+            {podcast.websiteUrl && (
+              <TouchableOpacity style={styles.actionButton}>
+                <Ionicons name="link-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              </TouchableOpacity>
             )}
           </View>
         </View>
 
         {/* Description */}
-        {!isMobile && podcast.description && (
+        {podcast.description && (
           <View style={styles.descriptionContainer}>
             <HtmlRenderer 
               htmlContent={podcast.description}
               style={descriptionStyle}
+              maxLines={isDescriptionExpanded ? undefined : 3}
             />
+            {podcast.description.length > 200 && (
+              <TouchableOpacity
+                style={styles.readMoreButton}
+                onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+              >
+                <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                  {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -229,145 +256,23 @@ export default function PodcastDetailWebScreen() {
 
         {/* Subscribe Button */}
         {user && (
-          <TouchableOpacity
-            style={[styles.subscribeButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-            onPress={handleSubscribe}
-          >
-            <Ionicons 
-              name={isSubscribed ? "checkmark-circle-outline" : "add-circle-outline"} 
-              size={20} 
-              color="#fff" 
-            />
-            <Text style={styles.subscribeButtonText}>
-              {isSubscribed ? 'Subscribed' : 'Subscribe'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Podcast Preferences */}
-        {user && isSubscribed && (
-          <View style={[styles.preferencesContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-            <Text style={[styles.preferencesTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Podcast Preferences
-            </Text>
-            
-            {/* Playback Speed */}
-            <View style={styles.preferenceItem}>
-              <Text style={[styles.preferenceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Playback Speed
-              </Text>
-              <View style={styles.speedButtons}>
-                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0].map((speed) => (
-                  <TouchableOpacity
-                    key={speed}
-                    style={[
-                      styles.speedButton,
-                      { 
-                        backgroundColor: effectiveSpeed === speed 
-                          ? Colors[colorScheme ?? 'light'].primary 
-                          : Colors[colorScheme ?? 'light'].background,
-                        borderColor: Colors[colorScheme ?? 'light'].border,
-                      }
-                    ]}
-                    onPress={() => updatePreferences({ playbackSpeed: speed })}
-                  >
-                    <Text style={[
-                      styles.speedButtonText,
-                      { 
-                        color: effectiveSpeed === speed 
-                          ? '#fff' 
-                          : Colors[colorScheme ?? 'light'].text 
-                      }
-                    ]}>
-                      {speed}x
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Max Episodes to Keep */}
-            <View style={styles.preferenceItem}>
-              <Text style={[styles.preferenceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Max Episodes to Keep
-              </Text>
-              <View style={styles.episodeButtons}>
-                {[10, 25, 50, 100].map((count) => (
-                  <TouchableOpacity
-                    key={count}
-                    style={[
-                      styles.episodeButton,
-                      { 
-                        backgroundColor: effectiveMaxEpisodes === count 
-                          ? Colors[colorScheme ?? 'light'].primary 
-                          : Colors[colorScheme ?? 'light'].background,
-                        borderColor: Colors[colorScheme ?? 'light'].border,
-                      }
-                    ]}
-                    onPress={() => updatePreferences({ maxEpisodesToKeep: count })}
-                  >
-                    <Text style={[
-                      styles.episodeButtonText,
-                      { 
-                        color: effectiveMaxEpisodes === count 
-                          ? '#fff' 
-                          : Colors[colorScheme ?? 'light'].text 
-                      }
-                    ]}>
-                      {count}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* Auto Download */}
-            <View style={styles.preferenceItem}>
-              <Text style={[styles.preferenceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-                Auto Download
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.autoDownloadButton,
-                  { 
-                    backgroundColor: effectiveAutoDownload 
-                      ? Colors[colorScheme ?? 'light'].primary 
-                      : Colors[colorScheme ?? 'light'].background,
-                    borderColor: Colors[colorScheme ?? 'light'].border,
-                  }
-                ]}
-                onPress={() => updatePreferences({ autoDownload: !effectiveAutoDownload })}
-              >
-                <Ionicons 
-                  name={effectiveAutoDownload ? "checkmark" : "close"} 
-                  size={16} 
-                  color={effectiveAutoDownload ? '#fff' : Colors[colorScheme ?? 'light'].text} 
-                />
-                <Text style={[
-                  styles.autoDownloadText,
-                  { 
-                    color: effectiveAutoDownload 
-                      ? '#fff' 
-                      : Colors[colorScheme ?? 'light'].text 
-                  }
-                ]}>
-                  {effectiveAutoDownload ? 'Enabled' : 'Disabled'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Reset to Global */}
+          <View style={styles.subscribeContainer}>
             <TouchableOpacity
-              style={[styles.resetButton, { borderColor: Colors[colorScheme ?? 'light'].border }]}
-              onPress={() => resetToGlobal()}
+              style={[styles.subscribeButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+              onPress={handleSubscribe}
             >
-              <Ionicons name="refresh" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              <Text style={[styles.resetText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Reset to Global Settings
+              <Ionicons 
+                name={isSubscribed ? "checkmark-circle-outline" : "add-circle-outline"} 
+                size={20} 
+                color="#fff" 
+              />
+              <Text style={styles.subscribeButtonText}>
+                {isSubscribed ? 'Subscribed' : 'Subscribe'}
               </Text>
             </TouchableOpacity>
           </View>
         )}
+
 
         {/* Episodes Header */}
         <View style={styles.episodesHeader}>
@@ -430,6 +335,18 @@ export default function PodcastDetailWebScreen() {
       </View>
       
       <Footer />
+
+      {/* Podcast Preferences Modal */}
+      <PodcastPreferencesModal
+        visible={showPreferencesModal}
+        onClose={() => setShowPreferencesModal(false)}
+        podcastId={id!}
+        effectiveSpeed={effectiveSpeed}
+        effectiveMaxEpisodes={effectiveMaxEpisodes}
+        effectiveAutoDownload={effectiveAutoDownload}
+        updatePreferences={updatePreferences}
+        resetToGlobal={resetToGlobal}
+      />
     </ScrollView>
   );
 }
@@ -455,39 +372,58 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   header: {
-    gap: 24,
+    alignItems: 'center',
     marginBottom: 32,
-    alignItems: 'flex-start',
   },
   artwork: {
     width: 200,
     height: 200,
-    borderRadius: 12,
+    borderRadius: 16,
+    marginVertical: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  artworkMobile: {
-    width: 150,
-    height: 150,
-    alignSelf: 'center',
+  artworkDesktop: {
+    width: 250,
+    height: 250,
   },
   artworkPlaceholder: {
     width: 200,
     height: 200,
-    borderRadius: 12,
+    borderRadius: 16,
+    marginVertical: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   headerInfo: {
-    flex: 1,
-  },
-  headerInfoMobile: {
     alignItems: 'center',
-    textAlign: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '700',
     fontFamily: 'Georgia',
+    textAlign: 'center',
     marginBottom: 8,
+  },
+  actionBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    marginTop: 12,
+  },
+  actionButton: {
+    padding: 8,
+    cursor: 'pointer',
   },
   author: {
     fontSize: 18,
@@ -512,9 +448,20 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     lineHeight: 26,
   },
+  readMoreButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    cursor: 'pointer',
+  },
+  readMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
   categoriesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 8,
     marginBottom: 24,
   },
@@ -528,14 +475,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
     fontWeight: '600',
   },
+  subscribeContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   subscribeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    marginBottom: 32,
+    cursor: 'pointer',
   },
   subscribeButtonText: {
     color: '#fff',
@@ -578,97 +530,5 @@ const styles = StyleSheet.create({
   },
   episodesContainer: {
     gap: 12,
-  },
-  preferencesContainer: {
-    marginBottom: 32,
-    padding: 24,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  preferencesTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 20,
-  },
-  preferenceItem: {
-    marginBottom: 20,
-  },
-  preferenceLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 12,
-  },
-  speedButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  speedButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    minWidth: 60,
-    alignItems: 'center',
-    cursor: 'pointer',
-  },
-  speedButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  episodeButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  episodeButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    minWidth: 70,
-    alignItems: 'center',
-    cursor: 'pointer',
-  },
-  episodeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  autoDownloadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 8,
-    alignSelf: 'flex-start',
-    cursor: 'pointer',
-  },
-  autoDownloadText: {
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'Georgia',
-  },
-  resetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 8,
-    alignSelf: 'flex-start',
-    marginTop: 12,
-    cursor: 'pointer',
-  },
-  resetText: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
   },
 });
