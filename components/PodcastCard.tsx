@@ -44,6 +44,22 @@ export const PodcastCard = React.memo(function PodcastCard({
     };
   }, [colorScheme]);
 
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const titleStyle = useMemo(() => [
+    styles.compactTitle, 
+    { color: themeStyles.text }
+  ], [themeStyles.text]);
+
+  const fullTitleStyle = useMemo(() => [
+    styles.title, 
+    { color: themeStyles.text }
+  ], [themeStyles.text]);
+
+  const descriptionStyle = useMemo(() => [
+    styles.description, 
+    { color: themeStyles.textSecondary }
+  ], [themeStyles.textSecondary]);
+
   if (compact) {
     return (
       <TouchableOpacity
@@ -66,7 +82,7 @@ export const PodcastCard = React.memo(function PodcastCard({
             <HtmlRenderer 
               htmlContent={podcast.title}
               maxLines={1}
-              style={[styles.compactTitle, { color: themeStyles.text }]}
+              style={titleStyle}
             />
             {podcast.author && (
               <Text style={[styles.compactAuthor, { color: themeStyles.textSecondary }]} numberOfLines={1}>
@@ -121,7 +137,7 @@ export const PodcastCard = React.memo(function PodcastCard({
             <HtmlRenderer 
               htmlContent={podcast.title}
               maxLines={2}
-              style={[styles.title, { color: themeStyles.text }]}
+              style={fullTitleStyle}
             />
             {showSubscribeButton && onSubscribe && (
               <TouchableOpacity
@@ -153,7 +169,7 @@ export const PodcastCard = React.memo(function PodcastCard({
             <HtmlRenderer 
               htmlContent={podcast.description}
               maxLines={2}
-              style={[styles.description, { color: themeStyles.textSecondary }]}
+              style={descriptionStyle}
             />
           )}
           {podcast.categories && podcast.categories.length > 0 && (
@@ -180,7 +196,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 12,
     padding: 16,
-    marginVertical: 8,
+    marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -242,7 +258,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    marginRight: 8,
   },
   compactTitle: {
     fontSize: 15,
@@ -280,12 +296,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   subscribeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    flexShrink: 0,
   },
 });

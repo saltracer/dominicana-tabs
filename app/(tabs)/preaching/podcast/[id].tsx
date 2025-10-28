@@ -21,6 +21,7 @@ import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptio
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
+import { usePodcastPreferences } from '../../../../hooks/usePodcastPreferences';
 import HtmlRenderer from '../../../../components/HtmlRenderer';
 
 export default function PodcastDetailScreen() {
@@ -34,6 +35,13 @@ export default function PodcastDetailScreen() {
 
   const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
   const { currentEpisode, playEpisode, pause, resume, isPlaying, isPaused } = usePodcastPlayer();
+  const { 
+    effectiveSpeed, 
+    effectiveMaxEpisodes, 
+    effectiveAutoDownload, 
+    updatePreferences, 
+    resetToGlobal 
+  } = usePodcastPreferences(id!);
   
   const isSubscribed = subscriptions.some(s => s.id === id);
 
@@ -210,6 +218,131 @@ export default function PodcastDetailScreen() {
               {isSubscribed ? 'Subscribed' : 'Subscribe'}
             </Text>
           </TouchableOpacity>
+        )}
+
+        {/* Podcast Preferences */}
+        {user && isSubscribed && (
+          <View style={[styles.preferencesContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+            <Text style={[styles.preferencesTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              Podcast Preferences
+            </Text>
+            
+            {/* Playback Speed */}
+            <View style={styles.preferenceItem}>
+              <Text style={[styles.preferenceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Playback Speed
+              </Text>
+              <View style={styles.speedButtons}>
+                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0].map((speed) => (
+                  <TouchableOpacity
+                    key={speed}
+                    style={[
+                      styles.speedButton,
+                      { 
+                        backgroundColor: effectiveSpeed === speed 
+                          ? Colors[colorScheme ?? 'light'].primary 
+                          : Colors[colorScheme ?? 'light'].background,
+                        borderColor: Colors[colorScheme ?? 'light'].border,
+                      }
+                    ]}
+                    onPress={() => updatePreferences({ playbackSpeed: speed })}
+                  >
+                    <Text style={[
+                      styles.speedButtonText,
+                      { 
+                        color: effectiveSpeed === speed 
+                          ? '#fff' 
+                          : Colors[colorScheme ?? 'light'].text 
+                      }
+                    ]}>
+                      {speed}x
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Max Episodes to Keep */}
+            <View style={styles.preferenceItem}>
+              <Text style={[styles.preferenceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Max Episodes to Keep
+              </Text>
+              <View style={styles.episodeButtons}>
+                {[10, 25, 50, 100].map((count) => (
+                  <TouchableOpacity
+                    key={count}
+                    style={[
+                      styles.episodeButton,
+                      { 
+                        backgroundColor: effectiveMaxEpisodes === count 
+                          ? Colors[colorScheme ?? 'light'].primary 
+                          : Colors[colorScheme ?? 'light'].background,
+                        borderColor: Colors[colorScheme ?? 'light'].border,
+                      }
+                    ]}
+                    onPress={() => updatePreferences({ maxEpisodesToKeep: count })}
+                  >
+                    <Text style={[
+                      styles.episodeButtonText,
+                      { 
+                        color: effectiveMaxEpisodes === count 
+                          ? '#fff' 
+                          : Colors[colorScheme ?? 'light'].text 
+                      }
+                    ]}>
+                      {count}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Auto Download */}
+            <View style={styles.preferenceItem}>
+              <Text style={[styles.preferenceLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
+                Auto Download
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.autoDownloadButton,
+                  { 
+                    backgroundColor: effectiveAutoDownload 
+                      ? Colors[colorScheme ?? 'light'].primary 
+                      : Colors[colorScheme ?? 'light'].background,
+                    borderColor: Colors[colorScheme ?? 'light'].border,
+                  }
+                ]}
+                onPress={() => updatePreferences({ autoDownload: !effectiveAutoDownload })}
+              >
+                <Ionicons 
+                  name={effectiveAutoDownload ? "checkmark" : "close"} 
+                  size={16} 
+                  color={effectiveAutoDownload ? '#fff' : Colors[colorScheme ?? 'light'].text} 
+                />
+                <Text style={[
+                  styles.autoDownloadText,
+                  { 
+                    color: effectiveAutoDownload 
+                      ? '#fff' 
+                      : Colors[colorScheme ?? 'light'].text 
+                  }
+                ]}>
+                  {effectiveAutoDownload ? 'Enabled' : 'Disabled'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Reset to Global */}
+            <TouchableOpacity
+              style={[styles.resetButton, { borderColor: Colors[colorScheme ?? 'light'].border }]}
+              onPress={() => resetToGlobal()}
+            >
+              <Ionicons name="refresh" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
+              <Text style={[styles.resetText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                Reset to Global Settings
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Episodes Header */}
@@ -405,5 +538,93 @@ const styles = StyleSheet.create({
   episodesContainer: {
     paddingHorizontal: 16,
     gap: 12,
+  },
+  preferencesContainer: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  preferencesTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 16,
+  },
+  preferenceItem: {
+    marginBottom: 16,
+  },
+  preferenceLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 8,
+  },
+  speedButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  speedButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 50,
+    alignItems: 'center',
+  },
+  speedButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  episodeButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  episodeButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  episodeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  autoDownloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+    alignSelf: 'flex-start',
+  },
+  autoDownloadText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  resetText: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
   },
 });

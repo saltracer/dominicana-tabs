@@ -112,6 +112,32 @@ export default function PreachingLayout() {
           headerRight: () => headerRightComponent,
         }}
       />
+      <Stack.Screen 
+        name="queue" 
+        options={{
+          headerTitle: 'Queue',
+          headerBackTitle: '',
+          headerLeft: () => headerLeftComponent,
+          headerRight: () => headerRightComponent,
+        }}
+      />
+      <Stack.Screen 
+        name="playlists" 
+        options={{
+          headerTitle: 'Playlists',
+          headerBackTitle: '',
+          headerLeft: () => headerLeftComponent,
+          headerRight: () => headerRightComponent,
+        }}
+      />
+      <Stack.Screen 
+        name="playlists/[id]" 
+        options={{
+          headerTitle: 'Playlist',
+          headerBackTitle: '',
+          headerRight: () => headerRightComponent,
+        }}
+      />
     </Stack>
   );
 }

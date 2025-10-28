@@ -25,8 +25,10 @@ import { usePodcasts } from '../../../hooks/usePodcasts';
 import { usePodcastSubscriptions } from '../../../hooks/usePodcastSubscriptions';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useIsMobile, useIsTablet, useIsDesktop } from '../../../hooks/useMediaQuery';
+import { usePlaylists } from '../../../hooks/usePlaylists';
+import { useQueue } from '../../../hooks/useQueue';
 
-type TabType = 'library' | 'subscriptions';
+type TabType = 'library' | 'subscriptions' | 'playlists' | 'queue';
 
 export default function PodcastsWebScreen() {
   const { colorScheme } = useTheme();
@@ -49,6 +51,10 @@ export default function PodcastsWebScreen() {
 
   // Load user subscriptions (only if authenticated)
   const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = usePodcastSubscriptions();
+  
+  // Load playlists and queue
+  const { playlists, loading: playlistsLoading } = usePlaylists();
+  const { queue, loading: queueLoading } = useQueue();
 
   // Track initial load completion
   useEffect(() => {
@@ -91,8 +97,22 @@ export default function PodcastsWebScreen() {
     return subscriptions.some(s => s.id === podcastId);
   };
 
-  const displayPodcasts = activeTab === 'library' ? libraryPodcasts : subscriptions;
-  const loading = activeTab === 'library' ? libraryLoading : subsLoading;
+  const getDisplayData = () => {
+    switch (activeTab) {
+      case 'library':
+        return { data: libraryPodcasts, loading: libraryLoading, type: 'podcasts' as const };
+      case 'subscriptions':
+        return { data: subscriptions, loading: subsLoading, type: 'podcasts' as const };
+      case 'playlists':
+        return { data: playlists, loading: playlistsLoading, type: 'playlists' as const };
+      case 'queue':
+        return { data: queue, loading: queueLoading, type: 'episodes' as const };
+      default:
+        return { data: [], loading: false, type: 'podcasts' as const };
+    }
+  };
+
+  const { data: displayData, loading, type: dataType } = getDisplayData();
 
   // Responsive column configuration
   const numColumns = useMemo(() => {
@@ -125,7 +145,12 @@ export default function PodcastsWebScreen() {
         </View>
 
         {/* Tabs */}
-        <View style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
+          contentContainerStyle={styles.tabContent}
+        >
           <TouchableOpacity
             style={[
               styles.tab,
@@ -137,7 +162,7 @@ export default function PodcastsWebScreen() {
               styles.tabText,
               { color: activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
             ]}>
-              Curated Library
+              Library
             </Text>
           </TouchableOpacity>
           {user && (
@@ -152,11 +177,39 @@ export default function PodcastsWebScreen() {
                 styles.tabText,
                 { color: activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
               ]}>
-                My Subscriptions ({subscriptions.length})
+                Subscriptions ({subscriptions.length})
               </Text>
             </TouchableOpacity>
           )}
-        </View>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'playlists' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setActiveTab('playlists')}
+          >
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === 'playlists' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
+            ]}>
+              Playlists ({playlists.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'queue' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
+            ]}
+            onPress={() => setActiveTab('queue')}
+          >
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === 'queue' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
+            ]}>
+              Queue ({queue.length})
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
 
         {/* Search Bar */}
         <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
@@ -183,33 +236,96 @@ export default function PodcastsWebScreen() {
               Loading podcasts...
             </Text>
           </View>
-        ) : displayPodcasts.length === 0 ? (
+        ) : displayData.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="radio-outline" size={64} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            <Ionicons 
+              name={
+                activeTab === 'library' ? 'radio-outline' :
+                activeTab === 'subscriptions' ? 'person-outline' :
+                activeTab === 'playlists' ? 'list-outline' :
+                'list'
+              } 
+              size={64} 
+              color={Colors[colorScheme ?? 'light'].textSecondary} 
+            />
             <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {activeTab === 'library' 
-                ? 'No podcasts found' 
-                : 'No subscriptions yet'}
+              {activeTab === 'library' && 'No podcasts found'}
+              {activeTab === 'subscriptions' && 'No subscriptions yet'}
+              {activeTab === 'playlists' && 'No playlists yet'}
+              {activeTab === 'queue' && 'Queue is empty'}
             </Text>
             <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {activeTab === 'library'
-                ? 'Try adjusting your search or check back later for new content.'
-                : 'Browse the curated library to discover podcasts to subscribe to.'}
+              {activeTab === 'library' && 'Try adjusting your search or check back later for new content.'}
+              {activeTab === 'subscriptions' && 'Browse the curated library to discover podcasts to subscribe to.'}
+              {activeTab === 'playlists' && 'Create your first playlist to organize your favorite episodes.'}
+              {activeTab === 'queue' && 'Add episodes to your queue to see them here.'}
             </Text>
           </View>
         ) : (
           <View style={[styles.podcastsGrid, { width: '100%', flexWrap: 'wrap' }]}>
-            {displayPodcasts.map((podcast) => (
-              <View key={podcast.id} style={{ width: columnWidth, padding: isMobile ? 8 : 12 }}>
-                <PodcastCard
-                  podcast={podcast}
-                  onPress={() => handlePodcastPress(podcast.id)}
-                  onSubscribe={handleSubscribe}
-                  isSubscribed={isSubscribed(podcast.id)}
-                  showSubscribeButton={activeTab === 'library'}
-                />
-              </View>
-            ))}
+            {dataType === 'podcasts' ? (
+              (displayData as any[]).map((podcast) => (
+                <View key={podcast.id} style={{ width: columnWidth as any, padding: isMobile ? 8 : 12 }}>
+                  <PodcastCard
+                    podcast={podcast}
+                    onPress={() => handlePodcastPress(podcast.id)}
+                    onSubscribe={handleSubscribe}
+                    isSubscribed={isSubscribed(podcast.id)}
+                    showSubscribeButton={activeTab === 'library'}
+                  />
+                </View>
+              ))
+            ) : dataType === 'playlists' ? (
+              (displayData as any[]).map((playlist) => (
+                <View key={playlist.id} style={{ width: columnWidth as any, padding: isMobile ? 8 : 12 }}>
+                  <TouchableOpacity
+                    style={[styles.playlistCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+                    onPress={() => router.push(`/(tabs)/preaching/playlists/${playlist.id}` as any)}
+                  >
+                    <View style={styles.playlistIcon}>
+                      <Ionicons 
+                        name={playlist.isSystem ? "cloud-download" : "list"} 
+                        size={24} 
+                        color={Colors[colorScheme ?? 'light'].primary} 
+                      />
+                    </View>
+                    <View style={styles.playlistInfo}>
+                      <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>
+                        {playlist.name}
+                      </Text>
+                      <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        {playlist.isSystem ? 'System Playlist' : 'User Playlist'}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : dataType === 'episodes' ? (
+              (displayData as any[]).map((episode, index) => (
+                <View key={episode.id} style={{ width: columnWidth as any, padding: isMobile ? 8 : 12 }}>
+                  <TouchableOpacity
+                    style={[styles.queueCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+                    onPress={() => router.push(`/(tabs)/preaching/episode/${episode.id}`)}
+                  >
+                    <View style={styles.queuePosition}>
+                      <Text style={[styles.queuePositionText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        {index + 1}
+                      </Text>
+                    </View>
+                    <View style={styles.queueInfo}>
+                      <Text style={[styles.queueTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
+                        {episode.title}
+                      </Text>
+                      <Text style={[styles.queueMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                        Podcast Name
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              ))
+            ) : null}
           </View>
         )}
 
@@ -248,15 +364,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabContainer: {
-    flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     marginBottom: 24,
   },
+  tabContent: {
+    paddingHorizontal: 16,
+  },
   tab: {
-    flex: 1,
     paddingVertical: 16,
+    paddingHorizontal: 12,
     alignItems: 'center',
+    marginRight: 8,
+    cursor: 'pointer',
   },
   tabText: {
     fontSize: 16,
@@ -312,6 +432,79 @@ const styles = StyleSheet.create({
   podcastsGrid: {
     flexDirection: 'row',
     gap: 16,
+  },
+  playlistCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    cursor: 'pointer',
+  },
+  playlistIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  playlistInfo: {
+    flex: 1,
+  },
+  playlistName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  playlistMeta: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
+  },
+  queueCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    cursor: 'pointer',
+  },
+  queuePosition: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  queuePositionText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: 'Georgia',
+  },
+  queueInfo: {
+    flex: 1,
+  },
+  queueTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+    marginBottom: 4,
+  },
+  queueMeta: {
+    fontSize: 12,
+    fontFamily: 'Georgia',
   },
 });
 

@@ -99,6 +99,7 @@ export interface PodcastFilters {
   isCurated?: boolean;
   sortBy?: 'title' | 'created_at' | 'last_fetched_at';
   sortOrder?: 'asc' | 'desc';
+  limit?: number;
 }
 
 export interface PodcastListResponse {
@@ -141,4 +142,55 @@ export interface UpdatePodcastData {
   categories?: string[];
   isCurated?: boolean;
   isActive?: boolean;
+}
+
+/**
+ * Playlist and Queue types
+ */
+export interface Playlist {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  isSystem: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlaylistItem {
+  id: string;
+  playlistId: string;
+  episodeId: string;
+  position: number;
+  addedAt: string;
+}
+
+export interface PlaylistWithEpisodes extends Playlist {
+  episodes: PodcastEpisode[];
+  episodeCount: number;
+}
+
+export interface PlaylistFilters {
+  sortBy?: 'added_date' | 'episode_date' | 'title' | 'duration';
+  sortOrder?: 'asc' | 'desc';
+  podcastId?: string;
+}
+
+export interface PodcastPreferences {
+  id: string;
+  userId: string;
+  podcastId: string;
+  playbackSpeed?: number; // null = use global
+  maxEpisodesToKeep?: number; // null = use global
+  autoDownload?: boolean; // null = use global
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QueueItem {
+  id: string;
+  userId: string;
+  episodeId: string;
+  position: number;
+  addedAt: string;
 }

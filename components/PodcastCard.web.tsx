@@ -42,6 +42,17 @@ export const PodcastCard = React.memo(function PodcastCard({
     };
   }, [colorScheme]);
 
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const titleStyle = useMemo(() => [
+    styles.title, 
+    { color: themeStyles.text }
+  ], [themeStyles.text]);
+
+  const descriptionStyle = useMemo(() => [
+    styles.description, 
+    { color: themeStyles.textSecondary }
+  ], [themeStyles.textSecondary]);
+
   return (
     <TouchableOpacity
       style={[
@@ -68,7 +79,7 @@ export const PodcastCard = React.memo(function PodcastCard({
             <HtmlRenderer 
               htmlContent={podcast.title}
               maxLines={2}
-              style={[styles.title, { color: themeStyles.text }]}
+              style={titleStyle}
             />
             {showSubscribeButton && onSubscribe && (
               <TouchableOpacity
@@ -102,7 +113,7 @@ export const PodcastCard = React.memo(function PodcastCard({
             <HtmlRenderer 
               htmlContent={podcast.description}
               maxLines={3}
-              style={[styles.description, { color: themeStyles.textSecondary }]}
+              style={descriptionStyle}
             />
           )}
           

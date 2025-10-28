@@ -14,6 +14,7 @@ import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
 import { PodcastService } from '../services/PodcastService';
 import { Podcast } from '../types';
 import { router } from 'expo-router';
+import FullScreenPlayer from './FullScreenPlayer.web';
 
 export default function PodcastMiniPlayer() {
   const { colorScheme } = useTheme();
@@ -33,6 +34,7 @@ export default function PodcastMiniPlayer() {
 
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [loadingPodcast, setLoadingPodcast] = useState(false);
+  const [showFullScreen, setShowFullScreen] = useState(false);
 
   console.log('[PodcastMiniPlayer.web] Rendering with:', {
     currentEpisode: currentEpisode?.title,
@@ -79,8 +81,8 @@ export default function PodcastMiniPlayer() {
   };
 
   const handlePress = () => {
-    // Navigate to episode detail screen
-    router.push(`/(tabs)/preaching/episode/${currentEpisode.id}`);
+    // Open full screen player drawer
+    setShowFullScreen(true);
   };
 
   const handleSpeedPress = () => {
@@ -103,14 +105,15 @@ export default function PodcastMiniPlayer() {
   const artworkUrl = currentEpisode.artworkUrl || podcast?.artworkUrl;
 
   return (
-    <TouchableOpacity
-      style={[
-        styles.container,
-        { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }
-      ]}
-      onPress={handlePress}
-      activeOpacity={0.8}
-    >
+    <>
+      <TouchableOpacity
+        style={[
+          styles.container,
+          { backgroundColor: Colors[colorScheme ?? 'light'].offWhiteCard }
+        ]}
+        onPress={handlePress}
+        activeOpacity={0.8}
+      >
       {/* Episode Artwork */}
       <View style={styles.artworkContainer}>
         {artworkUrl ? (
@@ -192,7 +195,13 @@ export default function PodcastMiniPlayer() {
           />
         </View>
       </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      <FullScreenPlayer 
+        visible={showFullScreen}
+        onClose={() => setShowFullScreen(false)}
+      />
+    </>
   );
 }
 
@@ -206,7 +215,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 8,
     marginVertical: 4,
     cursor: 'pointer',
-    transition: 'opacity 0.2s ease',
   },
   artworkContainer: {
     marginRight: 12,
