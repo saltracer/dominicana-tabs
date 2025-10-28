@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -49,6 +49,17 @@ export default function PodcastDetailWebScreen() {
     updatePreferences, 
     resetToGlobal 
   } = usePodcastPreferences(id!);
+
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const descriptionStyle = useMemo(() => [
+    styles.description, 
+    { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
+
+  const descriptionPreviewStyle = useMemo(() => [
+    styles.descriptionPreview, 
+    { color: Colors[colorScheme ?? 'light'].textSecondary }
+  ], [colorScheme]);
   
   const isSubscribed = subscriptions.some(s => s.id === id);
 
@@ -184,7 +195,7 @@ export default function PodcastDetailWebScreen() {
               <HtmlRenderer 
                 htmlContent={podcast.description}
                 maxLines={3}
-                style={[styles.descriptionPreview, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
+                style={descriptionPreviewStyle}
               />
             )}
           </View>
@@ -195,7 +206,7 @@ export default function PodcastDetailWebScreen() {
           <View style={styles.descriptionContainer}>
             <HtmlRenderer 
               htmlContent={podcast.description}
-              style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}
+              style={descriptionStyle}
             />
           </View>
         )}

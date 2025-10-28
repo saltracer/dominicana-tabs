@@ -145,19 +145,16 @@ export default function PodcastsWebScreen() {
         </View>
 
         {/* Tabs */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-          contentContainerStyle={styles.tabContent}
-        >
+        <View style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
           <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'library' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
-            ]}
+            style={styles.tab}
             onPress={() => setActiveTab('library')}
           >
+            <Ionicons 
+              name={activeTab === 'library' ? "library" : "library-outline"}
+              size={20}
+              color={activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+            />
             <Text style={[
               styles.tabText,
               { color: activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
@@ -167,49 +164,55 @@ export default function PodcastsWebScreen() {
           </TouchableOpacity>
           {user && (
             <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'subscriptions' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
-              ]}
+              style={styles.tab}
               onPress={() => setActiveTab('subscriptions')}
             >
+              <Ionicons 
+                name={activeTab === 'subscriptions' ? "bookmark" : "bookmark-outline"}
+                size={20}
+                color={activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+              />
               <Text style={[
                 styles.tabText,
                 { color: activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
               ]}>
-                Subscriptions ({subscriptions.length})
+                Subscriptions
               </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'playlists' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
-            ]}
+            style={styles.tab}
             onPress={() => setActiveTab('playlists')}
           >
+            <Ionicons 
+              name={activeTab === 'playlists' ? "list" : "list-outline"}
+              size={20}
+              color={activeTab === 'playlists' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+            />
             <Text style={[
               styles.tabText,
               { color: activeTab === 'playlists' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
             ]}>
-              Playlists ({playlists.length})
+              Playlists
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'queue' && { borderBottomColor: Colors[colorScheme ?? 'light'].primary, borderBottomWidth: 2 }
-            ]}
+            style={styles.tab}
             onPress={() => setActiveTab('queue')}
           >
+            <Ionicons 
+              name={activeTab === 'queue' ? "musical-notes" : "musical-notes-outline"}
+              size={20}
+              color={activeTab === 'queue' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+            />
             <Text style={[
               styles.tabText,
               { color: activeTab === 'queue' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
             ]}>
-              Queue ({queue.length})
+              Queue
             </Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
 
         {/* Search Bar */}
         <View style={[styles.searchContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
@@ -364,24 +367,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
     marginBottom: 24,
   },
-  tabContent: {
-    paddingHorizontal: 16,
-  },
   tab: {
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    flex: 1,
+    paddingVertical: 6,
     alignItems: 'center',
-    marginRight: 8,
+    justifyContent: 'center',
     cursor: 'pointer',
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: '600',
     fontFamily: 'Georgia',
+    marginTop: 2,
   },
   searchContainer: {
     flexDirection: 'row',

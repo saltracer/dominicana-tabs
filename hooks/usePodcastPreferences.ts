@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PodcastPreferences } from '../types/podcast-types';
 import { PodcastPreferencesService } from '../services/PodcastPreferencesService';
+import { useAuth } from '../contexts/AuthContext';
 
 export function usePodcastPreferences(podcastId: string) {
+  const { user } = useAuth();
   const [preferences, setPreferences] = useState<PodcastPreferences | null>(null);
   const [effectiveSpeed, setEffectiveSpeed] = useState<number>(1.0);
   const [effectiveMaxEpisodes, setEffectiveMaxEpisodes] = useState<number>(10);
@@ -11,7 +13,7 @@ export function usePodcastPreferences(podcastId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const loadPreferences = useCallback(async () => {
-    if (!podcastId) return;
+    if (!podcastId || !user) return;
 
     try {
       setLoading(true);
@@ -23,9 +25,9 @@ export function usePodcastPreferences(podcastId: string) {
 
       // Load effective values
       const [speed, maxEpisodes, autoDownload] = await Promise.all([
-        PodcastPreferencesService.getEffectiveSpeed(podcastId),
-        PodcastPreferencesService.getEffectiveMaxEpisodes(podcastId),
-        PodcastPreferencesService.getEffectiveAutoDownload(podcastId),
+        PodcastPreferencesService.getEffectiveSpeed(podcastId, user.id),
+        PodcastPreferencesService.getEffectiveMaxEpisodes(podcastId, user.id),
+        PodcastPreferencesService.getEffectiveAutoDownload(podcastId, user.id),
       ]);
 
       setEffectiveSpeed(speed);
@@ -37,7 +39,7 @@ export function usePodcastPreferences(podcastId: string) {
     } finally {
       setLoading(false);
     }
-  }, [podcastId]);
+  }, [podcastId, user]);
 
   const updatePreference = useCallback(async (key: keyof PodcastPreferences, value: any) => {
     try {

@@ -82,7 +82,7 @@ export class PodcastPreferencesService {
   /**
    * Get effective playback speed (podcast-specific or global fallback)
    */
-  static async getEffectiveSpeed(podcastId: string): Promise<number> {
+  static async getEffectiveSpeed(podcastId: string, userId: string): Promise<number> {
     const podcastPrefs = await this.getPodcastPreferences(podcastId);
     
     if (podcastPrefs?.playbackSpeed !== undefined && podcastPrefs.playbackSpeed !== null) {
@@ -90,14 +90,14 @@ export class PodcastPreferencesService {
     }
 
     // Fall back to global preferences
-    const globalPrefs = await UserLiturgyPreferencesService.getPreferences();
+    const globalPrefs = await UserLiturgyPreferencesService.getUserPreferences(userId);
     return globalPrefs?.podcast_default_speed || 1.0;
   }
 
   /**
    * Get effective max episodes to keep (podcast-specific or global fallback)
    */
-  static async getEffectiveMaxEpisodes(podcastId: string): Promise<number> {
+  static async getEffectiveMaxEpisodes(podcastId: string, userId: string): Promise<number> {
     const podcastPrefs = await this.getPodcastPreferences(podcastId);
     
     if (podcastPrefs?.maxEpisodesToKeep !== undefined && podcastPrefs.maxEpisodesToKeep !== null) {
@@ -105,14 +105,14 @@ export class PodcastPreferencesService {
     }
 
     // Fall back to global preferences
-    const globalPrefs = await UserLiturgyPreferencesService.getPreferences();
+    const globalPrefs = await UserLiturgyPreferencesService.getUserPreferences(userId);
     return globalPrefs?.podcast_max_downloads || 10;
   }
 
   /**
    * Get effective auto download setting (podcast-specific or global fallback)
    */
-  static async getEffectiveAutoDownload(podcastId: string): Promise<boolean> {
+  static async getEffectiveAutoDownload(podcastId: string, userId: string): Promise<boolean> {
     const podcastPrefs = await this.getPodcastPreferences(podcastId);
     
     if (podcastPrefs?.autoDownload !== undefined && podcastPrefs.autoDownload !== null) {
@@ -120,7 +120,7 @@ export class PodcastPreferencesService {
     }
 
     // Fall back to global preferences
-    const globalPrefs = await UserLiturgyPreferencesService.getPreferences();
-    return globalPrefs?.podcast_downloads_enabled || false;
+    const globalPrefs = await UserLiturgyPreferencesService.getUserPreferences(userId);
+    return globalPrefs?.podcast_auto_download || false;
   }
 }

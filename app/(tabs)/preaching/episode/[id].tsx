@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -42,6 +42,12 @@ export default function EpisodeDetailScreen() {
   const [sliderWidth, setSliderWidth] = useState(300);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
   const [showSpeedModal, setShowSpeedModal] = useState(false);
+
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const descriptionStyle = useMemo(() => [
+    styles.description, 
+    { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
 
   const {
     currentEpisode,
@@ -346,7 +352,7 @@ export default function EpisodeDetailScreen() {
           <View style={styles.descriptionContainer}>
             <HtmlRenderer 
               htmlContent={episode.description}
-              style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}
+              style={descriptionStyle}
             />
           </View>
         )}

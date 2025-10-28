@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,12 @@ export default function EpisodeDetailWebScreen() {
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
 
   const playbackSpeeds = [0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const descriptionStyle = useMemo(() => [
+    styles.description, 
+    { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
 
   const {
     currentEpisode,
@@ -287,7 +293,7 @@ export default function EpisodeDetailWebScreen() {
               <View style={styles.descriptionContainer}>
                 <HtmlRenderer 
                   htmlContent={episode.description}
-                  style={[styles.description, { color: Colors[colorScheme ?? 'light'].text }]}
+                  style={descriptionStyle}
                 />
               </View>
             )}
