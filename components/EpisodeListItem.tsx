@@ -30,6 +30,14 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   showProgress = true,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
+  const plainTitle = React.useMemo(() => {
+    try {
+      const withoutTags = episode.title.replace(/<[^>]*>/g, '');
+      return withoutTags;
+    } catch {
+      return episode.title;
+    }
+  }, [episode.title]);
   const [cacheDownloaded, setCacheDownloaded] = useState<boolean>(false);
 
   // Memoize theme-dependent styles
@@ -133,12 +141,9 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.titleContainer}>
-            <HtmlRenderer 
-              htmlContent={episode.title}
-              maxLines={2}
-              style={[styles.title, { color: themeStyles.text }]}
-              minimal
-            />
+            <Text numberOfLines={2} style={[styles.title, { color: themeStyles.text }]}>
+              {plainTitle}
+            </Text>
             {(isPlaying || isPaused) && (
               <View style={[styles.playingIndicator, { backgroundColor: themeStyles.primary }]}>
                 <Ionicons name="radio" size={12} color="#fff" />
@@ -266,7 +271,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     fontFamily: 'Georgia',
     lineHeight: 22,
     marginBottom: 4,
