@@ -38,7 +38,7 @@ const SPEED_OPTIONS = [
 
 export default function EpisodeDetailScreen() {
   const { colorScheme } = useTheme();
-  const { id, podcastId: qPodcastId, guid: qGuid, audioUrl: qAudioUrl } = useLocalSearchParams<{ id: string; podcastId?: string; guid?: string; audioUrl?: string }>();
+  const { id, podcastId: qPodcastId, guid: qGuid, audioUrl: qAudioUrl, podcastTitle: qPodcastTitle, podcastAuthor: qPodcastAuthor, podcastArt: qPodcastArt } = useLocalSearchParams<{ id: string; podcastId?: string; guid?: string; audioUrl?: string; podcastTitle?: string; podcastAuthor?: string; podcastArt?: string }>();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [episode, setEpisode] = useState<PodcastEpisode | null>(null);
@@ -130,11 +130,34 @@ export default function EpisodeDetailScreen() {
           console.log('[EpisodeDetail] getPodcast memo hit');
           setPodcast(memo);
         } else {
-          const t1 = Date.now();
-          const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
-          console.log('[EpisodeDetail] getPodcast elapsed=', Date.now() - t1, 'ms');
-          podcastHeaderMemoRef.current.set(episodeData.podcastId, podcastData);
-          setPodcast(podcastData);
+          // Try feed cache first to avoid DB hit
+          const feed = await getFeed(episodeData.podcastId);
+          if (feed) {
+            const p: Podcast = {
+              id: episodeData.podcastId,
+              title: feed.summary.title,
+              description: feed.summary.description || '',
+              author: feed.summary.author || '',
+              rssUrl: feed.uri,
+              artworkUrl: feed.summary.artworkUrl,
+              websiteUrl: feed.summary.websiteUrl,
+              language: feed.summary.language || 'en',
+              categories: feed.summary.categories || [],
+              isCurated: false,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              lastFetchedAt: new Date(feed.fetchedAt).toISOString(),
+            } as any;
+            podcastHeaderMemoRef.current.set(episodeData.podcastId, p);
+            setPodcast(p);
+          } else {
+            const t1 = Date.now();
+            const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
+            console.log('[EpisodeDetail] getPodcast elapsed=', Date.now() - t1, 'ms');
+            podcastHeaderMemoRef.current.set(episodeData.podcastId, podcastData);
+            setPodcast(podcastData);
+          }
         }
       } else {
         // Fallback to cache resolution when id is not a UUID
@@ -167,11 +190,11 @@ export default function EpisodeDetailScreen() {
         if (feed) {
           const p: Podcast = {
             id: qPodcastId,
-            title: feed.summary.title,
+            title: qPodcastTitle || feed.summary.title,
             description: feed.summary.description || '',
-            author: feed.summary.author || '',
+            author: qPodcastAuthor || feed.summary.author || '',
             rssUrl: feed.uri,
-            artworkUrl: feed.summary.artworkUrl,
+            artworkUrl: qPodcastArt || feed.summary.artworkUrl,
             websiteUrl: feed.summary.websiteUrl,
             language: feed.summary.language || 'en',
             categories: feed.summary.categories || [],

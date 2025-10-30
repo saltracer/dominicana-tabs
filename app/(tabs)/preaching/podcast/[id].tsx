@@ -335,11 +335,15 @@ export default function PodcastDetailScreen() {
       : (episode.guid && dbGuidToId.get(episode.guid))
           || dbAudioToId.get(episode.audioUrl)
           || episode.id;
-    const params: { id: string; podcastId?: string; guid?: string; audioUrl?: string } = { id: String(resolvedId) };
+    const params: { id: string; podcastId?: string; guid?: string; audioUrl?: string; podcastTitle?: string; podcastAuthor?: string; podcastArt?: string } = { id: String(resolvedId) };
     if (!isUuid) {
       if (podcast?.id) params.podcastId = podcast.id;
       if (episode.guid) params.guid = episode.guid;
       if (episode.audioUrl) params.audioUrl = episode.audioUrl;
+      // Pass a header snapshot to render immediately on episode page
+      if (podcast?.title) params.podcastTitle = podcast.title;
+      if (podcast?.author) params.podcastAuthor = podcast.author as string;
+      if (artworkPath || podcast?.artworkUrl) params.podcastArt = (artworkPath || podcast?.artworkUrl)!;
     }
     console.log('[PodcastDetail] navigate to episode', resolvedId, params);
     router.push({ pathname: '/preaching/episode/[id]', params });
