@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PodcastEpisode } from '../types';
 import { useTheme } from './ThemeProvider';
@@ -7,8 +7,12 @@ import { Colors } from '../constants/Colors';
 import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 import HtmlRenderer from './HtmlRenderer';
 import { getEpisodesMap } from '../lib/podcast/cache';
+import { ensureImageCached } from '../lib/podcast/storage';
+import { getFeed } from '../lib/podcast/cache';
 import { fileExists } from '../lib/podcast/storage';
 import { PodcastDownloadService } from '../services/PodcastDownloadService';
+import PlaylistService from '../services/PlaylistService';
+import { usePlaylists } from '../hooks/usePlaylists';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -18,6 +22,9 @@ interface EpisodeListItemProps {
   isPaused?: boolean;
   progress?: number; // Progress percentage 0-1
   showProgress?: boolean;
+  showArtwork?: boolean;
+  artworkLocalPath?: string | null;
+  showAddToPlaylist?: boolean;
 }
 
 export const EpisodeListItem = React.memo(function EpisodeListItem({
@@ -28,6 +35,9 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   isPaused = false,
   progress = 0,
   showProgress = true,
+  showArtwork = false,
+  artworkLocalPath = null,
+  showAddToPlaylist = true,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
   const plainTitle = React.useMemo(() => {
@@ -58,6 +68,69 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     downloadEpisode, 
     deleteDownloadedEpisode 
   } = usePodcastDownloads();
+
+  const [artPath, setArtPath] = useState<string | null>(artworkLocalPath || null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!showArtwork) {
+        setArtPath(null);
+        return;
+      }
+      // Prefer parent-provided local path, but verify it exists
+      if (artworkLocalPath) {
+        try {
+          const exists = await fileExists(artworkLocalPath);
+          if (exists) {
+            if (__DEV__) console.log('[EpisodeListItem] artwork using localPath:', artworkLocalPath);
+            if (!cancelled) setArtPath(artworkLocalPath);
+            return;
+          }
+          if (__DEV__) console.warn('[EpisodeListItem] localPath does not exist:', artworkLocalPath);
+        } catch {
+          if (__DEV__) console.warn('[EpisodeListItem] failed to check localPath:', artworkLocalPath);
+        }
+      }
+      // Try episode artwork first
+      if (episode.artworkUrl) {
+        try {
+          const { path } = await ensureImageCached(episode.artworkUrl);
+          if (!cancelled) setArtPath(path);
+          return;
+        } catch {
+          // Fall through to feed artwork
+        }
+      }
+      // Fallback to podcast artwork from feed cache
+      try {
+        const feed = await getFeed(episode.podcastId);
+        const localArt = feed?.summary?.localArtworkPath;
+        if (localArt) {
+          // Verify the cached path exists before using it
+          const exists = await fileExists(localArt);
+          if (exists) {
+            if (__DEV__) console.log('[EpisodeListItem] artwork using feed localArt:', localArt);
+            if (!cancelled) setArtPath(localArt);
+            return;
+          }
+          if (__DEV__) console.warn('[EpisodeListItem] feed localArt does not exist, re-caching:', localArt);
+        }
+        // Re-cache from URL if local path is missing or invalid
+        const artUrl = feed?.summary?.artworkUrl;
+        if (artUrl) {
+          if (__DEV__) console.log('[EpisodeListItem] caching artwork from feed URL:', artUrl);
+          const { path } = await ensureImageCached(artUrl);
+          if (!cancelled) setArtPath(path);
+          return;
+        }
+        if (!cancelled) setArtPath(null);
+      } catch (e) {
+        if (__DEV__) console.warn('[EpisodeListItem] failed to load feed artwork:', e);
+        if (!cancelled) setArtPath(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showArtwork, episode.artworkUrl, episode.podcastId, artworkLocalPath]);
 
   // Download state and handlers
   const isDownloadedMeta = isEpisodeDownloaded(episode.id);
@@ -133,13 +206,67 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
 
   const hasProgress = showProgress && progress > 0 && progress < 1;
 
+  const { playlists } = usePlaylists();
+  const [pickerVisible, setPickerVisible] = useState(false);
+
+  const handleAddToPlaylist = useCallback(() => {
+    const userPlaylists = (playlists || []).filter((p: any) => !p.is_builtin);
+    if (userPlaylists.length === 0) {
+      Alert.alert('No playlists', 'Create a playlist first in the Playlists tab.');
+      return;
+    }
+    setPickerVisible(true);
+  }, [playlists]);
+
+  const addToTarget = useCallback(async (playlistId: string, playlistName: string) => {
+    try {
+      const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(episode.id);
+      if (isUuid) {
+        await PlaylistService.addItem(playlistId, { episode_id: episode.id });
+      } else {
+        await PlaylistService.addItem(playlistId, { external_ref: { podcastId: episode.podcastId, guid: episode.guid, audioUrl: episode.audioUrl } as any });
+      }
+      setPickerVisible(false);
+      Alert.alert('Added', `Added to ${playlistName}`);
+    } catch (e) {
+      setPickerVisible(false);
+      Alert.alert('Error', 'Failed to add to playlist');
+    }
+  }, [episode]);
+
   return (
     <TouchableOpacity
       style={[styles.container, themeStyles.card]}
       onPress={onPress}
     >
       <View style={styles.content}>
+        <View style={styles.body}>
         <View style={styles.header}>
+          {showArtwork && (
+            <View style={styles.artworkContainer}>
+              {artPath ? (
+                <>
+                  {__DEV__ && console.log('[EpisodeListItem] rendering image with path:', artPath)}
+                  <Image 
+                    source={{ uri: artPath }} 
+                    style={styles.artwork} 
+                    resizeMode="cover"
+                    onError={(e) => {
+                      if (__DEV__) console.warn('[EpisodeListItem] image load error:', e.nativeEvent.error, 'for path:', artPath);
+                    }}
+                    onLoad={() => {
+                      if (__DEV__) console.log('[EpisodeListItem] image loaded successfully:', artPath);
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  {__DEV__ && console.log('[EpisodeListItem] no artPath, showing placeholder')}
+                  <View style={[styles.artwork, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]} />
+                </>
+              )}
+            </View>
+          )}
           <View style={styles.titleContainer}>
             <Text numberOfLines={2} style={[styles.title, { color: themeStyles.text }]}>
               {plainTitle}
@@ -194,8 +321,38 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
                 )}
               </TouchableOpacity>
             )}
+
+            {showAddToPlaylist && (
+              <TouchableOpacity
+                style={styles.downloadButton}
+                onPress={handleAddToPlaylist}
+              >
+                <Ionicons name="add-circle-outline" size={20} color={themeStyles.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
+
+        {/* Playlist picker modal */}
+        <Modal visible={pickerVisible} transparent animationType="fade" onRequestClose={() => setPickerVisible(false)}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+            <View style={{ width: '100%', maxWidth: 420, borderRadius: 12, padding: 16, backgroundColor: Colors[colorScheme ?? 'light'].card }}>
+              <Text style={{ fontFamily: 'Georgia', fontWeight: '700', fontSize: 16, color: themeStyles.text, marginBottom: 8 }}>Add to playlist</Text>
+              <ScrollView style={{ maxHeight: 300 }}>
+                {(playlists || []).filter((p: any) => !p.is_builtin).map((p: any) => (
+                  <TouchableOpacity key={p.id} onPress={() => addToTarget(p.id, p.name)} style={{ paddingVertical: 10 }}>
+                    <Text style={{ color: themeStyles.text, fontFamily: 'Georgia' }}>{p.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+                <TouchableOpacity onPress={() => setPickerVisible(false)} style={{ paddingVertical: 10, paddingHorizontal: 12 }}>
+                  <Text style={{ color: themeStyles.textSecondary, fontFamily: 'Georgia' }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         {episode.description && (
           <HtmlRenderer 
@@ -240,6 +397,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
             </View>
           </View>
         )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -259,15 +417,29 @@ const styles = StyleSheet.create({
   content: {
     gap: 12,
   },
+  artworkContainer: {
+    marginRight: 10,
+    alignSelf: 'flex-start',
+  },
+  artwork: {
+    width: 44,
+    height: 44,
+    borderRadius: 4,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 8,
   },
+  body: {
+    flex: 1,
+    minWidth: 0,
+  },
   titleContainer: {
     flex: 1,
-    marginRight: 16,
+    minWidth: 0,
+    marginRight: 10,
   },
   title: {
     fontSize: 16,
@@ -287,7 +459,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   playButton: {
     width: 44,

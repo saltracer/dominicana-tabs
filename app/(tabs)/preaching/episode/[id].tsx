@@ -16,6 +16,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
+import PlaylistService from '../../../../services/PlaylistService';
+import { usePlaylists } from '../../../../hooks/usePlaylists';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
@@ -40,6 +42,7 @@ export default function EpisodeDetailScreen() {
   const { colorScheme } = useTheme();
   const { id, podcastId: qPodcastId, guid: qGuid, audioUrl: qAudioUrl, podcastTitle: qPodcastTitle, podcastAuthor: qPodcastAuthor, podcastArt: qPodcastArt } = useLocalSearchParams<{ id: string; podcastId?: string; guid?: string; audioUrl?: string; podcastTitle?: string; podcastAuthor?: string; podcastArt?: string }>();
   const navigation = useNavigation();
+  const { playlists } = usePlaylists();
   const [loading, setLoading] = useState(true);
   const [episode, setEpisode] = useState<PodcastEpisode | null>(null);
   const [podcast, setPodcast] = useState<Podcast | null>(null);
@@ -109,10 +112,36 @@ export default function EpisodeDetailScreen() {
     if (episode) {
       navigation.setOptions({
         title: episode.title,
-        headerBackTitle: '', // Ensure back button has no text
+        headerBackTitle: '',
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={async () => {
+              try {
+                const userPlaylists = (playlists || []).filter((p: any) => !p.is_builtin);
+                if (userPlaylists.length === 0 || !episode) {
+                  Alert.alert('No playlists', 'Create a playlist first in the Playlists tab.');
+                  return;
+                }
+                const target = userPlaylists[0];
+                const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(episode.id);
+                if (isUuid) {
+                  await PlaylistService.addItem(target.id, { episode_id: episode.id });
+                } else {
+                  await PlaylistService.addItem(target.id, { external_ref: { podcastId: episode.podcastId, guid: episode.guid, audioUrl: episode.audioUrl } as any });
+                }
+                Alert.alert('Added', `Added to ${target.name}`);
+              } catch (e) {
+                Alert.alert('Error', 'Failed to add to playlist');
+              }
+            }}
+            style={{ paddingHorizontal: 12 }}
+          >
+            <Ionicons name="add-circle-outline" size={22} color={Colors[colorScheme ?? 'light'].text} />
+          </TouchableOpacity>
+        ),
       });
     }
-  }, [episode, navigation]);
+  }, [episode, navigation, playlists, colorScheme]);
 
   const loadEpisode = async () => {
     try {

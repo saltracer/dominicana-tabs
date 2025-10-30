@@ -1,329 +1,242 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  Alert,
-  RefreshControl,
-  ActivityIndicator,
-  Modal,
-  TextInput,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { EpisodeListItem } from '../../../../components/EpisodeListItem';
+import { PodcastEpisode } from '../../../../types';
+import { getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { usePlaylists } from '../../../../hooks/usePlaylists';
-import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
-import { PlaylistWithEpisodes, PodcastEpisode } from '../../../../types';
-import { EpisodeListItem } from '../../../../components/EpisodeListItem';
-import HtmlRenderer from '../../../../components/HtmlRenderer';
+import { usePlaylistItems } from '../../../../hooks/usePlaylistItems';
+import { useDownloadedPlaylist } from '../../../../hooks/useDownloadedPlaylist';
 
 export default function PlaylistDetailScreen() {
   const { colorScheme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { playlists, updatePlaylist, deletePlaylist, getPlaylistEpisodes, addEpisodeToPlaylist, removeEpisodeFromPlaylist, reorderPlaylistItems } = usePlaylists();
-  const { playEpisode } = usePodcastPlayer();
-  
-  const [playlist, setPlaylist] = useState<PlaylistWithEpisodes | null>(null);
-  const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
+  const isDownloaded = id === 'downloaded';
+  const { playlists, loading: playlistsLoading } = usePlaylists();
+  const playlist = useMemo(() => (isDownloaded ? { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any : playlists.find(p => p.id === id)), [isDownloaded, id, playlists]);
 
+  const { items: downloadedItems, loading: dlLoading } = useDownloadedPlaylist();
+  const { items, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
+  const [resolved, setResolved] = useState<Record<string, PodcastEpisode | null>>({});
+  const [artByPodcast, setArtByPodcast] = useState<Record<string, string | null>>({});
+
+  // Load artwork for downloaded items
   useEffect(() => {
-    if (id) {
-      loadPlaylist();
-    }
-  }, [id]);
-
-  const loadPlaylist = async () => {
-    try {
-      setLoading(true);
-      const playlistData = playlists.find(p => p.id === id);
-      if (playlistData) {
-        setPlaylist(playlistData as PlaylistWithEpisodes);
-        const episodesData = await getPlaylistEpisodes(id);
-        setEpisodes(episodesData);
+    let alive = true;
+    (async () => {
+      if (!isDownloaded) return;
+      const artMap: Record<string, string | null> = { ...artByPodcast };
+      for (const item of downloadedItems) {
+        const pid = (item as any).podcastId;
+        if (pid && artMap[pid] === undefined) {
+          try {
+            const feed = await getFeed(pid);
+            artMap[pid] = feed?.summary?.localArtworkPath || null;
+            if (__DEV__) console.log('[PlaylistDetail] artwork for downloaded podcast', pid, '=', artMap[pid]);
+          } catch {
+            artMap[pid] = null;
+          }
+        }
       }
-    } catch (error) {
-      console.error('Error loading playlist:', error);
-      Alert.alert('Error', 'Failed to load playlist');
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (alive) setArtByPodcast(artMap);
+    })();
+    return () => { alive = false; };
+  }, [isDownloaded, downloadedItems]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadPlaylist();
-    setRefreshing(false);
-  };
+  const data = isDownloaded ? downloadedItems : items;
 
-  const handlePlayEpisode = async (episode: PodcastEpisode) => {
-    try {
-      await playEpisode(episode);
-    } catch (error) {
-      console.error('Error playing episode:', error);
-      Alert.alert('Error', 'Failed to play episode');
-    }
-  };
-
-  const handleRemoveEpisode = async (episode: PodcastEpisode) => {
-    if (!playlist) return;
-
-    Alert.alert(
-      'Remove Episode',
-      `Remove "${episode.title}" from playlist?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await removeEpisodeFromPlaylist(playlist.id, episode.id);
-              await loadPlaylist();
-            } catch (error) {
-              console.error('Error removing episode:', error);
-              Alert.alert('Error', 'Failed to remove episode');
+  // Resolve playlist items to episodes when possible for richer rendering
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (isDownloaded) return;
+      const next: Record<string, PodcastEpisode | null> = {};
+      const artMap: Record<string, string | null> = { ...artByPodcast };
+      for (const it of items) {
+        try {
+          if ((it as any).episode_id) {
+            // Minimal episode object; defer full fetch for now
+            next[it.id] = {
+              id: (it as any).episode_id,
+              podcastId: (it as any).external_ref?.podcastId || 'unknown',
+              title: 'Episode',
+              description: '',
+              audioUrl: (it as any).external_ref?.audioUrl || '',
+              duration: undefined,
+              publishedAt: undefined,
+              episodeNumber: undefined,
+              seasonNumber: undefined,
+              guid: (it as any).external_ref?.guid,
+              artworkUrl: undefined,
+              fileSize: undefined,
+              mimeType: undefined,
+              createdAt: new Date().toISOString(),
+            } as any;
+            continue;
+          }
+          const ref = (it as any).external_ref;
+          if (ref?.podcastId) {
+            if (artMap[ref.podcastId] === undefined) {
+              try {
+                const feed = await getFeed(ref.podcastId);
+                artMap[ref.podcastId] = feed?.summary?.localArtworkPath || null;
+                if (__DEV__) console.log('[PlaylistDetail] artwork for podcast', ref.podcastId, '=', artMap[ref.podcastId]);
+              } catch (e) { 
+                artMap[ref.podcastId] = null;
+                if (__DEV__) console.warn('[PlaylistDetail] failed to get artwork for', ref.podcastId, e);
+              }
             }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleEditPlaylist = () => {
-    if (!playlist) return;
-    setEditName(playlist.name);
-    setEditDescription(playlist.description || '');
-    setShowEditModal(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!playlist || !editName.trim()) {
-      Alert.alert('Error', 'Please enter a playlist name');
-      return;
-    }
-
-    try {
-      await updatePlaylist(playlist.id, {
-        name: editName.trim(),
-        description: editDescription.trim() || undefined,
-      });
-      setShowEditModal(false);
-      await loadPlaylist();
-    } catch (error) {
-      console.error('Error updating playlist:', error);
-      Alert.alert('Error', 'Failed to update playlist');
-    }
-  };
-
-  const handleDeletePlaylist = () => {
-    if (!playlist) return;
-
-    if (playlist.isSystem) {
-      Alert.alert('Cannot Delete', 'System playlists cannot be deleted');
-      return;
-    }
-
-    Alert.alert(
-      'Delete Playlist',
-      `Delete "${playlist.name}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
             try {
-              await deletePlaylist(playlist.id);
-              router.back();
-            } catch (error) {
-              console.error('Error deleting playlist:', error);
-              Alert.alert('Error', 'Failed to delete playlist');
-            }
-          },
-        },
-      ]
-    );
+              const map = await getEpisodesMap(ref.podcastId);
+              const ep = Object.values(map).find(e => (ref.guid && e.guid === ref.guid) || (ref.audioUrl && e.audioUrl === ref.audioUrl));
+              if (ep) {
+                next[it.id] = {
+                  id: ep.id as any,
+                  podcastId: ref.podcastId,
+                  title: ep.title,
+                  description: ep.description,
+                  audioUrl: ep.audioUrl,
+                  duration: ep.duration,
+                  publishedAt: ep.publishedAt,
+                  episodeNumber: ep.episodeNumber,
+                  seasonNumber: ep.seasonNumber,
+                  guid: ep.guid,
+                  artworkUrl: ep.artworkUrl,
+                  fileSize: ep.fileSize,
+                  mimeType: ep.mimeType,
+                  createdAt: new Date().toISOString(),
+                } as any;
+                continue;
+              }
+            } catch {}
+          }
+          next[it.id] = null;
+        } catch {
+          next[it.id] = null;
+        }
+      }
+      if (alive) {
+        setResolved(next);
+        setArtByPodcast(artMap);
+      }
+    })();
+    return () => { alive = false; };
+  }, [items, isDownloaded]);
+
+  // Do not auto-navigate away; show empty state even if newly created and not yet synced
+
+  const handleMove = (itemId: string, dir: -1 | 1) => {
+    if (isDownloaded) return; // read-only
+    const index = data.findIndex(i => i.id === itemId);
+    if (index === -1) return;
+    const toIndex = index + dir;
+    if (toIndex < 0 || toIndex >= data.length) return;
+    void moveItem(itemId, toIndex);
   };
 
-  const renderEpisodeItem = ({ item: episode, index }: { item: PodcastEpisode; index: number }) => (
-    <EpisodeListItem
-      episode={episode}
-      onPress={() => router.push(`/(tabs)/preaching/episode/${episode.id}`)}
-      onPlay={() => handlePlayEpisode(episode)}
-    />
-  );
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="list" size={64} color={Colors[colorScheme ?? 'light'].textSecondary} />
-      <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-        No Episodes Yet
-      </Text>
-      <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-        Add episodes to this playlist to see them here
-      </Text>
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!playlist) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-        <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Playlist not found
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const handleRemove = (itemId: string) => {
+    if (isDownloaded) return; // read-only here (removal handled in downloads UI)
+    Alert.alert('Remove from playlist?', '', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => void removeItem(itemId) },
+    ]);
+  };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      {/* Header */}
+    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       <View style={styles.header}>
-        <View style={styles.headerInfo}>
-          <View style={styles.playlistIcon}>
-            <Ionicons 
-              name={playlist.isSystem ? "cloud-download" : "list"} 
-              size={32} 
-              color={Colors[colorScheme ?? 'light'].primary} 
-            />
-          </View>
-          <View style={styles.playlistDetails}>
-            <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {playlist.name}
-            </Text>
-            {playlist.description && (
-              <HtmlRenderer
-                htmlContent={playlist.description}
-                maxLines={2}
-                style={[styles.playlistDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
-              />
-            )}
-            <Text style={[styles.episodeCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {episodes.length} episode{episodes.length !== 1 ? 's' : ''}
-            </Text>
-          </View>
-        </View>
-        
-        <View style={styles.headerActions}>
-          {!playlist.isSystem && (
-            <>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-                onPress={handleEditPlaylist}
-              >
-                <Ionicons name="create" size={20} color={Colors[colorScheme ?? 'light'].text} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-                onPress={handleDeletePlaylist}
-              >
-                <Ionicons name="trash" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+        <View style={styles.navBtn} />
+        <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
+          {playlist?.name || 'Playlist'}
+        </Text>
+        <View style={styles.headerRight} />
       </View>
 
-      {/* Episodes List */}
       <FlatList
-        data={episodes}
+        data={data as any}
         keyExtractor={(item) => item.id}
-        renderItem={renderEpisodeItem}
-        style={styles.episodesList}
-        contentContainerStyle={styles.episodesContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={Colors[colorScheme ?? 'light'].text}
-          />
-        }
-        ListEmptyComponent={renderEmptyState}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        renderItem={({ item }) => {
+          if (isDownloaded) {
+            const ep: PodcastEpisode = {
+              id: (item as any).episodeId || (item as any).id,
+              podcastId: (item as any).podcastId,
+              title: (item as any).title,
+              description: '',
+              audioUrl: (item as any).audioUrl,
+              duration: undefined,
+              publishedAt: undefined,
+              episodeNumber: undefined,
+              seasonNumber: undefined,
+              guid: undefined,
+              artworkUrl: (item as any).artworkUrl || undefined,
+              fileSize: undefined,
+              mimeType: undefined,
+              createdAt: new Date().toISOString(),
+            } as any;
+            return (
+              <EpisodeListItem
+                episode={ep}
+                showArtwork
+                artworkLocalPath={(() => {
+                  const path = artByPodcast[(item as any).podcastId] || null;
+                  if (__DEV__) console.log('[PlaylistDetail] passing artwork to downloaded item:', (item as any).podcastId, 'path=', path);
+                  return path;
+                })()}
+                showAddToPlaylist={false}
+                onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, audioUrl: ep.audioUrl } })}
+              />
+            );
+          }
+          const ep = resolved[(item as any).id];
+          if (ep) {
+            return (
+              <EpisodeListItem
+                episode={ep}
+                showArtwork
+                artworkLocalPath={(() => {
+                  const path = artByPodcast[ep.podcastId] || null;
+                  if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
+                  return path;
+                })()}
+                showAddToPlaylist={false}
+                onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+              />
+            );
+          }
+          // Fallback minimal row
+          return (
+            <View style={[styles.itemRow, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}> 
+              <View style={styles.itemInfo}>
+                <Text style={[styles.itemTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>{(item as any).title || 'Episode'}</Text>
+                <Text style={[styles.itemMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>{(item as any).audioUrl || ''}</Text>
+              </View>
+              <View style={styles.itemActions}>
+                {!isDownloaded && (
+                  <>
+                    <TouchableOpacity onPress={() => handleMove((item as any).id, -1)} style={styles.iconBtn}>
+                      <Ionicons name="arrow-up" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleMove((item as any).id, 1)} style={styles.iconBtn}>
+                      <Ionicons name="arrow-down" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleRemove((item as any).id)} style={styles.iconBtn}>
+                      <Ionicons name="remove-circle" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                  </>
+                )}
+                <TouchableOpacity onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || (item as any).guid || (item as any).audioUrl, podcastId: (item as any).podcastId, guid: (item as any).guid, audioUrl: (item as any).audioUrl } })} style={styles.iconBtn}>
+                  <Ionicons name="chevron-forward" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        }}
       />
-
-      {/* Edit Modal */}
-      <Modal
-        visible={showEditModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowEditModal(false)}
-      >
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowEditModal(false)}>
-              <Text style={[styles.modalCancel, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Edit Playlist
-            </Text>
-            <TouchableOpacity onPress={handleSaveEdit}>
-              <Text style={[styles.modalSave, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                Save
-              </Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.modalContent}>
-            <Text style={[styles.inputLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Name
-            </Text>
-            <TextInput
-              style={[styles.textInput, { 
-                backgroundColor: Colors[colorScheme ?? 'light'].surface,
-                color: Colors[colorScheme ?? 'light'].text,
-                borderColor: Colors[colorScheme ?? 'light'].border,
-              }]}
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="Playlist name"
-              placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
-            />
-            
-            <Text style={[styles.inputLabel, { color: Colors[colorScheme ?? 'light'].text }]}>
-              Description (Optional)
-            </Text>
-            <TextInput
-              style={[styles.textArea, { 
-                backgroundColor: Colors[colorScheme ?? 'light'].surface,
-                color: Colors[colorScheme ?? 'light'].text,
-                borderColor: Colors[colorScheme ?? 'light'].border,
-              }]}
-              value={editDescription}
-              onChangeText={setEditDescription}
-              placeholder="Playlist description"
-              placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
-              multiline
-              numberOfLines={3}
-            />
-          </View>
-        </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -331,148 +244,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  headerInfo: {
+  navBtn: {
+    padding: 8,
+  },
+  title: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  playlistIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  playlistDetails: {
-    flex: 1,
-  },
-  playlistName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  playlistDescription: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-    marginBottom: 4,
-  },
-  episodeCount: {
-    fontSize: 14,
-    fontFamily: 'Georgia',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  episodesList: {
-    flex: 1,
-  },
-  episodesContent: {
-    padding: 16,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: 'Georgia',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyDescription: {
-    fontSize: 16,
-    fontFamily: 'Georgia',
     textAlign: 'center',
+    fontFamily: 'Georgia',
+    fontWeight: '700',
+    fontSize: 18,
   },
-  modalContainer: {
-    flex: 1,
+  headerRight: {
+    width: 30,
   },
-  modalHeader: {
+  itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
   },
-  modalCancel: {
-    fontSize: 16,
+  itemInfo: {
+    flex: 1,
+    marginRight: 8,
+  },
+  itemTitle: {
     fontFamily: 'Georgia',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: 'Georgia',
-  },
-  modalSave: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: 'Georgia',
-  },
-  modalContent: {
-    padding: 16,
-  },
-  inputLabel: {
-    fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'Georgia',
-    marginBottom: 8,
-    marginTop: 16,
+    fontSize: 14,
+    marginBottom: 4,
   },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
+  itemMeta: {
     fontFamily: 'Georgia',
+    fontSize: 12,
   },
-  textArea: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontFamily: 'Georgia',
-    height: 80,
-    textAlignVertical: 'top',
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconBtn: {
+    padding: 6,
   },
 });

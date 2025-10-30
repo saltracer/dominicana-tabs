@@ -29,6 +29,7 @@ import { usePodcastSubscriptions } from '../../../hooks/usePodcastSubscriptions'
 import { refreshFeed } from '../../../lib/podcast/cache';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePlaylists } from '../../../hooks/usePlaylists';
+import { useDownloadedPlaylist } from '../../../hooks/useDownloadedPlaylist';
 import { useQueue } from '../../../hooks/useQueue';
 import { getCurated, refreshCurated } from '../../../lib/podcast/cache';
 
@@ -42,6 +43,10 @@ export default function PodcastsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [cachedCurated, setCachedCurated] = useState<any[] | null>(null);
+  const [promptVisible, setPromptVisible] = useState(false);
+  const [promptValue, setPromptValue] = useState('');
+  const [promptMode, setPromptMode] = useState<'create' | 'rename'>('create');
+  const [promptTargetId, setPromptTargetId] = useState<string | null>(null);
 
   // Calculate number of columns for grid layout
   const numColumns = useMemo(() => {
@@ -59,7 +64,8 @@ export default function PodcastsScreen() {
   const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = usePodcastSubscriptions();
   
   // Load playlists and queue
-  const { playlists, loading: playlistsLoading } = usePlaylists();
+  const { playlists, loading: playlistsLoading, createPlaylist, renamePlaylist, deletePlaylist } = usePlaylists();
+  const { items: downloadedItems } = useDownloadedPlaylist();
   const { queue, loading: queueLoading } = useQueue();
 
   // Track initial load completion
@@ -164,7 +170,9 @@ export default function PodcastsScreen() {
       case 'subscriptions':
         return { data: subscriptions, loading: subsLoading, type: 'podcasts' as const };
       case 'playlists':
-        return { data: playlists, loading: playlistsLoading, type: 'playlists' as const };
+        const downloaded = { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any;
+        const list = [downloaded, ...playlists];
+        return { data: list, loading: playlistsLoading, type: 'playlists' as const };
       case 'queue':
         return { data: queue, loading: queueLoading, type: 'episodes' as const };
       default:
@@ -357,24 +365,74 @@ export default function PodcastsScreen() {
             >
               <View style={styles.podcastsContainer}>
                 {dataType === 'playlists' ? (
-                  (displayData as any[]).map((playlist) => (
+                  <View>
                     <TouchableOpacity
-                      key={playlist.id}
-                      style={[styles.playlistCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-                      onPress={() => router.push(`/(tabs)/preaching/playlists/${playlist.id}` as any)}
+                      onPress={async () => {
+                        setPromptMode('create');
+                        setPromptTargetId(null);
+                        setPromptValue('');
+                        setPromptVisible(true);
+                      }}
+                      style={{ alignSelf: 'flex-start', marginBottom: 12, backgroundColor: Colors[colorScheme ?? 'light'].primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 }}
+                      activeOpacity={0.85}
                     >
-                      <View style={styles.playlistIcon}>
-                        <Ionicons name={playlist.isSystem ? "cloud-download" : "list"} size={24} color={Colors[colorScheme ?? 'light'].primary} />
-                      </View>
-                      <View style={styles.playlistInfo}>
-                        <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>{playlist.name}</Text>
-                        <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                          {playlist.isSystem ? 'System Playlist' : 'User Playlist'}
-                        </Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                      <Text style={{ color: '#fff', fontFamily: 'Georgia', fontWeight: '600' }}>+ New playlist</Text>
                     </TouchableOpacity>
-                  ))
+                    {(displayData as any[]).map((playlist) => {
+                      return (
+                        <TouchableOpacity
+                          key={playlist.id}
+                          style={[styles.playlistCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+                          onPress={() => {
+                            if (playlist.id === 'downloaded') {
+                              router.push({ pathname: '/preaching/playlists/[id]', params: { id: 'downloaded' } });
+                            } else {
+                              router.push({ pathname: '/preaching/playlists/[id]', params: { id: playlist.id } });
+                            }
+                          }}
+                        >
+                          <View style={styles.playlistIcon}>
+                            <Ionicons name={playlist.id === 'downloaded' || playlist.is_builtin ? 'cloud-download' : 'list'} size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                          </View>
+                          <View style={styles.playlistInfo}>
+                            <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>{playlist.name}</Text>
+                            <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                              {playlist.id === 'downloaded' || playlist.is_builtin ? 'Downloaded (device)' : 'User Playlist'}
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            {playlist.id !== 'downloaded' && !playlist.is_builtin && (
+                              <TouchableOpacity
+                                onPress={async () => {
+                                  setPromptMode('rename');
+                                  setPromptTargetId(playlist.id);
+                                  setPromptValue(playlist.name || '');
+                                  setPromptVisible(true);
+                                }}
+                                style={{ padding: 6 }}
+                              >
+                                <Ionicons name='pencil' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                              </TouchableOpacity>
+                            )}
+                            {playlist.id !== 'downloaded' && !playlist.is_builtin && (
+                              <TouchableOpacity
+                                onPress={async () => {
+                                  Alert.alert('Delete playlist?', 'This will remove the playlist and its items (episodes remain).', [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { text: 'Delete', style: 'destructive', onPress: async () => { await deletePlaylist(playlist.id); } },
+                                  ]);
+                                }}
+                                style={{ padding: 6 }}
+                              >
+                                <Ionicons name='trash' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                              </TouchableOpacity>
+                            )}
+                            <Ionicons name='chevron-forward' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 ) : dataType === 'episodes' ? (
                   (displayData as any[]).map((episode, index) => (
                     <TouchableOpacity
@@ -394,6 +452,43 @@ export default function PodcastsScreen() {
                   ))
                 ) : null}
               </View>
+              {promptVisible && (
+                <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+                  <View style={{ width: '100%', maxWidth: 420, borderRadius: 12, padding: 16, backgroundColor: Colors[colorScheme ?? 'light'].card }}>
+                    <Text style={{ fontFamily: 'Georgia', fontWeight: '700', fontSize: 16, color: Colors[colorScheme ?? 'light'].text, marginBottom: 8 }}>
+                      {promptMode === 'create' ? 'New Playlist' : 'Rename Playlist'}
+                    </Text>
+                    <TextInput
+                      value={promptValue}
+                      onChangeText={setPromptValue}
+                      placeholder="Playlist name"
+                      placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+                      style={{ borderWidth: 1, borderColor: Colors[colorScheme ?? 'light'].border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontFamily: 'Georgia', color: Colors[colorScheme ?? 'light'].text }}
+                      autoFocus
+                    />
+                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+                      <TouchableOpacity onPress={() => setPromptVisible(false)} style={{ paddingVertical: 10, paddingHorizontal: 12, marginRight: 8 }}>
+                        <Text style={{ color: Colors[colorScheme ?? 'light'].textSecondary, fontFamily: 'Georgia' }}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={async () => {
+                          const name = promptValue.trim();
+                          if (!name) return;
+                          setPromptVisible(false);
+                          if (promptMode === 'create') {
+                            await createPlaylist(name);
+                          } else if (promptMode === 'rename' && promptTargetId) {
+                            await renamePlaylist(promptTargetId, name);
+                          }
+                        }}
+                        style={{ paddingVertical: 10, paddingHorizontal: 12 }}
+                      >
+                        <Text style={{ color: Colors[colorScheme ?? 'light'].primary, fontFamily: 'Georgia', fontWeight: '700' }}>Save</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              )}
             </ScrollView>
           )
         )}
