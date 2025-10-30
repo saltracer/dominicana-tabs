@@ -22,15 +22,20 @@ export default function PlaylistDetailScreen() {
   const { items, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
   const [resolved, setResolved] = useState<Record<string, PodcastEpisode | null>>({});
   const [artByPodcast, setArtByPodcast] = useState<Record<string, string | null>>({});
+  const [downloadedDurations, setDownloadedDurations] = useState<Record<string, number | undefined>>({});
 
-  // Load artwork for downloaded items
+  // Load artwork and duration for downloaded items
   useEffect(() => {
     let alive = true;
     (async () => {
       if (!isDownloaded) return;
       const artMap: Record<string, string | null> = { ...artByPodcast };
+      const durMap: Record<string, number | undefined> = { ...downloadedDurations };
       for (const item of downloadedItems) {
         const pid = (item as any).podcastId;
+        const itemId = (item as any).id;
+        
+        // Load artwork
         if (pid && artMap[pid] === undefined) {
           try {
             const feed = await getFeed(pid);
@@ -40,8 +45,31 @@ export default function PlaylistDetailScreen() {
             artMap[pid] = null;
           }
         }
+        
+        // Load duration from cache if missing
+        if (pid && durMap[itemId] === undefined && !(item as any).duration) {
+          try {
+            const map = await getEpisodesMap(pid);
+            const guid = (item as any).guid;
+            const audioUrl = (item as any).audioUrl;
+            const ep = Object.values(map).find(e => 
+              (guid && e.guid === guid) || 
+              (!guid && e.audioUrl === audioUrl) ||
+              e.audioUrl === audioUrl
+            );
+            if (ep && ep.duration) {
+              durMap[itemId] = ep.duration;
+              if (__DEV__) console.log('[PlaylistDetail] found duration from cache for', itemId, '=', ep.duration);
+            }
+          } catch (err) {
+            if (__DEV__) console.warn('[PlaylistDetail] error loading duration from cache', err);
+          }
+        }
       }
-      if (alive) setArtByPodcast(artMap);
+      if (alive) {
+        setArtByPodcast(artMap);
+        setDownloadedDurations(durMap);
+      }
     })();
     return () => { alive = false; };
   }, [isDownloaded, downloadedItems]);
@@ -93,7 +121,7 @@ export default function PlaylistDetailScreen() {
               const map = await getEpisodesMap(ref.podcastId);
               const ep = Object.values(map).find(e => (ref.guid && e.guid === ref.guid) || (ref.audioUrl && e.audioUrl === ref.audioUrl));
               if (ep) {
-                next[it.id] = {
+                const resolvedEp = {
                   id: ep.id as any,
                   podcastId: ref.podcastId,
                   title: ep.title,
@@ -109,6 +137,12 @@ export default function PlaylistDetailScreen() {
                   mimeType: ep.mimeType,
                   createdAt: new Date().toISOString(),
                 } as any;
+                if (__DEV__) console.log('[PlaylistDetail] resolved episode duration:', { 
+                  cacheDuration: ep.duration,
+                  resolvedDuration: resolvedEp.duration,
+                  hasDuration: resolvedEp.duration !== undefined && resolvedEp.duration !== null 
+                });
+                next[it.id] = resolvedEp;
                 continue;
               }
             } catch {}
@@ -161,13 +195,15 @@ export default function PlaylistDetailScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
         renderItem={({ item }) => {
           if (isDownloaded) {
+            const itemId = (item as any).id;
+            const cachedDuration = downloadedDurations[itemId];
             const ep: PodcastEpisode = {
-              id: (item as any).episodeId || (item as any).id,
+              id: (item as any).episodeId || itemId,
               podcastId: (item as any).podcastId,
               title: (item as any).title,
               description: (item as any).description || '',
               audioUrl: (item as any).audioUrl,
-              duration: (item as any).duration,
+              duration: (item as any).duration || cachedDuration,
               publishedAt: (item as any).publishedAt,
               episodeNumber: (item as any).episodeNumber,
               seasonNumber: (item as any).seasonNumber,
@@ -177,6 +213,12 @@ export default function PlaylistDetailScreen() {
               mimeType: (item as any).mimeType,
               createdAt: new Date().toISOString(),
             } as any;
+            if (__DEV__) console.log('[PlaylistDetail] downloaded item duration:', { 
+              itemDuration: (item as any).duration,
+              cachedDuration,
+              finalDuration: ep.duration,
+              hasDuration: ep.duration !== undefined && ep.duration !== null 
+            });
             return (
               <EpisodeListItem
                 episode={ep}
@@ -194,6 +236,13 @@ export default function PlaylistDetailScreen() {
           }
           const ep = resolved[(item as any).id];
           if (ep) {
+            if (__DEV__) console.log('[PlaylistDetail] rendering playlist item episode:', { 
+              id: ep.id,
+              title: ep.title?.substring(0, 30),
+              duration: ep.duration,
+              hasDuration: ep.duration !== undefined && ep.duration !== null && ep.duration > 0,
+              publishedAt: ep.publishedAt
+            });
             return (
               <EpisodeListItem
                 episode={ep}

@@ -418,6 +418,7 @@ export default function PodcastDetailScreen() {
             onPlay={() => handlePlayEpisode(item)}
             isPlaying={currentEpisode?.id === item.id && isPlaying}
             isPaused={currentEpisode?.id === item.id && isPaused}
+            hideDescription
           />
         )}
         initialNumToRender={12}
