@@ -73,6 +73,7 @@
 - [x] Improve performance of podcasts by using device caching
 - [ ] Add "Played" status to podcasts
 - [ ] Implement a download queue 
+- [ ] Get artwork from podcast available to track-player and in the iOS background
 
 
 ## Other
