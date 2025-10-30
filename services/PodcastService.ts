@@ -202,4 +202,12 @@ export class PodcastService {
 
     return count || 0;
   }
+
+  /**
+   * Get podcast by episode ID
+   */
+  static async getPodcastByEpisodeId(episodeId: string): Promise<Podcast> {
+    const episode = await this.getEpisode(episodeId);
+    return await this.getPodcast(episode.podcastId);
+  }
 }

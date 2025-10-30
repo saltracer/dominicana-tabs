@@ -78,10 +78,9 @@ const HtmlRenderer = memo(function HtmlRenderer({
         color: Colors[theme].text,
         fontSize: 14,
         lineHeight: 18,
-        ...style,
       },
     };
-  }, [colorScheme, style]);
+  }, [colorScheme]);
 
   // Memoize renderersProps to prevent recreation
   const renderersProps = useMemo(() => ({
@@ -96,7 +95,7 @@ const HtmlRenderer = memo(function HtmlRenderer({
       source={{ html: htmlContent }}
       tagsStyles={themeStyles.tagsStyles}
       systemFonts={systemFonts}
-      baseStyle={themeStyles.baseStyle}
+      baseStyle={[themeStyles.baseStyle, style]}
       renderersProps={renderersProps}
       // Ignore unsupported CSS properties but preserve content
       ignoredDomTags={['style', 'script']}

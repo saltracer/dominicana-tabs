@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Modal,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,8 @@ import { useQueue } from '../hooks/useQueue';
 import { router } from 'expo-router';
 import HtmlRenderer from './HtmlRenderer';
 import { useIsMobile, useIsTablet, useIsDesktop } from '../hooks/useMediaQuery';
+import { PodcastService } from '../services/PodcastService';
+import { Podcast } from '../types';
 
 interface FullScreenPlayerProps {
   visible: boolean;
@@ -45,19 +48,66 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   } = usePodcastPlayer();
   
   const { queue, playNext, playLast } = useQueue();
-  const [podcast, setPodcast] = useState<any>(null);
+  const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [loadingPodcast, setLoadingPodcast] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const episodeTitleStyle = useMemo(() => [
+    styles.episodeTitle,
+    { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
+
+  const descriptionStyle = useMemo(() => [
+    styles.description,
+    { color: Colors[colorScheme ?? 'light'].textSecondary }
+  ], [colorScheme]);
 
   // Load podcast data when episode changes
   useEffect(() => {
     if (currentEpisode) {
-      setLoadingPodcast(true);
-      // This would need to be implemented to fetch podcast by episode
-      // For now, we'll use a placeholder
-      setPodcast({ title: 'Podcast Title' });
+      loadPodcastData();
+    }
+  }, [currentEpisode?.id]);
+
+  const loadPodcastData = async () => {
+    if (!currentEpisode) return;
+    
+    setLoadingPodcast(true);
+    try {
+      const podcastData = await PodcastService.getPodcastByEpisodeId(currentEpisode.id);
+      setPodcast(podcastData);
+    } catch (error) {
+      console.error('Error loading podcast:', error);
+      // Set a fallback podcast object
+      setPodcast({
+        id: 'unknown',
+        title: 'Unknown Podcast',
+        description: '',
+        author: '',
+        rssUrl: '',
+        artworkUrl: undefined,
+        websiteUrl: undefined,
+        language: 'en',
+        categories: [],
+        isCurated: false,
+        isActive: true,
+        createdBy: undefined,
+        lastFetchedAt: undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } finally {
       setLoadingPodcast(false);
     }
-  }, [currentEpisode]);
+  };
+
+  // Artwork priority helper
+  const getArtworkUrl = () => {
+    return currentEpisode?.artworkUrl || 
+           podcast?.artworkUrl || 
+           null;
+  };
 
   const handlePlay = () => {
     if (isPlaying) {
@@ -85,6 +135,28 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     setSpeed(parseFloat(e.target.value));
   };
 
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPosition = (parseFloat(e.target.value) / 100) * duration;
+    seek(newPosition);
+  };
+
+  const handlePodcastPress = () => {
+    if (podcast) {
+      onClose();
+      router.push(`/(tabs)/preaching/podcast/${podcast.id}`);
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
   const handleQueuePress = () => {
     onClose();
     router.push('/(tabs)/preaching/queue');
@@ -101,12 +173,13 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   }
 
   const getArtworkSize = () => {
-    if (isMobile) return 200;
-    if (isTablet) return 250;
-    return 300;
+    if (isMobile) return 280;
+    if (isTablet) return 320;
+    return 360;
   };
 
   const artworkSize = getArtworkSize();
+  const artworkUrl = getArtworkUrl();
 
   return (
     <Modal
@@ -133,9 +206,13 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
           <View style={[styles.mainContent, { maxWidth: isDesktop ? 800 : '100%' }]}>
             {/* Artwork */}
             <View style={styles.artworkContainer}>
-              {currentEpisode.artworkUrl || podcast?.artworkUrl ? (
+              {loadingPodcast ? (
+                <View style={[styles.artworkPlaceholder, { width: artworkSize, height: artworkSize }]}>
+                  <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+                </View>
+              ) : artworkUrl ? (
                 <Image
-                  source={{ uri: currentEpisode.artworkUrl || podcast?.artworkUrl }}
+                  source={{ uri: artworkUrl }}
                   style={[styles.artwork, { width: artworkSize, height: artworkSize }]}
                   resizeMode="cover"
                 />
@@ -155,15 +232,48 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
 
             {/* Episode Info */}
             <View style={styles.episodeInfo}>
-              <Text style={[styles.podcastTitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {podcast?.title || 'Podcast'}
-              </Text>
+              <TouchableOpacity onPress={handlePodcastPress} disabled={!podcast}>
+                <Text style={[
+                  styles.podcastTitle, 
+                  { 
+                    color: podcast ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary 
+                  }
+                ]}>
+                  {podcast?.title || 'Loading...'}
+                </Text>
+              </TouchableOpacity>
               <HtmlRenderer
                 htmlContent={currentEpisode.title}
                 maxLines={3}
-                style={[styles.episodeTitle, { color: Colors[colorScheme ?? 'light'].text }]}
+                style={episodeTitleStyle}
               />
+              {currentEpisode.publishedAt && (
+                <Text style={[styles.publishedDate, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  {formatDate(currentEpisode.publishedAt)}
+                </Text>
+              )}
             </View>
+
+            {/* Episode Description */}
+            {currentEpisode.description && (
+              <View style={styles.descriptionContainer}>
+                <HtmlRenderer 
+                  htmlContent={currentEpisode.description}
+                  maxLines={isDescriptionExpanded ? undefined : 5}
+                  style={descriptionStyle}
+                />
+                {currentEpisode.description.length > 200 && (
+                  <TouchableOpacity 
+                    onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    style={styles.readMoreButton}
+                  >
+                    <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
             {/* Progress Bar */}
             <View style={styles.progressContainer}>
@@ -173,9 +283,9 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
               <input
                 type="range"
                 min="0"
-                max={duration}
-                value={position}
-                onChange={(e) => handleSeek(parseFloat(e.target.value))}
+                max="100"
+                value={duration > 0 ? (position / duration) * 100 : 0}
+                onChange={handleSliderChange}
                 style={{
                   flex: 1,
                   height: 6,
@@ -192,7 +302,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
             {/* Playback Controls */}
             <View style={styles.controls}>
               <TouchableOpacity
-                style={[styles.controlButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
+                style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
                 onPress={handleSkipBack}
               >
                 <Ionicons name="play-skip-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -210,7 +320,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.controlButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
+                style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
                 onPress={handleSkipForward}
               >
                 <Ionicons name="play-skip-forward" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -219,26 +329,20 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
 
             {/* Speed Control */}
             <View style={styles.speedContainer}>
-              <div style={styles.speedSelect}>
+              <div style={[styles.speedButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
+                <Ionicons name="speedometer" size={20} color={Colors[colorScheme ?? 'light'].primary} />
                 <select
                   value={playbackSpeed}
                   onChange={handleSpeedChange}
                   style={{
-                    backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                    backgroundColor: 'transparent',
                     color: Colors[colorScheme ?? 'light'].text,
-                    borderColor: Colors[colorScheme ?? 'light'].border,
-                    borderRadius: 20,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
+                    border: 'none',
                     fontSize: 16,
                     fontWeight: 'bold',
                     fontFamily: 'Georgia',
-                    appearance: 'none',
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='${encodeURIComponent(Colors[colorScheme ?? 'light'].text)}'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 8px center',
-                    backgroundSize: '16px',
-                    paddingRight: 32,
+                    outline: 'none',
+                    cursor: 'pointer',
                   }}
                 >
                   <option value={0.75}>0.75x</option>
@@ -302,35 +406,74 @@ const styles = StyleSheet.create({
   },
   artworkContainer: {
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 40,
+    paddingHorizontal: 20,
   },
   artwork: {
     borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   artworkPlaceholder: {
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   episodeInfo: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   podcastTitle: {
     fontSize: 16,
     marginBottom: 8,
     fontFamily: 'Georgia',
+    textAlign: 'center',
+    cursor: 'pointer',
   },
   episodeTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
     fontFamily: 'Georgia',
+    marginBottom: 8,
+  },
+  publishedDate: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
+  descriptionContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  description: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    lineHeight: 20,
+  },
+  readMoreButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    cursor: 'pointer',
+  },
+  readMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
   timeText: {
     fontSize: 14,
@@ -343,29 +486,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
+    gap: 20,
   },
-  controlButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  skipButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
   },
   playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
   speedContainer: {
     alignItems: 'center',
     marginBottom: 24,
   },
-  speedSelect: {
-    // Web specific styles for select element
+  speedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    gap: 8,
   },
   queueInfo: {
     alignItems: 'center',

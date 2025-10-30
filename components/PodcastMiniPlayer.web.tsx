@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { PodcastService } from '../services/PodcastService';
 import { Podcast } from '../types';
 import { router } from 'expo-router';
 import FullScreenPlayer from './FullScreenPlayer.web';
+import HtmlRenderer from './HtmlRenderer';
 
 export default function PodcastMiniPlayer() {
   const { colorScheme } = useTheme();
@@ -35,6 +36,12 @@ export default function PodcastMiniPlayer() {
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [loadingPodcast, setLoadingPodcast] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
+
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const episodeTitleStyle = useMemo(() => [
+    styles.episodeTitle,
+    { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
 
   console.log('[PodcastMiniPlayer.web] Rendering with:', {
     currentEpisode: currentEpisode?.title,
@@ -131,12 +138,11 @@ export default function PodcastMiniPlayer() {
 
       {/* Episode Info */}
       <View style={styles.infoContainer}>
-        <Text 
-          style={[styles.episodeTitle, { color: Colors[colorScheme ?? 'light'].text }]}
-          numberOfLines={1}
-        >
-          {currentEpisode.title}
-        </Text>
+        <HtmlRenderer
+          htmlContent={currentEpisode.title}
+          maxLines={1}
+          style={episodeTitleStyle}
+        />
         <Text 
           style={[styles.podcastName, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
           numberOfLines={1}
@@ -211,6 +217,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
+    height: 56, // Fixed height to prevent expansion
     borderRadius: 8,
     marginHorizontal: 8,
     marginVertical: 4,
@@ -235,16 +242,19 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 4,
     minWidth: 0, // Allow text to truncate properly
+    justifyContent: 'center', // Vertically center the text
   },
   episodeTitle: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Georgia',
     marginBottom: 2,
+    lineHeight: 16, // Fixed line height to prevent expansion
   },
   podcastName: {
     fontSize: 12,
     fontFamily: 'Georgia',
+    lineHeight: 14, // Fixed line height to prevent expansion
   },
   playButton: {
     width: 32,
@@ -254,7 +264,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 8,
     cursor: 'pointer',
-    transition: 'opacity 0.2s ease',
   },
   speedContainer: {
     marginRight: 4,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,20 @@ import {
   Dimensions,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
 import { useQueue } from '../hooks/useQueue';
 import { router } from 'expo-router';
 import HtmlRenderer from './HtmlRenderer';
+import { PodcastService } from '../services/PodcastService';
+import { Podcast } from '../types';
+import SpeedSelectorModal from './SpeedSelectorModal';
 
 interface FullScreenPlayerProps {
   visible: boolean;
@@ -42,19 +47,72 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   } = usePodcastPlayer();
   
   const { queue, playNext, playLast } = useQueue();
-  const [podcast, setPodcast] = useState<any>(null);
+  const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [loadingPodcast, setLoadingPodcast] = useState(false);
+  const [showSpeedModal, setShowSpeedModal] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  // Memoize style objects for HtmlRenderer to prevent re-renders
+  const episodeTitleStyle = useMemo(() => [
+    styles.episodeTitle,
+    { color: Colors[colorScheme ?? 'light'].text }
+  ], [colorScheme]);
+
+  const descriptionStyle = useMemo(() => [
+    styles.description,
+    { color: Colors[colorScheme ?? 'light'].textSecondary }
+  ], [colorScheme]);
 
   // Load podcast data when episode changes
   useEffect(() => {
     if (currentEpisode) {
-      setLoadingPodcast(true);
-      // This would need to be implemented to fetch podcast by episode
-      // For now, we'll use a placeholder
-      setPodcast({ title: 'Podcast Title' });
+      loadPodcastData();
+    }
+  }, [currentEpisode?.id]);
+
+  const loadPodcastData = async () => {
+    if (!currentEpisode) return;
+    
+    setLoadingPodcast(true);
+    try {
+      const podcastData = await PodcastService.getPodcastByEpisodeId(currentEpisode.id);
+      setPodcast(podcastData);
+    } catch (error) {
+      console.error('Error loading podcast:', error);
+      // Set a fallback podcast object
+      setPodcast({
+        id: 'unknown',
+        title: 'Unknown Podcast',
+        description: '',
+        author: '',
+        rssUrl: '',
+        artworkUrl: undefined,
+        websiteUrl: undefined,
+        language: 'en',
+        categories: [],
+        isCurated: false,
+        isActive: true,
+        createdBy: undefined,
+        lastFetchedAt: undefined,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    } finally {
       setLoadingPodcast(false);
     }
-  }, [currentEpisode]);
+  };
+
+  // Artwork priority helper
+  const getArtworkUrl = () => {
+    return currentEpisode?.artworkUrl || 
+           podcast?.artworkUrl || 
+           null;
+  };
+
+  // Get responsive artwork size
+  const getArtworkSize = () => {
+    return 280; // Mobile size for now
+  };
 
   const handlePlay = () => {
     if (isPlaying) {
@@ -78,11 +136,30 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     seek(newPosition);
   };
 
-  const handleSpeedChange = () => {
-    const speeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
-    const currentIndex = speeds.indexOf(playbackSpeed);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-    setSpeed(speeds[nextIndex]);
+  const handleSpeedChange = (speed: number) => {
+    setSpeed(speed);
+  };
+
+  const handleSliderChange = (value: number) => {
+    const newPosition = (value / 100) * duration;
+    seek(newPosition);
+  };
+
+  const handlePodcastPress = () => {
+    if (podcast) {
+      onClose();
+      router.push(`/(tabs)/preaching/podcast/${podcast.id}`);
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   const handleQueuePress = () => {
@@ -99,6 +176,9 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   if (!currentEpisode) {
     return null;
   }
+
+  const artworkSize = getArtworkSize();
+  const artworkUrl = getArtworkUrl();
 
   return (
     <Modal
@@ -124,14 +204,25 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Artwork */}
           <View style={styles.artworkContainer}>
-            {currentEpisode.artworkUrl || podcast?.artworkUrl ? (
+            {loadingPodcast ? (
+              <View style={[styles.artworkPlaceholder, { width: artworkSize, height: artworkSize }]}>
+                <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+              </View>
+            ) : artworkUrl ? (
               <Image
-                source={{ uri: currentEpisode.artworkUrl || podcast?.artworkUrl }}
-                style={styles.artwork}
+                source={{ uri: artworkUrl }}
+                style={[styles.artwork, { width: artworkSize, height: artworkSize }]}
                 resizeMode="cover"
               />
             ) : (
-              <View style={[styles.artworkPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+              <View style={[
+                styles.artworkPlaceholder, 
+                { 
+                  width: artworkSize, 
+                  height: artworkSize,
+                  backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' 
+                }
+              ]}>
                 <Ionicons name="radio" size={80} color={Colors[colorScheme ?? 'light'].primary} />
               </View>
             )}
@@ -139,42 +230,64 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
 
           {/* Episode Info */}
           <View style={styles.episodeInfo}>
-            <Text style={[styles.podcastTitle, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              {podcast?.title || 'Podcast'}
-            </Text>
+            <TouchableOpacity onPress={handlePodcastPress} disabled={!podcast}>
+              <Text style={[
+                styles.podcastTitle, 
+                { 
+                  color: podcast ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary 
+                }
+              ]}>
+                {podcast?.title || 'Loading...'}
+              </Text>
+            </TouchableOpacity>
             <HtmlRenderer
               htmlContent={currentEpisode.title}
               maxLines={3}
-              style={[styles.episodeTitle, { color: Colors[colorScheme ?? 'light'].text }]}
+              style={episodeTitleStyle}
             />
+            {currentEpisode.publishedAt && (
+              <Text style={[styles.publishedDate, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                {formatDate(currentEpisode.publishedAt)}
+              </Text>
+            )}
           </View>
+
+          {/* Episode Description */}
+          {currentEpisode.description && (
+            <View style={styles.descriptionContainer}>
+              <HtmlRenderer 
+                htmlContent={currentEpisode.description}
+                maxLines={isDescriptionExpanded ? undefined : 5}
+                style={descriptionStyle}
+              />
+              {currentEpisode.description.length > 200 && (
+                <TouchableOpacity 
+                  onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  style={styles.readMoreButton}
+                >
+                  <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                    {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {/* Progress Bar */}
           <View style={styles.progressContainer}>
             <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
               {formatTime(position)}
             </Text>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${duration > 0 ? (position / duration) * 100 : 0}%`,
-                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
-                  },
-                ]}
-              />
-              <TouchableOpacity
-                style={[
-                  styles.progressThumb,
-                  {
-                    left: `${duration > 0 ? (position / duration) * 100 : 0}%`,
-                    backgroundColor: Colors[colorScheme ?? 'light'].primary,
-                  },
-                ]}
-                onPress={() => {}} // Handle seeking
-              />
-            </View>
+            <Slider
+              value={duration > 0 ? (position / duration) * 100 : 0}
+              onValueChange={handleSliderChange}
+              minimumValue={0}
+              maximumValue={100}
+              minimumTrackTintColor={Colors[colorScheme ?? 'light'].primary}
+              maximumTrackTintColor={Colors[colorScheme ?? 'light'].border}
+              thumbTintColor={Colors[colorScheme ?? 'light'].primary}
+              style={styles.slider}
+            />
             <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
               {formatTime(duration)}
             </Text>
@@ -183,7 +296,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
           {/* Playback Controls */}
           <View style={styles.controls}>
             <TouchableOpacity
-              style={[styles.controlButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
+              style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
               onPress={handleSkipBack}
             >
               <Ionicons name="play-skip-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -201,7 +314,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.controlButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
+              style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
               onPress={handleSkipForward}
             >
               <Ionicons name="play-skip-forward" size={24} color={Colors[colorScheme ?? 'light'].text} />
@@ -212,8 +325,9 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
           <View style={styles.speedContainer}>
             <TouchableOpacity
               style={[styles.speedButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-              onPress={handleSpeedChange}
+              onPress={() => setShowSpeedModal(true)}
             >
+              <Ionicons name="speedometer" size={20} color={Colors[colorScheme ?? 'light'].primary} />
               <Text style={[styles.speedText, { color: Colors[colorScheme ?? 'light'].text }]}>
                 {playbackSpeed}x
               </Text>
@@ -229,6 +343,14 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
             </View>
           )}
         </ScrollView>
+
+        {/* Speed Selector Modal */}
+        <SpeedSelectorModal
+          visible={showSpeedModal}
+          currentSpeed={playbackSpeed}
+          onSelectSpeed={handleSpeedChange}
+          onClose={() => setShowSpeedModal(false)}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -264,39 +386,72 @@ const styles = StyleSheet.create({
   },
   artworkContainer: {
     alignItems: 'center',
-    marginVertical: 32,
+    marginVertical: 40,
+    paddingHorizontal: 20,
   },
   artwork: {
-    width: 200,
-    height: 200,
     borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   artworkPlaceholder: {
-    width: 200,
-    height: 200,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   episodeInfo: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   podcastTitle: {
     fontSize: 16,
     marginBottom: 8,
     fontFamily: 'Georgia',
+    textAlign: 'center',
   },
   episodeTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     textAlign: 'center',
     fontFamily: 'Georgia',
+    marginBottom: 8,
+  },
+  publishedDate: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    textAlign: 'center',
+  },
+  descriptionContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  description: {
+    fontSize: 14,
+    fontFamily: 'Georgia',
+    lineHeight: 20,
+  },
+  readMoreButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  readMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
   },
   progressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 32,
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
   timeText: {
     fontSize: 14,
@@ -304,56 +459,48 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Georgia',
   },
-  progressBar: {
+  slider: {
     flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    borderRadius: 2,
+    height: 40,
     marginHorizontal: 16,
-    position: 'relative',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  progressThumb: {
-    position: 'absolute',
-    top: -6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    marginLeft: -8,
   },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
+    gap: 20,
   },
-  controlButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  skipButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
   },
   playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
   speedContainer: {
     alignItems: 'center',
     marginBottom: 24,
   },
   speedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 20,
+    gap: 8,
   },
   speedText: {
     fontSize: 16,
