@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.sm,
-    minHeight: 58,
+    minHeight: 48, // Fixed height to match feast banner content
   },
   topRowMobile: {
     flexDirection: 'column',
@@ -803,6 +803,7 @@ const styles = StyleSheet.create({
   feastRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 48, // Fixed height to match content
   },
   feastRowMobile: {
     flexDirection: 'column',

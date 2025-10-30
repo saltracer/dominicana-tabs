@@ -723,6 +723,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    height: 48, // Fixed height to match content
   },
   rankContainer: {
     paddingHorizontal: 12,
@@ -910,7 +911,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
   carouselContainer: {
-    height: 'auto',
+    height: 48, // Fixed height to match feast banner content
     marginBottom: 0,
     width: '100%',
   },

@@ -165,7 +165,7 @@ export default function PodcastMiniPlayer() {
         ) : (
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
-            size={16}
+            size={18}
             color="#fff"
           />
         )}
@@ -216,8 +216,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 2,
-    paddingVertical: 8,
-    height: 56, // Fixed height to prevent expansion
+    paddingVertical: 4,
+    height: 48, // Fixed height to match feast banner
     borderRadius: 8,
     // marginHorizontal: 8,
     // marginVertical: 4,
@@ -230,17 +230,17 @@ const styles = StyleSheet.create({
     // borderColor: '#ff0000'
   },
   artworkContainer: {
-    marginRight: 12,
+    marginRight: 8,
   },
   artwork: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 4,
   },
   artworkPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -251,52 +251,57 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // Vertically center the text
   },
   episodeTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     fontFamily: 'Georgia',
-    marginBottom: 2,
-    lineHeight: 16, // Fixed line height to prevent expansion
+    marginBottom: 1,
+    lineHeight: 15, // Fixed line height to prevent expansion
+    textAlign: 'left', // Left-align the title
+    height: 15, // Fixed height to enforce single line
+    overflow: 'hidden', // Hide overflow text
   },
   podcastName: {
     fontSize: 12,
     fontFamily: 'Georgia',
-    lineHeight: 14, // Fixed line height to prevent expansion
+    lineHeight: 12, // Fixed line height to prevent expansion
+    height: 12, // Fixed height to enforce single line
+    overflow: 'hidden', // Hide overflow text
   },
   playButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: 6,
   },
   speedContainer: {
     marginRight: 4,
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 6,
     // backgroundColor: 'rgba(0,0,0,0.08)',
-    minWidth: 28,
+    minWidth: 26,
     alignItems: 'center',
   },
   speedText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'Georgia',
   },
   progressContainer: {
     position: 'absolute',
-    bottom: 2,
-    left: 12,
-    right: 12,
-    height: 2,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 3,
   },
   progressBar: {
-    height: 2,
-    borderRadius: 1,
+    height: 3,
+    borderRadius: 1.5,
   },
   progressFill: {
-    height: 2,
-    borderRadius: 1,
+    height: 3,
+    borderRadius: 1.5,
   },
 });
