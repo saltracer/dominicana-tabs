@@ -165,16 +165,16 @@ export default function PlaylistDetailScreen() {
               id: (item as any).episodeId || (item as any).id,
               podcastId: (item as any).podcastId,
               title: (item as any).title,
-              description: '',
+              description: (item as any).description || '',
               audioUrl: (item as any).audioUrl,
-              duration: undefined,
-              publishedAt: undefined,
-              episodeNumber: undefined,
-              seasonNumber: undefined,
-              guid: undefined,
+              duration: (item as any).duration,
+              publishedAt: (item as any).publishedAt,
+              episodeNumber: (item as any).episodeNumber,
+              seasonNumber: (item as any).seasonNumber,
+              guid: (item as any).guid,
               artworkUrl: (item as any).artworkUrl || undefined,
-              fileSize: undefined,
-              mimeType: undefined,
+              fileSize: (item as any).fileSize,
+              mimeType: (item as any).mimeType,
               createdAt: new Date().toISOString(),
             } as any;
             return (
@@ -187,7 +187,8 @@ export default function PlaylistDetailScreen() {
                   return path;
                 })()}
                 showAddToPlaylist={false}
-                onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, audioUrl: ep.audioUrl } })}
+                hideDescription
+                onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
               />
             );
           }
@@ -203,6 +204,7 @@ export default function PlaylistDetailScreen() {
                   return path;
                 })()}
                 showAddToPlaylist={false}
+                hideDescription
                 onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
               />
             );

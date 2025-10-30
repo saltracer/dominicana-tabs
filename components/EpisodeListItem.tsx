@@ -25,6 +25,7 @@ interface EpisodeListItemProps {
   showArtwork?: boolean;
   artworkLocalPath?: string | null;
   showAddToPlaylist?: boolean;
+  hideDescription?: boolean; // When true, hide description and show date/duration instead
 }
 
 export const EpisodeListItem = React.memo(function EpisodeListItem({
@@ -38,6 +39,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   showArtwork = false,
   artworkLocalPath = null,
   showAddToPlaylist = true,
+  hideDescription = false,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
   const plainTitle = React.useMemo(() => {
@@ -182,9 +184,20 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     return `${minutes}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
   };
 
-  const formatDate = (dateString?: string): string => {
+  const formatDate = (dateString?: string, useAbsolute = false): string => {
     if (!dateString) return '';
     const date = new Date(dateString);
+    
+    if (useAbsolute) {
+      // Use actual date format for playlist screens
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+    
+    // Relative dates for other screens
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -354,7 +367,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
           </View>
         </Modal>
 
-        {episode.description && (
+        {!hideDescription && episode.description && (
           <HtmlRenderer 
             htmlContent={episode.description} 
             maxLines={2}
@@ -368,11 +381,22 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
             <View style={styles.metaItem}>
               <Ionicons name="calendar-outline" size={14} color={themeStyles.textSecondary} />
               <Text style={[styles.metaText, { color: themeStyles.textSecondary }]}>
-                {formatDate(episode.publishedAt)}
+                {formatDate(episode.publishedAt, hideDescription)}
               </Text>
             </View>
           )}
-          {episode.duration && (
+          {(() => {
+            const dur = episode.duration;
+            if (__DEV__ && hideDescription) {
+              console.log('[EpisodeListItem] duration check:', { 
+                duration: dur, 
+                type: typeof dur, 
+                isNumber: typeof dur === 'number',
+                isTruthy: !!dur 
+              });
+            }
+            return (dur !== undefined && dur !== null && dur > 0);
+          })() && (
             <View style={styles.metaItem}>
               <Ionicons name="time-outline" size={14} color={themeStyles.textSecondary} />
               <Text style={[styles.metaText, { color: themeStyles.textSecondary }]}>

@@ -9,10 +9,18 @@ type DownloadedItem = {
   podcastId: string;
   episodeId?: string; // DB uuid when available
   title: string;
+  description?: string;
   audioUrl: string;
   artworkUrl?: string | null;
   localAudioPath: string;
   downloadedAt: number;
+  guid?: string;
+  duration?: number;
+  publishedAt?: string;
+  episodeNumber?: number;
+  seasonNumber?: number;
+  fileSize?: number;
+  mimeType?: string;
 };
 
 export function useDownloadedPlaylist() {
@@ -40,8 +48,15 @@ export function useDownloadedPlaylist() {
             
             // Start with metadata values (most reliable)
             let title: string | undefined = d.title;
+            let description: string | undefined;
             let artworkUrl: string | null | undefined = null;
             let episodeId: string | undefined = d.episodeId;
+            let duration: number | undefined;
+            let publishedAt: string | undefined;
+            let episodeNumber: number | undefined;
+            let seasonNumber: number | undefined;
+            let fileSize: number | undefined;
+            let mimeType: string | undefined;
             const guid = d.guid;
             
             // Try to enhance from cache if podcastId is available
@@ -56,8 +71,15 @@ export function useDownloadedPlaylist() {
                 );
                 if (ep) {
                   title = title || ep.title;
+                  description = ep.description;
                   artworkUrl = ep.artworkUrl || null;
                   episodeId = ep.id as any;
+                  duration = ep.duration;
+                  publishedAt = ep.publishedAt;
+                  episodeNumber = ep.episodeNumber;
+                  seasonNumber = ep.seasonNumber;
+                  fileSize = ep.fileSize;
+                  mimeType = ep.mimeType;
                   if (__DEV__) console.log('[useDownloadedPlaylist] matched episode from cache:', title);
                 } else if (__DEV__) {
                   console.warn('[useDownloadedPlaylist] episode not found in cache:', d.podcastId, guid || d.audioUrl);
@@ -73,10 +95,18 @@ export function useDownloadedPlaylist() {
               podcastId: d.podcastId || 'unknown',
               episodeId,
               title: title || 'Episode',
+              description,
               audioUrl: d.audioUrl,
               artworkUrl: artworkUrl ?? null,
               localAudioPath: d.filePath,
               downloadedAt: typeof d.downloadedAt === 'string' ? new Date(d.downloadedAt).getTime() : (d.downloadedAt as any) || Date.now(),
+              guid,
+              duration,
+              publishedAt,
+              episodeNumber,
+              seasonNumber,
+              fileSize,
+              mimeType,
             });
           } catch (err) {
             if (__DEV__) console.error('[useDownloadedPlaylist] error processing download:', d.episodeId, err);
