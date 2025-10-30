@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PodcastEpisode } from '../types';
@@ -6,6 +6,9 @@ import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
 import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 import HtmlRenderer from './HtmlRenderer';
+import { getEpisodesMap } from '../lib/podcast/cache';
+import { fileExists } from '../lib/podcast/storage';
+import { PodcastDownloadService } from '../services/PodcastDownloadService';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -27,6 +30,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   showProgress = true,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
+  const [cacheDownloaded, setCacheDownloaded] = useState<boolean>(false);
 
   // Memoize theme-dependent styles
   const themeStyles = useMemo(() => {
@@ -48,8 +52,36 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   } = usePodcastDownloads();
 
   // Download state and handlers
-  const isDownloaded = isEpisodeDownloaded(episode.id);
+  const isDownloadedMeta = isEpisodeDownloaded(episode.id);
+  const isDownloaded = cacheDownloaded || isDownloadedMeta;
   const downloadState = getDownloadState(episode.id);
+
+  // Fast cache-based detection so the button reflects state before metadata loads
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        // First, check download metadata directly for this episode id
+        const directPath = await PodcastDownloadService.getDownloadedEpisodePath(episode.id);
+        if (directPath) {
+          if (!cancelled) setCacheDownloaded(true);
+          return;
+        }
+
+        const map = await getEpisodesMap(episode.podcastId);
+        // match by guid or audioUrl
+        const entry = Object.values(map).find(e => (e.guid && e.guid === episode.guid) || e.audioUrl === episode.audioUrl);
+        if (entry && entry.localAudioPath) {
+          const exists = await fileExists(entry.localAudioPath);
+          if (!cancelled) setCacheDownloaded(!!exists);
+          return;
+        }
+      } catch {}
+      if (!cancelled) setCacheDownloaded(false);
+    };
+    check();
+    return () => { cancelled = true; };
+  }, [episode.id, episode.podcastId, episode.guid, episode.audioUrl]);
 
   const handleDownload = async () => {
     if (isDownloaded) {
