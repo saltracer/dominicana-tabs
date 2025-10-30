@@ -140,7 +140,13 @@ export default function PodcastsScreen() {
   };
 
   const handlePodcastPress = (podcastId: string) => {
-    router.push(`/(tabs)/preaching/podcast/${podcastId}`);
+    const p = (libraryPodcasts || []).find((x: any) => x.id === podcastId) || (subscriptions || []).find((x: any) => x.id === podcastId);
+    const params: any = { id: podcastId };
+    if (p?.rssUrl) params.rssUrl = p.rssUrl;
+    if (p?.title) params.podcastTitle = p.title;
+    if (p?.author) params.podcastAuthor = p.author;
+    if (p?.artworkUrl) params.podcastArt = p.artworkUrl;
+    router.push({ pathname: '/preaching/podcast/[id]', params });
   };
 
   const isSubscribed = (podcastId: string) => {

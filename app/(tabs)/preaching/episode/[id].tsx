@@ -120,21 +120,161 @@ export default function EpisodeDetailScreen() {
       const start = Date.now();
       console.log('[EpisodeDetail] loadEpisode:start');
       const isUuid = /^[0-9a-fA-F-]{36}$/.test(id!);
-      if (isUuid) {
-        const t0 = Date.now();
-        const episodeData = await PodcastService.getEpisode(id!);
-        console.log('[EpisodeDetail] getEpisode (DB) elapsed=', Date.now() - t0, 'ms');
-        setEpisode(episodeData);
-        const memo = podcastHeaderMemoRef.current.get(episodeData.podcastId);
-        if (memo) {
-          console.log('[EpisodeDetail] getPodcast memo hit');
-          setPodcast(memo);
-        } else {
-          // Try feed cache first to avoid DB hit
-          const feed = await getFeed(episodeData.podcastId);
+      const hasCacheContext = !!qPodcastId && (!!qGuid || !!qAudioUrl);
+      if (hasCacheContext) {
+        // Prefer cache-first when we have context (curated/non-subscribed friendly)
+        const { getEpisodesMap } = await import('../../../../lib/podcast/cache');
+        const tMap = Date.now();
+        const map = await getEpisodesMap(qPodcastId!);
+        console.log('[EpisodeDetail] getEpisodesMap (cache-first) elapsed=', Date.now() - tMap, 'ms', 'count=', Object.keys(map).length);
+        const ep = Object.values(map).find(e => (qGuid && e.guid === qGuid) || (qAudioUrl && e.audioUrl === qAudioUrl) || e.guid === id || e.audioUrl === id);
+        if (ep) {
+          const cacheEpisode: PodcastEpisode = {
+            id: ep.id,
+            podcastId: qPodcastId!,
+            title: ep.title,
+            description: ep.description,
+            audioUrl: ep.audioUrl,
+            duration: ep.duration,
+            publishedAt: ep.publishedAt,
+            episodeNumber: ep.episodeNumber,
+            seasonNumber: ep.seasonNumber,
+            guid: ep.guid,
+            artworkUrl: ep.artworkUrl,
+            fileSize: ep.fileSize,
+            mimeType: ep.mimeType,
+            createdAt: new Date().toISOString(),
+          } as any;
+          setEpisode(cacheEpisode);
+          const feed = await getFeed(qPodcastId!);
           if (feed) {
             const p: Podcast = {
-              id: episodeData.podcastId,
+              id: qPodcastId!,
+              title: qPodcastTitle || feed.summary.title,
+              description: feed.summary.description || '',
+              author: qPodcastAuthor || feed.summary.author || '',
+              rssUrl: feed.uri,
+              artworkUrl: qPodcastArt || feed.summary.artworkUrl,
+              websiteUrl: feed.summary.websiteUrl,
+              language: feed.summary.language || 'en',
+              categories: feed.summary.categories || [],
+              isCurated: false,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              lastFetchedAt: new Date(feed.fetchedAt).toISOString(),
+            } as any;
+            podcastHeaderMemoRef.current.set(qPodcastId!, p);
+            setPodcast(p);
+          }
+          // Skip DB entirely on cache-success path
+        } else if (isUuid) {
+          // Fallback to DB only if we truly have a UUID and cache didn't find it
+          const t0 = Date.now();
+          try {
+            const episodeData = await PodcastService.getEpisode(id!);
+            console.log('[EpisodeDetail] getEpisode (DB after cache miss) elapsed=', Date.now() - t0, 'ms');
+            setEpisode(episodeData);
+            const feed = await getFeed(episodeData.podcastId);
+            if (feed) {
+              const p: Podcast = {
+                id: episodeData.podcastId,
+                title: feed.summary.title,
+                description: feed.summary.description || '',
+                author: feed.summary.author || '',
+                rssUrl: feed.uri,
+                artworkUrl: feed.summary.artworkUrl,
+                websiteUrl: feed.summary.websiteUrl,
+                language: feed.summary.language || 'en',
+                categories: feed.summary.categories || [],
+                isCurated: false,
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                lastFetchedAt: new Date(feed.fetchedAt).toISOString(),
+              } as any;
+              podcastHeaderMemoRef.current.set(episodeData.podcastId, p);
+              setPodcast(p);
+            } else {
+              const t1 = Date.now();
+              const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
+              console.log('[EpisodeDetail] getPodcast elapsed=', Date.now() - t1, 'ms');
+              podcastHeaderMemoRef.current.set(episodeData.podcastId, podcastData);
+              setPodcast(podcastData);
+            }
+          } catch (e) {
+            console.warn('[EpisodeDetail] DB fetch after cache miss failed', e);
+          }
+        }
+      } else if (isUuid) {
+        const t0 = Date.now();
+        try {
+          const episodeData = await PodcastService.getEpisode(id!);
+          console.log('[EpisodeDetail] getEpisode (DB) elapsed=', Date.now() - t0, 'ms');
+          setEpisode(episodeData);
+          const memo = podcastHeaderMemoRef.current.get(episodeData.podcastId);
+          if (memo) {
+            console.log('[EpisodeDetail] getPodcast memo hit');
+            setPodcast(memo);
+          } else {
+            // Try feed cache first to avoid DB hit
+            const feed = await getFeed(episodeData.podcastId);
+            if (feed) {
+              const p: Podcast = {
+                id: episodeData.podcastId,
+                title: feed.summary.title,
+                description: feed.summary.description || '',
+                author: feed.summary.author || '',
+                rssUrl: feed.uri,
+                artworkUrl: feed.summary.artworkUrl,
+                websiteUrl: feed.summary.websiteUrl,
+                language: feed.summary.language || 'en',
+                categories: feed.summary.categories || [],
+                isCurated: false,
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                lastFetchedAt: new Date(feed.fetchedAt).toISOString(),
+              } as any;
+              podcastHeaderMemoRef.current.set(episodeData.podcastId, p);
+              setPodcast(p);
+            } else {
+              const t1 = Date.now();
+              const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
+              console.log('[EpisodeDetail] getPodcast elapsed=', Date.now() - t1, 'ms');
+              podcastHeaderMemoRef.current.set(episodeData.podcastId, podcastData);
+              setPodcast(podcastData);
+            }
+          }
+        } catch (e) {
+          console.warn('[EpisodeDetail] getEpisode (DB) failed, falling back to cache', e);
+          // Fallthrough to cache logic below by simulating non-UUID path
+          if (!qPodcastId) throw new Error('Missing podcastId for cache episode');
+          const { getEpisodesMap } = await import('../../../../lib/podcast/cache');
+          const map = await getEpisodesMap(qPodcastId);
+          const ep = Object.values(map).find(x => (qGuid && x.guid === qGuid) || (qAudioUrl && x.audioUrl === qAudioUrl) || x.guid === id || x.audioUrl === id);
+          if (!ep) throw new Error('Episode not found in cache');
+          const cacheEpisode: PodcastEpisode = {
+            id: ep.id,
+            podcastId: qPodcastId,
+            title: ep.title,
+            description: ep.description,
+            audioUrl: ep.audioUrl,
+            duration: ep.duration,
+            publishedAt: ep.publishedAt,
+            episodeNumber: ep.episodeNumber,
+            seasonNumber: ep.seasonNumber,
+            guid: ep.guid,
+            artworkUrl: ep.artworkUrl,
+            fileSize: ep.fileSize,
+            mimeType: ep.mimeType,
+            createdAt: new Date().toISOString(),
+          } as any;
+          setEpisode(cacheEpisode);
+          const feed = await getFeed(qPodcastId);
+          if (feed) {
+            const p: Podcast = {
+              id: qPodcastId,
               title: feed.summary.title,
               description: feed.summary.description || '',
               author: feed.summary.author || '',
@@ -149,14 +289,7 @@ export default function EpisodeDetailScreen() {
               updatedAt: new Date().toISOString(),
               lastFetchedAt: new Date(feed.fetchedAt).toISOString(),
             } as any;
-            podcastHeaderMemoRef.current.set(episodeData.podcastId, p);
             setPodcast(p);
-          } else {
-            const t1 = Date.now();
-            const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
-            console.log('[EpisodeDetail] getPodcast elapsed=', Date.now() - t1, 'ms');
-            podcastHeaderMemoRef.current.set(episodeData.podcastId, podcastData);
-            setPodcast(podcastData);
           }
         }
       } else {

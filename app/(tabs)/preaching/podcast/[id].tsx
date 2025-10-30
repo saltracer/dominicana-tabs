@@ -33,7 +33,7 @@ import PodcastPreferencesModal from '../../../../components/PodcastPreferencesMo
 export default function PodcastDetailScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, rssUrl: qRssUrl, podcastTitle: qPodcastTitle, podcastAuthor: qPodcastAuthor, podcastArt: qPodcastArt } = useLocalSearchParams<{ id: string; rssUrl?: string; podcastTitle?: string; podcastAuthor?: string; podcastArt?: string }>();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [podcast, setPodcast] = useState<PodcastWithEpisodes | null>(null);
@@ -67,7 +67,7 @@ export default function PodcastDetailScreen() {
 
   useEffect(() => {
     if (id) {
-      console.log('[PodcastDetail] mount id=', id);
+      console.log('[PodcastDetail] mount id=', id, { qRssUrl, qPodcastTitle, qPodcastAuthor });
       loadFromCache();
       loadPodcast();
     }
@@ -195,7 +195,12 @@ export default function PodcastDetailScreen() {
       setLoading(true);
       const start = Date.now();
       console.log('[PodcastDetail] loadPodcast:start');
-      const data = await PodcastService.getPodcast(id!);
+      let data: any;
+      if (qRssUrl) {
+        data = { id: id!, rssUrl: qRssUrl, title: qPodcastTitle, author: qPodcastAuthor, artworkUrl: qPodcastArt } as any;
+      } else {
+        data = await PodcastService.getPodcast(id!);
+      }
       // Build DB episode lookup maps (guid -> uuid, audioUrl -> uuid) if available
       try {
         const g2i = new Map<string, string>();
@@ -210,7 +215,7 @@ export default function PodcastDetailScreen() {
         setDbGuidToId(g2i);
         setDbAudioToId(a2i);
       } catch {}
-      console.log('[PodcastDetail] loadPodcast:getPodcast elapsed=', Date.now() - start);
+      if (!qRssUrl) console.log('[PodcastDetail] loadPodcast:getPodcast elapsed=', Date.now() - start);
 
       // Refresh from RSS (1h policy) and then load episodes from device cache
       try {
@@ -245,7 +250,7 @@ export default function PodcastDetailScreen() {
           mimeType: ep.mimeType,
           createdAt: new Date().toISOString(),
         }));
-        setPodcast({ ...data, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
+        setPodcast({ ...data, title: qPodcastTitle || data.title, author: qPodcastAuthor || data.author, artworkUrl: qPodcastArt || data.artworkUrl, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
         const artUrl = data.artworkUrl;
         if (artUrl) {
           try {
@@ -336,15 +341,14 @@ export default function PodcastDetailScreen() {
           || dbAudioToId.get(episode.audioUrl)
           || episode.id;
     const params: { id: string; podcastId?: string; guid?: string; audioUrl?: string; podcastTitle?: string; podcastAuthor?: string; podcastArt?: string } = { id: String(resolvedId) };
-    if (!isUuid) {
-      if (podcast?.id) params.podcastId = podcast.id;
-      if (episode.guid) params.guid = episode.guid;
-      if (episode.audioUrl) params.audioUrl = episode.audioUrl;
-      // Pass a header snapshot to render immediately on episode page
-      if (podcast?.title) params.podcastTitle = podcast.title;
-      if (podcast?.author) params.podcastAuthor = podcast.author as string;
-      if (artworkPath || podcast?.artworkUrl) params.podcastArt = (artworkPath || podcast?.artworkUrl)!;
-    }
+    // Always pass context when available to enable cache fallback on episode screen
+    if (podcast?.id) params.podcastId = podcast.id;
+    if (episode.guid) params.guid = episode.guid;
+    if (episode.audioUrl) params.audioUrl = episode.audioUrl;
+    // Pass a header snapshot to render immediately on episode page
+    if (podcast?.title) params.podcastTitle = podcast.title;
+    if (podcast?.author) params.podcastAuthor = podcast.author as string;
+    if (artworkPath || podcast?.artworkUrl) params.podcastArt = (artworkPath || podcast?.artworkUrl)!;
     console.log('[PodcastDetail] navigate to episode', resolvedId, params);
     router.push({ pathname: '/preaching/episode/[id]', params });
   };
