@@ -89,13 +89,32 @@ const HtmlRenderer = memo(function HtmlRenderer({
     },
   }), [maxLines]);
 
+  // Memoize merged base style to prevent unnecessary re-renders
+  const mergedBaseStyle = useMemo(() => {
+    if (!style) return themeStyles.baseStyle;
+    
+    // If style is an array (React Native style array), flatten it into a single object
+    let flattenedStyle: any = {};
+    if (Array.isArray(style)) {
+      style.forEach((s: any) => {
+        if (s && typeof s === 'object') {
+          flattenedStyle = { ...flattenedStyle, ...s };
+        }
+      });
+    } else {
+      flattenedStyle = style;
+    }
+    
+    return { ...themeStyles.baseStyle, ...flattenedStyle };
+  }, [themeStyles.baseStyle, style]);
+
   return (
     <MemoizedRenderHtml
       contentWidth={width}
       source={{ html: htmlContent }}
       tagsStyles={themeStyles.tagsStyles}
       systemFonts={systemFonts}
-      baseStyle={[themeStyles.baseStyle, style]}
+      baseStyle={mergedBaseStyle}
       renderersProps={renderersProps}
       // Ignore unsupported CSS properties but preserve content
       ignoredDomTags={['style', 'script']}
