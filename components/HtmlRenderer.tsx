@@ -5,6 +5,8 @@ import RenderHtml from 'react-native-render-html';
 import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
 
+type ThemeKey = 'light' | 'dark';
+
 interface HtmlRendererProps {
   htmlContent: string;
   maxLines?: number;
@@ -43,6 +45,46 @@ const staticTagsStyles = {
 };
 
 const systemFonts = ['Georgia', 'System'];
+const IGNORED_DOM_TAGS = ['style', 'script'] as const;
+const DEFAULT_TEXT_PROPS = { allowFontScaling: false } as const;
+
+// Global caches to ensure referential stability across many instances
+const themeStylesCache: Record<string, { tagsStyles: any; baseStyle: any }> = {};
+const renderersPropsCache = new Map<number | undefined, any>();
+
+function getThemeStyles(theme: ThemeKey) {
+  if (themeStylesCache[theme]) return themeStylesCache[theme];
+  const styles = {
+    tagsStyles: {
+      ...staticTagsStyles,
+      a: {
+        color: Colors[theme].primary,
+        textDecorationLine: 'underline' as const,
+      },
+      blockquote: {
+        marginLeft: 16,
+        paddingLeft: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: Colors[theme].primary,
+        fontStyle: 'italic' as const,
+      },
+    },
+    baseStyle: {
+      color: Colors[theme].text,
+      fontSize: 14,
+      lineHeight: 18,
+    },
+  };
+  themeStylesCache[theme] = styles;
+  return styles;
+}
+
+function getRenderersProps(maxLines?: number) {
+  if (renderersPropsCache.has(maxLines)) return renderersPropsCache.get(maxLines);
+  const value = { text: { numberOfLines: maxLines } };
+  renderersPropsCache.set(maxLines, value);
+  return value;
+}
 
 const HtmlRenderer = memo(function HtmlRenderer({ 
   htmlContent, 
@@ -57,37 +99,14 @@ const HtmlRenderer = memo(function HtmlRenderer({
   }
 
   // Memoize theme-dependent styles to prevent recreation on every render
-  const themeStyles = useMemo(() => {
-    const theme = colorScheme ?? 'light';
-    return {
-      tagsStyles: {
-        ...staticTagsStyles,
-        a: {
-          color: Colors[theme].primary,
-          textDecorationLine: 'underline' as const,
-        },
-        blockquote: {
-          marginLeft: 16,
-          paddingLeft: 8,
-          borderLeftWidth: 3,
-          borderLeftColor: Colors[theme].primary,
-          fontStyle: 'italic' as const,
-        },
-      },
-      baseStyle: {
-        color: Colors[theme].text,
-        fontSize: 14,
-        lineHeight: 18,
-      },
-    };
-  }, [colorScheme]);
+  const theme = (colorScheme ?? 'light') as ThemeKey;
+  const themeStyles = getThemeStyles(theme);
 
   // Memoize renderersProps to prevent recreation
-  const renderersProps = useMemo(() => ({
-    text: {
-      numberOfLines: maxLines,
-    },
-  }), [maxLines]);
+  const renderersProps = getRenderersProps(maxLines);
+
+  // Stable source object to prevent provider prop updates
+  const source = useMemo(() => ({ html: htmlContent }), [htmlContent]);
 
   // Memoize merged base style to prevent unnecessary re-renders
   const mergedBaseStyle = useMemo(() => {
@@ -111,16 +130,14 @@ const HtmlRenderer = memo(function HtmlRenderer({
   return (
     <MemoizedRenderHtml
       contentWidth={width}
-      source={{ html: htmlContent }}
+      source={source}
       tagsStyles={themeStyles.tagsStyles}
       systemFonts={systemFonts}
       baseStyle={mergedBaseStyle}
       renderersProps={renderersProps}
       // Ignore unsupported CSS properties but preserve content
-      ignoredDomTags={['style', 'script']}
-      defaultTextProps={{
-        allowFontScaling: false,
-      }}
+      ignoredDomTags={IGNORED_DOM_TAGS as any}
+      defaultTextProps={DEFAULT_TEXT_PROPS as any}
       // Disable CSS parsing that causes warnings
       enableExperimentalMarginCollapsing={false}
       // Remove customCSSRules that were causing native style property warnings
