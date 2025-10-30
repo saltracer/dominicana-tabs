@@ -150,7 +150,11 @@ export default function PodcastsScreen() {
   const getDisplayData = () => {
     switch (activeTab) {
       case 'library':
-        return { data: libraryPodcasts, loading: libraryLoading, type: 'podcasts' as const };
+        return { 
+          data: (cachedCurated && (!hasLoadedOnce || libraryLoading)) ? cachedCurated : libraryPodcasts, 
+          loading: libraryLoading, 
+          type: 'podcasts' as const 
+        };
       case 'subscriptions':
         return { data: subscriptions, loading: subsLoading, type: 'podcasts' as const };
       case 'playlists':

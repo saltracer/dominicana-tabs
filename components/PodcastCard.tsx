@@ -1,10 +1,11 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Podcast } from '../types';
 import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
 import HtmlRenderer from './HtmlRenderer';
+import { ensureImageCached } from '../lib/podcast/storage';
 
 interface PodcastCardProps {
   podcast: Podcast;
@@ -24,6 +25,25 @@ export const PodcastCard = React.memo(function PodcastCard({
   compact = false,
 }: PodcastCardProps) {
   const { colorScheme } = useTheme();
+  const [localArtwork, setLocalArtwork] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (podcast.artworkUrl) {
+        try {
+          const { path } = await ensureImageCached(podcast.artworkUrl);
+          if (!cancelled) setLocalArtwork(path);
+        } catch {
+          if (!cancelled) setLocalArtwork(null);
+        }
+      } else {
+        setLocalArtwork(null);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [podcast.artworkUrl]);
 
   const handleSubscribe = useCallback((e: any) => {
     e?.stopPropagation();
@@ -67,9 +87,9 @@ export const PodcastCard = React.memo(function PodcastCard({
         onPress={onPress}
       >
         <View style={styles.compactContent}>
-          {podcast.artworkUrl ? (
+          {localArtwork || podcast.artworkUrl ? (
             <Image
-              source={{ uri: podcast.artworkUrl }}
+              source={{ uri: localArtwork || podcast.artworkUrl }}
               style={styles.compactArtwork}
               resizeMode="cover"
             />
@@ -121,9 +141,9 @@ export const PodcastCard = React.memo(function PodcastCard({
       onPress={onPress}
     >
       <View style={styles.artworkContainer}>
-        {podcast.artworkUrl ? (
+        {localArtwork || podcast.artworkUrl ? (
           <Image
-            source={{ uri: podcast.artworkUrl }}
+            source={{ uri: localArtwork || podcast.artworkUrl }}
             style={styles.artwork}
             resizeMode="cover"
           />

@@ -17,7 +17,8 @@ import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastWithEpisodes, PodcastEpisode } from '../../../../types';
-import { refreshFeed, getEpisodesMap } from '../../../../lib/podcast/cache';
+import { refreshFeed, getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
+import { ensureImageCached } from '../../../../lib/podcast/storage';
 import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptions';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
@@ -35,6 +36,7 @@ export default function PodcastDetailScreen() {
   const [podcast, setPodcast] = useState<PodcastWithEpisodes | null>(null);
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [artworkPath, setArtworkPath] = useState<string | null>(null);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
   const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
@@ -57,9 +59,67 @@ export default function PodcastDetailScreen() {
 
   useEffect(() => {
     if (id) {
+      loadFromCache();
       loadPodcast();
     }
   }, [id]);
+
+  const loadFromCache = async () => {
+    try {
+      const feed = await getFeed(id!);
+      const map = await getEpisodesMap(id!);
+      const episodesFromCache: PodcastEpisode[] = Object.values(map).map((ep) => ({
+        id: ep.id,
+        podcastId: id!,
+        title: ep.title,
+        description: ep.description,
+        audioUrl: ep.audioUrl,
+        duration: ep.duration,
+        publishedAt: ep.publishedAt,
+        episodeNumber: ep.episodeNumber,
+        seasonNumber: ep.seasonNumber,
+        guid: ep.guid,
+        artworkUrl: ep.artworkUrl,
+        fileSize: ep.fileSize,
+        mimeType: ep.mimeType,
+        createdAt: new Date().toISOString(),
+      }));
+
+      if (feed || episodesFromCache.length) {
+        const base: PodcastWithEpisodes = {
+          id: id!,
+          title: feed?.summary.title || 'Podcast',
+          description: feed?.summary.description,
+          author: feed?.summary.author,
+          rssUrl: feed?.uri || '',
+          artworkUrl: feed?.summary.artworkUrl,
+          websiteUrl: feed?.summary.websiteUrl,
+          language: feed?.summary.language || 'en',
+          categories: feed?.summary.categories || [],
+          isCurated: false,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          episodes: episodesFromCache,
+          episodeCount: episodesFromCache.length,
+        };
+        setPodcast(base);
+        const artUrl = base.artworkUrl;
+        if (artUrl) {
+          try {
+            const { path } = await ensureImageCached(artUrl);
+            setArtworkPath(path);
+          } catch {
+            setArtworkPath(null);
+          }
+        } else {
+          setArtworkPath(null);
+        }
+      }
+    } catch {
+      // ignore cache errors
+    }
+  };
 
   const loadPodcast = async () => {
     try {
@@ -87,6 +147,15 @@ export default function PodcastDetailScreen() {
           createdAt: new Date().toISOString(),
         }));
         setPodcast({ ...data, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
+        const artUrl = data.artworkUrl;
+        if (artUrl) {
+          try {
+            const { path } = await ensureImageCached(artUrl);
+            setArtworkPath(path);
+          } catch {
+            setArtworkPath(null);
+          }
+        }
       } catch (e) {
         // Fallback to service-provided episodes if cache path fails
         setPodcast(data);
@@ -210,9 +279,9 @@ export default function PodcastDetailScreen() {
         {/* Podcast Header - Vertical Layout */}
         <View style={styles.header}>
           {/* Artwork */}
-          {podcast.artworkUrl ? (
+          {artworkPath || podcast.artworkUrl ? (
             <Image
-              source={{ uri: podcast.artworkUrl }}
+              source={{ uri: artworkPath || podcast.artworkUrl }}
               style={styles.artwork}
               resizeMode="cover"
             />
