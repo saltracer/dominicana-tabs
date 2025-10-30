@@ -37,6 +37,7 @@ export default function PodcastDetailScreen() {
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [artworkPath, setArtworkPath] = useState<string | null>(null);
+  const [hasCache, setHasCache] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
   const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
@@ -104,14 +105,12 @@ export default function PodcastDetailScreen() {
           episodeCount: episodesFromCache.length,
         };
         setPodcast(base);
+        setHasCache(true);
         const artUrl = base.artworkUrl;
         if (artUrl) {
-          try {
-            const { path } = await ensureImageCached(artUrl);
-            setArtworkPath(path);
-          } catch {
-            setArtworkPath(null);
-          }
+          ensureImageCached(artUrl)
+            .then(({ path }) => setArtworkPath(path))
+            .catch(() => setArtworkPath(null));
         } else {
           setArtworkPath(null);
         }
@@ -149,12 +148,9 @@ export default function PodcastDetailScreen() {
         setPodcast({ ...data, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
         const artUrl = data.artworkUrl;
         if (artUrl) {
-          try {
-            const { path } = await ensureImageCached(artUrl);
-            setArtworkPath(path);
-          } catch {
-            setArtworkPath(null);
-          }
+          ensureImageCached(artUrl)
+            .then(({ path }) => setArtworkPath(path))
+            .catch(() => setArtworkPath(null));
         }
       } catch (e) {
         // Fallback to service-provided episodes if cache path fails
