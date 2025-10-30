@@ -219,6 +219,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     height: 48, // Fixed height to match feast banner
     borderRadius: 8,
+    position: 'relative', // Allow absolute positioning of progress bar
+    overflow: 'visible', // Show progress bar at bottom
     marginHorizontal: 8,
     marginVertical: 4,
     cursor: 'pointer',
@@ -290,13 +292,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 6,
+    zIndex: 10, // Ensure progress bar appears on top
   },
   progressBar: {
     height: 6,
-    borderRadius: 1.5,
+    borderRadius: 3,
   },
   progressFill: {
     height: 6,
-    borderRadius: 1.5,
+    borderRadius: 3,
   },
 });
