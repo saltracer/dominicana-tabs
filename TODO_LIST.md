@@ -72,6 +72,7 @@
 - [ ] Create podcast specific preferences
 - [x] Improve performance of podcasts by using device caching
 - [ ] Add "Played" status to podcasts
+- [ ] Implement a download queue 
 
 
 ## Other

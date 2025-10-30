@@ -44,15 +44,15 @@ export default function FeastBanner({
   const showPodcastPlayer = currentEpisode && (isPlaying || isPaused || isLoading);
   
   // Debug logging
-  console.log('[FeastBanner] Podcast player state:', {
-    currentEpisode: currentEpisode?.title,
-    isPlaying,
-    isPaused,
-    isLoading,
-    showPodcastPlayer,
-    hasCurrentEpisode: !!currentEpisode,
-    episodeId: currentEpisode?.id
-  });
+  // console.log('[FeastBanner] Podcast player state:', {
+  //   currentEpisode: currentEpisode?.title,
+  //   isPlaying,
+  //   isPaused,
+  //   isLoading,
+  //   showPodcastPlayer,
+  //   hasCurrentEpisode: !!currentEpisode,
+  //   episodeId: currentEpisode?.id
+  // });
 
   const navigateToPreviousDay = () => {
     const currentDate = parseISO(liturgicalDay.date);

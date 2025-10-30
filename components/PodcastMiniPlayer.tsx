@@ -45,13 +45,13 @@ export default function PodcastMiniPlayer() {
     { color: Colors[colorScheme ?? 'light'].text }
   ], [colorScheme]);
 
-  console.log('[PodcastMiniPlayer] Rendering with:', {
-    currentEpisode: currentEpisode?.title,
-    isPlaying,
-    isPaused,
-    position,
-    duration
-  });
+  // console.log('[PodcastMiniPlayer] Rendering with:', {
+  //   currentEpisode: currentEpisode?.title,
+  //   isPlaying,
+  //   isPaused,
+  //   position,
+  //   duration
+  // });
 
   // Fetch podcast data when episode changes
   useEffect(() => {
