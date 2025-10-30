@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
-import { Colors, getLiturgicalColorHex } from '../constants/Colors';
+import { Colors, getLiturgicalColorHex, adjustLiturgicalColorBrightness } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
 import { LiturgicalDay } from '../types';
@@ -33,7 +33,7 @@ export default function FeastBanner({
 }: FeastBannerProps) {
   const { colorScheme } = useTheme();
   const { selectedDate, setSelectedDate } = useCalendar();
-  const { currentEpisode, isPlaying, isPaused, isLoading } = usePodcastPlayer();
+  const { currentEpisode, isPlaying, isPaused, isLoading, position, duration, seek } = usePodcastPlayer();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
@@ -132,6 +132,13 @@ export default function FeastBanner({
     ? getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark')
     : getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark');
 
+  // Calculate progress percentage for podcast playback
+  const progressPercentage = duration > 0 ? (position / duration) * 100 : 0;
+  
+  // Determine if progress should be shown
+  // Show progress when miniplayer is visible (index 0) AND we have valid duration
+  const showProgress = showPodcastPlayer && carouselIndex === 0 && duration > 0;
+
   const handleDateChange = (day: any) => {
     if (day) {
       // Use date-fns parseISO for clean date parsing
@@ -192,13 +199,41 @@ export default function FeastBanner({
         borderColor: Colors[colorScheme ?? 'light'].border,
       }
     ]}>
-              {/* Liturgical Day Color Bar */}
-        <View 
-          style={[
-            styles.seasonColorBar, 
-            { backgroundColor: displayColor }
-          ]} 
-        />
+              {/* Liturgical Day Color Bar with Progress Overlay */}
+        {showProgress ? (
+          <TouchableOpacity
+            style={[
+              styles.seasonColorBar, 
+              { backgroundColor: displayColor }
+            ]}
+            onPress={(e) => {
+              // Calculate the position based on where the user clicked
+              const { locationX, target } = e.nativeEvent;
+              const { width } = (target as any).getBoundingClientRect?.() || { width: window.innerWidth };
+              const percentage = locationX / width;
+              const newPosition = Math.max(0, Math.min(duration, duration * percentage));
+              seek(newPosition);
+            }}
+            activeOpacity={1}
+          >
+            <View 
+              style={[
+                styles.progressFill,
+                { 
+                  width: `${progressPercentage}%`,
+                  backgroundColor: adjustLiturgicalColorBrightness(displayColor, colorScheme === 'dark')
+                }
+              ]} 
+            />
+          </TouchableOpacity>
+        ) : (
+          <View 
+            style={[
+              styles.seasonColorBar, 
+              { backgroundColor: displayColor }
+            ]}
+          />
+        )}
       
       <View 
         style={[styles.bannerContent, isMobile && styles.bannerContentMobile, isTablet && styles.bannerContentTablet]}
@@ -675,6 +710,15 @@ const styles = StyleSheet.create({
   seasonColorBar: {
     height: 4,
     width: '100%',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    height: '100%',
   },
   topRow: {
     flexDirection: 'row',

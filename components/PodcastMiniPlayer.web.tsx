@@ -106,7 +106,6 @@ export default function PodcastMiniPlayer() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progressPercentage = duration > 0 ? (position / duration) * 100 : 0;
 
   // Determine which artwork to use (episode first, then podcast)
   const artworkUrl = currentEpisode.artworkUrl || podcast?.artworkUrl;
@@ -181,26 +180,6 @@ export default function PodcastMiniPlayer() {
           {playbackSpeed}x
         </Text>
       </TouchableOpacity>
-
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View 
-          style={[
-            styles.progressBar,
-            { backgroundColor: Colors[colorScheme ?? 'light'].border }
-          ]}
-        >
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${progressPercentage}%`,
-                backgroundColor: Colors[colorScheme ?? 'light'].primary,
-              }
-            ]}
-          />
-        </View>
-      </View>
       </TouchableOpacity>
 
       <FullScreenPlayer 
@@ -219,8 +198,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     height: 48, // Fixed height to match feast banner
     borderRadius: 8,
-    position: 'relative', // Allow absolute positioning of progress bar
-    overflow: 'visible', // Show progress bar at bottom
     marginHorizontal: 8,
     marginVertical: 4,
     cursor: 'pointer',
@@ -285,21 +262,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     fontFamily: 'Georgia',
-  },
-  progressContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 6,
-    zIndex: 10, // Ensure progress bar appears on top
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: 3,
   },
 });

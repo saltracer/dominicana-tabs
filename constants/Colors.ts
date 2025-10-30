@@ -237,3 +237,25 @@ export const getLiturgicalColorHex = (liturgicalColor: string, isDark: boolean =
         return theme.primary;
   }
 };
+
+// Helper function to adjust liturgical color brightness for progress bars
+export function adjustLiturgicalColorBrightness(
+  hexColor: string, 
+  isDarkMode: boolean
+): string {
+  // Parse hex to RGB
+  const r = parseInt(hexColor.slice(1, 3), 16);
+  const g = parseInt(hexColor.slice(3, 5), 16);
+  const b = parseInt(hexColor.slice(5, 7), 16);
+  
+  // Adjust brightness
+  // For dark mode: lighten by 30% (make brighter)
+  // For light mode: darken by 30% (make darker)
+  const factor = isDarkMode ? 1.3 : 0.7;
+  const newR = Math.min(255, Math.floor(r * factor));
+  const newG = Math.min(255, Math.floor(g * factor));
+  const newB = Math.min(255, Math.floor(b * factor));
+  
+  // Convert back to hex with zero-padding
+  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+}

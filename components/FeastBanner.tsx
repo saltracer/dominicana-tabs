@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
-import { Colors, getLiturgicalColorHex } from '../constants/Colors';
+import { Colors, getLiturgicalColorHex, adjustLiturgicalColorBrightness } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { useCalendar } from './CalendarContext';
 import { useScrollContext } from '../contexts/ScrollContext';
@@ -33,7 +33,7 @@ export default function FeastBanner({
   const { colorScheme } = useTheme();
   const { shouldHideUI } = useScrollContext();
   const { selectedDate, setSelectedDate } = useCalendar();
-  const { currentEpisode, isPlaying, isPaused, isLoading } = usePodcastPlayer();
+  const { currentEpisode, isPlaying, isPaused, isLoading, position, duration, seek } = usePodcastPlayer();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
@@ -145,6 +145,13 @@ export default function FeastBanner({
   const displayColor = primaryFeast?.color 
     ? getLiturgicalColorHex(primaryFeast.color, colorScheme === 'dark')
     : getLiturgicalColorHex(liturgicalDay.season.name, colorScheme === 'dark');
+
+  // Calculate progress percentage for podcast playback
+  const progressPercentage = duration > 0 ? (position / duration) * 100 : 0;
+  
+  // Determine if progress should be shown
+  // Show progress when miniplayer is visible (index 0) AND we have valid duration
+  const showProgress = showPodcastPlayer && currentCarouselIndex === 0 && duration > 0;
 
   return (
     <View style={[
@@ -354,11 +361,39 @@ export default function FeastBanner({
         </View>
       </View>
 
-      {/* Liturgical Day Color Bar */}
-      <View style={[
-        styles.seasonColorBar,
-        { backgroundColor: displayColor }
-      ]} />
+      {/* Liturgical Day Color Bar with Progress Overlay */}
+      {showProgress ? (
+        <TouchableOpacity
+          style={[
+            styles.seasonColorBar,
+            { backgroundColor: displayColor }
+          ]}
+          onPress={(e) => {
+            // Calculate the position based on where the user tapped
+            const { locationX, target } = e.nativeEvent;
+            const { width } = (target as any).getBoundingClientRect?.() || { width: Dimensions.get('window').width };
+            const percentage = locationX / width;
+            const newPosition = Math.max(0, Math.min(duration, duration * percentage));
+            seek(newPosition);
+          }}
+          activeOpacity={1}
+        >
+          <View 
+            style={[
+              styles.progressFill,
+              { 
+                width: `${progressPercentage}%`,
+                backgroundColor: adjustLiturgicalColorBrightness(displayColor, colorScheme === 'dark')
+              }
+            ]} 
+          />
+        </TouchableOpacity>
+      ) : (
+        <View style={[
+          styles.seasonColorBar,
+          { backgroundColor: displayColor }
+        ]} />
+      )}
 
             {isDatePickerVisible && (
         <Modal
@@ -638,6 +673,15 @@ const styles = StyleSheet.create({
     // borderBottomWidth: 1,
     borderColor: '#DDDDDD',
     marginBottom: -1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    height: '100%',
   },
   topRow: {
     flexDirection: 'row',
