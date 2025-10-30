@@ -426,7 +426,7 @@ export default function PodcastDetailScreen() {
 
             {podcast.description && (
               <View style={styles.descriptionContainer}>
-                <HtmlRenderer htmlContent={podcast.description} style={descriptionStyle} maxLines={isDescriptionExpanded ? undefined : 3} />
+                <HtmlRenderer htmlContent={podcast.description} style={descriptionStyle} maxLines={isDescriptionExpanded ? undefined : 3} minimal />
                 {podcast.description.length > 200 && (
                   <TouchableOpacity style={styles.readMoreButton} onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
                     <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>

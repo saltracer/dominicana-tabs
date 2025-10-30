@@ -11,6 +11,7 @@ interface HtmlRendererProps {
   htmlContent: string;
   maxLines?: number;
   style?: any;
+  minimal?: boolean; // if true, rely on upstream RenderHTMLConfigProvider
 }
 
 // Memoized component to prevent unnecessary re-renders
@@ -89,7 +90,8 @@ function getRenderersProps(maxLines?: number) {
 const HtmlRenderer = memo(function HtmlRenderer({ 
   htmlContent, 
   maxLines, 
-  style 
+  style,
+  minimal = false,
 }: HtmlRendererProps) {
   const { width } = useWindowDimensions();
   const { colorScheme } = useTheme();
@@ -127,6 +129,15 @@ const HtmlRenderer = memo(function HtmlRenderer({
     return { ...themeStyles.baseStyle, ...flattenedStyle };
   }, [themeStyles.baseStyle, style]);
 
+  if (minimal) {
+    return (
+      <MemoizedRenderHtml
+        contentWidth={width}
+        source={source}
+      />
+    );
+  }
+
   return (
     <MemoizedRenderHtml
       contentWidth={width}
@@ -135,12 +146,9 @@ const HtmlRenderer = memo(function HtmlRenderer({
       systemFonts={systemFonts}
       baseStyle={mergedBaseStyle}
       renderersProps={renderersProps}
-      // Ignore unsupported CSS properties but preserve content
       ignoredDomTags={IGNORED_DOM_TAGS as any}
       defaultTextProps={DEFAULT_TEXT_PROPS as any}
-      // Disable CSS parsing that causes warnings
       enableExperimentalMarginCollapsing={false}
-      // Remove customCSSRules that were causing native style property warnings
     />
   );
 });

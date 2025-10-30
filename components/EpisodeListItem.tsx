@@ -137,6 +137,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
               htmlContent={episode.title}
               maxLines={2}
               style={[styles.title, { color: themeStyles.text }]}
+              minimal
             />
             {(isPlaying || isPaused) && (
               <View style={[styles.playingIndicator, { backgroundColor: themeStyles.primary }]}>
@@ -196,6 +197,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
             htmlContent={episode.description} 
             maxLines={2}
             style={[styles.description, { color: themeStyles.textSecondary }]}
+            minimal
           />
         )}
 
