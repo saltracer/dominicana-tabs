@@ -88,8 +88,8 @@ export function audioPath(feedId: string, episodeId: string, extension: string =
   return `${audioDirForFeed(feedId)}${sanitize(episodeId)}.${extension}`;
 }
 
-export function imagePathForUrl(url: string): string {
-  const name = hashForUrl(url);
+export async function imagePathForUrl(url: string): Promise<string> {
+  const name = await hashString(url);
   // Extension is not critical; use jpg for uniformity
   return `${PODCAST_IMAGE_DIR}${name}.jpg`;
 }
@@ -99,8 +99,8 @@ export function tmpPath(filename: string): string {
 }
 
 // Hashing utilities
-export function hashForUrl(url: string): string {
-  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, url).then((h) => h);
+export function hashForUrl(url: string): Promise<string> {
+  return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, url);
 }
 
 export async function hashString(value: string): Promise<string> {

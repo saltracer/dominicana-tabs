@@ -15,7 +15,7 @@ import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropd
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 import { getUsage, deleteAll, getFeedUsage, deleteFeedData } from '../../lib/podcast/cache';
-import { recalcUsageByScan } from '../../lib/podcast/storage';
+import { recalcUsageByScan, imagePathForUrl, fileExists, getFileSize } from '../../lib/podcast/storage';
 import { usePodcastSubscriptions } from '../../hooks/usePodcastSubscriptions';
 
 export default function PreachingSettingsScreen() {
@@ -60,6 +60,17 @@ export default function PreachingSettingsScreen() {
       await Promise.all(
         subscriptions.map(async (p) => {
           const u = await getFeedUsage(p.id);
+          // Include DB artwork if cached (may differ from RSS artwork URL)
+          try {
+            if (p.artworkUrl) {
+              const artPath = await imagePathForUrl(p.artworkUrl);
+              if (await fileExists(artPath)) {
+                const size = await getFileSize(artPath);
+                entries[p.id] = { audioBytes: u.audioBytes, imageBytes: u.imageBytes + size };
+                return;
+              }
+            }
+          } catch {}
           entries[p.id] = u;
         })
       );

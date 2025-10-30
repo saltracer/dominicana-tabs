@@ -332,7 +332,7 @@ export async function getFeedUsage(feedId: string): Promise<{ audioBytes: number
   }
   let imageBytes = 0;
   for (const url of urlSet) {
-    const path = imagePathForUrl(url);
+    const path = await imagePathForUrl(url);
     if (await fileExists(path)) {
       imageBytes += await getFileSize(path);
     }
