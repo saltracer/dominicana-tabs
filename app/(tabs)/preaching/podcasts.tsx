@@ -262,9 +262,32 @@ export default function PodcastsScreen() {
         )}
       </View>
 
-      {(!user && (activeTab === 'subscriptions' || activeTab === 'queue'))
+      {(!user && (activeTab === 'subscriptions' || activeTab === 'queue' || activeTab === 'playlists'))
         ? (
-          <></>
+          <View style={styles.emptyContainer}>
+            <Ionicons 
+              name={
+                activeTab === 'subscriptions' ? 'person-outline' :
+                activeTab === 'playlists' ? 'list-outline' :
+                'musical-notes-outline'
+              }
+              size={64}
+              color={Colors[colorScheme ?? 'light'].textSecondary}
+            />
+            <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+              {activeTab === 'subscriptions' && 'No subscriptions yet'}
+              {activeTab === 'playlists' && 'No playlists yet'}
+              {activeTab === 'queue' && 'Queue is empty'}
+            </Text>
+            <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>Login to manage and sync your {activeTab} across devices.</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/auth')}
+              style={{ marginTop: 12, backgroundColor: Colors[colorScheme ?? 'light'].primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 }}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: '#fff', fontFamily: 'Georgia', fontWeight: '600' }}>Login here</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           loading && !hasLoadedOnce ? (
             <View style={styles.loadingContainer}>

@@ -15,6 +15,7 @@ import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropd
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 import { getUsage, deleteAll, getFeedUsage, deleteFeedData } from '../../lib/podcast/cache';
+import { recalcUsageByScan } from '../../lib/podcast/storage';
 import { usePodcastSubscriptions } from '../../hooks/usePodcastSubscriptions';
 
 export default function PreachingSettingsScreen() {
@@ -46,7 +47,7 @@ export default function PreachingSettingsScreen() {
 
   const loadPodcastUsage = async () => {
     try {
-      const u = await getUsage();
+      const u = await recalcUsageByScan();
       setUsage(u);
     } catch (e) {
       console.warn('Failed to load podcast usage:', e);

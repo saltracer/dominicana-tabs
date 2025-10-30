@@ -4,9 +4,17 @@
  */
 
 import { Platform } from 'react-native';
-import { File, Directory, Paths } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PodcastEpisode } from '../types/podcast-types';
+import {
+  ensureAudioDownloaded,
+  getFileSize,
+  deleteFile,
+  bumpAudioBytes,
+  fileExists,
+} from '../lib/podcast/storage';
+import { getEpisodesMap } from '../lib/podcast/cache';
+import { setJson, keys, hashString } from '../lib/podcast/storage';
 
 export interface DownloadProgress {
   episodeId: string;
@@ -18,6 +26,7 @@ export interface DownloadProgress {
 
 export interface DownloadedEpisode {
   episodeId: string;
+  podcastId?: string;
   fileName: string;
   filePath: string;
   fileSize: number;
@@ -26,36 +35,9 @@ export interface DownloadedEpisode {
 }
 
 export class PodcastDownloadService {
-  private static readonly CACHE_DIR_NAME = 'podcast-episodes';
   private static readonly METADATA_KEY = 'podcast_downloads_metadata';
   
-  /**
-   * Get the cache directory path
-   */
-  private static getCacheDir(): string {
-    return `${Paths.cache.uri}${this.CACHE_DIR_NAME}`;
-  }
-  
-  /**
-   * Initialize the cache directory
-   */
-  static async initialize(): Promise<void> {
-    try {
-      const cacheDir = this.getCacheDir();
-      console.log('[PodcastDownload] Initializing cache directory at:', cacheDir);
-      
-      const directory = new Directory(cacheDir);
-      if (!directory.exists) {
-        await directory.create({ intermediates: true });
-        console.log('[PodcastDownload] Created cache directory successfully');
-      } else {
-        console.log('[PodcastDownload] Cache directory already exists');
-      }
-    } catch (error) {
-      console.error('[PodcastDownload] Error initializing cache directory:', error);
-      throw error;
-    }
-  }
+  // Storage initialization handled by podcast storage helpers
 
   /**
    * Download an episode to local cache
@@ -68,62 +50,49 @@ export class PodcastDownloadService {
       throw new Error('Podcast downloads are not available on web');
     }
 
-    await this.initialize();
-
     try {
-      const fileName = `${episode.id}.mp3`; // Assume MP3, could be determined from URL
-      const filePath = `${this.getCacheDir()}/${fileName}`;
-      
-      console.log(`[PodcastDownload] Starting download for episode: ${episode.title}`);
-      console.log(`[PodcastDownload] URL: ${episode.audioUrl}`);
-      console.log(`[PodcastDownload] Local path: ${filePath}`);
+      const result = await ensureAudioDownloaded(
+        episode.podcastId,
+        episode.id,
+        episode.audioUrl,
+        'mp3',
+        p => {
+          if (onProgress) {
+            onProgress({
+              episodeId: episode.id,
+              fileName: `${episode.id}.mp3`,
+              totalBytes: p.totalBytesExpectedToWrite,
+              downloadedBytes: p.totalBytesWritten,
+              progress: p.totalBytesExpectedToWrite > 0 ? Math.round((p.totalBytesWritten / p.totalBytesExpectedToWrite) * 100) : 0,
+            });
+          }
+        }
+      );
 
-      // Check if already downloaded
-      const existingFile = new File(filePath);
-      if (existingFile.exists) {
-        console.log('[PodcastDownload] Episode already downloaded');
-        return filePath;
-      }
-
-      // Download the file
-      const response = await fetch(episode.audioUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to download episode: ${response.statusText}`);
-      }
-
-      const contentLength = parseInt(response.headers.get('content-length') || '0', 10);
-      const arrayBuffer = await response.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
-      // Notify progress (100% since we have the full buffer)
-      if (onProgress) {
-        onProgress({
-          episodeId: episode.id,
-          fileName,
-          totalBytes: contentLength || arrayBuffer.byteLength,
-          downloadedBytes: arrayBuffer.byteLength,
-          progress: 100,
-        });
-      }
-
-      // Write to cache
-      await existingFile.create();
-      await existingFile.write(uint8Array);
-
-      // Save metadata
       await this.saveDownloadMetadata({
         episodeId: episode.id,
-        fileName,
-        filePath,
-        fileSize: arrayBuffer.byteLength,
+        podcastId: episode.podcastId,
+        fileName: `${episode.id}.mp3`,
+        filePath: result.path,
+        fileSize: result.bytesAdded,
         downloadedAt: new Date().toISOString(),
         audioUrl: episode.audioUrl,
       });
 
-      console.log(`[PodcastDownload] Successfully downloaded: ${fileName}`);
-      console.log(`[PodcastDownload] Size: ${(arrayBuffer.byteLength / 1024 / 1024).toFixed(2)} MB`);
-      
-      return filePath;
+      // Persist localAudioPath into cache episodes map for accurate per-feed usage
+      try {
+        const cacheEpisodeId = episode.guid || await hashString(episode.audioUrl);
+        const map = await getEpisodesMap(episode.podcastId);
+        const existing = map[cacheEpisodeId];
+        if (existing) {
+          map[cacheEpisodeId] = { ...existing, localAudioPath: result.path } as any;
+          await setJson(keys.episodes(episode.podcastId), map);
+        }
+      } catch {
+        // best-effort only
+      }
+
+      return result.path;
     } catch (error) {
       console.error(`[PodcastDownload] Error downloading episode ${episode.id}:`, error);
       throw error;
@@ -146,8 +115,8 @@ export class PodcastDownloadService {
         return null;
       }
 
-      const file = new File(download.filePath);
-      if (file.exists) {
+      const exists = await fileExists(download.filePath);
+      if (exists) {
         return download.filePath;
       } else {
         // File was deleted but metadata remains, clean it up
@@ -173,14 +142,31 @@ export class PodcastDownloadService {
       const download = metadata.find(d => d.episodeId === episodeId);
       
       if (download) {
-        const file = new File(download.filePath);
-        if (file.exists) {
-          await file.delete();
-          console.log(`[PodcastDownload] Deleted file: ${download.filePath}`);
-        }
+        const size = await getFileSize(download.filePath);
+        await deleteFile(download.filePath);
+        if (size > 0) await bumpAudioBytes(-size);
         
         await this.deleteDownloadMetadata(episodeId);
         console.log(`[PodcastDownload] Deleted metadata for episode: ${episodeId}`);
+
+        // Also clear localAudioPath in cache map if present
+        if (download.podcastId) {
+          try {
+            const map = await getEpisodesMap(download.podcastId);
+            // We don't know cache id (guid/hash) here; try clearing any entry pointing at this path
+            let changed = false;
+            for (const [id, ep] of Object.entries(map)) {
+              if ((ep as any).localAudioPath === download.filePath) {
+                (ep as any).localAudioPath = undefined;
+                map[id] = ep as any;
+                changed = true;
+              }
+            }
+            if (changed) await setJson(keys.episodes(download.podcastId), map);
+          } catch {
+            // best-effort only
+          }
+        }
       }
     } catch (error) {
       console.error(`[PodcastDownload] Error deleting episode ${episodeId}:`, error);
@@ -202,8 +188,8 @@ export class PodcastDownloadService {
       // Verify files still exist and clean up metadata if not
       const validDownloads: DownloadedEpisode[] = [];
       for (const download of metadata) {
-        const file = new File(download.filePath);
-        if (file.exists) {
+        const exists = await fileExists(download.filePath);
+        if (exists) {
           validDownloads.push(download);
         } else {
           await this.deleteDownloadMetadata(download.episodeId);

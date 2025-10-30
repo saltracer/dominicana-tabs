@@ -1,4 +1,5 @@
-import * as FileSystem from 'expo-file-system';
+// Use legacy API to avoid deprecation errors on getInfoAsync/makeDirectoryAsync, etc.
+import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 
