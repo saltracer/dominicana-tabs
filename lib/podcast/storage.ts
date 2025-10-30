@@ -195,6 +195,11 @@ async function dirSizeRecursive(dirUri: string): Promise<number> {
   return total;
 }
 
+// Exported helper to compute directory size recursively (used for per-feed usage)
+export async function dirSize(uri: string): Promise<number> {
+  return dirSizeRecursive(uri);
+}
+
 // Download helpers
 export async function downloadToFile(
   url: string,

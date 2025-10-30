@@ -13,6 +13,9 @@ import {
   deleteAllPodcastData,
   audioDirForFeed,
   getFileSize,
+  dirSize,
+  imagePathForUrl,
+  fileExists,
 } from './storage';
 
 type FeedSummary = {
@@ -314,41 +317,26 @@ export async function deleteAll(): Promise<void> {
 }
 
 export async function getFeedUsage(feedId: string): Promise<{ audioBytes: number; imageBytes: number }>{
-  // Audio usage: sum directory for feed
-  const audioBytes = await (async () => {
-    const dir = audioDirForFeed(feedId);
-    // reuse dirSizeRecursive indirectly by listing files including subdirs
-    // We don't have a direct export, so we can approximate by trying common file names
-    // For accuracy, we can attempt to compute sizes of files in dir by reading directory recursively using FileSystem
-    // But to avoid exporting internals, compute by probing a few expected paths; as a fallback this returns 0 if dir missing
-    // For correctness, we will rely on getFileSize per episode when known by episodes map
-    const episodes = await getEpisodesMap(feedId);
-    let total = 0;
-    for (const ep of Object.values(episodes)) {
-      if (ep.localAudioPath) {
-        total += await getFileSize(ep.localAudioPath);
-      }
-    }
-    return total;
-  })();
+  // Audio usage: exact size of the feed's audio directory
+  const audioBytes = await dirSize(audioDirForFeed(feedId));
 
-  // Image usage: sum sizes of distinct artwork files for this feed's episodes
-  const imageBytes = await (async () => {
-    const episodes = await getEpisodesMap(feedId);
-    const urls = Array.from(new Set(Object.values(episodes).map(e => e.artworkUrl).filter(Boolean) as string[]));
-    let total = 0;
-    for (const url of urls) {
-      // image path is hash-based with .jpg extension
-      try {
-        const { path } = await ensureImageCached(url); // ensures present, returns path
-        total += await getFileSize(path);
-      } catch {
-        // ignore
-      }
+  // Image usage: sum sizes for episode and feed artwork files if present in cache
+  const episodes = await getEpisodesMap(feedId);
+  const urlSet = new Set<string>();
+  for (const ep of Object.values(episodes)) {
+    if (ep.artworkUrl) urlSet.add(ep.artworkUrl);
+  }
+  if (urlSet.size === 0) {
+    const feed = await getFeed(feedId);
+    if (feed?.summary.artworkUrl) urlSet.add(feed.summary.artworkUrl);
+  }
+  let imageBytes = 0;
+  for (const url of urlSet) {
+    const path = imagePathForUrl(url);
+    if (await fileExists(path)) {
+      imageBytes += await getFileSize(path);
     }
-    return total;
-  })();
-
+  }
   return { audioBytes, imageBytes };
 }
 
