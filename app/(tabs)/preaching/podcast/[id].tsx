@@ -44,6 +44,8 @@ export default function PodcastDetailScreen() {
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const mountStartRef = useRef<number>(Date.now());
   const didLogLayoutRef = useRef<boolean>(false);
+  const [dbGuidToId, setDbGuidToId] = useState<Map<string, string>>(new Map());
+  const [dbAudioToId, setDbAudioToId] = useState<Map<string, string>>(new Map());
 
   const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
   const { currentEpisode, playEpisode, pause, resume, isPlaying, isPaused } = usePodcastPlayer();
@@ -194,6 +196,20 @@ export default function PodcastDetailScreen() {
       const start = Date.now();
       console.log('[PodcastDetail] loadPodcast:start');
       const data = await PodcastService.getPodcast(id!);
+      // Build DB episode lookup maps (guid -> uuid, audioUrl -> uuid) if available
+      try {
+        const g2i = new Map<string, string>();
+        const a2i = new Map<string, string>();
+        const list = (data as any).episodes as PodcastEpisode[] | undefined;
+        if (Array.isArray(list)) {
+          for (const dbEp of list) {
+            if (dbEp.guid) g2i.set(dbEp.guid, dbEp.id);
+            if (dbEp.audioUrl) a2i.set(dbEp.audioUrl, dbEp.id);
+          }
+        }
+        setDbGuidToId(g2i);
+        setDbAudioToId(a2i);
+      } catch {}
       console.log('[PodcastDetail] loadPodcast:getPodcast elapsed=', Date.now() - start);
 
       // Refresh from RSS (1h policy) and then load episodes from device cache
@@ -203,8 +219,18 @@ export default function PodcastDetailScreen() {
         console.log('[PodcastDetail] loadPodcast:refreshFeed elapsed=', Date.now() - rfStart);
         const map = await getEpisodesMap(data.id);
         console.log('[PodcastDetail] loadPodcast:getEpisodesMap elapsed=', Date.now() - start, 'count=', Object.keys(map).length);
+        // Build lookup to preserve DB episode ids (UUID) by guid or audioUrl
+        const dbByGuid = new Map<string, string>();
+        const dbByAudio = new Map<string, string>();
+        if (Array.isArray((data as any).episodes)) {
+          for (const dbEp of (data as any).episodes as PodcastEpisode[]) {
+            if (dbEp.guid) dbByGuid.set(dbEp.guid, dbEp.id);
+            if (dbEp.audioUrl) dbByAudio.set(dbEp.audioUrl, dbEp.id);
+          }
+        }
+
         const episodesFromCache: PodcastEpisode[] = Object.values(map).map((ep) => ({
-          id: ep.id,
+          id: (ep.guid && dbByGuid.get(ep.guid)) || dbByAudio.get(ep.audioUrl) || ep.id,
           podcastId: data.id,
           title: ep.title,
           description: ep.description,
@@ -302,8 +328,21 @@ export default function PodcastDetailScreen() {
   };
 
   const handleEpisodePress = (episode: PodcastEpisode) => {
-    // Navigate to episode detail/player
-    router.push(`/(tabs)/preaching/episode/${episode.id}`);
+    // Navigate to episode detail/player using object form to safely encode id
+    const isUuid = /^[0-9a-fA-F-]{36}$/.test(episode.id);
+    const resolvedId = isUuid
+      ? episode.id
+      : (episode.guid && dbGuidToId.get(episode.guid))
+          || dbAudioToId.get(episode.audioUrl)
+          || episode.id;
+    const params: { id: string; podcastId?: string; guid?: string; audioUrl?: string } = { id: String(resolvedId) };
+    if (!isUuid) {
+      if (podcast?.id) params.podcastId = podcast.id;
+      if (episode.guid) params.guid = episode.guid;
+      if (episode.audioUrl) params.audioUrl = episode.audioUrl;
+    }
+    console.log('[PodcastDetail] navigate to episode', resolvedId, params);
+    router.push({ pathname: '/preaching/episode/[id]', params });
   };
 
   const handlePlayEpisode = async (episode: PodcastEpisode) => {

@@ -37,7 +37,7 @@ const SPEED_OPTIONS = [
 
 export default function EpisodeDetailScreen() {
   const { colorScheme } = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, podcastId: qPodcastId, guid: qGuid, audioUrl: qAudioUrl } = useLocalSearchParams<{ id: string; podcastId?: string; guid?: string; audioUrl?: string }>();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [episode, setEpisode] = useState<PodcastEpisode | null>(null);
@@ -101,24 +101,52 @@ export default function EpisodeDetailScreen() {
   const loadEpisode = async () => {
     try {
       setLoading(true);
-      const episodeData = await PodcastService.getEpisode(id!);
-      setEpisode(episodeData);
-
-      // Load podcast info
-      const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
-      setPodcast(podcastData);
+      const isUuid = /^[0-9a-fA-F-]{36}$/.test(id!);
+      if (isUuid) {
+        const episodeData = await PodcastService.getEpisode(id!);
+        setEpisode(episodeData);
+        const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
+        setPodcast(podcastData);
+      } else {
+        // Fallback to cache resolution when id is not a UUID
+        if (!qPodcastId) throw new Error('Missing podcastId for cache episode');
+        const { getEpisodesMap } = await import('../../../../lib/podcast/cache');
+        const map = await getEpisodesMap(qPodcastId);
+        const ep = Object.values(map).find(e => (qGuid && e.guid === qGuid) || (qAudioUrl && e.audioUrl === qAudioUrl) || e.guid === id || e.audioUrl === id);
+        if (!ep) throw new Error('Episode not found in cache');
+        const cacheEpisode: PodcastEpisode = {
+          id: ep.id,
+          podcastId: qPodcastId,
+          title: ep.title,
+          description: ep.description,
+          audioUrl: ep.audioUrl,
+          duration: ep.duration,
+          publishedAt: ep.publishedAt,
+          episodeNumber: ep.episodeNumber,
+          seasonNumber: ep.seasonNumber,
+          guid: ep.guid,
+          artworkUrl: ep.artworkUrl,
+          fileSize: ep.fileSize,
+          mimeType: ep.mimeType,
+          createdAt: new Date().toISOString(),
+        } as any;
+        setEpisode(cacheEpisode);
+        const podcastData = await PodcastService.getPodcast(qPodcastId);
+        setPodcast(podcastData);
+      }
 
       // Refresh RSS feed if stale (1h policy)
-      if (podcastData?.rssUrl) {
+      const parentRss = (podcast?.rssUrl) || (qPodcastId ? (await PodcastService.getPodcast(qPodcastId)).rssUrl : undefined);
+      if (parentRss) {
         try {
-          await refreshFeed(podcastData.id, podcastData.rssUrl);
+          await refreshFeed((podcast?.id) || qPodcastId!, parentRss);
         } catch (e) {
           console.warn('[EpisodeDetail] Feed refresh skipped:', e);
         }
       }
 
       // Ensure artwork is cached locally
-      const artUrl = episodeData.artworkUrl || podcastData.artworkUrl;
+      const artUrl = (episode ? episode.artworkUrl : undefined) || podcast?.artworkUrl;
       if (artUrl) {
         try {
           const { path } = await ensureImageCached(artUrl);
