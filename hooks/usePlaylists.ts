@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Playlist, PlaylistWithEpisodes, PlaylistFilters, PodcastEpisode } from '../types/podcast-types';
 import { PodcastPlaylistService } from '../services/PodcastPlaylistService';
+import { useAuth } from '../contexts/AuthContext';
 
 export function usePlaylists() {
+  const { user } = useAuth();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,6 +13,11 @@ export function usePlaylists() {
     try {
       setLoading(true);
       setError(null);
+      if (!user) {
+        setPlaylists([]);
+        setLoading(false);
+        return;
+      }
       const data = await PodcastPlaylistService.getUserPlaylists();
       setPlaylists(data);
     } catch (err) {
@@ -19,7 +26,7 @@ export function usePlaylists() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const createPlaylist = useCallback(async (name: string, description?: string) => {
     try {

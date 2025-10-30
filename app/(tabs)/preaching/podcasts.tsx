@@ -26,9 +26,11 @@ import PreachingNavigation from '../../../components/PreachingNavigation';
 import { PodcastCard } from '../../../components/PodcastCard';
 import { usePodcasts } from '../../../hooks/usePodcasts';
 import { usePodcastSubscriptions } from '../../../hooks/usePodcastSubscriptions';
+import { refreshFeed } from '../../../lib/podcast/cache';
 import { useAuth } from '../../../contexts/AuthContext';
 import { usePlaylists } from '../../../hooks/usePlaylists';
 import { useQueue } from '../../../hooks/useQueue';
+import { getCurated, refreshCurated } from '../../../lib/podcast/cache';
 
 type TabType = 'library' | 'subscriptions' | 'playlists' | 'queue';
 
@@ -39,6 +41,7 @@ export default function PodcastsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [cachedCurated, setCachedCurated] = useState<any[] | null>(null);
 
   // Calculate number of columns for grid layout
   const numColumns = useMemo(() => {
@@ -66,9 +69,53 @@ export default function PodcastsScreen() {
     }
   }, [libraryLoading, subsLoading, hasLoadedOnce]);
 
+  // On first screen mount with subscriptions available, refresh stale feeds (app-start sweep)
+  useEffect(() => {
+    const runStartupRefresh = async () => {
+      if (!user || subsLoading || subscriptions.length === 0) return;
+      try {
+        // Bound concurrency by simple batching
+        const batchSize = 3;
+        for (let i = 0; i < subscriptions.length; i += batchSize) {
+          const batch = subscriptions.slice(i, i + batchSize);
+          await Promise.all(batch.map(p => refreshFeed(p.id, p.rssUrl).catch(() => null)));
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    runStartupRefresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, subsLoading]);
+
+  // Load curated cache immediately for fast first paint
+  useEffect(() => {
+    const loadCache = async () => {
+      const cached = await getCurated();
+      if (cached?.items) setCachedCurated(cached.items as any[]);
+    };
+    loadCache();
+  }, []);
+
+  // Whenever libraryPodcasts updates, persist into curated cache
+  useEffect(() => {
+    if (libraryPodcasts && libraryPodcasts.length > 0) {
+      setCachedCurated(libraryPodcasts as any[]);
+      // refreshCurated stores with 1h policy; we force because we want latest in cache
+      void refreshCurated(async () => ({ items: libraryPodcasts as any[] }), { force: true });
+    }
+  }, [libraryPodcasts]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
+    // Optimistically show cached curated while refetching
+    const cached = await getCurated();
+    if (cached?.items) setCachedCurated(cached.items as any[]);
     await Promise.all([refetchLibrary(), user ? refetchSubs() : Promise.resolve()]);
+    // After refetch, update curated cache
+    if (libraryPodcasts && libraryPodcasts.length > 0) {
+      await refreshCurated(async () => ({ items: libraryPodcasts as any[] }), { force: true });
+    }
     setRefreshing(false);
   };
 
@@ -144,24 +191,22 @@ export default function PodcastsScreen() {
             Library
           </Text>
         </TouchableOpacity>
-        {user && (
-          <TouchableOpacity
-            style={styles.tab}
-            onPress={() => setActiveTab('subscriptions')}
-          >
-            <Ionicons 
-              name={activeTab === 'subscriptions' ? "bookmark" : "bookmark-outline"}
-              size={20}
-              color={activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
-            />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
-            ]}>
-              Subscriptions
-            </Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.tab}
+          onPress={() => setActiveTab('subscriptions')}
+        >
+          <Ionicons 
+            name={activeTab === 'subscriptions' ? "bookmark" : "bookmark-outline"}
+            size={20}
+            color={activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+          />
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
+          ]}>
+            Subscriptions
+          </Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.tab}
           onPress={() => setActiveTab('playlists')}
@@ -213,126 +258,112 @@ export default function PodcastsScreen() {
         )}
       </View>
 
-      {/* Content */}
-      {loading && !hasLoadedOnce ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
-          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            Loading podcasts...
-          </Text>
-        </View>
-      ) : displayData.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons 
-            name={
-              activeTab === 'library' ? 'radio-outline' :
-              activeTab === 'subscriptions' ? 'person-outline' :
-              activeTab === 'playlists' ? 'list-outline' :
-              'list'
-            } 
-            size={64} 
-            color={Colors[colorScheme ?? 'light'].textSecondary} 
-          />
-          <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            {activeTab === 'library' && 'No podcasts found'}
-            {activeTab === 'subscriptions' && 'No subscriptions yet'}
-            {activeTab === 'playlists' && 'No playlists yet'}
-            {activeTab === 'queue' && 'Queue is empty'}
-          </Text>
-          <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-            {activeTab === 'library' && 'Try adjusting your search or check back later for new content.'}
-            {activeTab === 'subscriptions' && 'Browse the curated library to discover podcasts to subscribe to.'}
-            {activeTab === 'playlists' && 'Create your first playlist to organize your favorite episodes.'}
-            {activeTab === 'queue' && 'Add episodes to your queue to see them here.'}
-          </Text>
-        </View>
-      ) : dataType === 'podcasts' ? (
-        <FlatList
-          data={displayData as any[]}
-          numColumns={numColumns}
-          key={numColumns} // Force re-render when columns change
-          renderItem={({ item: podcast }) => (
-            <View style={{ flex: 1, marginHorizontal: 6 }}>
-              <PodcastCard
-                podcast={podcast}
-                onPress={() => handlePodcastPress(podcast.id)}
-                onSubscribe={handleSubscribe}
-                isSubscribed={isSubscribed(podcast.id)}
-                showSubscribeButton={activeTab === 'library'}
-              />
+      {(!user && (activeTab === 'subscriptions' || activeTab === 'queue'))
+        ? (
+          <></>
+        ) : (
+          loading && !hasLoadedOnce ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+              <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>Loading podcasts...</Text>
             </View>
-          )}
-          keyExtractor={(item) => item.id}
-          style={{ flex: 1 }}
-          contentContainerStyle={[styles.podcastsContainer, { paddingBottom: 120 }]}
-          columnWrapperStyle={numColumns > 1 ? styles.podcastRow : undefined}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        />
-      ) : (
-        <ScrollView 
-          style={styles.scrollView} 
-          showsVerticalScrollIndicator={false} 
-          contentContainerStyle={{ paddingBottom: 120 }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-          }
-        >
-          <View style={styles.podcastsContainer}>
-            {dataType === 'playlists' ? (
-              (displayData as any[]).map((playlist) => (
-                <TouchableOpacity
-                  key={playlist.id}
-                  style={[styles.playlistCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-                  onPress={() => router.push(`/(tabs)/preaching/playlists/${playlist.id}` as any)}
-                >
-                  <View style={styles.playlistIcon}>
-                    <Ionicons 
-                      name={playlist.isSystem ? "cloud-download" : "list"} 
-                      size={24} 
-                      color={Colors[colorScheme ?? 'light'].primary} 
-                    />
-                  </View>
-                  <View style={styles.playlistInfo}>
-                    <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                      {playlist.name}
-                    </Text>
-                    <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      {playlist.isSystem ? 'System Playlist' : 'User Playlist'}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                </TouchableOpacity>
-              ))
-            ) : dataType === 'episodes' ? (
-              (displayData as any[]).map((episode, index) => (
-                <TouchableOpacity
-                  key={episode.id}
-                  style={[styles.queueCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-                  onPress={() => router.push(`/(tabs)/preaching/episode/${episode.id}`)}
-                >
-                  <View style={styles.queuePosition}>
-                    <Text style={[styles.queuePositionText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      {index + 1}
-                    </Text>
-                  </View>
-                  <View style={styles.queueInfo}>
-                    <Text style={[styles.queueTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>
-                      {episode.title}
-                    </Text>
-                    <Text style={[styles.queueMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      Podcast Name
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                </TouchableOpacity>
-              ))
-            ) : null}
-          </View>
-        </ScrollView>
-      )}
+          ) : displayData.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons 
+                name={
+                  activeTab === 'library' ? 'radio-outline' :
+                  activeTab === 'subscriptions' ? 'person-outline' :
+                  activeTab === 'playlists' ? 'list-outline' :
+                  'list'
+                } 
+                size={64} 
+                color={Colors[colorScheme ?? 'light'].textSecondary} 
+              />
+              <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
+                {activeTab === 'library' && 'No podcasts found'}
+                {activeTab === 'subscriptions' && 'No subscriptions yet'}
+                {activeTab === 'playlists' && 'No playlists yet'}
+                {activeTab === 'queue' && 'Queue is empty'}
+              </Text>
+              <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                {activeTab === 'library' && 'Try adjusting your search or check back later for new content.'}
+                {activeTab === 'subscriptions' && 'Browse the curated library to discover podcasts to subscribe to.'}
+                {activeTab === 'playlists' && 'Create your first playlist to organize your favorite episodes.'}
+                {activeTab === 'queue' && 'Add episodes to your queue to see them here.'}
+              </Text>
+            </View>
+          ) : dataType === 'podcasts' ? (
+            <FlatList
+              data={displayData as any[]}
+              numColumns={numColumns}
+              key={numColumns}
+              renderItem={({ item: podcast }) => (
+                <View style={{ flex: 1, marginHorizontal: 6 }}>
+                  <PodcastCard
+                    podcast={podcast}
+                    onPress={() => handlePodcastPress(podcast.id)}
+                    onSubscribe={handleSubscribe}
+                    isSubscribed={isSubscribed(podcast.id)}
+                    showSubscribeButton={activeTab === 'library'}
+                  />
+                </View>
+              )}
+              keyExtractor={(item) => item.id}
+              style={{ flex: 1 }}
+              contentContainerStyle={[styles.podcastsContainer, { paddingBottom: 120 }]}
+              columnWrapperStyle={numColumns > 1 ? styles.podcastRow : undefined}
+              showsVerticalScrollIndicator={false}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            />
+          ) : (
+            <ScrollView 
+              style={styles.scrollView} 
+              showsVerticalScrollIndicator={false} 
+              contentContainerStyle={{ paddingBottom: 120 }}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+            >
+              <View style={styles.podcastsContainer}>
+                {dataType === 'playlists' ? (
+                  (displayData as any[]).map((playlist) => (
+                    <TouchableOpacity
+                      key={playlist.id}
+                      style={[styles.playlistCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+                      onPress={() => router.push(`/(tabs)/preaching/playlists/${playlist.id}` as any)}
+                    >
+                      <View style={styles.playlistIcon}>
+                        <Ionicons name={playlist.isSystem ? "cloud-download" : "list"} size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                      </View>
+                      <View style={styles.playlistInfo}>
+                        <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>{playlist.name}</Text>
+                        <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                          {playlist.isSystem ? 'System Playlist' : 'User Playlist'}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                  ))
+                ) : dataType === 'episodes' ? (
+                  (displayData as any[]).map((episode, index) => (
+                    <TouchableOpacity
+                      key={episode.id}
+                      style={[styles.queueCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+                      onPress={() => router.push(`/(tabs)/preaching/episode/${episode.id}`)}
+                    >
+                      <View style={styles.queuePosition}>
+                        <Text style={[styles.queuePositionText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.queueInfo}>
+                        <Text style={[styles.queueTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>{episode.title}</Text>
+                        <Text style={[styles.queueMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>Podcast Name</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                  ))
+                ) : null}
+              </View>
+            </ScrollView>
+          )
+        )}
     </SafeAreaView>
   );
 }

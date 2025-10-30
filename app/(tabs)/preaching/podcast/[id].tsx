@@ -17,6 +17,7 @@ import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastWithEpisodes, PodcastEpisode } from '../../../../types';
+import { refreshFeed, getEpisodesMap } from '../../../../lib/podcast/cache';
 import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptions';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
@@ -64,7 +65,32 @@ export default function PodcastDetailScreen() {
     try {
       setLoading(true);
       const data = await PodcastService.getPodcast(id!);
-      setPodcast(data);
+
+      // Refresh from RSS (1h policy) and then load episodes from device cache
+      try {
+        await refreshFeed(data.id, data.rssUrl);
+        const map = await getEpisodesMap(data.id);
+        const episodesFromCache: PodcastEpisode[] = Object.values(map).map((ep) => ({
+          id: ep.id,
+          podcastId: data.id,
+          title: ep.title,
+          description: ep.description,
+          audioUrl: ep.audioUrl,
+          duration: ep.duration,
+          publishedAt: ep.publishedAt,
+          episodeNumber: ep.episodeNumber,
+          seasonNumber: ep.seasonNumber,
+          guid: ep.guid,
+          artworkUrl: ep.artworkUrl,
+          fileSize: ep.fileSize,
+          mimeType: ep.mimeType,
+          createdAt: new Date().toISOString(),
+        }));
+        setPodcast({ ...data, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
+      } catch (e) {
+        // Fallback to service-provided episodes if cache path fails
+        setPodcast(data);
+      }
     } catch (error) {
       console.error('Error loading podcast:', error);
       Alert.alert('Error', 'Failed to load podcast details');
@@ -75,9 +101,35 @@ export default function PodcastDetailScreen() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    loadPodcast();
+    try {
+      // Force refresh this feed, then reload from cache
+      const base = await PodcastService.getPodcast(id!);
+      await refreshFeed(base.id, base.rssUrl, { force: true });
+      const map = await getEpisodesMap(base.id);
+      const episodesFromCache: PodcastEpisode[] = Object.values(map).map((ep) => ({
+        id: ep.id,
+        podcastId: base.id,
+        title: ep.title,
+        description: ep.description,
+        audioUrl: ep.audioUrl,
+        duration: ep.duration,
+        publishedAt: ep.publishedAt,
+        episodeNumber: ep.episodeNumber,
+        seasonNumber: ep.seasonNumber,
+        guid: ep.guid,
+        artworkUrl: ep.artworkUrl,
+        fileSize: ep.fileSize,
+        mimeType: ep.mimeType,
+        createdAt: new Date().toISOString(),
+      }));
+      setPodcast({ ...base, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
+    } catch (e) {
+      await loadPodcast();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSubscribe = async () => {

@@ -11,6 +11,7 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
@@ -21,6 +22,8 @@ import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastEpisode, Podcast } from '../../../../types';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 import HtmlRenderer from '../../../../components/HtmlRenderer';
+import { refreshFeed } from '../../../../lib/podcast/cache';
+import { ensureImageCached } from '../../../../lib/podcast/storage';
 
 const SPEED_OPTIONS = [
   { value: 0.75, label: '0.75x - Slow' },
@@ -42,6 +45,8 @@ export default function EpisodeDetailScreen() {
   const [sliderWidth, setSliderWidth] = useState(300);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
   const [showSpeedModal, setShowSpeedModal] = useState(false);
+  const [artworkPath, setArtworkPath] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
   const titleStyle = useMemo(() => [
@@ -102,12 +107,47 @@ export default function EpisodeDetailScreen() {
       // Load podcast info
       const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
       setPodcast(podcastData);
+
+      // Refresh RSS feed if stale (1h policy)
+      if (podcastData?.rssUrl) {
+        try {
+          await refreshFeed(podcastData.id, podcastData.rssUrl);
+        } catch (e) {
+          console.warn('[EpisodeDetail] Feed refresh skipped:', e);
+        }
+      }
+
+      // Ensure artwork is cached locally
+      const artUrl = episodeData.artworkUrl || podcastData.artworkUrl;
+      if (artUrl) {
+        try {
+          const { path } = await ensureImageCached(artUrl);
+          setArtworkPath(path);
+        } catch (e) {
+          console.warn('[EpisodeDetail] Image cache skipped:', e);
+          setArtworkPath(null);
+        }
+      } else {
+        setArtworkPath(null);
+      }
     } catch (error) {
       console.error('Error loading episode:', error);
       Alert.alert('Error', 'Failed to load episode');
       router.back();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    if (!episode || !podcast) return;
+    setRefreshing(true);
+    try {
+      await refreshFeed(podcast.id, podcast.rssUrl, { force: true });
+      // Reload episode and podcast info after refresh
+      await loadEpisode();
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -172,14 +212,15 @@ export default function EpisodeDetailScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Header Section */}
         <View style={[styles.headerSection, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
           {/* Artwork */}
           <View style={styles.artworkContainer}>
-            {episode.artworkUrl || podcast.artworkUrl ? (
+            {artworkPath || episode.artworkUrl || podcast.artworkUrl ? (
               <Image
-                source={{ uri: episode.artworkUrl || podcast.artworkUrl }}
+                source={{ uri: artworkPath || episode.artworkUrl || podcast.artworkUrl }}
                 style={styles.artwork}
                 resizeMode="cover"
               />

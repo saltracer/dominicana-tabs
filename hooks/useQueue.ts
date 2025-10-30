@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PodcastEpisode, Playlist } from '../types/podcast-types';
 import { PodcastQueueService } from '../services/PodcastQueueService';
+import { useAuth } from '../contexts/AuthContext';
 
 export function useQueue() {
+  const { user } = useAuth();
   const [queue, setQueue] = useState<PodcastEpisode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,6 +13,11 @@ export function useQueue() {
     try {
       setLoading(true);
       setError(null);
+      if (!user) {
+        setQueue([]);
+        setLoading(false);
+        return;
+      }
       const data = await PodcastQueueService.getQueue();
       setQueue(data);
     } catch (err) {
@@ -19,7 +26,7 @@ export function useQueue() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const addToQueue = useCallback(async (episode: PodcastEpisode, position?: number) => {
     try {

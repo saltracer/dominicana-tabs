@@ -14,12 +14,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import LiturgyPreferencesDropdown from '../../components/LiturgyPreferencesDropdown';
 import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle';
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
+import { getUsage, deleteAll, getFeedUsage, deleteFeedData } from '../../lib/podcast/cache';
+import { usePodcastSubscriptions } from '../../hooks/usePodcastSubscriptions';
 
 export default function PreachingSettingsScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
   const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
   const [preferencesLoading, setPreferencesLoading] = useState(false);
+  const [usage, setUsage] = useState<{ audioBytes: number; imageBytes: number } | null>(null);
+  const { subscriptions } = usePodcastSubscriptions();
+  const [perFeedUsage, setPerFeedUsage] = useState<Record<string, { audioBytes: number; imageBytes: number }>>({});
 
   const availableOptions = UserLiturgyPreferencesService.getAvailableOptions();
 
@@ -39,6 +44,30 @@ export default function PreachingSettingsScreen() {
     }
   };
 
+  const loadPodcastUsage = async () => {
+    try {
+      const u = await getUsage();
+      setUsage(u);
+    } catch (e) {
+      console.warn('Failed to load podcast usage:', e);
+    }
+  };
+
+  const loadPerFeedUsage = async () => {
+    try {
+      const entries: Record<string, { audioBytes: number; imageBytes: number }> = {};
+      await Promise.all(
+        subscriptions.map(async (p) => {
+          const u = await getFeedUsage(p.id);
+          entries[p.id] = u;
+        })
+      );
+      setPerFeedUsage(entries);
+    } catch (e) {
+      console.warn('Failed to load per-feed usage:', e);
+    }
+  };
+
   const updateLiturgyPreference = async (key: keyof UserLiturgyPreferencesData, value: any) => {
     if (!user?.id || !liturgyPreferences) return;
     
@@ -54,7 +83,14 @@ export default function PreachingSettingsScreen() {
 
   useEffect(() => {
     loadLiturgyPreferences();
+    loadPodcastUsage();
   }, [user?.id]);
+
+  useEffect(() => {
+    if (subscriptions.length) {
+      loadPerFeedUsage();
+    }
+  }, [subscriptions]);
 
   if (preferencesLoading) {
     return (
@@ -175,6 +211,74 @@ export default function PreachingSettingsScreen() {
               icon="speedometer"
             />
           </View>
+
+        {/* Podcast Storage Usage Section */}
+        <View style={styles.section}>
+          <Text style={[styles.subsectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>Podcast Storage</Text>
+          <View style={{ gap: 8 }}>
+            <Text style={{ color: Colors[colorScheme ?? 'light'].textSecondary }}>
+              Audio: {formatBytes(usage?.audioBytes || 0)}
+            </Text>
+            <Text style={{ color: Colors[colorScheme ?? 'light'].textSecondary }}>
+              Images: {formatBytes(usage?.imageBytes || 0)}
+            </Text>
+          </View>
+          <View style={{ height: 12 }} />
+          <TouchableOpacity
+            onPress={async () => {
+              await deleteAll();
+              await loadPodcastUsage();
+              await loadPerFeedUsage();
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              paddingVertical: 12,
+            }}
+          >
+            <Ionicons name="trash" size={18} color={Colors[colorScheme ?? 'light'].primary} />
+            <Text style={{ color: Colors[colorScheme ?? 'light'].primary, fontFamily: 'Georgia', fontWeight: '600' }}>
+              Delete all podcast data
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Per-Podcast Storage Section */}
+        {subscriptions.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.subsectionTitle, { color: Colors[colorScheme ?? 'light'].text }]}>Per-Podcast Storage</Text>
+            {subscriptions.map((p) => {
+              const u = perFeedUsage[p.id] || { audioBytes: 0, imageBytes: 0 };
+              return (
+                <View key={p.id} style={{ paddingVertical: 8 }}>
+                  <Text style={{ color: Colors[colorScheme ?? 'light'].text, fontFamily: 'Georgia', fontWeight: '600' }}>{p.title}</Text>
+                  <Text style={{ color: Colors[colorScheme ?? 'light'].textSecondary }}>Audio: {formatBytes(u.audioBytes)} • Images: {formatBytes(u.imageBytes)}</Text>
+                  <View style={{ flexDirection: 'row', gap: 16, paddingTop: 6 }}>
+                    <TouchableOpacity
+                      onPress={async () => {
+                        await deleteFeedData(p.id, 'audio');
+                        await loadPodcastUsage();
+                        await loadPerFeedUsage();
+                      }}
+                    >
+                      <Text style={{ color: Colors[colorScheme ?? 'light'].primary, fontFamily: 'Georgia' }}>Delete audio</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={async () => {
+                        await deleteFeedData(p.id, 'images');
+                        await loadPodcastUsage();
+                        await loadPerFeedUsage();
+                      }}
+                    >
+                      <Text style={{ color: Colors[colorScheme ?? 'light'].primary, fontFamily: 'Georgia' }}>Delete images</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -232,4 +336,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Georgia',
   },
 });
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const value = bytes / Math.pow(k, i);
+  return `${value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2)} ${sizes[i]}`;
+}
 

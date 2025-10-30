@@ -16,6 +16,7 @@ import { Podcast } from '../types';
 import { router } from 'expo-router';
 import FullScreenPlayer from './FullScreenPlayer';
 import HtmlRenderer from './HtmlRenderer';
+import { ensureImageCached } from '../lib/podcast/storage';
 
 export default function PodcastMiniPlayer() {
   const { colorScheme } = useTheme();
@@ -36,6 +37,7 @@ export default function PodcastMiniPlayer() {
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [loadingPodcast, setLoadingPodcast] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
+  const [artworkPath, setArtworkPath] = useState<string | null>(null);
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
   const episodeTitleStyle = useMemo(() => [
@@ -57,6 +59,7 @@ export default function PodcastMiniPlayer() {
       fetchPodcast();
     } else {
       setPodcast(null);
+      setArtworkPath(null);
     }
   }, [currentEpisode?.id]);
 
@@ -67,6 +70,18 @@ export default function PodcastMiniPlayer() {
       setLoadingPodcast(true);
       const podcastData = await PodcastService.getPodcast(currentEpisode.podcastId);
       setPodcast(podcastData);
+      const artUrl = currentEpisode.artworkUrl || podcastData?.artworkUrl;
+      if (artUrl) {
+        try {
+          const { path } = await ensureImageCached(artUrl);
+          setArtworkPath(path);
+        } catch (e) {
+          console.warn('[PodcastMiniPlayer] Image cache skipped:', e);
+          setArtworkPath(null);
+        }
+      } else {
+        setArtworkPath(null);
+      }
     } catch (error) {
       console.error('[PodcastMiniPlayer] Error fetching podcast:', error);
       setPodcast(null);
@@ -108,7 +123,7 @@ export default function PodcastMiniPlayer() {
 
 
   // Determine which artwork to use (episode first, then podcast)
-  const artworkUrl = currentEpisode.artworkUrl || podcast?.artworkUrl;
+  const artworkUrl = artworkPath || currentEpisode.artworkUrl || podcast?.artworkUrl;
 
   return (
     <>

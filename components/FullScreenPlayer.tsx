@@ -23,6 +23,7 @@ import HtmlRenderer from './HtmlRenderer';
 import { PodcastService } from '../services/PodcastService';
 import { Podcast } from '../types';
 import SpeedSelectorModal from './SpeedSelectorModal';
+import { ensureImageCached } from '../lib/podcast/storage';
 
 interface FullScreenPlayerProps {
   visible: boolean;
@@ -51,6 +52,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   const [loadingPodcast, setLoadingPodcast] = useState(false);
   const [showSpeedModal, setShowSpeedModal] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [artworkPath, setArtworkPath] = useState<string | null>(null);
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
   const episodeTitleStyle = useMemo(() => [
@@ -67,6 +69,14 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   useEffect(() => {
     if (currentEpisode) {
       loadPodcastData();
+      const artUrl = currentEpisode.artworkUrl;
+      if (artUrl) {
+        ensureImageCached(artUrl)
+          .then(({ path }) => setArtworkPath(path))
+          .catch(() => setArtworkPath(null));
+      } else {
+        setArtworkPath(null);
+      }
     }
   }, [currentEpisode?.id]);
 
@@ -104,9 +114,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
 
   // Artwork priority helper
   const getArtworkUrl = () => {
-    return currentEpisode?.artworkUrl || 
-           podcast?.artworkUrl || 
-           null;
+    return artworkPath || currentEpisode?.artworkUrl || podcast?.artworkUrl || null;
   };
 
   // Get responsive artwork size
