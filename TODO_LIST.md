@@ -70,7 +70,8 @@
 - [ ] Podcasts - Support playlists
 - [ ] Podcasts - Create a downloaded podcasts section
 - [ ] Create podcast specific preferences
-- [ ] Improve performance of podcasts by using device caching
+- [x] Improve performance of podcasts by using device caching
+- [ ] Add "Played" status to podcasts
 
 
 ## Other
