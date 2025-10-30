@@ -243,19 +243,48 @@ export function adjustLiturgicalColorBrightness(
   hexColor: string, 
   isDarkMode: boolean
 ): string {
+  // Smarter brightness adjustment based on base color
+  // Ensures good contrast for all liturgical colors
+  
   // Parse hex to RGB
   const r = parseInt(hexColor.slice(1, 3), 16);
   const g = parseInt(hexColor.slice(3, 5), 16);
   const b = parseInt(hexColor.slice(5, 7), 16);
   
-  // Adjust brightness
-  // For dark mode: lighten by 30% (make brighter)
-  // For light mode: darken by 30% (make darker)
-  const factor = isDarkMode ? 1.3 : 0.7;
-  const newR = Math.min(255, Math.floor(r * factor));
-  const newG = Math.min(255, Math.floor(g * factor));
-  const newB = Math.min(255, Math.floor(b * factor));
+  // Calculate brightness
+  const brightness = (r + g + b) / 3;
+  const isLightColor = brightness > 127;
+  
+  // Apply adjustment based on brightness and theme
+  let factor: number;
+  if (isDarkMode) {
+    factor = isLightColor ? 1.5 : 1.3; // Lighten more for light colors
+  } else {
+    factor = brightness > 127 ? 0.6 : 0.5; // Darken more for light colors
+  }
+  
+  const newR = Math.min(255, Math.max(0, Math.floor(r * factor)));
+  const newG = Math.min(255, Math.max(0, Math.floor(g * factor)));
+  const newB = Math.min(255, Math.max(0, Math.floor(b * factor)));
   
   // Convert back to hex with zero-padding
   return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+}
+
+// Alternative: Use semi-transparent black/white overlay for contrast
+export function getProgressColorOverlay(
+  baseColor: string,
+  isDarkMode: boolean
+): string {
+  // Return white for dark base colors, black for light base colors
+  const isWhite = baseColor.toLowerCase() === '#ffffff';
+  const isGold = baseColor.toLowerCase().includes('ffd');
+  
+  if (isWhite || isGold) {
+    // Light colors need dark overlay
+    return isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.6)';
+  } else {
+    // Dark colors need light overlay
+    return isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.7)';
+  }
 }

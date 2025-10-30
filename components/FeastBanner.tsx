@@ -383,7 +383,7 @@ export default function FeastBanner({
               styles.progressFill,
               { 
                 width: `${progressPercentage}%`,
-                backgroundColor: adjustLiturgicalColorBrightness(displayColor, colorScheme === 'dark')
+                backgroundColor: Colors[colorScheme ?? 'light'].primary
               }
             ]} 
           />
