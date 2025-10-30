@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   Modal,
   FlatList,
   RefreshControl,
+  InteractionManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
@@ -22,8 +23,8 @@ import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastEpisode, Podcast } from '../../../../types';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 import HtmlRenderer from '../../../../components/HtmlRenderer';
-import { refreshFeed } from '../../../../lib/podcast/cache';
-import { ensureImageCached } from '../../../../lib/podcast/storage';
+import { refreshFeed, getFeed } from '../../../../lib/podcast/cache';
+import { ensureImageCached, imagePathForUrl } from '../../../../lib/podcast/storage';
 
 const SPEED_OPTIONS = [
   { value: 0.75, label: '0.75x - Slow' },
@@ -47,6 +48,10 @@ export default function EpisodeDetailScreen() {
   const [showSpeedModal, setShowSpeedModal] = useState(false);
   const [artworkPath, setArtworkPath] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const mountStartRef = useRef<number>(Date.now());
+  const didLogLayoutRef = useRef<boolean>(false);
+  // Simple in-memory memo for podcast headers by podcastId
+  const podcastHeaderMemoRef = useRef<Map<string, Podcast>>(new Map());
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
   const titleStyle = useMemo(() => [
@@ -84,9 +89,20 @@ export default function EpisodeDetailScreen() {
 
   useEffect(() => {
     if (id) {
+      console.log('[EpisodeDetail] mount id=', id, { qPodcastId, qGuid, qAudioUrl });
       loadEpisode();
     }
   }, [id]);
+
+  useEffect(() => {
+    const startedAt = mountStartRef.current;
+    const task = InteractionManager.runAfterInteractions(() => {
+      console.log('[EpisodeDetail] afterInteractions elapsed=', Date.now() - startedAt, 'ms');
+    });
+    return () => {
+      if ((task as any)?.cancel) (task as any).cancel();
+    };
+  }, []);
 
   // Set header title when episode is loaded
   useEffect(() => {
@@ -101,17 +117,32 @@ export default function EpisodeDetailScreen() {
   const loadEpisode = async () => {
     try {
       setLoading(true);
+      const start = Date.now();
+      console.log('[EpisodeDetail] loadEpisode:start');
       const isUuid = /^[0-9a-fA-F-]{36}$/.test(id!);
       if (isUuid) {
+        const t0 = Date.now();
         const episodeData = await PodcastService.getEpisode(id!);
+        console.log('[EpisodeDetail] getEpisode (DB) elapsed=', Date.now() - t0, 'ms');
         setEpisode(episodeData);
-        const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
-        setPodcast(podcastData);
+        const memo = podcastHeaderMemoRef.current.get(episodeData.podcastId);
+        if (memo) {
+          console.log('[EpisodeDetail] getPodcast memo hit');
+          setPodcast(memo);
+        } else {
+          const t1 = Date.now();
+          const podcastData = await PodcastService.getPodcast(episodeData.podcastId);
+          console.log('[EpisodeDetail] getPodcast elapsed=', Date.now() - t1, 'ms');
+          podcastHeaderMemoRef.current.set(episodeData.podcastId, podcastData);
+          setPodcast(podcastData);
+        }
       } else {
         // Fallback to cache resolution when id is not a UUID
         if (!qPodcastId) throw new Error('Missing podcastId for cache episode');
         const { getEpisodesMap } = await import('../../../../lib/podcast/cache');
+        const tMap = Date.now();
         const map = await getEpisodesMap(qPodcastId);
+        console.log('[EpisodeDetail] getEpisodesMap (cache) elapsed=', Date.now() - tMap, 'ms', 'count=', Object.keys(map).length);
         const ep = Object.values(map).find(e => (qGuid && e.guid === qGuid) || (qAudioUrl && e.audioUrl === qAudioUrl) || e.guid === id || e.audioUrl === id);
         if (!ep) throw new Error('Episode not found in cache');
         const cacheEpisode: PodcastEpisode = {
@@ -131,15 +162,43 @@ export default function EpisodeDetailScreen() {
           createdAt: new Date().toISOString(),
         } as any;
         setEpisode(cacheEpisode);
-        const podcastData = await PodcastService.getPodcast(qPodcastId);
-        setPodcast(podcastData);
+        // Build podcast header from feed cache to avoid DB call
+        const feed = await getFeed(qPodcastId);
+        if (feed) {
+          const p: Podcast = {
+            id: qPodcastId,
+            title: feed.summary.title,
+            description: feed.summary.description || '',
+            author: feed.summary.author || '',
+            rssUrl: feed.uri,
+            artworkUrl: feed.summary.artworkUrl,
+            websiteUrl: feed.summary.websiteUrl,
+            language: feed.summary.language || 'en',
+            categories: feed.summary.categories || [],
+            isCurated: false,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastFetchedAt: new Date(feed.fetchedAt).toISOString(),
+          } as any;
+          podcastHeaderMemoRef.current.set(qPodcastId, p);
+          setPodcast(p);
+        } else {
+          const tP = Date.now();
+          const podcastData = await PodcastService.getPodcast(qPodcastId);
+          console.log('[EpisodeDetail] getPodcast (fallback) elapsed=', Date.now() - tP, 'ms');
+          podcastHeaderMemoRef.current.set(qPodcastId, podcastData);
+          setPodcast(podcastData);
+        }
       }
 
       // Refresh RSS feed if stale (1h policy)
       const parentRss = (podcast?.rssUrl) || (qPodcastId ? (await PodcastService.getPodcast(qPodcastId)).rssUrl : undefined);
       if (parentRss) {
         try {
+          const tR = Date.now();
           await refreshFeed((podcast?.id) || qPodcastId!, parentRss);
+          console.log('[EpisodeDetail] refreshFeed elapsed=', Date.now() - tR, 'ms');
         } catch (e) {
           console.warn('[EpisodeDetail] Feed refresh skipped:', e);
         }
@@ -149,7 +208,9 @@ export default function EpisodeDetailScreen() {
       const artUrl = (episode ? episode.artworkUrl : undefined) || podcast?.artworkUrl;
       if (artUrl) {
         try {
+          const tA = Date.now();
           const { path } = await ensureImageCached(artUrl);
+          console.log('[EpisodeDetail] ensureImageCached elapsed=', Date.now() - tA, 'ms');
           setArtworkPath(path);
         } catch (e) {
           console.warn('[EpisodeDetail] Image cache skipped:', e);
@@ -158,6 +219,7 @@ export default function EpisodeDetailScreen() {
       } else {
         setArtworkPath(null);
       }
+      console.log('[EpisodeDetail] loadEpisode:done elapsed=', Date.now() - start, 'ms');
     } catch (error) {
       console.error('Error loading episode:', error);
       Alert.alert('Error', 'Failed to load episode');
