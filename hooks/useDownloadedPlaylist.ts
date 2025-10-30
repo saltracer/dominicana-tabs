@@ -27,41 +27,68 @@ export function useDownloadedPlaylist() {
       try {
         setLoading(true);
         const downloads = await PodcastDownloadService.getDownloadedEpisodes();
+        if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'downloads');
+        
         const results: DownloadedItem[] = [];
         for (const d of downloads) {
           try {
             const exists = await fileExists(d.filePath);
-            if (!exists) continue;
-            let title: string | undefined;
+            if (!exists) {
+              if (__DEV__) console.warn('[useDownloadedPlaylist] file missing:', d.filePath);
+              continue;
+            }
+            
+            // Start with metadata values (most reliable)
+            let title: string | undefined = d.title;
             let artworkUrl: string | null | undefined = null;
-            let episodeId: string | undefined;
+            let episodeId: string | undefined = d.episodeId;
+            const guid = d.guid;
+            
+            // Try to enhance from cache if podcastId is available
             if (d.podcastId) {
               try {
                 const map = await getEpisodesMap(d.podcastId);
-                const ep = Object.values(map).find(e => e.audioUrl === d.audioUrl || (!!e.guid && e.guid === (d as any).guid));
+                // Match by guid first (most stable), then audioUrl
+                const ep = Object.values(map).find(e => 
+                  (guid && e.guid === guid) || 
+                  (!guid && e.audioUrl === d.audioUrl) ||
+                  e.audioUrl === d.audioUrl
+                );
                 if (ep) {
-                  title = ep.title;
+                  title = title || ep.title;
                   artworkUrl = ep.artworkUrl || null;
                   episodeId = ep.id as any;
+                  if (__DEV__) console.log('[useDownloadedPlaylist] matched episode from cache:', title);
+                } else if (__DEV__) {
+                  console.warn('[useDownloadedPlaylist] episode not found in cache:', d.podcastId, guid || d.audioUrl);
                 }
-              } catch {}
+              } catch (err) {
+                if (__DEV__) console.warn('[useDownloadedPlaylist] error loading cache for', d.podcastId, err);
+                // Continue with metadata values even if cache fails
+              }
             }
+            
             results.push({
-              id: `${d.podcastId || 'unknown'}:${(d as any).guid || d.audioUrl}`,
+              id: `${d.podcastId || 'unknown'}:${guid || d.audioUrl}`,
               podcastId: d.podcastId || 'unknown',
               episodeId,
-              title: title || (d as any).title || 'Episode',
+              title: title || 'Episode',
               audioUrl: d.audioUrl,
               artworkUrl: artworkUrl ?? null,
               localAudioPath: d.filePath,
               downloadedAt: typeof d.downloadedAt === 'string' ? new Date(d.downloadedAt).getTime() : (d.downloadedAt as any) || Date.now(),
             });
-          } catch {}
+          } catch (err) {
+            if (__DEV__) console.error('[useDownloadedPlaylist] error processing download:', d.episodeId, err);
+          }
         }
         results.sort((a, b) => b.downloadedAt - a.downloadedAt);
+        if (__DEV__) console.log('[useDownloadedPlaylist] returning', results.length, 'items');
         if (alive) setItems(results);
+      } catch (err) {
+        console.error('[useDownloadedPlaylist] error:', err);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
     return () => { alive = false; };

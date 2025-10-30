@@ -32,6 +32,8 @@ export interface DownloadedEpisode {
   fileSize: number;
   downloadedAt: string;
   audioUrl: string; // Original URL for reference
+  guid?: string; // Episode GUID for stable matching across restarts
+  title?: string; // Episode title for display
 }
 
 export class PodcastDownloadService {
@@ -77,6 +79,8 @@ export class PodcastDownloadService {
         fileSize: result.bytesAdded,
         downloadedAt: new Date().toISOString(),
         audioUrl: episode.audioUrl,
+        guid: episode.guid,
+        title: episode.title,
       });
 
       // Persist localAudioPath into cache episodes map for accurate per-feed usage
@@ -184,18 +188,28 @@ export class PodcastDownloadService {
 
     try {
       const metadata = await this.getDownloadMetadata();
+      if (__DEV__) console.log('[PodcastDownload] getDownloadedEpisodes: found', metadata.length, 'metadata entries');
       
       // Verify files still exist and clean up metadata if not
       const validDownloads: DownloadedEpisode[] = [];
       for (const download of metadata) {
-        const exists = await fileExists(download.filePath);
-        if (exists) {
+        try {
+          const exists = await fileExists(download.filePath);
+          if (exists) {
+            validDownloads.push(download);
+            if (__DEV__) console.log('[PodcastDownload] verified download:', download.episodeId, download.filePath);
+          } else {
+            if (__DEV__) console.warn('[PodcastDownload] file missing, removing metadata:', download.episodeId, download.filePath);
+            await this.deleteDownloadMetadata(download.episodeId);
+          }
+        } catch (e) {
+          if (__DEV__) console.warn('[PodcastDownload] error checking file', download.episodeId, e);
+          // Don't delete on check error; file might still exist
           validDownloads.push(download);
-        } else {
-          await this.deleteDownloadMetadata(download.episodeId);
         }
       }
       
+      if (__DEV__) console.log('[PodcastDownload] getDownloadedEpisodes: returning', validDownloads.length, 'valid downloads');
       return validDownloads;
     } catch (error) {
       console.error('[PodcastDownload] Error getting downloaded episodes:', error);
