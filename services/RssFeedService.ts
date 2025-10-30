@@ -27,7 +27,8 @@ export class RssFeedService {
         // Preserve text content from CDATA
         preserveOrder: false,
         // Handle complex HTML content
-        unpairedTags: ['br', 'hr', 'img', 'input', 'meta', 'link'],
+        // Allow common void elements, but DO NOT mark 'link' as unpaired since many RSS feeds use <link>..</link>
+        unpairedTags: ['br', 'hr', 'img', 'input', 'meta'],
       });
     }
     return RssFeedService.parser;

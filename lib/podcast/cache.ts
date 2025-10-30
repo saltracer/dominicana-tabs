@@ -23,6 +23,7 @@ type FeedSummary = {
   description?: string;
   author?: string;
   artworkUrl?: string;
+  localArtworkPath?: string;
   websiteUrl?: string;
   language?: string;
   categories: string[];
@@ -166,10 +167,23 @@ export async function refreshFeed(
     description: parsed.description,
     author: parsed.author,
     artworkUrl: parsed.artworkUrl,
+    localArtworkPath: undefined,
     websiteUrl: parsed.websiteUrl,
     language: parsed.language,
     categories: parsed.categories ?? [],
   };
+
+  // If artwork is already cached, record its local path for instant reuse
+  if (parsed.artworkUrl) {
+    try {
+      const artPath = await imagePathForUrl(parsed.artworkUrl);
+      if (await fileExists(artPath)) {
+        summary.localArtworkPath = artPath;
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   const prevEpisodes = await getEpisodesMap(feedId);
   const nextEpisodes: EpisodesMap = {};

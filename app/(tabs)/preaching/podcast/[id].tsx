@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  InteractionManager,
+  FlatList,
+  ListRenderItem,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -18,7 +21,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastWithEpisodes, PodcastEpisode } from '../../../../types';
 import { refreshFeed, getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
-import { ensureImageCached } from '../../../../lib/podcast/storage';
+import { ensureImageCached, imagePathForUrl, fileExists } from '../../../../lib/podcast/storage';
 import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptions';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
@@ -39,6 +42,8 @@ export default function PodcastDetailScreen() {
   const [artworkPath, setArtworkPath] = useState<string | null>(null);
   const [hasCache, setHasCache] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const mountStartRef = useRef<number>(Date.now());
+  const didLogLayoutRef = useRef<boolean>(false);
 
   const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
   const { currentEpisode, playEpisode, pause, resume, isPlaying, isPaused } = usePodcastPlayer();
@@ -46,7 +51,7 @@ export default function PodcastDetailScreen() {
     effectiveSpeed, 
     effectiveMaxEpisodes, 
     effectiveAutoDownload, 
-    updatePreferences, 
+    updatePreference, 
     resetToGlobal 
   } = usePodcastPreferences(id!);
 
@@ -60,15 +65,42 @@ export default function PodcastDetailScreen() {
 
   useEffect(() => {
     if (id) {
+      console.log('[PodcastDetail] mount id=', id);
       loadFromCache();
       loadPodcast();
     }
   }, [id]);
 
+  // Log when interactions are complete (approx when UI is fully settled)
+  useEffect(() => {
+    const startedAt = mountStartRef.current;
+    const task = InteractionManager.runAfterInteractions(() => {
+      console.log('[PodcastDetail] afterInteractions elapsed=', Date.now() - startedAt, 'ms');
+    });
+    return () => {
+      // Optional cancel if supported
+      if ((task as any)?.cancel) (task as any).cancel();
+    };
+  }, []);
+
   const loadFromCache = async () => {
+    const start = Date.now();
     try {
+      console.log('[PodcastDetail] loadFromCache:start');
       const feed = await getFeed(id!);
+      console.log('[PodcastDetail] loadFromCache:getFeed elapsed=', Date.now() - start, 'hasFeed=', !!feed);
       const map = await getEpisodesMap(id!);
+      const mapKeys = Object.keys(map);
+      console.log('[PodcastDetail] loadFromCache:getEpisodesMap elapsed=', Date.now() - start, 'count=', mapKeys.length);
+      console.log('[PodcastDetail] cache summary snapshot:', {
+        fetchedAt: feed?.fetchedAt || null,
+        etag: feed?.etag || null,
+        lastModified: feed?.lastModified || null,
+        summaryArtUrl: feed?.summary?.artworkUrl || null,
+        summaryLocalArt: feed?.summary?.localArtworkPath || null,
+        episodeCount: mapKeys.length,
+      });
+      const epStart = Date.now();
       const episodesFromCache: PodcastEpisode[] = Object.values(map).map((ep) => ({
         id: ep.id,
         podcastId: id!,
@@ -85,6 +117,7 @@ export default function PodcastDetailScreen() {
         mimeType: ep.mimeType,
         createdAt: new Date().toISOString(),
       }));
+      console.log('[PodcastDetail] loadFromCache:build episodes elapsed=', Date.now() - epStart);
 
       if (feed || episodesFromCache.length) {
         const base: PodcastWithEpisodes = {
@@ -106,29 +139,70 @@ export default function PodcastDetailScreen() {
         };
         setPodcast(base);
         setHasCache(true);
-        const artUrl = base.artworkUrl;
-        if (artUrl) {
+        console.log('[PodcastDetail] loadFromCache:done elapsed=', Date.now() - start);
+
+        // Artwork resolution in background to avoid blocking cache path timing
+        (async () => {
+          const artStart = Date.now();
+          // Prefer feed's cached local path for instant set
+          if (feed?.summary?.localArtworkPath) {
+            console.log('[PodcastDetail] loadFromCache:art using summary path at', new Date().toISOString());
+            setArtworkPath(feed.summary.localArtworkPath);
+            return;
+          }
+
+          const artUrl = base.artworkUrl;
+          if (!artUrl) {
+            setArtworkPath(null);
+            return;
+          }
+
+          try {
+            const hashStart = Date.now();
+            console.log('[PodcastDetail] loadFromCache:art precheck start at', new Date().toISOString());
+            const maybePath = await imagePathForUrl(artUrl);
+            const hashElapsed = Date.now() - hashStart;
+            console.log('[PodcastDetail] loadFromCache:art path computed in', hashElapsed, 'ms ->', maybePath);
+
+            // Optimistically set path without stat to avoid slow IO. We'll fallback on Image onError.
+            setArtworkPath(maybePath);
+            return;
+          } catch (e) {
+            console.warn('[PodcastDetail] loadFromCache:art precheck failed', e);
+          }
+
           ensureImageCached(artUrl)
-            .then(({ path }) => setArtworkPath(path))
-            .catch(() => setArtworkPath(null));
-        } else {
-          setArtworkPath(null);
-        }
+            .then(({ path }) => {
+              console.log('[PodcastDetail] loadFromCache:art cached elapsed=', Date.now() - artStart, 'ms at', new Date().toISOString());
+              setArtworkPath(path);
+            })
+            .catch((e) => {
+              console.warn('[PodcastDetail] loadFromCache:art cache failed', e);
+              setArtworkPath(null);
+            });
+        })();
       }
     } catch {
       // ignore cache errors
+      console.warn('[PodcastDetail] loadFromCache:error elapsed=', Date.now() - start);
     }
   };
 
   const loadPodcast = async () => {
     try {
       setLoading(true);
+      const start = Date.now();
+      console.log('[PodcastDetail] loadPodcast:start');
       const data = await PodcastService.getPodcast(id!);
+      console.log('[PodcastDetail] loadPodcast:getPodcast elapsed=', Date.now() - start);
 
       // Refresh from RSS (1h policy) and then load episodes from device cache
       try {
+        const rfStart = Date.now();
         await refreshFeed(data.id, data.rssUrl);
+        console.log('[PodcastDetail] loadPodcast:refreshFeed elapsed=', Date.now() - rfStart);
         const map = await getEpisodesMap(data.id);
+        console.log('[PodcastDetail] loadPodcast:getEpisodesMap elapsed=', Date.now() - start, 'count=', Object.keys(map).length);
         const episodesFromCache: PodcastEpisode[] = Object.values(map).map((ep) => ({
           id: ep.id,
           podcastId: data.id,
@@ -148,13 +222,20 @@ export default function PodcastDetailScreen() {
         setPodcast({ ...data, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
         const artUrl = data.artworkUrl;
         if (artUrl) {
-          ensureImageCached(artUrl)
-            .then(({ path }) => setArtworkPath(path))
-            .catch(() => setArtworkPath(null));
+          try {
+            const maybePath = await imagePathForUrl(artUrl);
+            // Optimistically set without stat to avoid slow IO on dev
+            setArtworkPath(maybePath);
+          } catch (e) {
+            console.warn('[PodcastDetail] loadPodcast:art precompute failed', e);
+            setArtworkPath(null);
+          }
         }
+        console.log('[PodcastDetail] loadPodcast:done elapsed=', Date.now() - start);
       } catch (e) {
         // Fallback to service-provided episodes if cache path fails
         setPodcast(data);
+        console.warn('[PodcastDetail] loadPodcast:cache path failed, using service data. elapsed=', Date.now() - start, e);
       }
     } catch (error) {
       console.error('Error loading podcast:', error);
@@ -168,6 +249,8 @@ export default function PodcastDetailScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
+    const start = Date.now();
+    console.log('[PodcastDetail] handleRefresh:start');
     try {
       // Force refresh this feed, then reload from cache
       const base = await PodcastService.getPodcast(id!);
@@ -190,7 +273,9 @@ export default function PodcastDetailScreen() {
         createdAt: new Date().toISOString(),
       }));
       setPodcast({ ...base, episodes: episodesFromCache, episodeCount: episodesFromCache.length });
+      console.log('[PodcastDetail] handleRefresh:done elapsed=', Date.now() - start);
     } catch (e) {
+      console.warn('[PodcastDetail] handleRefresh:fallback elapsed=', Date.now() - start, e);
       await loadPodcast();
     } finally {
       setRefreshing(false);
@@ -264,181 +349,134 @@ export default function PodcastDetailScreen() {
   if (!podcast) return null;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]} edges={['left', 'right']}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}
+      edges={['left', 'right']}
+      onLayout={() => {
+        if (!didLogLayoutRef.current) {
+          didLogLayoutRef.current = true;
+          console.log('[PodcastDetail] onLayout (first) elapsed=', Date.now() - mountStartRef.current, 'ms');
         }
-      >
-        {/* Podcast Header - Vertical Layout */}
-        <View style={styles.header}>
-          {/* Artwork */}
-          {artworkPath || podcast.artworkUrl ? (
-            <Image
-              source={{ uri: artworkPath || podcast.artworkUrl }}
-              style={styles.artwork}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[styles.artworkPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
-              <Ionicons name="radio" size={64} color={Colors[colorScheme ?? 'light'].primary} />
-            </View>
-          )}
-
-          {/* Podcast Info */}
-          <View style={styles.headerInfo}>
-            <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
-              {podcast.title}
-            </Text>
-            {podcast.author && (
-              <Text style={[styles.author, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {podcast.author}
-              </Text>
-            )}
-            {podcast.episodeCount !== undefined && (
-              <Text style={[styles.episodeCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {podcast.episodeCount} episodes
-              </Text>
-            )}
-          </View>
-
-          {/* Action Bar */}
-          <View style={styles.actionBar}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => setShowPreferencesModal(true)}
-            >
-              <Ionicons name="settings-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="share-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-            </TouchableOpacity>
-            {podcast.websiteUrl && (
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="link-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Description */}
-        {podcast.description && (
-          <View style={styles.descriptionContainer}>
-            <HtmlRenderer 
-              htmlContent={podcast.description}
-              style={descriptionStyle}
-              maxLines={isDescriptionExpanded ? undefined : 3}
-            />
-            {podcast.description.length > 200 && (
-              <TouchableOpacity
-                style={styles.readMoreButton}
-                onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-              >
-                <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  {isDescriptionExpanded ? 'Read less' : 'Read more'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+      }}
+    >
+      <FlatList
+        data={sortedEpisodes}
+        keyExtractor={(item) => item.id}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        renderItem={({ item }) => (
+          <EpisodeListItem
+            episode={item}
+            onPress={() => handleEpisodePress(item)}
+            onPlay={() => handlePlayEpisode(item)}
+            isPlaying={currentEpisode?.id === item.id && isPlaying}
+            isPaused={currentEpisode?.id === item.id && isPaused}
+          />
         )}
+        initialNumToRender={12}
+        maxToRenderPerBatch={16}
+        windowSize={7}
+        removeClippedSubviews
+        ListHeaderComponent={(
+          <>
+            {/* Podcast Header - Vertical Layout */}
+            <View style={styles.header}>
+              {artworkPath || podcast.artworkUrl ? (
+                <Image
+                  source={{ uri: artworkPath || podcast.artworkUrl }}
+                  style={styles.artwork}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={[styles.artworkPlaceholder, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                  <Ionicons name="radio" size={64} color={Colors[colorScheme ?? 'light'].primary} />
+                </View>
+              )}
 
-        {/* Categories */}
-        {podcast.categories && podcast.categories.length > 0 && (
-          <View style={styles.categoriesContainer}>
-            {podcast.categories.map((category) => (
-              <View
-                key={category}
-                style={[styles.categoryTag, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}
-              >
-                <Text style={[styles.categoryText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                  {category}
+              <View style={styles.headerInfo}>
+                <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  {podcast.title}
                 </Text>
+                {podcast.author && (
+                  <Text style={[styles.author, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {podcast.author}
+                  </Text>
+                )}
+                {podcast.episodeCount !== undefined && (
+                  <Text style={[styles.episodeCount, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {podcast.episodeCount} episodes
+                  </Text>
+                )}
               </View>
-            ))}
-          </View>
+
+              <View style={styles.actionBar}>
+                <TouchableOpacity style={styles.actionButton} onPress={() => setShowPreferencesModal(true)}>
+                  <Ionicons name="settings-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionButton}>
+                  <Ionicons name="share-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                </TouchableOpacity>
+                {podcast.websiteUrl && (
+                  <TouchableOpacity style={styles.actionButton}>
+                    <Ionicons name="link-outline" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            {podcast.description && (
+              <View style={styles.descriptionContainer}>
+                <HtmlRenderer htmlContent={podcast.description} style={descriptionStyle} maxLines={isDescriptionExpanded ? undefined : 3} />
+                {podcast.description.length > 200 && (
+                  <TouchableOpacity style={styles.readMoreButton} onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                    <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                      {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {podcast.categories && podcast.categories.length > 0 && (
+              <View style={styles.categoriesContainer}>
+                {podcast.categories.map((category) => (
+                  <View key={category} style={[styles.categoryTag, { backgroundColor: Colors[colorScheme ?? 'light'].primary + '20' }]}>
+                    <Text style={[styles.categoryText, { color: Colors[colorScheme ?? 'light'].primary }]}>{category}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {user && (
+              <View style={styles.subscribeContainer}>
+                <TouchableOpacity style={[styles.subscribeButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]} onPress={handleSubscribe}>
+                  <Ionicons name={isSubscribed ? 'checkmark-circle-outline' : 'add-circle-outline'} size={20} color="#fff" />
+                  <Text style={styles.subscribeButtonText}>{isSubscribed ? 'Subscribed' : 'Subscribe'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.episodesHeader}>
+              <Text style={[styles.episodesTitle, { color: Colors[colorScheme ?? 'light'].text }]}>Episodes</Text>
+              <View style={styles.sortButtons}>
+                <TouchableOpacity
+                  style={[styles.sortButton, { backgroundColor: sortOrder === 'newest' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].surface }]}
+                  onPress={() => setSortOrder('newest')}
+                >
+                  <Text style={[styles.sortButtonText, { color: sortOrder === 'newest' ? '#fff' : Colors[colorScheme ?? 'light'].text }]}>Newest</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.sortButton, { backgroundColor: sortOrder === 'oldest' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].surface }]}
+                  onPress={() => setSortOrder('oldest')}
+                >
+                  <Text style={[styles.sortButtonText, { color: sortOrder === 'oldest' ? '#fff' : Colors[colorScheme ?? 'light'].text }]}>Oldest</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </>
         )}
-
-        {/* Subscribe Button */}
-        {user && (
-          <View style={styles.subscribeContainer}>
-            <TouchableOpacity
-              style={[styles.subscribeButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-              onPress={handleSubscribe}
-            >
-              <Ionicons 
-                name={isSubscribed ? "checkmark-circle-outline" : "add-circle-outline"} 
-                size={20} 
-                color="#fff" 
-              />
-              <Text style={styles.subscribeButtonText}>
-                {isSubscribed ? 'Subscribed' : 'Subscribe'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-
-        {/* Episodes Header */}
-        <View style={styles.episodesHeader}>
-          <Text style={[styles.episodesTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
-            Episodes
-          </Text>
-          <View style={styles.sortButtons}>
-            <TouchableOpacity
-              style={[
-                styles.sortButton,
-                { backgroundColor: sortOrder === 'newest' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].surface }
-              ]}
-              onPress={() => setSortOrder('newest')}
-            >
-              <Text style={[
-                styles.sortButtonText,
-                { color: sortOrder === 'newest' ? '#fff' : Colors[colorScheme ?? 'light'].text }
-              ]}>
-                Newest
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.sortButton,
-                { backgroundColor: sortOrder === 'oldest' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].surface }
-              ]}
-              onPress={() => setSortOrder('oldest')}
-            >
-              <Text style={[
-                styles.sortButtonText,
-                { color: sortOrder === 'oldest' ? '#fff' : Colors[colorScheme ?? 'light'].text }
-              ]}>
-                Oldest
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Episodes List */}
-        {sortedEpisodes.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-              No episodes available
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.episodesContainer}>
-            {sortedEpisodes.map((episode) => (
-              <EpisodeListItem
-                key={episode.id}
-                episode={episode}
-                onPress={() => handleEpisodePress(episode)}
-                onPlay={() => handlePlayEpisode(episode)}
-                isPlaying={currentEpisode?.id === episode.id && isPlaying}
-                isPaused={currentEpisode?.id === episode.id && isPaused}
-              />
-            ))}
-          </View>
-        )}
-      </ScrollView>
+        contentContainerStyle={{ paddingBottom: 120 }}
+      />
 
       {/* Podcast Preferences Modal */}
       <PodcastPreferencesModal
@@ -448,8 +486,11 @@ export default function PodcastDetailScreen() {
         effectiveSpeed={effectiveSpeed}
         effectiveMaxEpisodes={effectiveMaxEpisodes}
         effectiveAutoDownload={effectiveAutoDownload}
-        updatePreferences={updatePreferences}
-        resetToGlobal={resetToGlobal}
+        updatePreferences={(updates) => {
+          const [key, value] = Object.entries(updates)[0] as [any, any];
+          updatePreference(key, value);
+        }}
+        resetToGlobal={() => resetToGlobal('playbackSpeed')}
       />
     </SafeAreaView>
   );
