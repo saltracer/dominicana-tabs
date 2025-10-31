@@ -23,7 +23,6 @@ export class RssFeedService {
         htmlEntities: true,
         // Handle CDATA sections properly
         parseTagValue: true,
-        parseNodeValue: true,
         // Preserve text content from CDATA
         preserveOrder: false,
         // Handle complex HTML content
@@ -245,8 +244,15 @@ export class RssFeedService {
     const mimeType = enclosure?.['@_type'] || '';
     const fileSize = enclosure?.['@_length'] ? parseInt(enclosure['@_length']) : undefined;
     
-    // Parse duration
-    const duration = this.parseDuration(item['itunes:duration']?.['#text'] || item['itunes:duration']);
+    // Parse duration - check multiple possible locations
+    const duration = this.parseDuration(
+      item['itunes:duration']?.['#text'] || 
+      item['itunes:duration'] || 
+      item.duration?.['#text'] || 
+      item.duration ||
+      item['podcast:duration']?.['#text'] ||
+      item['podcast:duration']
+    );
     
     // Parse publish date
     const publishedAt = item.pubDate?.['#text'] || item.pubDate;
@@ -305,6 +311,16 @@ export class RssFeedService {
     // Parse published date
     const publishedAt = entry.published?.['#text'] || entry.published || entry.updated?.['#text'] || entry.updated;
     
+    // Parse duration - check multiple possible locations for Atom feeds
+    const duration = this.parseDuration(
+      entry['itunes:duration']?.['#text'] ||
+      entry['itunes:duration'] ||
+      entry.duration?.['#text'] ||
+      entry.duration ||
+      entry['podcast:duration']?.['#text'] ||
+      entry['podcast:duration']
+    );
+    
     // GUID is typically the id
     const guid = entry.id?.['#text'] || entry.id || '';
     
@@ -312,6 +328,7 @@ export class RssFeedService {
       title,
       description,
       audioUrl,
+      duration,
       publishedAt,
       guid: typeof guid === 'string' ? guid : '',
       fileSize,
@@ -391,16 +408,31 @@ export class RssFeedService {
    * Parse duration string (HH:MM:SS or MM:SS) to seconds
    */
   private static parseDuration(duration: any): number | undefined {
-    if (!duration || typeof duration !== 'string') return undefined;
+    if (!duration) return undefined;
     
+    // If it's already a number (seconds), return it
+    if (typeof duration === 'number') {
+      return duration > 0 ? duration : undefined;
+    }
+    
+    // If it's a string, try parsing it
+    if (typeof duration !== 'string') return undefined;
+    
+    // Check if it's already just a number string (seconds)
+    const numOnly = parseInt(duration);
+    if (!isNaN(numOnly) && duration.trim() === String(numOnly)) {
+      return numOnly > 0 ? numOnly : undefined;
+    }
+    
+    // Try parsing as HH:MM:SS or MM:SS format
     const parts = duration.split(':').map(p => parseInt(p));
-    if (parts.length === 3) {
+    if (parts.length === 3 && !parts.some(isNaN)) {
       // HH:MM:SS
       return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    } else if (parts.length === 2) {
+    } else if (parts.length === 2 && !parts.some(isNaN)) {
       // MM:SS
       return parts[0] * 60 + parts[1];
-    } else if (parts.length === 1) {
+    } else if (parts.length === 1 && !isNaN(parts[0])) {
       // Just seconds
       return parts[0];
     }
