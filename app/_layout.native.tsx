@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import Animated, {
   useSharedValue,
@@ -90,16 +91,18 @@ function RootLayoutNav() {
   const { colorScheme } = useTheme();
 
   return (
-    <SafeAreaProvider>
-      <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false,
-            headerBackButtonDisplayMode: "minimal", }} />
-          <Stack.Screen name="admin" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
-        </Stack>
-      </NavigationThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false,
+              headerBackButtonDisplayMode: "minimal", }} />
+            <Stack.Screen name="admin" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="auth" options={{ presentation: 'modal', headerShown: false }} />
+          </Stack>
+        </NavigationThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
