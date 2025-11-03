@@ -12,6 +12,7 @@ import { getFeed } from '../lib/podcast/cache';
 import { fileExists } from '../lib/podcast/storage';
 import { PodcastDownloadService } from '../services/PodcastDownloadService';
 import PlaylistService from '../services/PlaylistService';
+import { PodcastService } from '../services/PodcastService';
 import { usePlaylists } from '../hooks/usePlaylists';
 
 interface EpisodeListItemProps {
@@ -244,10 +245,36 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   const addToTarget = useCallback(async (playlistId: string, playlistName: string) => {
     try {
       const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(episode.id);
+      
+      // Verify episode exists in database before using episode_id
+      let episodeExistsInDb = false;
       if (isUuid) {
+        try {
+          await PodcastService.getEpisode(episode.id, true); // silent = true to suppress error logs
+          episodeExistsInDb = true;
+          if (__DEV__) console.log('[EpisodeListItem] ✅ Episode exists in DB, using episode_id');
+        } catch (e) {
+          // Episode not in DB, will use external_ref instead
+          if (__DEV__) console.log('[EpisodeListItem] Episode ID looks like UUID but not in DB, using external_ref');
+        }
+      }
+      
+      if (episodeExistsInDb) {
         await PlaylistService.addItem(playlistId, { episode_id: episode.id });
       } else {
-        await PlaylistService.addItem(playlistId, { external_ref: { podcastId: episode.podcastId, guid: episode.guid, audioUrl: episode.audioUrl } as any });
+        // Include full metadata in external_ref so episode displays properly even without cache
+        await PlaylistService.addItem(playlistId, { 
+          external_ref: { 
+            podcastId: episode.podcastId, 
+            guid: episode.guid, 
+            audioUrl: episode.audioUrl,
+            title: episode.title,
+            description: episode.description,
+            duration: episode.duration,
+            publishedAt: episode.publishedAt,
+            artworkUrl: episode.artworkUrl,
+          } as any 
+        });
       }
       setPickerVisible(false);
       Alert.alert('Added', `Added to ${playlistName}`);

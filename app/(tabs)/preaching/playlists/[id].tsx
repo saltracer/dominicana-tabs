@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -13,15 +13,19 @@ import { usePlaylists } from '../../../../hooks/usePlaylists';
 import { usePlaylistItems } from '../../../../hooks/usePlaylistItems';
 import { useDownloadedPlaylist } from '../../../../hooks/useDownloadedPlaylist';
 import { usePodcastDownloads } from '../../../../hooks/usePodcastDownloads';
+import { syncDown, syncUp } from '../../../../lib/playlist/cache';
+import { useAuth } from '../../../../contexts/AuthContext';
+import { PodcastService } from '../../../../services/PodcastService';
 
 export default function PlaylistDetailScreen() {
   const { colorScheme } = useTheme();
+  const { user } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDownloaded = id === 'downloaded';
   const { playlists, loading: playlistsLoading } = usePlaylists();
   const playlist = useMemo(() => (isDownloaded ? { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any : playlists.find(p => p.id === id)), [isDownloaded, id, playlists]);
 
-  const { items: downloadedItems, loading: dlLoading } = useDownloadedPlaylist();
+  const { items: downloadedItems, loading: dlLoading, refetch: refetchDownloaded } = useDownloadedPlaylist();
   const { items, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
   const { isEpisodeDownloaded, downloadEpisode, deleteDownloadedEpisode } = usePodcastDownloads();
   const [resolved, setResolved] = useState<Record<string, PodcastEpisode | null>>({});
@@ -30,6 +34,7 @@ export default function PlaylistDetailScreen() {
   const [localData, setLocalData] = useState<any[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
 
   // Load artwork and duration for downloaded items
@@ -104,7 +109,30 @@ export default function PlaylistDetailScreen() {
       for (const it of items) {
         try {
           if ((it as any).episode_id) {
-            // Minimal episode object; defer full fetch for now
+            // Fetch full episode data from database
+            if (__DEV__) console.log('[PlaylistDetail] Item has episode_id, attempting DB fetch:', (it as any).episode_id);
+            try {
+              const episode = await PodcastService.getEpisode((it as any).episode_id);
+              if (__DEV__) console.log('[PlaylistDetail] ✅ Fetched episode from DB:', episode.title);
+              next[it.id] = episode;
+              
+              // Also fetch artwork for this podcast
+              if (episode.podcastId && artMap[episode.podcastId] === undefined) {
+                try {
+                  const feed = await getFeed(episode.podcastId);
+                  artMap[episode.podcastId] = feed?.summary?.localArtworkPath || null;
+                } catch (e) {
+                  artMap[episode.podcastId] = null;
+                }
+              }
+              continue;
+            } catch (err) {
+              if (__DEV__) console.warn('[PlaylistDetail] ❌ Episode not found in DB (orphaned episode_id):', (it as any).episode_id);
+              if (__DEV__) console.warn('[PlaylistDetail] This item should be removed and re-added to fix. Item ID:', it.id);
+              // Fall through to create minimal object
+            }
+            
+            // Fallback minimal episode object if DB fetch fails
             next[it.id] = {
               id: (it as any).episode_id,
               podcastId: (it as any).external_ref?.podcastId || 'unknown',
@@ -161,6 +189,26 @@ export default function PlaylistDetailScreen() {
                   hasDuration: resolvedEp.duration !== undefined && resolvedEp.duration !== null 
                 });
                 next[it.id] = resolvedEp;
+                continue;
+              } else if (ref.title) {
+                // Episode not in cache, but we have metadata from external_ref
+                if (__DEV__) console.log('[PlaylistDetail] Using external_ref metadata for:', ref.title);
+                next[it.id] = {
+                  id: ref.guid || ref.audioUrl || it.id,
+                  podcastId: ref.podcastId,
+                  title: ref.title,
+                  description: ref.description || '',
+                  audioUrl: ref.audioUrl || '',
+                  duration: ref.duration,
+                  publishedAt: ref.publishedAt,
+                  episodeNumber: undefined,
+                  seasonNumber: undefined,
+                  guid: ref.guid,
+                  artworkUrl: ref.artworkUrl,
+                  fileSize: undefined,
+                  mimeType: undefined,
+                  createdAt: new Date().toISOString(),
+                } as any;
                 continue;
               }
             } catch {}
@@ -265,6 +313,27 @@ export default function PlaylistDetailScreen() {
     if (ref) ref.close();
   };
 
+  const handleRefresh = async () => {
+    if (isReordering) return; // Don't refresh during reordering
+    
+    setRefreshing(true);
+    try {
+      if (isDownloaded) {
+        // For downloaded playlist, refetch the downloaded items
+        refetchDownloaded();
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } else if (user?.id && id) {
+        // For user playlists, sync with backend
+        await syncUp(user.id);
+        await syncDown(user.id);
+      }
+    } catch (error) {
+      console.error('[PlaylistDetail] Refresh failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   // Underlay component for right swipe (remove from playlist)
   const UnderlayRight = ({ item }: { item: any }) => (
     <View style={[styles.underlayRight, { backgroundColor: '#d32f2f' }]}>
@@ -307,6 +376,14 @@ export default function PlaylistDetailScreen() {
           });
         }}
         activationDistance={isDownloaded ? 999999 : 20}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors[colorScheme ?? 'light'].primary}
+            colors={[Colors[colorScheme ?? 'light'].primary]}
+          />
+        }
         renderItem={({ item, drag, isActive }: RenderItemParams<any>) => {
           if (isDownloaded) {
             const itemId = (item as any).id;
@@ -474,8 +551,20 @@ export default function PlaylistDetailScreen() {
               </ScaleDecorator>
             );
           }
-          // Fallback minimal row
+          // Fallback minimal row - use external_ref metadata if available
           const fallbackId = (item as any).id || (item as any).episodeId || (item as any).audioUrl;
+          const extRef = (item as any).external_ref;
+          const fallbackTitle = extRef?.title || (item as any).title || 'Episode';
+          const fallbackMeta = extRef?.audioUrl || (item as any).audioUrl || '';
+          
+          if (__DEV__) console.log('[PlaylistDetail] Fallback row:', {
+            itemId: fallbackId,
+            hasExternalRef: !!extRef,
+            externalRefTitle: extRef?.title,
+            itemTitle: (item as any).title,
+            displayTitle: fallbackTitle,
+          });
+          
           return (
             <ScaleDecorator>
               <SwipeableItem
@@ -507,14 +596,14 @@ export default function PlaylistDetailScreen() {
               >
                 <TouchableOpacity 
                   style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
-                  onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || (item as any).guid || (item as any).audioUrl, podcastId: (item as any).podcastId, guid: (item as any).guid, audioUrl: (item as any).audioUrl } })}
+                  onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || extRef?.guid || (item as any).guid || extRef?.audioUrl || (item as any).audioUrl, podcastId: extRef?.podcastId || (item as any).podcastId, guid: extRef?.guid || (item as any).guid, audioUrl: extRef?.audioUrl || (item as any).audioUrl } })}
                   onLongPress={!isDownloaded ? drag : undefined}
                   activeOpacity={0.7}
                 >
                   <View style={[styles.itemRow, { backgroundColor: Colors[colorScheme ?? 'light'].card, flex: 1 }]}> 
                     <View style={styles.itemInfo}>
-                      <Text style={[styles.itemTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>{(item as any).title || 'Episode'}</Text>
-                      <Text style={[styles.itemMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>{(item as any).audioUrl || ''}</Text>
+                      <Text style={[styles.itemTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>{fallbackTitle}</Text>
+                      <Text style={[styles.itemMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>{fallbackMeta}</Text>
                     </View>
                     <View style={styles.itemActions}>
                       {!isDownloaded && (

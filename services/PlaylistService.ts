@@ -13,6 +13,12 @@ export type ExternalEpisodeRef = {
   podcastId: string;
   guid?: string;
   audioUrl?: string;
+  // Additional metadata for display when episode isn't in cache
+  title?: string;
+  description?: string;
+  duration?: number;
+  publishedAt?: string;
+  artworkUrl?: string;
 };
 
 export type PlaylistItem = {

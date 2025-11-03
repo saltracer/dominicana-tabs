@@ -152,7 +152,7 @@ export class PodcastService {
   /**
    * Get a single episode by ID
    */
-  static async getEpisode(id: string): Promise<PodcastEpisode> {
+  static async getEpisode(id: string, silent = false): Promise<PodcastEpisode> {
     const { data, error } = await supabase
       .from('podcast_episodes')
       .select('*')
@@ -160,7 +160,9 @@ export class PodcastService {
       .single();
 
     if (error) {
-      console.error('Error fetching episode:', error);
+      if (!silent) {
+        console.error('Error fetching episode:', error);
+      }
       throw new Error(`Failed to fetch episode: ${error.message}`);
     }
 
