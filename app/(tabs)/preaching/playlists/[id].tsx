@@ -21,7 +21,7 @@ import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 export default function PlaylistDetailScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
-  const { playEpisode, currentEpisode, isPlaying, isPaused } = usePodcastPlayer();
+  const { playEpisode, currentEpisode, isPlaying, isPaused, pause, resume } = usePodcastPlayer();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDownloaded = id === 'downloaded';
   const { playlists, loading: playlistsLoading } = usePlaylists();
@@ -492,7 +492,15 @@ export default function PlaylistDetailScreen() {
                       showAddToPlaylist={false}
                       hideDescription
                       onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
-                      onPlay={() => playEpisode(ep)}
+                      onPlay={() => {
+                        if (currentEpisode?.id === ep.id && isPlaying) {
+                          pause();
+                        } else if (currentEpisode?.id === ep.id && isPaused) {
+                          resume();
+                        } else {
+                          playEpisode(ep);
+                        }
+                      }}
                       isPlaying={currentEpisode?.id === ep.id && isPlaying}
                       isPaused={currentEpisode?.id === ep.id && isPaused}
                       onLongPress={!isDownloaded ? drag : undefined}
@@ -573,7 +581,15 @@ export default function PlaylistDetailScreen() {
                       showAddToPlaylist={false}
                       hideDescription
                       onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
-                      onPlay={() => playEpisode(ep)}
+                      onPlay={() => {
+                        if (currentEpisode?.id === ep.id && isPlaying) {
+                          pause();
+                        } else if (currentEpisode?.id === ep.id && isPaused) {
+                          resume();
+                        } else {
+                          playEpisode(ep);
+                        }
+                      }}
                       isPlaying={currentEpisode?.id === ep.id && isPlaying}
                       isPaused={currentEpisode?.id === ep.id && isPaused}
                       onLongPress={!isDownloaded ? drag : undefined}
