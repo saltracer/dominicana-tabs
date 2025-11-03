@@ -29,6 +29,7 @@ export default function PlaylistDetailScreen() {
   const [downloadedDurations, setDownloadedDurations] = useState<Record<string, number | undefined>>({});
   const [localData, setLocalData] = useState<any[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
 
   // Load artwork and duration for downloaded items
@@ -83,10 +84,15 @@ export default function PlaylistDetailScreen() {
 
   const data = isDownloaded ? downloadedItems : items;
 
-  // Sync local data for drag operations
+  // Sync local data for drag operations - but not during active reordering
   useEffect(() => {
-    setLocalData(data as any);
-  }, [data]);
+    if (!isReordering) {
+      console.log('[PlaylistDetail] Syncing localData from data source, length:', data.length);
+      setLocalData(data as any);
+    } else {
+      console.log('[PlaylistDetail] Skipping data sync - reordering in progress');
+    }
+  }, [data, isReordering]);
 
   // Resolve playlist items to episodes when possible for richer rendering
   useEffect(() => {
@@ -174,10 +180,24 @@ export default function PlaylistDetailScreen() {
 
   // Do not auto-navigate away; show empty state even if newly created and not yet synced
 
-  const handleDragEnd = ({ data: newData }: { data: any[] }) => {
+  const handleDragEnd = async ({ data: newData }: { data: any[] }) => {
     setIsDragging(false);
     if (isDownloaded) return; // read-only
+    
+    // Check if order actually changed
+    const orderChanged = newData.some((item, idx) => {
+      const originalIdx = data.findIndex(d => d.id === item.id);
+      return originalIdx !== idx;
+    });
+    
+    if (!orderChanged) {
+      console.log('[PlaylistDetail] No order change detected');
+      return; // No change, just a cancelled drag
+    }
+    
+    // Update local data immediately for responsive UI
     setLocalData(newData);
+    console.log('[PlaylistDetail] Updated localData with new order:', newData.map(i => i.id));
     
     // Find what moved and update backend
     const movedItem = newData.find((item, idx) => {
@@ -187,7 +207,23 @@ export default function PlaylistDetailScreen() {
     
     if (movedItem) {
       const newIndex = newData.findIndex(i => i.id === movedItem.id);
-      void moveItem(movedItem.id, newIndex);
+      console.log('[PlaylistDetail] Moving item:', movedItem.id, 'to index:', newIndex);
+      try {
+        // Block data syncs during the move operation
+        setIsReordering(true);
+        await moveItem(movedItem.id, newIndex);
+        console.log('[PlaylistDetail] moveItem completed, waiting for backend sync...');
+        // Wait a bit longer for backend to fully propagate
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setIsReordering(false);
+        console.log('[PlaylistDetail] Reordering complete');
+      } catch (error) {
+        console.error('[PlaylistDetail] Failed to reorder item:', error);
+        Alert.alert('Error', 'Failed to reorder item. Please try again.');
+        // Revert on error
+        setLocalData(data as any);
+        setIsReordering(false);
+      }
     }
   };
 

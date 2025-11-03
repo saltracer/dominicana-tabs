@@ -111,16 +111,52 @@ export default class PlaylistService {
     itemId: string,
     toIndex: number
   ): Promise<void> {
+    if (__DEV__) console.log('[PlaylistService] moveItem called:', { playlistId, itemId, toIndex });
+    
     // Fetch current items to reassign positions (simple approach; can be optimized server-side)
     const items = await this.getItems(playlistId);
+    if (__DEV__) console.log('[PlaylistService] Current items count:', items.length);
+    if (__DEV__) console.log('[PlaylistService] Current items:', items.map(i => ({ id: i.id, position: i.position })));
+    
     const idx = items.findIndex((i) => i.id === itemId);
-    if (idx === -1) return;
+    if (idx === -1) {
+      if (__DEV__) console.warn('[PlaylistService] Item not found:', itemId);
+      return;
+    }
+    
+    if (__DEV__) console.log('[PlaylistService] Found item at index:', idx, 'moving to:', toIndex);
     const [moved] = items.splice(idx, 1);
     items.splice(Math.max(0, Math.min(toIndex, items.length)), 0, moved);
-    // Re-number positions sequentially
-    const updates = items.map((i, index) => ({ id: i.id, position: index }));
-    const { error } = await supabase.from('playlist_items').upsert(updates, { onConflict: 'id' });
-    if (error) throw error;
+    
+    // Re-number positions sequentially - include ALL fields to satisfy INSERT policy during upsert
+    const updates = items.map((i, index) => ({
+      id: i.id,
+      playlist_id: i.playlist_id,
+      episode_id: i.episode_id,
+      external_ref: i.external_ref,
+      position: index,
+      added_at: i.added_at,
+    }));
+    if (__DEV__) console.log('[PlaylistService] Updating positions:', updates);
+    
+    if (__DEV__) console.log('[PlaylistService] Calling supabase.upsert with onConflict: id');
+    const { data, error } = await supabase
+      .from('playlist_items')
+      .upsert(updates, { onConflict: 'id' });
+    
+    if (error) {
+      console.error('[PlaylistService] Upsert failed:', error);
+      console.error('[PlaylistService] Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      throw error;
+    }
+    
+    if (__DEV__) console.log('[PlaylistService] Upsert succeeded, data:', data);
+    if (__DEV__) console.log('[PlaylistService] moveItem completed successfully');
   }
 }
 
