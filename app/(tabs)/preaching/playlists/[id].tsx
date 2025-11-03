@@ -349,15 +349,12 @@ export default function PlaylistDetailScreen() {
                       showAddToPlaylist={false}
                       hideDescription
                       onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      onLongPress={!isDownloaded ? drag : undefined}
                       rightAccessory={
                         !isDownloaded ? (
-                          <TouchableOpacity 
-                            onLongPress={drag}
-                            style={styles.dragHandle}
-                            activeOpacity={0.7}
-                          >
+                          <View style={styles.dragHandle}>
                             <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                          </TouchableOpacity>
+                          </View>
                         ) : null
                       }
                     />
@@ -427,15 +424,12 @@ export default function PlaylistDetailScreen() {
                       showAddToPlaylist={false}
                       hideDescription
                       onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      onLongPress={!isDownloaded ? drag : undefined}
                       rightAccessory={
                         !isDownloaded ? (
-                          <TouchableOpacity 
-                            onLongPress={drag}
-                            style={styles.dragHandle}
-                            activeOpacity={0.7}
-                          >
+                          <View style={styles.dragHandle}>
                             <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                          </TouchableOpacity>
+                          </View>
                         ) : null
                       }
                     />
@@ -475,7 +469,12 @@ export default function PlaylistDetailScreen() {
                 swipeEnabled={!isDragging && !isDownloaded}
                 activationThreshold={20}
               >
-                <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
+                <TouchableOpacity 
+                  style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
+                  onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || (item as any).guid || (item as any).audioUrl, podcastId: (item as any).podcastId, guid: (item as any).guid, audioUrl: (item as any).audioUrl } })}
+                  onLongPress={!isDownloaded ? drag : undefined}
+                  activeOpacity={0.7}
+                >
                   <View style={[styles.itemRow, { backgroundColor: Colors[colorScheme ?? 'light'].card, flex: 1 }]}> 
                     <View style={styles.itemInfo}>
                       <Text style={[styles.itemTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>{(item as any).title || 'Episode'}</Text>
@@ -483,25 +482,18 @@ export default function PlaylistDetailScreen() {
                     </View>
                     <View style={styles.itemActions}>
                       {!isDownloaded && (
-                        <TouchableOpacity onPress={() => handleRemove((item as any).id)} style={styles.iconBtn}>
+                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleRemove((item as any).id); }} style={styles.iconBtn}>
                           <Ionicons name="remove-circle" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || (item as any).guid || (item as any).audioUrl, podcastId: (item as any).podcastId, guid: (item as any).guid, audioUrl: (item as any).audioUrl } })} style={styles.iconBtn}>
-                        <Ionicons name="chevron-forward" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                      </TouchableOpacity>
                     </View>
+                    {!isDownloaded && (
+                      <View style={styles.dragHandle}>
+                        <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                      </View>
+                    )}
                   </View>
-                  {!isDownloaded && (
-                    <TouchableOpacity 
-                      onLongPress={drag}
-                      style={styles.dragHandle}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                    </TouchableOpacity>
-                  )}
-                </View>
+                </TouchableOpacity>
               </SwipeableItem>
             </ScaleDecorator>
           );

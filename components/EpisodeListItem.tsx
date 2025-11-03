@@ -18,6 +18,7 @@ interface EpisodeListItemProps {
   episode: PodcastEpisode;
   onPress: () => void;
   onPlay?: () => void;
+  onLongPress?: () => void;
   isPlaying?: boolean;
   isPaused?: boolean;
   progress?: number; // Progress percentage 0-1
@@ -33,6 +34,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   episode,
   onPress,
   onPlay,
+  onLongPress,
   isPlaying = false,
   isPaused = false,
   progress = 0,
@@ -213,18 +215,24 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   };
 
   const handlePlay = useCallback((e: any) => {
-    e?.stopPropagation();
+    e?.stopPropagation?.();
     if (onPlay) {
       onPlay();
     }
   }, [onPlay]);
+
+  const handleDownloadPress = useCallback((e: any) => {
+    e?.stopPropagation?.();
+    handleDownload(e);
+  }, [handleDownload]);
 
   const hasProgress = showProgress && progress > 0 && progress < 1;
 
   const { playlists } = usePlaylists();
   const [pickerVisible, setPickerVisible] = useState(false);
 
-  const handleAddToPlaylist = useCallback(() => {
+  const handleAddToPlaylist = useCallback((e: any) => {
+    e?.stopPropagation?.();
     const userPlaylists = (playlists || []).filter((p: any) => !p.is_builtin);
     if (userPlaylists.length === 0) {
       Alert.alert('No playlists', 'Create a playlist first in the Playlists tab.');
@@ -253,6 +261,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     <TouchableOpacity
       style={[styles.container, themeStyles.card]}
       onPress={onPress}
+      onLongPress={onLongPress}
     >
       <View style={styles.content}>
         <View style={styles.body}>
@@ -322,7 +331,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
                       : Colors[colorScheme ?? 'light'].surface,
                   }
                 ]}
-                onPress={handleDownload}
+                onPress={handleDownloadPress}
                 disabled={downloadState.status === 'downloading'}
               >
                 {downloadState.status === 'downloading' ? (
