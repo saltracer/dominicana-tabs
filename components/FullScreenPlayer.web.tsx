@@ -41,7 +41,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     position,
     duration,
     playbackSpeed,
-    play,
+    resume,
     pause,
     seek,
     setSpeed,
@@ -127,7 +127,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     if (isPlaying) {
       pause();
     } else {
-      play();
+      resume();
     }
   };
 
