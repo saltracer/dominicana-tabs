@@ -26,6 +26,7 @@ interface EpisodeListItemProps {
   artworkLocalPath?: string | null;
   showAddToPlaylist?: boolean;
   hideDescription?: boolean; // When true, hide description and show date/duration instead
+  rightAccessory?: React.ReactNode; // Optional component to render on the right (e.g., drag handle)
 }
 
 export const EpisodeListItem = React.memo(function EpisodeListItem({
@@ -40,6 +41,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   artworkLocalPath = null,
   showAddToPlaylist = true,
   hideDescription = false,
+  rightAccessory = null,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
   const plainTitle = React.useMemo(() => {
@@ -343,6 +345,8 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
                 <Ionicons name="add-circle-outline" size={20} color={themeStyles.textSecondary} />
               </TouchableOpacity>
             )}
+            
+            {rightAccessory}
           </View>
         </View>
 

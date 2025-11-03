@@ -338,20 +338,29 @@ export default function PlaylistDetailScreen() {
                   activationThreshold={20}
                 >
                   <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
-                    <View style={{ flex: 1 }}>
-                      <EpisodeListItem
-                        episode={ep}
-                        showArtwork
-                        artworkLocalPath={(() => {
-                          const path = artByPodcast[(item as any).podcastId] || null;
-                          if (__DEV__) console.log('[PlaylistDetail] passing artwork to downloaded item:', (item as any).podcastId, 'path=', path);
-                          return path;
-                        })()}
-                        showAddToPlaylist={false}
-                        hideDescription
-                        onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
-                      />
-                    </View>
+                    <EpisodeListItem
+                      episode={ep}
+                      showArtwork
+                      artworkLocalPath={(() => {
+                        const path = artByPodcast[(item as any).podcastId] || null;
+                        if (__DEV__) console.log('[PlaylistDetail] passing artwork to downloaded item:', (item as any).podcastId, 'path=', path);
+                        return path;
+                      })()}
+                      showAddToPlaylist={false}
+                      hideDescription
+                      onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      rightAccessory={
+                        !isDownloaded ? (
+                          <TouchableOpacity 
+                            onLongPress={drag}
+                            style={styles.dragHandle}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                          </TouchableOpacity>
+                        ) : null
+                      }
+                    />
                   </View>
                 </SwipeableItem>
               </ScaleDecorator>
@@ -407,29 +416,29 @@ export default function PlaylistDetailScreen() {
                   activationThreshold={20}
                 >
                   <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
-                    <View style={{ flex: 1 }}>
-                      <EpisodeListItem
-                        episode={ep}
-                        showArtwork
-                        artworkLocalPath={(() => {
-                          const path = artByPodcast[ep.podcastId] || null;
-                          if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
-                          return path;
-                        })()}
-                        showAddToPlaylist={false}
-                        hideDescription
-                        onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
-                      />
-                    </View>
-                    {!isDownloaded && (
-                      <TouchableOpacity 
-                        onLongPress={drag}
-                        style={styles.dragHandle}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                      </TouchableOpacity>
-                    )}
+                    <EpisodeListItem
+                      episode={ep}
+                      showArtwork
+                      artworkLocalPath={(() => {
+                        const path = artByPodcast[ep.podcastId] || null;
+                        if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
+                        return path;
+                      })()}
+                      showAddToPlaylist={false}
+                      hideDescription
+                      onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      rightAccessory={
+                        !isDownloaded ? (
+                          <TouchableOpacity 
+                            onLongPress={drag}
+                            style={styles.dragHandle}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                          </TouchableOpacity>
+                        ) : null
+                      }
+                    />
                   </View>
                 </SwipeableItem>
               </ScaleDecorator>
@@ -526,8 +535,6 @@ const styles = StyleSheet.create({
     width: 30,
   },
   draggableItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 10,
   },
   draggableItemActive: {
@@ -539,10 +546,10 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   dragHandle: {
-    padding: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
   },
   itemRow: {
     flexDirection: 'row',
