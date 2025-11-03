@@ -75,10 +75,24 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     
     setLoadingPodcast(true);
     try {
+      // Try to fetch podcast by episode.podcastId first (works for RSS-cached episodes)
+      if (currentEpisode.podcastId) {
+        try {
+          const podcastData = await PodcastService.getPodcast(currentEpisode.podcastId);
+          setPodcast(podcastData);
+          setLoadingPodcast(false);
+          return;
+        } catch (e) {
+          if (__DEV__) console.log('[FullScreenPlayer] Could not fetch podcast by podcastId, trying by episodeId');
+        }
+      }
+      
+      // Fallback: try to get podcast via episode ID (for DB episodes)
       const podcastData = await PodcastService.getPodcastByEpisodeId(currentEpisode.id);
       setPodcast(podcastData);
     } catch (error) {
-      console.error('Error loading podcast:', error);
+      // Expected for RSS-cached episodes not in database - use fallback
+      if (__DEV__) console.log('[FullScreenPlayer] Episode not in DB, using fallback podcast info');
       // Set a fallback podcast object
       setPodcast({
         id: 'unknown',

@@ -16,10 +16,12 @@ import { usePodcastDownloads } from '../../../../hooks/usePodcastDownloads';
 import { syncDown, syncUp } from '../../../../lib/playlist/cache';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { PodcastService } from '../../../../services/PodcastService';
+import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 
 export default function PlaylistDetailScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
+  const { playEpisode, currentEpisode, isPlaying, isPaused } = usePodcastPlayer();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDownloaded = id === 'downloaded';
   const { playlists, loading: playlistsLoading } = usePlaylists();
@@ -153,6 +155,31 @@ export default function PlaylistDetailScreen() {
           }
           const ref = (it as any).external_ref;
           if (ref?.podcastId) {
+            // Try to fetch from database first (for curated podcasts)
+            if (ref.guid) {
+              try {
+                const dbEpisode = await PodcastService.getEpisodeByGuid(ref.podcastId, ref.guid, true);
+                if (dbEpisode) {
+                  if (__DEV__) console.log('[PlaylistDetail] ✅ Matched episode from DB by guid:', dbEpisode.title);
+                  next[it.id] = dbEpisode;
+                  
+                  // Fetch artwork
+                  if (artMap[ref.podcastId] === undefined) {
+                    try {
+                      const feed = await getFeed(ref.podcastId);
+                      artMap[ref.podcastId] = feed?.summary?.localArtworkPath || null;
+                    } catch (e) {
+                      artMap[ref.podcastId] = null;
+                    }
+                  }
+                  continue;
+                }
+              } catch (e) {
+                if (__DEV__) console.log('[PlaylistDetail] Episode not in DB by guid, trying cache');
+              }
+            }
+            
+            // Fallback to RSS cache
             if (artMap[ref.podcastId] === undefined) {
               try {
                 const feed = await getFeed(ref.podcastId);
@@ -450,7 +477,10 @@ export default function PlaylistDetailScreen() {
                   swipeEnabled={!isDragging}
                   activationThreshold={20}
                 >
-                  <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
+                  <View 
+                    style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
+                    pointerEvents="box-none"
+                  >
                     <EpisodeListItem
                       episode={ep}
                       showArtwork
@@ -462,6 +492,9 @@ export default function PlaylistDetailScreen() {
                       showAddToPlaylist={false}
                       hideDescription
                       onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      onPlay={() => playEpisode(ep)}
+                      isPlaying={currentEpisode?.id === ep.id && isPlaying}
+                      isPaused={currentEpisode?.id === ep.id && isPaused}
                       onLongPress={!isDownloaded ? drag : undefined}
                       rightAccessory={
                         !isDownloaded ? (
@@ -525,7 +558,10 @@ export default function PlaylistDetailScreen() {
                   swipeEnabled={!isDragging}
                   activationThreshold={20}
                 >
-                  <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
+                  <View 
+                    style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
+                    pointerEvents="box-none"
+                  >
                     <EpisodeListItem
                       episode={ep}
                       showArtwork
@@ -537,6 +573,9 @@ export default function PlaylistDetailScreen() {
                       showAddToPlaylist={false}
                       hideDescription
                       onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      onPlay={() => playEpisode(ep)}
+                      isPlaying={currentEpisode?.id === ep.id && isPlaying}
+                      isPaused={currentEpisode?.id === ep.id && isPaused}
                       onLongPress={!isDownloaded ? drag : undefined}
                       rightAccessory={
                         !isDownloaded ? (

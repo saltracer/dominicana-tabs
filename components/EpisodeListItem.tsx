@@ -246,21 +246,38 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     try {
       const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(episode.id);
       
-      // Verify episode exists in database before using episode_id
-      let episodeExistsInDb = false;
+      // Try to find episode in database (check by ID first, then by guid)
+      let dbEpisode: any = null;
+      
+      // First try: Check if episode.id is actually a database ID
       if (isUuid) {
         try {
-          await PodcastService.getEpisode(episode.id, true); // silent = true to suppress error logs
-          episodeExistsInDb = true;
-          if (__DEV__) console.log('[EpisodeListItem] ✅ Episode exists in DB, using episode_id');
+          dbEpisode = await PodcastService.getEpisode(episode.id, true);
+          if (__DEV__) console.log('[EpisodeListItem] ✅ Episode exists in DB by ID, using episode_id');
         } catch (e) {
-          // Episode not in DB, will use external_ref instead
-          if (__DEV__) console.log('[EpisodeListItem] Episode ID looks like UUID but not in DB, using external_ref');
+          // Not found by ID, try by guid
         }
       }
       
-      if (episodeExistsInDb) {
-        await PlaylistService.addItem(playlistId, { episode_id: episode.id });
+      // Second try: Check by guid (for RSS-cached episodes from curated podcasts)
+      if (!dbEpisode && episode.guid && episode.podcastId) {
+        dbEpisode = await PodcastService.getEpisodeByGuid(episode.podcastId, episode.guid, true);
+        if (dbEpisode && __DEV__) {
+          console.log('[EpisodeListItem] ✅ Episode exists in DB by guid, using episode_id:', dbEpisode.id);
+        }
+      }
+      
+      // Third try: Check by audioUrl (final fallback)
+      if (!dbEpisode && episode.audioUrl && episode.podcastId) {
+        dbEpisode = await PodcastService.getEpisodeByAudioUrl(episode.podcastId, episode.audioUrl, true);
+        if (dbEpisode && __DEV__) {
+          console.log('[EpisodeListItem] ✅ Episode exists in DB by audioUrl, using episode_id:', dbEpisode.id);
+        }
+      }
+      
+      if (dbEpisode) {
+        // Use the database episode_id (the actual primary key)
+        await PlaylistService.addItem(playlistId, { episode_id: dbEpisode.id });
       } else {
         // Include full metadata in external_ref so episode displays properly even without cache
         await PlaylistService.addItem(playlistId, { 

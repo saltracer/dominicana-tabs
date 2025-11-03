@@ -6,6 +6,11 @@
 import { supabase } from '../lib/supabase';
 import { PodcastEpisode, PodcastPlaybackProgress } from '../types';
 
+// Helper to check if ID is a valid UUID
+const isValidUuid = (id: string): boolean => {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+};
+
 export class PodcastPlaybackService {
   /**
    * Save or update playback progress
@@ -16,6 +21,12 @@ export class PodcastPlaybackService {
     duration?: number,
     completed = false
   ): Promise<void> {
+    // Skip database operations for non-UUID episode IDs (RSS-cached episodes)
+    if (!isValidUuid(episodeId)) {
+      if (__DEV__) console.log('[PodcastPlaybackService] Skipping progress save for non-UUID episode:', episodeId);
+      return;
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return; // Silently fail if not authenticated
 
@@ -41,6 +52,12 @@ export class PodcastPlaybackService {
    * Get playback progress for an episode
    */
   static async getProgress(episodeId: string): Promise<PodcastPlaybackProgress | null> {
+    // Skip database operations for non-UUID episode IDs (RSS-cached episodes)
+    if (!isValidUuid(episodeId)) {
+      if (__DEV__) console.log('[PodcastPlaybackService] Skipping progress fetch for non-UUID episode:', episodeId);
+      return null;
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
@@ -73,6 +90,12 @@ export class PodcastPlaybackService {
    * Mark episode as completed
    */
   static async markCompleted(episodeId: string, duration?: number): Promise<void> {
+    // Skip database operations for non-UUID episode IDs (RSS-cached episodes)
+    if (!isValidUuid(episodeId)) {
+      if (__DEV__) console.log('[PodcastPlaybackService] Skipping mark completed for non-UUID episode:', episodeId);
+      return;
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -94,6 +117,12 @@ export class PodcastPlaybackService {
    * Save playback speed for an episode
    */
   static async saveSpeed(episodeId: string, speed: number): Promise<void> {
+    // Skip database operations for non-UUID episode IDs (RSS-cached episodes)
+    if (!isValidUuid(episodeId)) {
+      if (__DEV__) console.log('[PodcastPlaybackService] Skipping speed save for non-UUID episode:', episodeId);
+      return;
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -117,6 +146,12 @@ export class PodcastPlaybackService {
    * Delete progress for an episode (mark as unplayed)
    */
   static async deleteProgress(episodeId: string): Promise<void> {
+    // Skip database operations for non-UUID episode IDs (RSS-cached episodes)
+    if (!isValidUuid(episodeId)) {
+      if (__DEV__) console.log('[PodcastPlaybackService] Skipping progress delete for non-UUID episode:', episodeId);
+      return;
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 

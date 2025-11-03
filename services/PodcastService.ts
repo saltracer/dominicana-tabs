@@ -170,6 +170,50 @@ export class PodcastService {
   }
 
   /**
+   * Get a single episode by guid (RSS feed guid)
+   */
+  static async getEpisodeByGuid(podcastId: string, guid: string, silent = false): Promise<PodcastEpisode | null> {
+    const { data, error } = await supabase
+      .from('podcast_episodes')
+      .select('*')
+      .eq('podcast_id', podcastId)
+      .eq('guid', guid)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // No rows
+      if (!silent) {
+        console.error('Error fetching episode by guid:', error);
+      }
+      return null;
+    }
+
+    return this.transformEpisode(data);
+  }
+
+  /**
+   * Get episode by audio URL (fallback when guid doesn't match)
+   */
+  static async getEpisodeByAudioUrl(podcastId: string, audioUrl: string, silent = false): Promise<PodcastEpisode | null> {
+    const { data, error } = await supabase
+      .from('podcast_episodes')
+      .select('*')
+      .eq('podcast_id', podcastId)
+      .eq('audio_url', audioUrl)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // No rows
+      if (!silent) {
+        console.error('Error fetching episode by audio URL:', error);
+      }
+      return null;
+    }
+
+    return this.transformEpisode(data);
+  }
+
+  /**
    * Get episodes for a podcast
    */
   static async getEpisodes(podcastId: string, limit = 50): Promise<PodcastEpisode[]> {
@@ -209,7 +253,8 @@ export class PodcastService {
    * Get podcast by episode ID
    */
   static async getPodcastByEpisodeId(episodeId: string): Promise<Podcast> {
-    const episode = await this.getEpisode(episodeId);
+    // Try to get episode from DB (silent mode to avoid noise for RSS-cached episodes)
+    const episode = await this.getEpisode(episodeId, true);
     return await this.getPodcast(episode.podcastId);
   }
 }
