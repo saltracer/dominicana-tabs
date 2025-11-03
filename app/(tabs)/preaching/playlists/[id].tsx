@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -7,6 +7,7 @@ import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-it
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { PodcastEpisode } from '../../../../types';
 import { getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
+import { ensureImageCached, fileExists } from '../../../../lib/podcast/storage';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { usePlaylists } from '../../../../hooks/usePlaylists';
@@ -37,13 +38,30 @@ export default function PlaylistDetailScreen() {
   const [isDragging, setIsDragging] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [initialResolutionComplete, setInitialResolutionComplete] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
 
   // Load artwork and duration for downloaded items
   useEffect(() => {
     let alive = true;
+    
+    // Reset resolution state when downloaded items change
+    if (isDownloaded) {
+      setInitialResolutionComplete(false);
+    }
+    
     (async () => {
-      if (!isDownloaded) return;
+      if (!isDownloaded) {
+        // For non-downloaded playlists, wait for the regular resolution to complete
+        return;
+      }
+      
+      // If empty downloaded playlist and not loading, mark as complete immediately
+      if (downloadedItems.length === 0 && !dlLoading) {
+        setInitialResolutionComplete(true);
+        return;
+      }
+      
       const artMap: Record<string, string | null> = { ...artByPodcast };
       const durMap: Record<string, number | undefined> = { ...downloadedDurations };
       for (const item of downloadedItems) {
@@ -54,8 +72,27 @@ export default function PlaylistDetailScreen() {
         if (pid && artMap[pid] === undefined) {
           try {
             const feed = await getFeed(pid);
-            artMap[pid] = feed?.summary?.localArtworkPath || null;
-            if (__DEV__) console.log('[PlaylistDetail] artwork for downloaded podcast', pid, '=', artMap[pid]);
+            let artPath = feed?.summary?.localArtworkPath || null;
+            
+            // Verify the cached path exists, if not re-download
+            if (artPath) {
+              const exists = await fileExists(artPath);
+              if (!exists && feed?.summary?.artworkUrl) {
+                if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing for downloaded item, re-downloading:', feed.summary.artworkUrl);
+                const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                artPath = path;
+              } else if (!exists) {
+                artPath = null;
+              }
+            } else if (feed?.summary?.artworkUrl) {
+              // No cached path, download it
+              if (__DEV__) console.log('[PlaylistDetail] No cached artwork for downloaded item, downloading:', feed.summary.artworkUrl);
+              const { path } = await ensureImageCached(feed.summary.artworkUrl);
+              artPath = path;
+            }
+            
+            artMap[pid] = artPath;
+            if (__DEV__) console.log('[PlaylistDetail] artwork for downloaded podcast', pid, '=', artPath);
           } catch {
             artMap[pid] = null;
           }
@@ -82,8 +119,11 @@ export default function PlaylistDetailScreen() {
         }
       }
       if (alive) {
+        if (__DEV__) console.log('[PlaylistDetail] Downloaded items resolution complete for', downloadedItems.length, 'items');
         setArtByPodcast(artMap);
         setDownloadedDurations(durMap);
+        // Mark initial resolution as complete for downloaded playlists
+        setInitialResolutionComplete(true);
       }
     })();
     return () => { alive = false; };
@@ -92,20 +132,35 @@ export default function PlaylistDetailScreen() {
   const data = isDownloaded ? downloadedItems : items;
 
   // Sync local data for drag operations - but not during active reordering
+  // Also wait for initial resolution to complete before syncing
   useEffect(() => {
-    if (!isReordering) {
-      console.log('[PlaylistDetail] Syncing localData from data source, length:', data.length);
+    if (!isReordering && initialResolutionComplete) {
+      if (__DEV__) console.log('[PlaylistDetail] ✅ Syncing localData from data source, length:', data.length, 'resolutionComplete:', initialResolutionComplete);
       setLocalData(data as any);
+    } else if (isReordering) {
+      if (__DEV__) console.log('[PlaylistDetail] ⏸️  Skipping data sync - reordering in progress');
     } else {
-      console.log('[PlaylistDetail] Skipping data sync - reordering in progress');
+      if (__DEV__) console.log('[PlaylistDetail] ⏸️  Skipping data sync - waiting for initial resolution, resolutionComplete:', initialResolutionComplete);
     }
-  }, [data, isReordering]);
+  }, [data, isReordering, initialResolutionComplete]);
 
   // Resolve playlist items to episodes when possible for richer rendering
   useEffect(() => {
     let alive = true;
+    
+    // Reset resolution state when items change
+    if (__DEV__) console.log('[PlaylistDetail] Resetting resolution state, items:', items.length);
+    setInitialResolutionComplete(false);
+    
     (async () => {
       if (isDownloaded) return;
+      
+      // If empty playlist and not loading, mark as complete immediately
+      if (items.length === 0 && !loading) {
+        setInitialResolutionComplete(true);
+        return;
+      }
+      
       const next: Record<string, PodcastEpisode | null> = {};
       const artMap: Record<string, string | null> = { ...artByPodcast };
       for (const it of items) {
@@ -122,7 +177,25 @@ export default function PlaylistDetailScreen() {
               if (episode.podcastId && artMap[episode.podcastId] === undefined) {
                 try {
                   const feed = await getFeed(episode.podcastId);
-                  artMap[episode.podcastId] = feed?.summary?.localArtworkPath || null;
+                  let artPath = feed?.summary?.localArtworkPath || null;
+                  
+                  // Verify the cached path exists, if not re-download
+                  if (artPath) {
+                    const exists = await fileExists(artPath);
+                    if (!exists && feed?.summary?.artworkUrl) {
+                      if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing, re-downloading:', feed.summary.artworkUrl);
+                      const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                      artPath = path;
+                    } else if (!exists) {
+                      artPath = null;
+                    }
+                  } else if (feed?.summary?.artworkUrl) {
+                    // No cached path, download it
+                    const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                    artPath = path;
+                  }
+                  
+                  artMap[episode.podcastId] = artPath;
                 } catch (e) {
                   artMap[episode.podcastId] = null;
                 }
@@ -167,7 +240,25 @@ export default function PlaylistDetailScreen() {
                   if (artMap[ref.podcastId] === undefined) {
                     try {
                       const feed = await getFeed(ref.podcastId);
-                      artMap[ref.podcastId] = feed?.summary?.localArtworkPath || null;
+                      let artPath = feed?.summary?.localArtworkPath || null;
+                      
+                      // Verify the cached path exists, if not re-download
+                      if (artPath) {
+                        const exists = await fileExists(artPath);
+                        if (!exists && feed?.summary?.artworkUrl) {
+                          if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing, re-downloading:', feed.summary.artworkUrl);
+                          const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                          artPath = path;
+                        } else if (!exists) {
+                          artPath = null;
+                        }
+                      } else if (feed?.summary?.artworkUrl) {
+                        // No cached path, download it
+                        const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                        artPath = path;
+                      }
+                      
+                      artMap[ref.podcastId] = artPath;
                     } catch (e) {
                       artMap[ref.podcastId] = null;
                     }
@@ -183,8 +274,27 @@ export default function PlaylistDetailScreen() {
             if (artMap[ref.podcastId] === undefined) {
               try {
                 const feed = await getFeed(ref.podcastId);
-                artMap[ref.podcastId] = feed?.summary?.localArtworkPath || null;
-                if (__DEV__) console.log('[PlaylistDetail] artwork for podcast', ref.podcastId, '=', artMap[ref.podcastId]);
+                let artPath = feed?.summary?.localArtworkPath || null;
+                
+                // Verify the cached path exists, if not re-download
+                if (artPath) {
+                  const exists = await fileExists(artPath);
+                  if (!exists && feed?.summary?.artworkUrl) {
+                    if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing, re-downloading:', feed.summary.artworkUrl);
+                    const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                    artPath = path;
+                  } else if (!exists) {
+                    artPath = null;
+                  }
+                } else if (feed?.summary?.artworkUrl) {
+                  // No cached path, download it
+                  if (__DEV__) console.log('[PlaylistDetail] No cached artwork, downloading:', feed.summary.artworkUrl);
+                  const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                  artPath = path;
+                }
+                
+                artMap[ref.podcastId] = artPath;
+                if (__DEV__) console.log('[PlaylistDetail] artwork for podcast', ref.podcastId, '=', artPath);
               } catch (e) { 
                 artMap[ref.podcastId] = null;
                 if (__DEV__) console.warn('[PlaylistDetail] failed to get artwork for', ref.podcastId, e);
@@ -246,8 +356,11 @@ export default function PlaylistDetailScreen() {
         }
       }
       if (alive) {
+        if (__DEV__) console.log('[PlaylistDetail] Resolution complete for', items.length, 'items');
         setResolved(next);
         setArtByPodcast(artMap);
+        // Mark initial resolution as complete for regular playlists
+        setInitialResolutionComplete(true);
       }
     })();
     return () => { alive = false; };
@@ -380,6 +493,9 @@ export default function PlaylistDetailScreen() {
     );
   };
 
+  // Show loading indicator during initial resolution
+  const isInitiallyLoading = !initialResolutionComplete && (loading || dlLoading || data.length > 0);
+
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       <View style={styles.header}>
@@ -390,7 +506,15 @@ export default function PlaylistDetailScreen() {
         <View style={styles.headerRight} />
       </View>
 
-      <DraggableFlatList
+      {isInitiallyLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
+          <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+            Loading playlist...
+          </Text>
+        </View>
+      ) : (
+        <DraggableFlatList
         data={localData}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
@@ -679,6 +803,7 @@ export default function PlaylistDetailScreen() {
           );
         }}
       />
+      )}
     </View>
   );
 }
@@ -686,6 +811,17 @@ export default function PlaylistDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontFamily: 'Georgia',
   },
   header: {
     flexDirection: 'row',
