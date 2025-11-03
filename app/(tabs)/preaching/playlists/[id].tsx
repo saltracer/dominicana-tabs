@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-item';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { PodcastEpisode } from '../../../../types';
 import { getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
@@ -10,6 +12,7 @@ import { useTheme } from '../../../../components/ThemeProvider';
 import { usePlaylists } from '../../../../hooks/usePlaylists';
 import { usePlaylistItems } from '../../../../hooks/usePlaylistItems';
 import { useDownloadedPlaylist } from '../../../../hooks/useDownloadedPlaylist';
+import { usePodcastDownloads } from '../../../../hooks/usePodcastDownloads';
 
 export default function PlaylistDetailScreen() {
   const { colorScheme } = useTheme();
@@ -20,9 +23,13 @@ export default function PlaylistDetailScreen() {
 
   const { items: downloadedItems, loading: dlLoading } = useDownloadedPlaylist();
   const { items, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
+  const { isEpisodeDownloaded, downloadEpisode, deleteDownloadedEpisode } = usePodcastDownloads();
   const [resolved, setResolved] = useState<Record<string, PodcastEpisode | null>>({});
   const [artByPodcast, setArtByPodcast] = useState<Record<string, string | null>>({});
   const [downloadedDurations, setDownloadedDurations] = useState<Record<string, number | undefined>>({});
+  const [localData, setLocalData] = useState<any[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const itemRefs = useRef<Map<string, any>>(new Map());
 
   // Load artwork and duration for downloaded items
   useEffect(() => {
@@ -75,6 +82,11 @@ export default function PlaylistDetailScreen() {
   }, [isDownloaded, downloadedItems]);
 
   const data = isDownloaded ? downloadedItems : items;
+
+  // Sync local data for drag operations
+  useEffect(() => {
+    setLocalData(data as any);
+  }, [data]);
 
   // Resolve playlist items to episodes when possible for richer rendering
   useEffect(() => {
@@ -162,13 +174,21 @@ export default function PlaylistDetailScreen() {
 
   // Do not auto-navigate away; show empty state even if newly created and not yet synced
 
-  const handleMove = (itemId: string, dir: -1 | 1) => {
+  const handleDragEnd = ({ data: newData }: { data: any[] }) => {
+    setIsDragging(false);
     if (isDownloaded) return; // read-only
-    const index = data.findIndex(i => i.id === itemId);
-    if (index === -1) return;
-    const toIndex = index + dir;
-    if (toIndex < 0 || toIndex >= data.length) return;
-    void moveItem(itemId, toIndex);
+    setLocalData(newData);
+    
+    // Find what moved and update backend
+    const movedItem = newData.find((item, idx) => {
+      const originalIdx = data.findIndex(d => d.id === item.id);
+      return originalIdx !== idx;
+    });
+    
+    if (movedItem) {
+      const newIndex = newData.findIndex(i => i.id === movedItem.id);
+      void moveItem(movedItem.id, newIndex);
+    }
   };
 
   const handleRemove = (itemId: string) => {
@@ -177,6 +197,55 @@ export default function PlaylistDetailScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => void removeItem(itemId) },
     ]);
+  };
+
+  const handleDownload = async (episode: PodcastEpisode) => {
+    try {
+      await downloadEpisode(episode);
+      // Close the swipe item after action
+      const ref = itemRefs.current.get(episode.id);
+      if (ref) ref.close();
+    } catch (error) {
+      console.error('Error downloading episode:', error);
+      Alert.alert('Error', 'Failed to download episode');
+    }
+  };
+
+  const handleDeleteDownload = async (episode: PodcastEpisode) => {
+    try {
+      await deleteDownloadedEpisode(episode.id);
+      // Close the swipe item after action
+      const ref = itemRefs.current.get(episode.id);
+      if (ref) ref.close();
+    } catch (error) {
+      console.error('Error deleting download:', error);
+      Alert.alert('Error', 'Failed to delete download');
+    }
+  };
+
+  const handleSwipeRemove = (itemId: string) => {
+    handleRemove(itemId);
+    const ref = itemRefs.current.get(itemId);
+    if (ref) ref.close();
+  };
+
+  // Underlay component for right swipe (remove from playlist)
+  const UnderlayRight = ({ item }: { item: any }) => (
+    <View style={[styles.underlayRight, { backgroundColor: '#d32f2f' }]}>
+      <Ionicons name="trash" size={24} color="#fff" />
+      <Text style={styles.underlayText}>Remove</Text>
+    </View>
+  );
+
+  // Underlay component for left swipe (download/delete download)
+  const UnderlayLeft = ({ item, episode }: { item: any; episode?: PodcastEpisode }) => {
+    const downloaded = episode ? isEpisodeDownloaded(episode.id) : false;
+    return (
+      <View style={[styles.underlayLeft, { backgroundColor: downloaded ? '#f57c00' : '#388e3c' }]}>
+        <Text style={styles.underlayText}>{downloaded ? 'Delete' : 'Download'}</Text>
+        <Ionicons name={downloaded ? 'trash' : 'cloud-download'} size={24} color="#fff" />
+      </View>
+    );
   };
 
   return (
@@ -189,11 +258,20 @@ export default function PlaylistDetailScreen() {
         <View style={styles.headerRight} />
       </View>
 
-      <FlatList
-        data={data as any}
+      <DraggableFlatList
+        data={localData}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
-        renderItem={({ item }) => {
+        onDragEnd={handleDragEnd}
+        onDragBegin={() => {
+          setIsDragging(true);
+          // Close all open swipeable items when drag begins
+          itemRefs.current.forEach((ref) => {
+            if (ref) ref.close();
+          });
+        }}
+        activationDistance={isDownloaded ? 999999 : 20}
+        renderItem={({ item, drag, isActive }: RenderItemParams<any>) => {
           if (isDownloaded) {
             const itemId = (item as any).id;
             const cachedDuration = downloadedDurations[itemId];
@@ -220,18 +298,63 @@ export default function PlaylistDetailScreen() {
               hasDuration: ep.duration !== undefined && ep.duration !== null 
             });
             return (
-              <EpisodeListItem
-                episode={ep}
-                showArtwork
-                artworkLocalPath={(() => {
-                  const path = artByPodcast[(item as any).podcastId] || null;
-                  if (__DEV__) console.log('[PlaylistDetail] passing artwork to downloaded item:', (item as any).podcastId, 'path=', path);
-                  return path;
-                })()}
-                showAddToPlaylist={false}
-                hideDescription
-                onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
-              />
+              <ScaleDecorator>
+                <SwipeableItem
+                  key={ep.id}
+                  item={item}
+                  ref={(ref) => {
+                    if (ref) itemRefs.current.set(ep.id, ref);
+                  }}
+                  onChange={({ openDirection, snapPoint }) => {
+                    if (openDirection !== 'none') {
+                      // Close other open items
+                      itemRefs.current.forEach((ref, key) => {
+                        if (key !== ep.id && ref) ref.close();
+                      });
+                      
+                      // Trigger action when fully swiped
+                      if (snapPoint === 150) {
+                        setTimeout(() => {
+                          if (openDirection === 'left') {
+                            const downloaded = isEpisodeDownloaded(ep.id);
+                            if (downloaded) {
+                              handleDeleteDownload(ep);
+                            } else {
+                              handleDownload(ep);
+                            }
+                          } else if (openDirection === 'right' && !isDownloaded) {
+                            handleSwipeRemove((item as any).id);
+                          }
+                        }, 100);
+                      }
+                    }
+                  }}
+                  overSwipe={20}
+                  renderUnderlayLeft={() => <UnderlayLeft item={item} episode={ep} />}
+                  renderUnderlayRight={() => <UnderlayRight item={item} />}
+                  snapPointsLeft={[150]}
+                  snapPointsRight={[150]}
+                  swipeEnabled={!isDragging}
+                  activationThreshold={20}
+                >
+                  <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
+                    <View style={{ flex: 1 }}>
+                      <EpisodeListItem
+                        episode={ep}
+                        showArtwork
+                        artworkLocalPath={(() => {
+                          const path = artByPodcast[(item as any).podcastId] || null;
+                          if (__DEV__) console.log('[PlaylistDetail] passing artwork to downloaded item:', (item as any).podcastId, 'path=', path);
+                          return path;
+                        })()}
+                        showAddToPlaylist={false}
+                        hideDescription
+                        onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      />
+                    </View>
+                  </View>
+                </SwipeableItem>
+              </ScaleDecorator>
             );
           }
           const ep = resolved[(item as any).id];
@@ -244,46 +367,134 @@ export default function PlaylistDetailScreen() {
               publishedAt: ep.publishedAt
             });
             return (
-              <EpisodeListItem
-                episode={ep}
-                showArtwork
-                artworkLocalPath={(() => {
-                  const path = artByPodcast[ep.podcastId] || null;
-                  if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
-                  return path;
-                })()}
-                showAddToPlaylist={false}
-                hideDescription
-                onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
-              />
+              <ScaleDecorator>
+                <SwipeableItem
+                  key={ep.id}
+                  item={item}
+                  ref={(ref) => {
+                    if (ref) itemRefs.current.set(ep.id, ref);
+                  }}
+                  onChange={({ openDirection, snapPoint }) => {
+                    if (openDirection !== 'none') {
+                      // Close other open items
+                      itemRefs.current.forEach((ref, key) => {
+                        if (key !== ep.id && ref) ref.close();
+                      });
+                      
+                      // Trigger action when fully swiped
+                      if (snapPoint === 150) {
+                        setTimeout(() => {
+                          if (openDirection === 'left') {
+                            const downloaded = isEpisodeDownloaded(ep.id);
+                            if (downloaded) {
+                              handleDeleteDownload(ep);
+                            } else {
+                              handleDownload(ep);
+                            }
+                          } else if (openDirection === 'right' && !isDownloaded) {
+                            handleSwipeRemove((item as any).id);
+                          }
+                        }, 100);
+                      }
+                    }
+                  }}
+                  overSwipe={20}
+                  renderUnderlayLeft={() => <UnderlayLeft item={item} episode={ep} />}
+                  renderUnderlayRight={() => <UnderlayRight item={item} />}
+                  snapPointsLeft={[150]}
+                  snapPointsRight={[150]}
+                  swipeEnabled={!isDragging}
+                  activationThreshold={20}
+                >
+                  <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
+                    <View style={{ flex: 1 }}>
+                      <EpisodeListItem
+                        episode={ep}
+                        showArtwork
+                        artworkLocalPath={(() => {
+                          const path = artByPodcast[ep.podcastId] || null;
+                          if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
+                          return path;
+                        })()}
+                        showAddToPlaylist={false}
+                        hideDescription
+                        onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
+                      />
+                    </View>
+                    {!isDownloaded && (
+                      <TouchableOpacity 
+                        onLongPress={drag}
+                        style={styles.dragHandle}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </SwipeableItem>
+              </ScaleDecorator>
             );
           }
           // Fallback minimal row
+          const fallbackId = (item as any).id || (item as any).episodeId || (item as any).audioUrl;
           return (
-            <View style={[styles.itemRow, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}> 
-              <View style={styles.itemInfo}>
-                <Text style={[styles.itemTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>{(item as any).title || 'Episode'}</Text>
-                <Text style={[styles.itemMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>{(item as any).audioUrl || ''}</Text>
-              </View>
-              <View style={styles.itemActions}>
-                {!isDownloaded && (
-                  <>
-                    <TouchableOpacity onPress={() => handleMove((item as any).id, -1)} style={styles.iconBtn}>
-                      <Ionicons name="arrow-up" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+            <ScaleDecorator>
+              <SwipeableItem
+                key={fallbackId}
+                item={item}
+                ref={(ref) => {
+                  if (ref) itemRefs.current.set(fallbackId, ref);
+                }}
+                onChange={({ openDirection, snapPoint }) => {
+                  if (openDirection !== 'none') {
+                    // Close other open items
+                    itemRefs.current.forEach((ref, key) => {
+                      if (key !== fallbackId && ref) ref.close();
+                    });
+                    
+                    // Trigger action when fully swiped
+                    if (snapPoint === 150 && openDirection === 'right' && !isDownloaded) {
+                      setTimeout(() => {
+                        handleSwipeRemove((item as any).id);
+                      }, 100);
+                    }
+                  }
+                }}
+                overSwipe={20}
+                renderUnderlayRight={() => <UnderlayRight item={item} />}
+                snapPointsRight={[150]}
+                swipeEnabled={!isDragging && !isDownloaded}
+                activationThreshold={20}
+              >
+                <View style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}>
+                  <View style={[styles.itemRow, { backgroundColor: Colors[colorScheme ?? 'light'].card, flex: 1 }]}> 
+                    <View style={styles.itemInfo}>
+                      <Text style={[styles.itemTitle, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={2}>{(item as any).title || 'Episode'}</Text>
+                      <Text style={[styles.itemMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]} numberOfLines={1}>{(item as any).audioUrl || ''}</Text>
+                    </View>
+                    <View style={styles.itemActions}>
+                      {!isDownloaded && (
+                        <TouchableOpacity onPress={() => handleRemove((item as any).id)} style={styles.iconBtn}>
+                          <Ionicons name="remove-circle" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || (item as any).guid || (item as any).audioUrl, podcastId: (item as any).podcastId, guid: (item as any).guid, audioUrl: (item as any).audioUrl } })} style={styles.iconBtn}>
+                        <Ionicons name="chevron-forward" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  {!isDownloaded && (
+                    <TouchableOpacity 
+                      onLongPress={drag}
+                      style={styles.dragHandle}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleMove((item as any).id, 1)} style={styles.iconBtn}>
-                      <Ionicons name="arrow-down" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleRemove((item as any).id)} style={styles.iconBtn}>
-                      <Ionicons name="remove-circle" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                    </TouchableOpacity>
-                  </>
-                )}
-                <TouchableOpacity onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || (item as any).guid || (item as any).audioUrl, podcastId: (item as any).podcastId, guid: (item as any).guid, audioUrl: (item as any).audioUrl } })} style={styles.iconBtn}>
-                  <Ionicons name="chevron-forward" size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                </TouchableOpacity>
-              </View>
-            </View>
+                  )}
+                </View>
+              </SwipeableItem>
+            </ScaleDecorator>
           );
         }}
       />
@@ -314,12 +525,30 @@ const styles = StyleSheet.create({
   headerRight: {
     width: 30,
   },
+  draggableItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  draggableItemActive: {
+    opacity: 0.7,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  dragHandle: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
     borderRadius: 12,
-    marginBottom: 10,
   },
   itemInfo: {
     flex: 1,
@@ -341,5 +570,26 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     padding: 6,
+  },
+  underlayRight: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingLeft: 20,
+  },
+  underlayLeft: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingRight: 20,
+  },
+  underlayText: {
+    color: '#fff',
+    fontFamily: 'Georgia',
+    fontSize: 16,
+    fontWeight: '600',
+    marginHorizontal: 8,
   },
 });

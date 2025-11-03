@@ -13,16 +13,16 @@ config.resolver = {
   platforms: ['ios', 'android', 'native', 'web'],
 };
 
-// Configure transformer for optimal bundling
-config.transformer = {
-  ...config.transformer,
-  getTransformOptions: async () => ({
-    transform: {
-      experimentalImportSupport: false,
-      inlineRequires: true,
-    },
-  }),
-};
+// // Configure transformer for optimal bundling
+// config.transformer = {
+//   ...config.transformer,
+//   getTransformOptions: async () => ({
+//     transform: {
+//       experimentalImportSupport: false,
+//       inlineRequires: true,
+//     },
+//   }),
+// };
 
 // Configure platform-specific module resolution
 config.resolver.platforms = ['ios', 'android', 'native', 'web'];
