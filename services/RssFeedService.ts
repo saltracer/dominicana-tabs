@@ -388,10 +388,18 @@ export class RssFeedService {
   }
 
   /**
-   * Parse duration string (HH:MM:SS or MM:SS) to seconds
+   * Parse duration string (HH:MM:SS or MM:SS) or number to seconds
    */
   private static parseDuration(duration: any): number | undefined {
-    if (!duration || typeof duration !== 'string') return undefined;
+    if (!duration) return undefined;
+    
+    // If it's already a number (e.g., from XML parser converting "577" to 577), return it
+    if (typeof duration === 'number') {
+      return Math.floor(duration); // Ensure it's an integer
+    }
+    
+    // Otherwise parse as string
+    if (typeof duration !== 'string') return undefined;
     
     const parts = duration.split(':').map(p => parseInt(p));
     if (parts.length === 3) {

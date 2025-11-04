@@ -606,7 +606,7 @@ export default function PlaylistDetailScreen() {
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       <Stack.Screen 
         options={{ 
-          title: playlist?.name || 'Playlist',
+          title: playlist?.name || '',
         }} 
       />
       {isInitiallyLoading ? (

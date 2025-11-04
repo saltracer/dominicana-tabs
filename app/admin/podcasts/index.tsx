@@ -86,14 +86,52 @@ export default function PodcastsListScreen() {
   };
 
   const handleRefreshEpisodes = async (podcast: Podcast) => {
-    try {
-      Alert.alert('Refreshing', 'Fetching latest episodes from RSS feed...');
-      await AdminPodcastService.refreshEpisodes(podcast.id);
-      Alert.alert('Success', 'Episodes refreshed successfully');
-      loadPodcasts();
-    } catch (error) {
-      Alert.alert('Error', 'Failed to refresh episodes');
-    }
+    Alert.alert(
+      'Refresh Episodes',
+      `Fetch latest episodes from "${podcast.title}"? This will check for new episodes and update existing ones.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Refresh',
+          style: 'default',
+          onPress: async () => {
+            try {
+              Alert.alert('Refreshing', 'Fetching latest episodes from RSS feed...');
+              await AdminPodcastService.refreshEpisodes(podcast.id);
+              Alert.alert('Success', 'Episodes refreshed successfully');
+              loadPodcasts();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to refresh episodes');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleForceReparse = async (podcast: Podcast) => {
+    Alert.alert(
+      'Force Reparse RSS Feed',
+      `This will force a complete re-fetch and re-parse of the RSS feed for "${podcast.title}", updating all episode metadata including durations. Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Force Reparse',
+          style: 'default',
+          onPress: async () => {
+            try {
+              Alert.alert('Reparsing', 'Force reparsing RSS feed...');
+              await AdminPodcastService.refreshEpisodes(podcast.id);
+              Alert.alert('Success', 'RSS feed reparsed successfully. All episode data has been updated.');
+              loadPodcasts();
+            } catch (error) {
+              console.error('Force reparse error:', error);
+              Alert.alert('Error', 'Failed to reparse RSS feed');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading && podcasts.length === 0) {
@@ -215,6 +253,12 @@ export default function PodcastsListScreen() {
                   onPress={() => handleRefreshEpisodes(podcast)}
                 >
                   <Ionicons name="refresh-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, { backgroundColor: '#8b5cf6' }]}
+                  onPress={() => handleForceReparse(podcast)}
+                >
+                  <Ionicons name="sync-outline" size={20} color="#fff" />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, { backgroundColor: '#ef4444' }]}

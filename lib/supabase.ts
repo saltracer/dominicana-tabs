@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // Supabase configuration
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
@@ -9,13 +10,33 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Supabase configuration missing. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY environment variables.');
 }
 
-// Create Supabase client with AsyncStorage for session persistence
+// Create a storage adapter that works on both web and native
+const supabaseStorage = Platform.OS === 'web' 
+  ? {
+      getItem: (key: string) => {
+        if (typeof window === 'undefined') return null;
+        return Promise.resolve(window.localStorage.getItem(key));
+      },
+      setItem: (key: string, value: string) => {
+        if (typeof window === 'undefined') return Promise.resolve();
+        window.localStorage.setItem(key, value);
+        return Promise.resolve();
+      },
+      removeItem: (key: string) => {
+        if (typeof window === 'undefined') return Promise.resolve();
+        window.localStorage.removeItem(key);
+        return Promise.resolve();
+      },
+    }
+  : AsyncStorage;
+
+// Create Supabase client with platform-appropriate storage for session persistence
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: supabaseStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    detectSessionInUrl: Platform.OS === 'web',
   },
 });
 

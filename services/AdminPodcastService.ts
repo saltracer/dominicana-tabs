@@ -72,14 +72,19 @@ export class AdminPodcastService {
       mime_type: ep.mimeType || null,
     }));
 
+    // Use upsert to handle both new episodes and updates to existing ones
+    // This prevents duplicate key errors when refreshing/reparsing
     const { error } = await supabase
       .from('podcast_episodes')
-      .insert(episodeData)
+      .upsert(episodeData, { 
+        onConflict: 'podcast_id,guid',
+        ignoreDuplicates: false // Update existing episodes with new data
+      })
       .select();
 
     if (error) {
-      console.error('Error inserting episodes:', error);
-      throw new Error(`Failed to insert episodes: ${error.message}`);
+      console.error('Error upserting episodes:', error);
+      throw new Error(`Failed to upsert episodes: ${error.message}`);
     }
   }
 

@@ -83,6 +83,55 @@ export default function PodcastsListWebScreen() {
     );
   };
 
+  const handleRefreshEpisodes = async (podcast: Podcast) => {
+    Alert.alert(
+      'Refresh Episodes',
+      `Fetch latest episodes from "${podcast.title}"? This will check for new episodes and update existing ones.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Refresh',
+          style: 'default',
+          onPress: async () => {
+            try {
+              Alert.alert('Refreshing', 'Fetching latest episodes from RSS feed...');
+              await AdminPodcastService.refreshEpisodes(podcast.id);
+              Alert.alert('Success', 'Episodes refreshed successfully');
+              loadPodcasts();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to refresh episodes');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleForceReparse = async (podcast: Podcast) => {
+    Alert.alert(
+      'Force Reparse RSS Feed',
+      `This will force a complete re-fetch and re-parse of the RSS feed for "${podcast.title}", updating all episode metadata including durations. Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Force Reparse',
+          style: 'default',
+          onPress: async () => {
+            try {
+              Alert.alert('Reparsing', 'Force reparsing RSS feed...');
+              await AdminPodcastService.refreshEpisodes(podcast.id);
+              Alert.alert('Success', 'RSS feed reparsed successfully. All episode data has been updated.');
+              loadPodcasts();
+            } catch (error) {
+              console.error('Force reparse error:', error);
+              Alert.alert('Error', 'Failed to reparse RSS feed');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       {/* Header */}
@@ -290,18 +339,38 @@ export default function PodcastsListWebScreen() {
                   </View>
                   <View style={styles.tableCell}>
                     <View style={styles.actions}>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => router.push(`/admin/podcasts/${podcast.id}`)}
-                      >
-                        <Ionicons name="create-outline" size={18} color={Colors[colorScheme ?? 'light'].primary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => handleDeletePodcast(podcast)}
-                      >
-                        <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                      </TouchableOpacity>
+                      <View title="Edit podcast details">
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() => router.push(`/admin/podcasts/${podcast.id}`)}
+                        >
+                          <Ionicons name="create-outline" size={18} color={Colors[colorScheme ?? 'light'].primary} />
+                        </TouchableOpacity>
+                      </View>
+                      <View title="Refresh - Check for new episodes and update existing ones">
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() => handleRefreshEpisodes(podcast)}
+                        >
+                          <Ionicons name="refresh-outline" size={18} color="#3b82f6" />
+                        </TouchableOpacity>
+                      </View>
+                      <View title="Force Reparse - Complete re-fetch and re-parse of RSS feed, updates all episode metadata">
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() => handleForceReparse(podcast)}
+                        >
+                          <Ionicons name="sync-outline" size={18} color="#8b5cf6" />
+                        </TouchableOpacity>
+                      </View>
+                      <View title="Delete podcast and all episodes permanently">
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() => handleDeletePodcast(podcast)}
+                        >
+                          <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
                 </View>
