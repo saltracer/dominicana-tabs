@@ -74,8 +74,8 @@
 - [ ] Add "Played" status to podcasts
 - [ ] Playlist features don't actually continue to the next episode.
 - [ ] Implement a download queue 
-- [ ] Get playback integrated with the iOS operating system.
-- [ ] Is streaming audio playback supported?
+- [x] Get playback integrated with the iOS operating system.
+- [x] Is streaming audio playback supported - yes.
 
 
 ## Other
