@@ -290,11 +290,19 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     const autoPlayEnabled = preferences?.podcast_auto_play_next ?? true;
     if (!autoPlayEnabled) {
       console.log('[PodcastPlayerContext] Auto-play disabled by user preference');
+      setPlaybackContext(null);
       return;
     }
     
     const { episodes, currentIndex, type, sourceId } = playbackContext;
     const nextIndex = currentIndex + 1;
+    
+    console.log('[PodcastPlayerContext] Checking for next episode:', {
+      currentIndex,
+      nextIndex,
+      totalEpisodes: episodes.length,
+      hasNext: nextIndex < episodes.length,
+    });
     
     if (nextIndex < episodes.length) {
       const nextEpisode = episodes[nextIndex];
@@ -309,6 +317,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     } else {
       console.log('[PodcastPlayerContext] Reached end of list, no more episodes to play');
       setPlaybackContext(null);
+      setCurrentEpisode(null);
+      setIsPlaying(false);
+      setIsPaused(false);
     }
   }, [playbackContext, preferences?.podcast_auto_play_next]);
   
