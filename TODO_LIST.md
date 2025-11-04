@@ -72,7 +72,7 @@
 - [ ] Create podcast specific preferences
 - [x] Improve performance of podcasts by using device caching
 - [ ] Add "Played" status to podcasts
-- [ ] Playlist features don't actually continue to the next episode.
+- [x] Playlist features don't actually continue to the next episode.
 - [ ] Implement a download queue 
 - [x] Get playback integrated with the iOS operating system.
 - [x] Is streaming audio playback supported - yes.
