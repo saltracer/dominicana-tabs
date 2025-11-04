@@ -87,6 +87,8 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const isInitializedRef = useRef(false);
   const pauseRef = useRef<(() => Promise<void>) | null>(null);
   const resumeRef = useRef<(() => Promise<void>) | null>(null);
+  const playNextEpisodeRef = useRef<(() => Promise<void>) | null>(null);
+  const markCompletedRef = useRef<(() => Promise<void>) | null>(null);
   
   // Cleanup: Unregister handlers when component unmounts
   useEffect(() => {
@@ -204,9 +206,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         TrackPlayer.addEventListener('playback-queue-ended', async (data: any) => {
           console.log('[PodcastPlayerContext] TrackPlayer playback-queue-ended:', data);
           setIsPlaying(false);
-          await markCompleted();
+          if (markCompletedRef.current) await markCompletedRef.current();
           // Auto-play next episode if available
-          await playNextEpisode();
+          if (playNextEpisodeRef.current) await playNextEpisodeRef.current();
         });
 
         // console.log('[PodcastPlayerContext] TrackPlayer event listeners set up');
@@ -277,6 +279,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
 
   const playNextEpisode = useCallback(async () => {
     console.log('[PodcastPlayerContext] playNextEpisode called');
+    console.log('[PodcastPlayerContext] Current playbackContext:', playbackContext);
     
     if (!playbackContext) {
       console.log('[PodcastPlayerContext] No playback context, cannot auto-play next');
@@ -308,6 +311,16 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       setPlaybackContext(null);
     }
   }, [playbackContext, preferences?.podcast_auto_play_next]);
+  
+  // Update ref when playNextEpisode changes
+  useEffect(() => {
+    playNextEpisodeRef.current = playNextEpisode;
+  }, [playNextEpisode]);
+  
+  // Update ref when markCompleted changes
+  useEffect(() => {
+    markCompletedRef.current = markCompleted;
+  }, [markCompleted]);
 
   const playEpisode = useCallback(async (episode: PodcastEpisode, context?: Partial<PlaybackContext>) => {
     console.log('[PodcastPlayerContext] playEpisode called with:', episode.title);
@@ -327,20 +340,24 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         sourceId: context.sourceId,
       };
       
-      setPlaybackContext(newContext);
-      console.log('[PodcastPlayerContext] Updated playback context:', {
+      console.log('[PodcastPlayerContext] Setting NEW playback context:', {
         type: newContext.type,
         episodeCount: newContext.episodes.length,
         currentIndex: newContext.currentIndex,
+        currentEpisode: newContext.episodes[newContext.currentIndex]?.title,
         sourceId: newContext.sourceId,
       });
+      setPlaybackContext(newContext);
     } else if (!playbackContext) {
       // No context provided and none exists - single episode mode
+      console.log('[PodcastPlayerContext] Setting SINGLE episode context');
       setPlaybackContext({
         type: 'single',
         episodes: [episode],
         currentIndex: 0,
       });
+    } else {
+      console.log('[PodcastPlayerContext] Preserving existing playback context');
     }
     
     try {
@@ -376,9 +393,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         newAudio.addEventListener('ended', async () => {
           console.log('[PodcastPlayerContext] Episode ended');
           setIsPlaying(false);
-          await markCompleted();
+          if (markCompletedRef.current) await markCompletedRef.current();
           // Auto-play next episode if available
-          await playNextEpisode();
+          if (playNextEpisodeRef.current) await playNextEpisodeRef.current();
         });
         
         newAudio.addEventListener('play', () => {

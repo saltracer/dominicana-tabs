@@ -361,6 +361,33 @@ export default function PodcastDetailScreen() {
       })
     : [];
 
+  const handlePlayEpisode = async (episode: PodcastEpisode) => {
+    console.log('[PodcastDetail] handlePlayEpisode called with episode:', episode.title);
+    if (currentEpisode?.id === episode.id) {
+      if (isPlaying) {
+        console.log('[PodcastDetail] Pausing current episode');
+        pause();
+      } else if (isPaused) {
+        console.log('[PodcastDetail] Resuming paused episode');
+        resume();
+      } else {
+        console.log('[PodcastDetail] Playing current episode');
+        await playEpisode(episode, {
+          type: 'podcast',
+          episodes: sortedEpisodes,
+          sourceId: podcast?.id,
+        });
+      }
+    } else {
+      console.log('[PodcastDetail] Playing new episode:', episode.title);
+      await playEpisode(episode, {
+        type: 'podcast',
+        episodes: sortedEpisodes,
+        sourceId: podcast?.id,
+      });
+    }
+  };
+
   if (loading && !podcast) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
