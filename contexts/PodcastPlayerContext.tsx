@@ -334,16 +334,8 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           console.warn('[PodcastPlayerContext] Error stopping current playback:', e);
         }
 
-        // DIAGNOSTIC: Log episode artwork info
-        console.log('[PodcastPlayerContext] Episode artwork diagnostic:', {
-          hasArtworkUrl: !!episode.artworkUrl,
-          artworkUrl: episode.artworkUrl,
-          artworkUrlType: typeof episode.artworkUrl,
-          episodeKeys: Object.keys(episode),
-        });
-
         // Cache artwork for iOS controls before adding track
-        let artworkPath = episode.artworkUrl;
+        let artworkPath: string | number = require('../assets/images/dominicana_logo-icon-white.png');
         if (episode.artworkUrl) {
           try {
             console.log('[PodcastPlayerContext] Caching artwork for iOS controls:', episode.artworkUrl);
@@ -352,15 +344,14 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
             artworkPath = path.startsWith('file://') ? path : `file://${path}`;
             console.log('[PodcastPlayerContext] Artwork cached at:', artworkPath);
           } catch (e) {
-            console.warn('[PodcastPlayerContext] Failed to cache artwork, using remote URL:', e);
-            artworkPath = episode.artworkUrl;
+            console.warn('[PodcastPlayerContext] Failed to cache artwork, using default logo:', e);
+            artworkPath = require('../assets/images/dominicana_logo-icon-white.png');
           }
         } else {
-          console.warn('[PodcastPlayerContext] No artwork URL provided for episode');
+          console.log('[PodcastPlayerContext] No artwork URL, using default dominicana logo');
         }
 
-        console.log('[PodcastPlayerContext] Adding episode to TrackPlayer queue with artwork:', artworkPath);
-        // Add episode to queue with cached artwork
+        // Add episode to queue with cached artwork (or default logo)
         await TrackPlayer.add({
           id: episode.id,
           url: audioUrl,
@@ -369,8 +360,6 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           artwork: artworkPath,
           duration: episode.duration,
         });
-        
-        console.log('[PodcastPlayerContext] Track added to TrackPlayer successfully');
 
         console.log('[PodcastPlayerContext] Loading saved progress');
         // Load saved progress

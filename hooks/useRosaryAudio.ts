@@ -210,6 +210,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
             title: 'Faith, Hope, and Charity',
             artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
             album: mysteryName,
+            artwork: require('../assets/images/dominicana_logo-icon-white.png'),
             beadId: bead.id,
           });
           beadIdMapRef.current.set(trackIndex, bead.id);
@@ -232,6 +233,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
             title: 'Glory Be',
             artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
             album: mysteryName,
+            artwork: require('../assets/images/dominicana_logo-icon-white.png'),
             beadId: bead.id,
           });
           beadIdMapRef.current.set(trackIndex, bead.id);
@@ -252,6 +254,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
             title: 'Alleluia',
             artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
             album: mysteryName,
+            artwork: require('../assets/images/dominicana_logo-icon-white.png'),
             beadId: bead.id, // Same bead ID as Glory Be
           });
           beadIdMapRef.current.set(trackIndex, bead.id);
@@ -277,6 +280,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
               title: bead.title, // Keep the combined title
               artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
               album: mysteryName,
+              artwork: require('../assets/images/dominicana_logo-icon-white.png'),
               beadId: bead.id, // Same bead ID for all tracks
             });
             beadIdMapRef.current.set(trackIndex, bead.id);
@@ -303,6 +307,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
         title: bead.title,
         artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
         album: mysteryName,
+        artwork: require('../assets/images/dominicana_logo-icon-white.png'),
         beadId: bead.id,
       });
       
