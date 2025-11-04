@@ -153,11 +153,14 @@ export class PodcastService {
    * Get a single episode by ID
    */
   static async getEpisode(id: string, silent = false): Promise<PodcastEpisode> {
+    const queryStart = Date.now();
     const { data, error } = await supabase
       .from('podcast_episodes')
       .select('*')
       .eq('id', id)
       .single();
+
+    if (__DEV__) console.log('[PodcastService.getEpisode] Query took', Date.now() - queryStart, 'ms');
 
     if (error) {
       if (!silent) {
@@ -173,12 +176,15 @@ export class PodcastService {
    * Get a single episode by guid (RSS feed guid)
    */
   static async getEpisodeByGuid(podcastId: string, guid: string, silent = false): Promise<PodcastEpisode | null> {
+    const queryStart = Date.now();
     const { data, error } = await supabase
       .from('podcast_episodes')
       .select('*')
       .eq('podcast_id', podcastId)
       .eq('guid', guid)
       .single();
+
+    if (__DEV__) console.log('[PodcastService.getEpisodeByGuid] Query took', Date.now() - queryStart, 'ms');
 
     if (error) {
       if (error.code === 'PGRST116') return null; // No rows

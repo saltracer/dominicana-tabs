@@ -7,7 +7,7 @@ import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-it
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { PodcastEpisode } from '../../../../types';
 import { getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
-import { ensureImageCached, fileExists } from '../../../../lib/podcast/storage';
+import { ensureImageCached, fileExists, setJson, keys } from '../../../../lib/podcast/storage';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { usePlaylists } from '../../../../hooks/usePlaylists';
@@ -73,22 +73,32 @@ export default function PlaylistDetailScreen() {
           try {
             const feed = await getFeed(pid);
             let artPath = feed?.summary?.localArtworkPath || null;
+            let needsUpdate = false;
             
             // Verify the cached path exists, if not re-download
             if (artPath) {
               const exists = await fileExists(artPath);
               if (!exists && feed?.summary?.artworkUrl) {
-                if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing for downloaded item, re-downloading:', feed.summary.artworkUrl);
+                if (__DEV__) console.log('[PlaylistDetail] 📥 Re-downloading artwork for downloaded item:', feed.summary.artworkUrl);
                 const { path } = await ensureImageCached(feed.summary.artworkUrl);
                 artPath = path;
+                needsUpdate = true;
               } else if (!exists) {
                 artPath = null;
               }
             } else if (feed?.summary?.artworkUrl) {
               // No cached path, download it
-              if (__DEV__) console.log('[PlaylistDetail] No cached artwork for downloaded item, downloading:', feed.summary.artworkUrl);
+              if (__DEV__) console.log('[PlaylistDetail] 📥 Downloading artwork for downloaded item:', feed.summary.artworkUrl);
               const { path } = await ensureImageCached(feed.summary.artworkUrl);
               artPath = path;
+              needsUpdate = true;
+            }
+            
+            // Update feed cache with new artwork path
+            if (needsUpdate && feed && artPath) {
+              feed.summary.localArtworkPath = artPath;
+              await setJson(keys.feed(pid), feed);
+              if (__DEV__) console.log('[PlaylistDetail] 💾 Updated feed cache with artwork path');
             }
             
             artMap[pid] = artPath;
@@ -149,10 +159,11 @@ export default function PlaylistDetailScreen() {
     let alive = true;
     
     // Reset resolution state when items change
-    if (__DEV__) console.log('[PlaylistDetail] Resetting resolution state, items:', items.length);
+    if (__DEV__) console.log('[PlaylistDetail] 🔄 Resetting resolution state, items:', items.length);
     setInitialResolutionComplete(false);
     
     (async () => {
+      const resolutionStart = Date.now();
       if (isDownloaded) return;
       
       // If empty playlist and not loading, mark as complete immediately
@@ -164,42 +175,69 @@ export default function PlaylistDetailScreen() {
       const next: Record<string, PodcastEpisode | null> = {};
       const artMap: Record<string, string | null> = { ...artByPodcast };
       for (const it of items) {
+        const itemStart = Date.now();
         try {
           if ((it as any).episode_id) {
             // Fetch full episode data from database
-            if (__DEV__) console.log('[PlaylistDetail] Item has episode_id, attempting DB fetch:', (it as any).episode_id);
+            const dbStart = Date.now();
+            if (__DEV__) console.log('[PlaylistDetail] 🔍 Fetching episode from DB:', (it as any).episode_id);
             try {
               const episode = await PodcastService.getEpisode((it as any).episode_id);
-              if (__DEV__) console.log('[PlaylistDetail] ✅ Fetched episode from DB:', episode.title);
+              if (__DEV__) console.log('[PlaylistDetail] ✅ DB fetch complete in', Date.now() - dbStart, 'ms:', episode.title);
               next[it.id] = episode;
               
               // Also fetch artwork for this podcast
               if (episode.podcastId && artMap[episode.podcastId] === undefined) {
+                const artStart = Date.now();
                 try {
+                  const feedStart = Date.now();
                   const feed = await getFeed(episode.podcastId);
+                  if (__DEV__) console.log('[PlaylistDetail] 📂 getFeed took', Date.now() - feedStart, 'ms');
+                  
                   let artPath = feed?.summary?.localArtworkPath || null;
+                  let needsUpdate = false;
                   
                   // Verify the cached path exists, if not re-download
                   if (artPath) {
+                    const checkStart = Date.now();
                     const exists = await fileExists(artPath);
+                    if (__DEV__) console.log('[PlaylistDetail] 🔍 fileExists check took', Date.now() - checkStart, 'ms, exists:', exists);
                     if (!exists && feed?.summary?.artworkUrl) {
-                      if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing, re-downloading:', feed.summary.artworkUrl);
+                      const downloadStart = Date.now();
+                      if (__DEV__) console.log('[PlaylistDetail] 📥 Re-downloading artwork:', feed.summary.artworkUrl);
                       const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                      if (__DEV__) console.log('[PlaylistDetail] 📥 Download took', Date.now() - downloadStart, 'ms');
                       artPath = path;
+                      needsUpdate = true;
                     } else if (!exists) {
                       artPath = null;
                     }
                   } else if (feed?.summary?.artworkUrl) {
                     // No cached path, download it
+                    const downloadStart = Date.now();
+                    if (__DEV__) console.log('[PlaylistDetail] 📥 Downloading artwork (no cache):', feed.summary.artworkUrl);
                     const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                    if (__DEV__) console.log('[PlaylistDetail] 📥 Download took', Date.now() - downloadStart, 'ms');
                     artPath = path;
+                    needsUpdate = true;
+                  }
+                  
+                  // Update feed cache with new artwork path to avoid re-downloading
+                  if (needsUpdate && feed && artPath) {
+                    const updateStart = Date.now();
+                    feed.summary.localArtworkPath = artPath;
+                    await setJson(keys.feed(episode.podcastId), feed);
+                    if (__DEV__) console.log('[PlaylistDetail] 💾 Cache update took', Date.now() - updateStart, 'ms');
                   }
                   
                   artMap[episode.podcastId] = artPath;
+                  if (__DEV__) console.log('[PlaylistDetail] 🎨 Total artwork processing took', Date.now() - artStart, 'ms');
                 } catch (e) {
                   artMap[episode.podcastId] = null;
+                  if (__DEV__) console.log('[PlaylistDetail] ❌ Artwork processing failed in', Date.now() - artStart, 'ms');
                 }
               }
+              if (__DEV__) console.log('[PlaylistDetail] ⏱️  Item processing (episode_id path) took', Date.now() - itemStart, 'ms');
               continue;
             } catch (err) {
               if (__DEV__) console.warn('[PlaylistDetail] ❌ Episode not found in DB (orphaned episode_id):', (it as any).episode_id);
@@ -228,82 +266,14 @@ export default function PlaylistDetailScreen() {
           }
           const ref = (it as any).external_ref;
           if (ref?.podcastId) {
-            // Try to fetch from database first (for curated podcasts)
-            if (ref.guid) {
-              try {
-                const dbEpisode = await PodcastService.getEpisodeByGuid(ref.podcastId, ref.guid, true);
-                if (dbEpisode) {
-                  if (__DEV__) console.log('[PlaylistDetail] ✅ Matched episode from DB by guid:', dbEpisode.title);
-                  next[it.id] = dbEpisode;
-                  
-                  // Fetch artwork
-                  if (artMap[ref.podcastId] === undefined) {
-                    try {
-                      const feed = await getFeed(ref.podcastId);
-                      let artPath = feed?.summary?.localArtworkPath || null;
-                      
-                      // Verify the cached path exists, if not re-download
-                      if (artPath) {
-                        const exists = await fileExists(artPath);
-                        if (!exists && feed?.summary?.artworkUrl) {
-                          if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing, re-downloading:', feed.summary.artworkUrl);
-                          const { path } = await ensureImageCached(feed.summary.artworkUrl);
-                          artPath = path;
-                        } else if (!exists) {
-                          artPath = null;
-                        }
-                      } else if (feed?.summary?.artworkUrl) {
-                        // No cached path, download it
-                        const { path } = await ensureImageCached(feed.summary.artworkUrl);
-                        artPath = path;
-                      }
-                      
-                      artMap[ref.podcastId] = artPath;
-                    } catch (e) {
-                      artMap[ref.podcastId] = null;
-                    }
-                  }
-                  continue;
-                }
-              } catch (e) {
-                if (__DEV__) console.log('[PlaylistDetail] Episode not in DB by guid, trying cache');
-              }
-            }
-            
-            // Fallback to RSS cache
-            if (artMap[ref.podcastId] === undefined) {
-              try {
-                const feed = await getFeed(ref.podcastId);
-                let artPath = feed?.summary?.localArtworkPath || null;
-                
-                // Verify the cached path exists, if not re-download
-                if (artPath) {
-                  const exists = await fileExists(artPath);
-                  if (!exists && feed?.summary?.artworkUrl) {
-                    if (__DEV__) console.log('[PlaylistDetail] Cached artwork missing, re-downloading:', feed.summary.artworkUrl);
-                    const { path } = await ensureImageCached(feed.summary.artworkUrl);
-                    artPath = path;
-                  } else if (!exists) {
-                    artPath = null;
-                  }
-                } else if (feed?.summary?.artworkUrl) {
-                  // No cached path, download it
-                  if (__DEV__) console.log('[PlaylistDetail] No cached artwork, downloading:', feed.summary.artworkUrl);
-                  const { path } = await ensureImageCached(feed.summary.artworkUrl);
-                  artPath = path;
-                }
-                
-                artMap[ref.podcastId] = artPath;
-                if (__DEV__) console.log('[PlaylistDetail] artwork for podcast', ref.podcastId, '=', artPath);
-              } catch (e) { 
-                artMap[ref.podcastId] = null;
-                if (__DEV__) console.warn('[PlaylistDetail] failed to get artwork for', ref.podcastId, e);
-              }
-            }
+            // Try RSS cache first (faster than database)
+            const cacheStart = Date.now();
             try {
               const map = await getEpisodesMap(ref.podcastId);
+              if (__DEV__) console.log('[PlaylistDetail] 📦 getEpisodesMap took', Date.now() - cacheStart, 'ms');
               const ep = Object.values(map).find(e => (ref.guid && e.guid === ref.guid) || (ref.audioUrl && e.audioUrl === ref.audioUrl));
               if (ep) {
+                // Found in RSS cache - use it!
                 const resolvedEp = {
                   id: ep.id as any,
                   podcastId: ref.podcastId,
@@ -320,35 +290,157 @@ export default function PlaylistDetailScreen() {
                   mimeType: ep.mimeType,
                   createdAt: new Date().toISOString(),
                 } as any;
-                if (__DEV__) console.log('[PlaylistDetail] resolved episode duration:', { 
-                  cacheDuration: ep.duration,
-                  resolvedDuration: resolvedEp.duration,
-                  hasDuration: resolvedEp.duration !== undefined && resolvedEp.duration !== null 
-                });
+                if (__DEV__) console.log('[PlaylistDetail] ✅ Resolved from RSS cache (fast path), duration:', ep.duration);
                 next[it.id] = resolvedEp;
-                continue;
-              } else if (ref.title) {
-                // Episode not in cache, but we have metadata from external_ref
-                if (__DEV__) console.log('[PlaylistDetail] Using external_ref metadata for:', ref.title);
-                next[it.id] = {
-                  id: ref.guid || ref.audioUrl || it.id,
-                  podcastId: ref.podcastId,
-                  title: ref.title,
-                  description: ref.description || '',
-                  audioUrl: ref.audioUrl || '',
-                  duration: ref.duration,
-                  publishedAt: ref.publishedAt,
-                  episodeNumber: undefined,
-                  seasonNumber: undefined,
-                  guid: ref.guid,
-                  artworkUrl: ref.artworkUrl,
-                  fileSize: undefined,
-                  mimeType: undefined,
-                  createdAt: new Date().toISOString(),
-                } as any;
+                
+                // Still need to load artwork
+                if (artMap[ref.podcastId] === undefined) {
+                  const artStart = Date.now();
+                  try {
+                    const feedStart = Date.now();
+                    const feed = await getFeed(ref.podcastId);
+                    if (__DEV__) console.log('[PlaylistDetail] 📂 getFeed took', Date.now() - feedStart, 'ms');
+                    
+                    let artPath = feed?.summary?.localArtworkPath || null;
+                    let needsUpdate = false;
+                    
+                    // Verify the cached path exists, if not re-download
+                    if (artPath) {
+                      const checkStart = Date.now();
+                      const exists = await fileExists(artPath);
+                      if (__DEV__) console.log('[PlaylistDetail] 🔍 fileExists check took', Date.now() - checkStart, 'ms, exists:', exists);
+                      if (!exists && feed?.summary?.artworkUrl) {
+                        const downloadStart = Date.now();
+                        if (__DEV__) console.log('[PlaylistDetail] 📥 Re-downloading artwork:', feed.summary.artworkUrl);
+                        const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                        if (__DEV__) console.log('[PlaylistDetail] 📥 Download took', Date.now() - downloadStart, 'ms');
+                        artPath = path;
+                        needsUpdate = true;
+                      } else if (!exists) {
+                        artPath = null;
+                      }
+                    } else if (feed?.summary?.artworkUrl) {
+                      // No cached path, download it
+                      const downloadStart = Date.now();
+                      if (__DEV__) console.log('[PlaylistDetail] 📥 Downloading artwork (no cache):', feed.summary.artworkUrl);
+                      const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                      if (__DEV__) console.log('[PlaylistDetail] 📥 Download took', Date.now() - downloadStart, 'ms');
+                      artPath = path;
+                      needsUpdate = true;
+                    }
+                    
+                    // Update feed cache with new artwork path
+                    if (needsUpdate && feed && artPath) {
+                      const updateStart = Date.now();
+                      feed.summary.localArtworkPath = artPath;
+                      await setJson(keys.feed(ref.podcastId), feed);
+                      if (__DEV__) console.log('[PlaylistDetail] 💾 Cache update took', Date.now() - updateStart, 'ms');
+                    }
+                    
+                    artMap[ref.podcastId] = artPath;
+                    if (__DEV__) console.log('[PlaylistDetail] 🎨 Total artwork processing took', Date.now() - artStart, 'ms');
+                  } catch (e) {
+                    artMap[ref.podcastId] = null;
+                    if (__DEV__) console.log('[PlaylistDetail] ❌ Artwork processing failed in', Date.now() - artStart, 'ms');
+                  }
+                }
+                if (__DEV__) console.log('[PlaylistDetail] ⏱️  Item processing (RSS cache fast path) took', Date.now() - itemStart, 'ms');
                 continue;
               }
-            } catch {}
+            } catch (e) {
+              if (__DEV__) console.log('[PlaylistDetail] RSS cache lookup failed, trying database');
+            }
+            
+            // Fallback to database if not in RSS cache
+            if (ref.guid) {
+              const guidStart = Date.now();
+              try {
+                const dbEpisode = await PodcastService.getEpisodeByGuid(ref.podcastId, ref.guid, true);
+                if (dbEpisode) {
+                  if (__DEV__) console.log('[PlaylistDetail] ✅ getEpisodeByGuid took', Date.now() - guidStart, 'ms:', dbEpisode.title);
+                  next[it.id] = dbEpisode;
+                  
+                  // Fetch artwork
+                  if (artMap[ref.podcastId] === undefined) {
+                    const artStart = Date.now();
+                    try {
+                      const feedStart = Date.now();
+                      const feed = await getFeed(ref.podcastId);
+                      if (__DEV__) console.log('[PlaylistDetail] 📂 getFeed took', Date.now() - feedStart, 'ms');
+                      
+                      let artPath = feed?.summary?.localArtworkPath || null;
+                      let needsUpdate = false;
+                      
+                      // Verify the cached path exists, if not re-download
+                      if (artPath) {
+                        const checkStart = Date.now();
+                        const exists = await fileExists(artPath);
+                        if (__DEV__) console.log('[PlaylistDetail] 🔍 fileExists check took', Date.now() - checkStart, 'ms, exists:', exists);
+                        if (!exists && feed?.summary?.artworkUrl) {
+                          const downloadStart = Date.now();
+                          if (__DEV__) console.log('[PlaylistDetail] 📥 Re-downloading artwork:', feed.summary.artworkUrl);
+                          const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                          if (__DEV__) console.log('[PlaylistDetail] 📥 Download took', Date.now() - downloadStart, 'ms');
+                          artPath = path;
+                          needsUpdate = true;
+                        } else if (!exists) {
+                          artPath = null;
+                        }
+                      } else if (feed?.summary?.artworkUrl) {
+                        // No cached path, download it
+                        const downloadStart = Date.now();
+                        if (__DEV__) console.log('[PlaylistDetail] 📥 Downloading artwork (no cache):', feed.summary.artworkUrl);
+                        const { path } = await ensureImageCached(feed.summary.artworkUrl);
+                        if (__DEV__) console.log('[PlaylistDetail] 📥 Download took', Date.now() - downloadStart, 'ms');
+                        artPath = path;
+                        needsUpdate = true;
+                      }
+                      
+                      // Update feed cache with new artwork path
+                      if (needsUpdate && feed && artPath) {
+                        const updateStart = Date.now();
+                        feed.summary.localArtworkPath = artPath;
+                        await setJson(keys.feed(ref.podcastId), feed);
+                        if (__DEV__) console.log('[PlaylistDetail] 💾 Cache update took', Date.now() - updateStart, 'ms');
+                      }
+                      
+                      artMap[ref.podcastId] = artPath;
+                      if (__DEV__) console.log('[PlaylistDetail] 🎨 Total artwork processing took', Date.now() - artStart, 'ms');
+                    } catch (e) {
+                      artMap[ref.podcastId] = null;
+                      if (__DEV__) console.log('[PlaylistDetail] ❌ Artwork processing failed in', Date.now() - artStart, 'ms');
+                    }
+                  }
+                  if (__DEV__) console.log('[PlaylistDetail] ⏱️  Item processing (database fallback path) took', Date.now() - itemStart, 'ms');
+                  continue;
+                }
+              } catch (e) {
+                if (__DEV__) console.log('[PlaylistDetail] Database query failed, will use external_ref');
+              }
+            }
+            
+            // Last resort: use external_ref metadata if available
+            if (ref.title) {
+              if (__DEV__) console.log('[PlaylistDetail] Using external_ref metadata for:', ref.title);
+              next[it.id] = {
+                id: ref.guid || ref.audioUrl || it.id,
+                podcastId: ref.podcastId,
+                title: ref.title,
+                description: ref.description || '',
+                audioUrl: ref.audioUrl || '',
+                duration: ref.duration,
+                publishedAt: ref.publishedAt,
+                episodeNumber: undefined,
+                seasonNumber: undefined,
+                guid: ref.guid,
+                artworkUrl: ref.artworkUrl,
+                fileSize: undefined,
+                mimeType: undefined,
+                createdAt: new Date().toISOString(),
+              } as any;
+              if (__DEV__) console.log('[PlaylistDetail] ⏱️  Item processing (external_ref fallback) took', Date.now() - itemStart, 'ms');
+              continue;
+            }
           }
           next[it.id] = null;
         } catch {
@@ -356,7 +448,8 @@ export default function PlaylistDetailScreen() {
         }
       }
       if (alive) {
-        if (__DEV__) console.log('[PlaylistDetail] Resolution complete for', items.length, 'items');
+        const elapsed = Date.now() - resolutionStart;
+        if (__DEV__) console.log('[PlaylistDetail] ✅ Resolution complete for', items.length, 'items in', elapsed, 'ms');
         setResolved(next);
         setArtByPodcast(artMap);
         // Mark initial resolution as complete for regular playlists

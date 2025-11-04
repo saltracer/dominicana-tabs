@@ -18,15 +18,34 @@ export function usePlaylists() {
         return;
       }
       try {
+        const loadStart = Date.now();
         setLoading(true);
+        
         // Cache-first
         const cached = await getCachedPlaylists(userId);
+        if (__DEV__) console.log('[usePlaylists] Loaded', cached.length, 'playlists from cache in', Date.now() - loadStart, 'ms');
         if (isMounted && cached.length) setPlaylists(cached);
-        // Background sync up + down
+        
+        // Sync mutations up
+        const syncUpStart = Date.now();
         await syncUp(userId);
-        await syncDown(userId);
+        if (__DEV__) console.log('[usePlaylists] syncUp completed in', Date.now() - syncUpStart, 'ms');
+        
+        // Only do full syncDown if cache was empty (first load)
+        // Skip DB refresh if we have cached data (it's already fresh from optimistic updates)
+        if (cached.length === 0) {
+          if (__DEV__) console.log('[usePlaylists] Cache empty, doing full syncDown');
+          const syncDownStart = Date.now();
+          await syncDown(userId);
+          if (__DEV__) console.log('[usePlaylists] syncDown completed in', Date.now() - syncDownStart, 'ms');
+        } else {
+          // Cache hit - use cached data (already synchronized via optimistic updates)
+          if (__DEV__) console.log('[usePlaylists] ✅ Cache hit, using cached data (skipping DB refresh)');
+        }
+        
         const fresh = await getCachedPlaylists(userId);
         if (isMounted) setPlaylists(fresh);
+        if (__DEV__) console.log('[usePlaylists] Total load time:', Date.now() - loadStart, 'ms');
       } catch (e) {
         setError(e);
       } finally {
@@ -54,8 +73,10 @@ export function usePlaylists() {
     await setCachedPlaylists(userId, next);
     await enqueueMutation(userId, { type: 'createPlaylist', name });
     await syncUp(userId);
-    await syncDown(userId);
-    setPlaylists(await getCachedPlaylists(userId));
+    // Refresh playlists only (don't fetch all items)
+    const freshPlaylists = await PlaylistService.getPlaylists();
+    await setCachedPlaylists(userId, freshPlaylists);
+    setPlaylists(freshPlaylists);
   }, [userId, playlists]);
 
   const renamePlaylist = useCallback(async (id: string, name: string) => {
@@ -65,8 +86,10 @@ export function usePlaylists() {
     await setCachedPlaylists(userId, next);
     await enqueueMutation(userId, { type: 'renamePlaylist', id, name });
     await syncUp(userId);
-    await syncDown(userId);
-    setPlaylists(await getCachedPlaylists(userId));
+    // Refresh playlists only (don't fetch all items)
+    const freshPlaylists = await PlaylistService.getPlaylists();
+    await setCachedPlaylists(userId, freshPlaylists);
+    setPlaylists(freshPlaylists);
   }, [userId, playlists]);
 
   const deletePlaylist = useCallback(async (id: string) => {
@@ -76,8 +99,10 @@ export function usePlaylists() {
     await setCachedPlaylists(userId, next);
     await enqueueMutation(userId, { type: 'deletePlaylist', id });
     await syncUp(userId);
-    await syncDown(userId);
-    setPlaylists(await getCachedPlaylists(userId));
+    // Refresh playlists only (don't fetch all items)
+    const freshPlaylists = await PlaylistService.getPlaylists();
+    await setCachedPlaylists(userId, freshPlaylists);
+    setPlaylists(freshPlaylists);
   }, [userId, playlists]);
 
   return {

@@ -75,11 +75,13 @@ export default class PlaylistService {
   }
 
   static async getItems(playlistId: string): Promise<PlaylistItem[]> {
+    const queryStart = Date.now();
     const { data, error } = await supabase
       .from('playlist_items')
       .select('*')
       .eq('playlist_id', playlistId)
       .order('position');
+    if (__DEV__) console.log('[PlaylistService.getItems] Query took', Date.now() - queryStart, 'ms');
     if (error) throw error;
     return data as unknown as PlaylistItem[];
   }
