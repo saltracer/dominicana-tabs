@@ -353,25 +353,6 @@ export default function PodcastDetailScreen() {
     router.push({ pathname: '/preaching/episode/[id]', params });
   };
 
-  const handlePlayEpisode = async (episode: PodcastEpisode) => {
-    console.log('[PodcastDetail] handlePlayEpisode called with episode:', episode.title);
-    if (currentEpisode?.id === episode.id) {
-      if (isPlaying) {
-        console.log('[PodcastDetail] Pausing current episode');
-        pause();
-      } else if (isPaused) {
-        console.log('[PodcastDetail] Resuming paused episode');
-        resume();
-      } else {
-        console.log('[PodcastDetail] Playing current episode');
-        await playEpisode(episode);
-      }
-    } else {
-      console.log('[PodcastDetail] Playing new episode:', episode.title);
-      await playEpisode(episode);
-    }
-  };
-
   const sortedEpisodes = podcast?.episodes
     ? [...podcast.episodes].sort((a, b) => {
         const dateA = new Date(a.publishedAt || 0).getTime();

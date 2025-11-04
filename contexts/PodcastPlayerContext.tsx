@@ -11,6 +11,16 @@ import { ensureImageCached } from '../lib/podcast/storage';
 // Default artwork for podcast playback (iOS lock screen)
 const DEFAULT_ARTWORK = require('../assets/images/dominicana_logo-icon-white.png');
 
+// Playback context types
+export type PlaybackContextType = 'podcast' | 'playlist' | 'queue' | 'downloaded' | 'single';
+
+export interface PlaybackContext {
+  type: PlaybackContextType;
+  episodes: PodcastEpisode[];
+  currentIndex: number;
+  sourceId?: string; // podcast ID, playlist ID, etc.
+}
+
 // Conditionally import TrackPlayer only on native
 let TrackPlayer: any = null;
 let useProgress: any = null;
@@ -38,8 +48,11 @@ interface PodcastPlayerContextType {
   playbackSpeed: number;
   progress: PodcastPlaybackProgress | null;
   
+  // Playback context (for auto-play)
+  playbackContext: PlaybackContext | null;
+  
   // Controls
-  playEpisode: (episode: PodcastEpisode) => Promise<void>;
+  playEpisode: (episode: PodcastEpisode, context?: Partial<PlaybackContext>) => Promise<void>;
   pause: () => Promise<void>;
   resume: () => Promise<void>;
   seek: (position: number) => Promise<void>;
@@ -63,6 +76,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
   const [progress, setProgress] = useState<PodcastPlaybackProgress | null>(null);
   const [preferences, setPreferences] = useState<any>(null);
+  const [playbackContext, setPlaybackContext] = useState<PlaybackContext | null>(null);
   
   // Web audio
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
@@ -186,6 +200,15 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           // console.log('[PodcastPlayerContext] TrackPlayer track-changed:', data);
         });
 
+        // Listen for playback queue ended (episode finished)
+        TrackPlayer.addEventListener('playback-queue-ended', async (data: any) => {
+          console.log('[PodcastPlayerContext] TrackPlayer playback-queue-ended:', data);
+          setIsPlaying(false);
+          await markCompleted();
+          // Auto-play next episode if available
+          await playNextEpisode();
+        });
+
         // console.log('[PodcastPlayerContext] TrackPlayer event listeners set up');
       } catch (error) {
         console.error('[PodcastPlayerContext] Error setting up TrackPlayer events:', error);
@@ -252,10 +275,73 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     }
   }, [currentEpisode, user, progress]);
 
-  const playEpisode = useCallback(async (episode: PodcastEpisode) => {
+  const playNextEpisode = useCallback(async () => {
+    console.log('[PodcastPlayerContext] playNextEpisode called');
+    
+    if (!playbackContext) {
+      console.log('[PodcastPlayerContext] No playback context, cannot auto-play next');
+      return;
+    }
+    
+    // Check auto-play preference
+    const autoPlayEnabled = preferences?.podcast_auto_play_next ?? true;
+    if (!autoPlayEnabled) {
+      console.log('[PodcastPlayerContext] Auto-play disabled by user preference');
+      return;
+    }
+    
+    const { episodes, currentIndex, type, sourceId } = playbackContext;
+    const nextIndex = currentIndex + 1;
+    
+    if (nextIndex < episodes.length) {
+      const nextEpisode = episodes[nextIndex];
+      console.log('[PodcastPlayerContext] Auto-playing next episode:', nextEpisode.title, `(${nextIndex + 1}/${episodes.length})`);
+      
+      // Play next episode with same context
+      await playEpisode(nextEpisode, {
+        type,
+        episodes,
+        sourceId,
+      });
+    } else {
+      console.log('[PodcastPlayerContext] Reached end of list, no more episodes to play');
+      setPlaybackContext(null);
+    }
+  }, [playbackContext, preferences?.podcast_auto_play_next]);
+
+  const playEpisode = useCallback(async (episode: PodcastEpisode, context?: Partial<PlaybackContext>) => {
     console.log('[PodcastPlayerContext] playEpisode called with:', episode.title);
     console.log('[PodcastPlayerContext] Platform.OS:', Platform.OS);
+    console.log('[PodcastPlayerContext] Context:', context);
     setIsLoading(true);
+    
+    // Update playback context if provided
+    if (context) {
+      const episodes = context.episodes || [episode];
+      const currentIndex = episodes.findIndex(ep => ep.id === episode.id);
+      
+      const newContext: PlaybackContext = {
+        type: context.type || 'single',
+        episodes,
+        currentIndex: currentIndex >= 0 ? currentIndex : 0,
+        sourceId: context.sourceId,
+      };
+      
+      setPlaybackContext(newContext);
+      console.log('[PodcastPlayerContext] Updated playback context:', {
+        type: newContext.type,
+        episodeCount: newContext.episodes.length,
+        currentIndex: newContext.currentIndex,
+        sourceId: newContext.sourceId,
+      });
+    } else if (!playbackContext) {
+      // No context provided and none exists - single episode mode
+      setPlaybackContext({
+        type: 'single',
+        episodes: [episode],
+        currentIndex: 0,
+      });
+    }
     
     try {
       // Check if episode is downloaded first
@@ -287,9 +373,12 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           setPosition(newAudio.currentTime);
         });
         
-        newAudio.addEventListener('ended', () => {
+        newAudio.addEventListener('ended', async () => {
+          console.log('[PodcastPlayerContext] Episode ended');
           setIsPlaying(false);
-          markCompleted();
+          await markCompleted();
+          // Auto-play next episode if available
+          await playNextEpisode();
         });
         
         newAudio.addEventListener('play', () => {
@@ -510,6 +599,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     duration,
     playbackSpeed,
     progress,
+    playbackContext,
     playEpisode,
     pause,
     resume,

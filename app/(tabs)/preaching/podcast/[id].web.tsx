@@ -115,6 +115,14 @@ export default function PodcastDetailWebScreen() {
     router.push(`/(tabs)/preaching/episode/${episode.id}`);
   };
 
+  const sortedEpisodes = podcast?.episodes
+    ? [...podcast.episodes].sort((a, b) => {
+        const dateA = new Date(a.publishedAt || 0).getTime();
+        const dateB = new Date(b.publishedAt || 0).getTime();
+        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      })
+    : [];
+
   const handlePlayEpisode = async (episode: PodcastEpisode) => {
     console.log('[PodcastDetail.web] handlePlayEpisode called with episode:', episode.title);
     if (currentEpisode?.id === episode.id) {
@@ -126,21 +134,21 @@ export default function PodcastDetailWebScreen() {
         resume();
       } else {
         console.log('[PodcastDetail.web] Playing current episode');
-        await playEpisode(episode);
+        await playEpisode(episode, {
+          type: 'podcast',
+          episodes: sortedEpisodes,
+          sourceId: podcast?.id,
+        });
       }
     } else {
       console.log('[PodcastDetail.web] Playing new episode:', episode.title);
-      await playEpisode(episode);
+      await playEpisode(episode, {
+        type: 'podcast',
+        episodes: sortedEpisodes,
+        sourceId: podcast?.id,
+      });
     }
   };
-
-  const sortedEpisodes = podcast?.episodes
-    ? [...podcast.episodes].sort((a, b) => {
-        const dateA = new Date(a.publishedAt || 0).getTime();
-        const dateB = new Date(b.publishedAt || 0).getTime();
-        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
-      })
-    : [];
 
   if (loading && !podcast) {
     return (

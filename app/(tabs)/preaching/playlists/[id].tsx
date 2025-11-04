@@ -728,7 +728,32 @@ export default function PlaylistDetailScreen() {
                         } else if (currentEpisode?.id === ep.id && isPaused) {
                           resume();
                         } else {
-                          playEpisode(ep);
+                          // Build episode list from downloaded items
+                          const allEpisodes = localData.map(item => {
+                            const itemId = (item as any).id;
+                            const cachedDur = downloadedDurations[itemId];
+                            return {
+                              id: (item as any).episodeId || itemId,
+                              podcastId: (item as any).podcastId,
+                              title: (item as any).title,
+                              description: (item as any).description || '',
+                              audioUrl: (item as any).audioUrl,
+                              duration: (item as any).duration || cachedDur,
+                              publishedAt: (item as any).publishedAt,
+                              episodeNumber: (item as any).episodeNumber,
+                              seasonNumber: (item as any).seasonNumber,
+                              guid: (item as any).guid,
+                              artworkUrl: (item as any).artworkUrl || undefined,
+                              fileSize: (item as any).fileSize,
+                              mimeType: (item as any).mimeType,
+                              createdAt: new Date().toISOString(),
+                            } as any;
+                          });
+                          playEpisode(ep, {
+                            type: 'downloaded',
+                            episodes: allEpisodes,
+                            sourceId: 'downloaded',
+                          });
                         }
                       }}
                       isPlaying={currentEpisode?.id === ep.id && isPlaying}
@@ -817,7 +842,15 @@ export default function PlaylistDetailScreen() {
                         } else if (currentEpisode?.id === ep.id && isPaused) {
                           resume();
                         } else {
-                          playEpisode(ep);
+                          // Build episode list from resolved items
+                          const allEpisodes = localData
+                            .map(item => resolved[(item as any).id])
+                            .filter((ep): ep is PodcastEpisode => ep !== null && ep !== undefined);
+                          playEpisode(ep, {
+                            type: 'playlist',
+                            episodes: allEpisodes,
+                            sourceId: id,
+                          });
                         }
                       }}
                       isPlaying={currentEpisode?.id === ep.id && isPlaying}

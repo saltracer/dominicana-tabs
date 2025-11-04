@@ -34,7 +34,10 @@ export default function QueueScreen() {
 
   const handlePlayEpisode = async (episode: PodcastEpisode) => {
     try {
-      await playEpisode(episode);
+      await playEpisode(episode, {
+        type: 'queue',
+        episodes: queue,
+      });
     } catch (err) {
       console.error('Error playing episode:', err);
       Alert.alert('Error', 'Failed to play episode');

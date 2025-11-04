@@ -164,7 +164,7 @@ export default function PreachingSettingsScreen() {
             <LiturgyPreferencesToggle
               label="Auto-Play Next"
               description="Automatically play next episode when current one ends"
-              value={liturgyPreferences.podcast_auto_play_next ?? false}
+              value={liturgyPreferences.podcast_auto_play_next ?? true}
               onValueChange={(value) => updateLiturgyPreference('podcast_auto_play_next', value)}
               icon="play-skip-forward"
             />
