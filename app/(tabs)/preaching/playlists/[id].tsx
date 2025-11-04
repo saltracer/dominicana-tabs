@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-item';
@@ -604,14 +604,11 @@ export default function PlaylistDetailScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      <View style={styles.header}>
-        <View style={styles.navBtn} />
-        <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
-          {playlist?.name || 'Playlist'}
-        </Text>
-        <View style={styles.headerRight} />
-      </View>
-
+      <Stack.Screen 
+        options={{ 
+          title: playlist?.name || 'Playlist',
+        }} 
+      />
       {isInitiallyLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
@@ -623,7 +620,7 @@ export default function PlaylistDetailScreen() {
         <DraggableFlatList
         data={localData}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         onDragEnd={handleDragEnd}
         onDragBegin={() => {
           setIsDragging(true);
@@ -932,35 +929,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  navBtn: {
-    padding: 8,
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    fontFamily: 'Georgia',
-    fontWeight: '700',
-    fontSize: 18,
-  },
-  headerRight: {
-    width: 30,
-  },
   draggableItemContainer: {
-    marginBottom: 10,
+    marginBottom: 0,
   },
   draggableItemActive: {
-    opacity: 0.7,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    opacity: 0.9,
   },
   dragHandle: {
     paddingHorizontal: 8,

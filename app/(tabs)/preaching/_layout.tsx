@@ -133,7 +133,6 @@ export default function PreachingLayout() {
       <Stack.Screen 
         name="playlists/[id]" 
         options={{
-          headerTitle: 'Playlist',
           headerBackTitle: '',
           headerRight: () => headerRightComponent,
         }}

@@ -528,14 +528,11 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 0,
     padding: 16,
-    marginVertical: 6,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginVertical: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   content: {
     gap: 12,
