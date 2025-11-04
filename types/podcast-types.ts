@@ -153,6 +153,7 @@ export interface Playlist {
   name: string;
   description?: string;
   isSystem: boolean;
+  displayOrder?: number;
   createdAt: string;
   updatedAt: string;
 }

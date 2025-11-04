@@ -19,6 +19,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import { ReduceMotion } from 'react-native-reanimated';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
 import { PreachingStyles } from '../../../styles';
@@ -47,6 +49,7 @@ export default function PodcastsScreen() {
   const [promptValue, setPromptValue] = useState('');
   const [promptMode, setPromptMode] = useState<'create' | 'rename'>('create');
   const [promptTargetId, setPromptTargetId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Calculate number of columns for grid layout
   const numColumns = useMemo(() => {
@@ -64,7 +67,7 @@ export default function PodcastsScreen() {
   const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = usePodcastSubscriptions();
   
   // Load playlists and queue
-  const { playlists, loading: playlistsLoading, createPlaylist, renamePlaylist, deletePlaylist } = usePlaylists();
+  const { playlists, loading: playlistsLoading, createPlaylist, renamePlaylist, deletePlaylist, updatePlaylistsOrder } = usePlaylists();
   const { items: downloadedItems } = useDownloadedPlaylist();
   const { queue, loading: queueLoading } = useQueue();
 
@@ -170,7 +173,7 @@ export default function PodcastsScreen() {
       case 'subscriptions':
         return { data: subscriptions, loading: subsLoading, type: 'podcasts' as const };
       case 'playlists':
-        const downloaded = { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any;
+        const downloaded = { id: 'downloaded', name: 'Downloaded', is_builtin: true, display_order: -1 } as any;
         const list = [downloaded, ...playlists];
         return { data: list, loading: playlistsLoading, type: 'playlists' as const };
       case 'queue':
@@ -182,6 +185,66 @@ export default function PodcastsScreen() {
 
   const { data: displayData, loading, type: dataType } = getDisplayData();
 
+  const handlePlaylistDragEnd = async ({ data: newData }: { data: any[] }) => {
+    setIsDragging(false);
+    
+    if (__DEV__) {
+      console.log('[Podcasts] 🎯 Drag ended, new order:', newData.map((p, idx) => ({ 
+        index: idx, 
+        id: p.id, 
+        name: p.name, 
+        display_order: p.display_order 
+      })));
+    }
+    
+    // Filter out the Downloaded playlist (should stay at top)
+    const userPlaylists = newData.filter(p => p.id !== 'downloaded' && !p.is_builtin);
+    
+    if (__DEV__) {
+      console.log('[Podcasts] User playlists after drag:', userPlaylists.map((p, idx) => ({ 
+        newIndex: idx, 
+        id: p.id, 
+        name: p.name, 
+        oldDisplayOrder: p.display_order,
+        newDisplayOrder: idx
+      })));
+      
+      console.log('[Podcasts] Original playlists order:', playlists.map((p, idx) => ({
+        index: idx,
+        id: p.id,
+        name: p.name,
+        display_order: p.display_order
+      })));
+    }
+    
+    // Check if order actually changed by comparing the sequence of IDs
+    const newIdSequence = userPlaylists.map(p => p.id).join(',');
+    const originalIdSequence = playlists.map(p => p.id).join(',');
+    const orderChanged = newIdSequence !== originalIdSequence;
+    
+    if (__DEV__) {
+      console.log('[Podcasts] Order comparison:', {
+        newSequence: newIdSequence,
+        originalSequence: originalIdSequence,
+        changed: orderChanged
+      });
+    }
+    
+    if (!orderChanged) {
+      if (__DEV__) console.log('[Podcasts] ⚠️ No order change detected, skipping update');
+      return;
+    }
+    
+    // Update order in backend (exclude built-in playlists)
+    try {
+      if (__DEV__) console.log('[Podcasts] 📤 Updating playlist order...');
+      await updatePlaylistsOrder(userPlaylists);
+      if (__DEV__) console.log('[Podcasts] ✅ Playlist order updated successfully');
+    } catch (error) {
+      console.error('[Podcasts] ❌ Failed to update playlist order:', error);
+      Alert.alert('Error', 'Failed to reorder playlists. Please try again.');
+    }
+  };
 
   return (
     <SafeAreaView 
@@ -356,7 +419,104 @@ export default function PodcastsScreen() {
               showsVerticalScrollIndicator={false}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
             />
-          ) : (
+          ) : dataType === 'playlists' ? (
+            <View style={{ flex: 1 }}>
+              <View style={[styles.podcastsContainer, { paddingBottom: 0 }]}>
+                <TouchableOpacity
+                  onPress={async () => {
+                    setPromptMode('create');
+                    setPromptTargetId(null);
+                    setPromptValue('');
+                    setPromptVisible(true);
+                  }}
+                  style={{ alignSelf: 'flex-start', marginBottom: 12, backgroundColor: Colors[colorScheme ?? 'light'].primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{ color: '#fff', fontFamily: 'Georgia', fontWeight: '600' }}>+ New playlist</Text>
+                </TouchableOpacity>
+              </View>
+              <DraggableFlatList
+                data={displayData as any[]}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
+                onDragEnd={handlePlaylistDragEnd}
+                onDragBegin={() => setIsDragging(true)}
+                activationDistance={20}
+                animationConfig={{
+                  reduceMotion: ReduceMotion.Never,
+                }}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+                renderItem={({ item: playlist, drag, isActive, getIndex }: RenderItemParams<any>) => {
+                  const isBuiltin = playlist.id === 'downloaded' || playlist.is_builtin;
+                  
+                  return (
+                    <ScaleDecorator>
+                      <TouchableOpacity
+                        style={[
+                          styles.playlistCard, 
+                          { backgroundColor: Colors[colorScheme ?? 'light'].card },
+                          isActive && { opacity: 0.8 }
+                        ]}
+                        onPress={() => {
+                          if (playlist.id === 'downloaded') {
+                            router.push({ pathname: '/preaching/playlists/[id]', params: { id: 'downloaded' } });
+                          } else {
+                            router.push({ pathname: '/preaching/playlists/[id]', params: { id: playlist.id } });
+                          }
+                        }}
+                        onLongPress={!isBuiltin ? drag : undefined}
+                        disabled={isActive}
+                      >
+                        {!isBuiltin && (
+                          <TouchableOpacity onLongPress={drag} style={{ padding: 8, marginRight: 4 }}>
+                            <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                          </TouchableOpacity>
+                        )}
+                        <View style={styles.playlistIcon}>
+                          <Ionicons name={isBuiltin ? 'cloud-download' : 'list'} size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                        </View>
+                        <View style={styles.playlistInfo}>
+                          <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>{playlist.name}</Text>
+                          <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                            {isBuiltin ? 'Downloaded (device)' : 'User Playlist'}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          {!isBuiltin && (
+                            <TouchableOpacity
+                              onPress={async () => {
+                                setPromptMode('rename');
+                                setPromptTargetId(playlist.id);
+                                setPromptValue(playlist.name || '');
+                                setPromptVisible(true);
+                              }}
+                              style={{ padding: 6 }}
+                            >
+                              <Ionicons name='pencil' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                            </TouchableOpacity>
+                          )}
+                          {!isBuiltin && (
+                            <TouchableOpacity
+                              onPress={async () => {
+                                Alert.alert('Delete playlist?', 'This will remove the playlist and its items (episodes remain).', [
+                                  { text: 'Cancel', style: 'cancel' },
+                                  { text: 'Delete', style: 'destructive', onPress: async () => { await deletePlaylist(playlist.id); } },
+                                ]);
+                              }}
+                              style={{ padding: 6 }}
+                            >
+                              <Ionicons name='trash' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                            </TouchableOpacity>
+                          )}
+                          <Ionicons name='chevron-forward' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                        </View>
+                      </TouchableOpacity>
+                    </ScaleDecorator>
+                  );
+                }}
+              />
+            </View>
+          ) : dataType === 'episodes' ? (
             <ScrollView 
               style={styles.scrollView} 
               showsVerticalScrollIndicator={false} 
@@ -364,76 +524,7 @@ export default function PodcastsScreen() {
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
             >
               <View style={styles.podcastsContainer}>
-                {dataType === 'playlists' ? (
-                  <View>
-                    <TouchableOpacity
-                      onPress={async () => {
-                        setPromptMode('create');
-                        setPromptTargetId(null);
-                        setPromptValue('');
-                        setPromptVisible(true);
-                      }}
-                      style={{ alignSelf: 'flex-start', marginBottom: 12, backgroundColor: Colors[colorScheme ?? 'light'].primary, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 }}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={{ color: '#fff', fontFamily: 'Georgia', fontWeight: '600' }}>+ New playlist</Text>
-                    </TouchableOpacity>
-                    {(displayData as any[]).map((playlist) => {
-                      return (
-                        <TouchableOpacity
-                          key={playlist.id}
-                          style={[styles.playlistCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-                          onPress={() => {
-                            if (playlist.id === 'downloaded') {
-                              router.push({ pathname: '/preaching/playlists/[id]', params: { id: 'downloaded' } });
-                            } else {
-                              router.push({ pathname: '/preaching/playlists/[id]', params: { id: playlist.id } });
-                            }
-                          }}
-                        >
-                          <View style={styles.playlistIcon}>
-                            <Ionicons name={playlist.id === 'downloaded' || playlist.is_builtin ? 'cloud-download' : 'list'} size={24} color={Colors[colorScheme ?? 'light'].primary} />
-                          </View>
-                          <View style={styles.playlistInfo}>
-                            <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>{playlist.name}</Text>
-                            <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                              {playlist.id === 'downloaded' || playlist.is_builtin ? 'Downloaded (device)' : 'User Playlist'}
-                            </Text>
-                          </View>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            {playlist.id !== 'downloaded' && !playlist.is_builtin && (
-                              <TouchableOpacity
-                                onPress={async () => {
-                                  setPromptMode('rename');
-                                  setPromptTargetId(playlist.id);
-                                  setPromptValue(playlist.name || '');
-                                  setPromptVisible(true);
-                                }}
-                                style={{ padding: 6 }}
-                              >
-                                <Ionicons name='pencil' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                              </TouchableOpacity>
-                            )}
-                            {playlist.id !== 'downloaded' && !playlist.is_builtin && (
-                              <TouchableOpacity
-                                onPress={async () => {
-                                  Alert.alert('Delete playlist?', 'This will remove the playlist and its items (episodes remain).', [
-                                    { text: 'Cancel', style: 'cancel' },
-                                    { text: 'Delete', style: 'destructive', onPress: async () => { await deletePlaylist(playlist.id); } },
-                                  ]);
-                                }}
-                                style={{ padding: 6 }}
-                              >
-                                <Ionicons name='trash' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                              </TouchableOpacity>
-                            )}
-                            <Ionicons name='chevron-forward' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ) : dataType === 'episodes' ? (
+                {dataType === 'episodes' ? (
                   (displayData as any[]).map((episode, index) => (
                     <TouchableOpacity
                       key={episode.id}
@@ -452,46 +543,48 @@ export default function PodcastsScreen() {
                   ))
                 ) : null}
               </View>
-              {promptVisible && (
-                <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-                  <View style={{ width: '100%', maxWidth: 420, borderRadius: 12, padding: 16, backgroundColor: Colors[colorScheme ?? 'light'].card }}>
-                    <Text style={{ fontFamily: 'Georgia', fontWeight: '700', fontSize: 16, color: Colors[colorScheme ?? 'light'].text, marginBottom: 8 }}>
-                      {promptMode === 'create' ? 'New Playlist' : 'Rename Playlist'}
-                    </Text>
-                    <TextInput
-                      value={promptValue}
-                      onChangeText={setPromptValue}
-                      placeholder="Playlist name"
-                      placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
-                      style={{ borderWidth: 1, borderColor: Colors[colorScheme ?? 'light'].border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontFamily: 'Georgia', color: Colors[colorScheme ?? 'light'].text }}
-                      autoFocus
-                    />
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
-                      <TouchableOpacity onPress={() => setPromptVisible(false)} style={{ paddingVertical: 10, paddingHorizontal: 12, marginRight: 8 }}>
-                        <Text style={{ color: Colors[colorScheme ?? 'light'].textSecondary, fontFamily: 'Georgia' }}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={async () => {
-                          const name = promptValue.trim();
-                          if (!name) return;
-                          setPromptVisible(false);
-                          if (promptMode === 'create') {
-                            await createPlaylist(name);
-                          } else if (promptMode === 'rename' && promptTargetId) {
-                            await renamePlaylist(promptTargetId, name);
-                          }
-                        }}
-                        style={{ paddingVertical: 10, paddingHorizontal: 12 }}
-                      >
-                        <Text style={{ color: Colors[colorScheme ?? 'light'].primary, fontFamily: 'Georgia', fontWeight: '700' }}>Save</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              )}
             </ScrollView>
-          )
+          ) : null
         )}
+      
+      {/* Prompt Modal */}
+      {promptVisible && (
+        <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ width: '100%', maxWidth: 420, borderRadius: 12, padding: 16, backgroundColor: Colors[colorScheme ?? 'light'].card }}>
+            <Text style={{ fontFamily: 'Georgia', fontWeight: '700', fontSize: 16, color: Colors[colorScheme ?? 'light'].text, marginBottom: 8 }}>
+              {promptMode === 'create' ? 'New Playlist' : 'Rename Playlist'}
+            </Text>
+            <TextInput
+              value={promptValue}
+              onChangeText={setPromptValue}
+              placeholder="Playlist name"
+              placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+              style={{ borderWidth: 1, borderColor: Colors[colorScheme ?? 'light'].border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontFamily: 'Georgia', color: Colors[colorScheme ?? 'light'].text }}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+              <TouchableOpacity onPress={() => setPromptVisible(false)} style={{ paddingVertical: 10, paddingHorizontal: 12, marginRight: 8 }}>
+                <Text style={{ color: Colors[colorScheme ?? 'light'].textSecondary, fontFamily: 'Georgia' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={async () => {
+                  const name = promptValue.trim();
+                  if (!name) return;
+                  setPromptVisible(false);
+                  if (promptMode === 'create') {
+                    await createPlaylist(name);
+                  } else if (promptMode === 'rename' && promptTargetId) {
+                    await renamePlaylist(promptTargetId, name);
+                  }
+                }}
+                style={{ paddingVertical: 10, paddingHorizontal: 12 }}
+              >
+                <Text style={{ color: Colors[colorScheme ?? 'light'].primary, fontFamily: 'Georgia', fontWeight: '700' }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }

@@ -44,8 +44,10 @@ export function usePlaylists() {
         }
         
         const fresh = await getCachedPlaylists(userId);
-        if (isMounted) setPlaylists(fresh);
-        if (__DEV__) console.log('[usePlaylists] Total load time:', Date.now() - loadStart, 'ms');
+        if (isMounted) {
+          setPlaylists(fresh);
+        }
+        if (__DEV__) console.log('[usePlaylists] Loaded', fresh.length, 'playlists in', Date.now() - loadStart, 'ms');
       } catch (e) {
         setError(e);
       } finally {
@@ -105,6 +107,31 @@ export function usePlaylists() {
     setPlaylists(freshPlaylists);
   }, [userId, playlists]);
 
+  const updatePlaylistsOrder = useCallback(async (orderedPlaylists: Playlist[]) => {
+    if (!userId) return;
+    
+    if (__DEV__) {
+      console.log('[usePlaylists] 🔄 Updating order for', orderedPlaylists.length, 'playlists');
+    }
+    
+    // Optimistic update
+    setPlaylists(orderedPlaylists);
+    await setCachedPlaylists(userId, orderedPlaylists);
+    
+    // Update display_order in backend
+    const updates = orderedPlaylists.map((p, index) => ({ id: p.id, display_order: index }));
+    await enqueueMutation(userId, { type: 'updatePlaylistsOrder', updates });
+    await syncUp(userId);
+    
+    // Refresh playlists only (don't fetch all items)
+    const freshPlaylists = await PlaylistService.getPlaylists();
+    if (__DEV__) {
+      console.log('[usePlaylists] ✅ Updated and refreshed playlists');
+    }
+    await setCachedPlaylists(userId, freshPlaylists);
+    setPlaylists(freshPlaylists);
+  }, [userId, playlists]);
+
   return {
     playlists,
     loading,
@@ -112,6 +139,7 @@ export function usePlaylists() {
     createPlaylist,
     renamePlaylist,
     deletePlaylist,
+    updatePlaylistsOrder,
   };
 }
 

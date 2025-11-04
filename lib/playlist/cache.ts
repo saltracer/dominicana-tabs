@@ -17,7 +17,8 @@ export type Mutation =
   | { type: 'deletePlaylist'; id: string }
   | { type: 'addItem'; playlistId: string; payload: { episode_id?: string; external_ref?: any; position?: number } }
   | { type: 'removeItem'; itemId: string }
-  | { type: 'moveItem'; playlistId: string; itemId: string; toIndex: number };
+  | { type: 'moveItem'; playlistId: string; itemId: string; toIndex: number }
+  | { type: 'updatePlaylistsOrder'; updates: Array<{ id: string; display_order: number }> };
 
 export async function getCachedPlaylists(userId: string): Promise<Playlist[]> {
   return (await getJson(keys.playlists(userId))) || [];
@@ -73,6 +74,7 @@ export async function syncUp(userId: string): Promise<void> {
       else if (m.type === 'addItem') await PlaylistService.addItem(m.playlistId, m.payload as any, (m.payload as any).position);
       else if (m.type === 'removeItem') await PlaylistService.removeItem(m.itemId);
       else if (m.type === 'moveItem') await PlaylistService.moveItem(m.playlistId, m.itemId, m.toIndex);
+      else if (m.type === 'updatePlaylistsOrder') await PlaylistService.updatePlaylistsOrder(m.updates);
     } catch (e) {
       if (__DEV__) console.warn('[playlist-cache] syncUp mutation failed', m, e);
     }

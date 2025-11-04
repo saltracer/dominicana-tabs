@@ -40,6 +40,7 @@ export default class PlaylistService {
       .order('display_order', { ascending: true, nullsFirst: false })
       .order('updated_at', { ascending: false });
     if (error) throw error;
+    
     return data as unknown as Playlist[];
   }
 
@@ -74,6 +75,30 @@ export default class PlaylistService {
       .delete()
       .eq('id', id);
     if (error) throw error;
+  }
+
+  static async updatePlaylistsOrder(playlists: Array<{ id: string; display_order: number }>): Promise<void> {
+    if (__DEV__) {
+      console.log('[PlaylistService] 💾 Updating display_order:', playlists.map(p => `${p.id.substring(0, 8)}:${p.display_order}`).join(', '));
+    }
+    
+    // Use individual UPDATE statements instead of UPSERT to avoid RLS issues
+    // UPSERT can trigger INSERT policies which may require fields we don't have
+    for (const playlist of playlists) {
+      const { error } = await supabase
+        .from('playlists')
+        .update({ display_order: playlist.display_order })
+        .eq('id', playlist.id);
+      
+      if (error) {
+        console.error('[PlaylistService] ❌ DB update failed for playlist:', playlist.id, error);
+        throw error;
+      }
+    }
+    
+    if (__DEV__) {
+      console.log('[PlaylistService] ✅ DB updated successfully');
+    }
   }
 
   static async getItems(playlistId: string): Promise<PlaylistItem[]> {
