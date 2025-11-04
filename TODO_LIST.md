@@ -77,7 +77,6 @@
 - [x] Get playback integrated with the iOS operating system.
 - [x] Is streaming audio playback supported - yes.
 
-
 ## Other
 - [ ] Carplay
 - [ ] Widget support
