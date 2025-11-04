@@ -4,6 +4,7 @@ import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-item';
+import { ReduceMotion } from 'react-native-reanimated';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { PodcastEpisode } from '../../../../types';
 import { getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
@@ -632,6 +633,9 @@ export default function PlaylistDetailScreen() {
           });
         }}
         activationDistance={isDownloaded ? 999999 : 20}
+        animationConfig={{
+          reduceMotion: ReduceMotion.Never,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
