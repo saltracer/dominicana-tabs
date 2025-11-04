@@ -43,16 +43,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfileWithDebounce(session.user.id);
-      } else {
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfileWithDebounce(session.user.id);
+        } else {
+          setLoading(false);
+          setProfileLoading(false);
+        }
+      })
+      .catch((error) => {
+        // Handle invalid/expired refresh tokens gracefully
+        console.log('AuthContext: Error getting session (treating as signed out):', error.message);
+        setSession(null);
+        setUser(null);
+        setProfile(null);
         setLoading(false);
         setProfileLoading(false);
-      }
-    });
+      });
 
     // Safety timeout to prevent infinite loading
     const timeout = setTimeout(() => {
