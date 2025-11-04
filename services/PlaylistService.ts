@@ -5,6 +5,7 @@ export type Playlist = {
   user_id: string;
   name: string;
   is_builtin: boolean;
+  display_order?: number;
   created_at: string;
   updated_at: string;
 };
@@ -36,6 +37,7 @@ export default class PlaylistService {
       .from('playlists')
       .select('*')
       .order('is_builtin', { ascending: false })
+      .order('display_order', { ascending: true, nullsFirst: false })
       .order('updated_at', { ascending: false });
     if (error) throw error;
     return data as unknown as Playlist[];

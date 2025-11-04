@@ -629,7 +629,7 @@ export default function PlaylistDetailScreen() {
             if (ref) ref.close();
           });
         }}
-        activationDistance={isDownloaded ? 999999 : 20}
+        activationDistance={20}
         animationConfig={{
           reduceMotion: ReduceMotion.Never,
         }}
