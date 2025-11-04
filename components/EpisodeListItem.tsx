@@ -356,7 +356,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
             <View style={styles.artworkContainer}>
               {artPath ? (
                 <>
-                  {__DEV__ && console.log('[EpisodeListItem] rendering image with path:', artPath)}
+                  {/* {__DEV__ && console.log('[EpisodeListItem] rendering image with path:', artPath)} */}
                   <Image 
                     source={{ uri: artPath }} 
                     style={styles.artwork} 
@@ -486,14 +486,14 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
           )}
           {(() => {
             const dur = episode.duration;
-            if (__DEV__ && hideDescription) {
-              console.log('[EpisodeListItem] duration check:', { 
-                duration: dur, 
-                type: typeof dur, 
-                isNumber: typeof dur === 'number',
-                isTruthy: !!dur 
-              });
-            }
+            // if (__DEV__ && hideDescription) {
+            //   console.log('[EpisodeListItem] duration check:', { 
+            //     duration: dur, 
+            //     type: typeof dur, 
+            //     isNumber: typeof dur === 'number',
+            //     isTruthy: !!dur 
+            //   });
+            // }
             return (dur !== undefined && dur !== null && dur > 0);
           })() && (
             <View style={styles.metaItem}>

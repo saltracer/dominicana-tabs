@@ -17,6 +17,7 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 import { RosaryAudioDownloadService } from '../services/RosaryAudioDownloadService';
 import { AudioSettings, RosaryBead } from '../types/rosary-types';
+import { AudioStateManager } from '../lib/audio-state-manager';
 
 interface UseRosaryAudioOptions {
   beads: RosaryBead[];
@@ -425,6 +426,9 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
     await TrackPlayer.play();
     setManualIsPlaying(true);
     setManualIsPaused(false);
+    
+    // Set rosary as active audio type when playing
+    AudioStateManager.setActiveAudioType('rosary');
   }, []);
 
   /**
@@ -504,12 +508,24 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
     await stop();
   }, [stop]);
 
-  // Cleanup on unmount
+  // Register handlers and cleanup on unmount
   useEffect(() => {
+    // Register rosary handlers with AudioStateManager
+    AudioStateManager.registerAudioHandlers('rosary', {
+      play: play,
+      pause: pause,
+      stop: stop,
+      next: skipToNext,
+      previous: skipToPrevious,
+    });
+    console.log('[useRosaryAudio] Registered rosary handlers with AudioStateManager');
+    
     return () => {
+      AudioStateManager.unregisterAudioHandlers('rosary');
+      console.log('[useRosaryAudio] Unregistered rosary handlers');
       TrackPlayer.reset();
     };
-  }, []);
+  }, [play, pause, stop, skipToNext, skipToPrevious]);
 
   return {
     // State

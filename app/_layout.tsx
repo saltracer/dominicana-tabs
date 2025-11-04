@@ -18,7 +18,7 @@ import { CalendarProvider } from '@/components/CalendarContext';
 import { BibleProvider } from '@/contexts/BibleContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PodcastPlayerProvider } from '@/contexts/PodcastPlayerContext';
-import { RosaryPlaybackService } from '@/services/RosaryPlaybackService';
+import { UnifiedPlaybackService } from '@/services/UnifiedPlaybackService';
 import { AudioVersionService } from '@/services/AudioVersionService';
 import { RosaryAudioDownloadService } from '@/services/RosaryAudioDownloadService';
 
@@ -29,7 +29,7 @@ const initializeTrackPlayer = async () => {
   if (trackPlayerInitialized) return;
   
   try {
-    TrackPlayer.registerPlaybackService(() => RosaryPlaybackService);
+    TrackPlayer.registerPlaybackService(() => UnifiedPlaybackService);
     
     await TrackPlayer.setupPlayer({
       autoUpdateMetadata: true,
@@ -49,7 +49,7 @@ const initializeTrackPlayer = async () => {
     });
     
     trackPlayerInitialized = true;
-    console.log('[App] TrackPlayer initialized successfully with background audio support');
+    console.log('[App] TrackPlayer initialized successfully with UnifiedPlaybackService and background audio support');
   } catch (error) {
     // If already set up, this is fine
     if (error instanceof Error && error.message.includes('already initialized')) {

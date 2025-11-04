@@ -749,13 +749,13 @@ export default function PlaylistDetailScreen() {
           }
           const ep = resolved[(item as any).id];
           if (ep) {
-            if (__DEV__) console.log('[PlaylistDetail] rendering playlist item episode:', { 
-              id: ep.id,
-              title: ep.title?.substring(0, 30),
-              duration: ep.duration,
-              hasDuration: ep.duration !== undefined && ep.duration !== null && ep.duration > 0,
-              publishedAt: ep.publishedAt
-            });
+            // if (__DEV__) console.log('[PlaylistDetail] rendering playlist item episode:', { 
+            //   id: ep.id,
+            //   title: ep.title?.substring(0, 30),
+            //   duration: ep.duration,
+            //   hasDuration: ep.duration !== undefined && ep.duration !== null && ep.duration > 0,
+            //   publishedAt: ep.publishedAt
+            // });
             return (
               <ScaleDecorator>
                 <SwipeableItem
@@ -805,7 +805,7 @@ export default function PlaylistDetailScreen() {
                       showArtwork
                       artworkLocalPath={(() => {
                         const path = artByPodcast[ep.podcastId] || null;
-                        if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
+                        // if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
                         return path;
                       })()}
                       showAddToPlaylist={false}

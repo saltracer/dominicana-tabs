@@ -67,13 +67,15 @@
 ## Preaching
 - [ ] Subscribe to blogs
 - [x] Subscribe to podcasts
-- [ ] Podcasts - Support playlists
-- [ ] Podcasts - Create a downloaded podcasts section
+- [x] Podcasts - Support playlists
+- [x] Podcasts - Create a downloaded podcasts section
 - [ ] Create podcast specific preferences
 - [x] Improve performance of podcasts by using device caching
 - [ ] Add "Played" status to podcasts
+- [ ] Playlist features don't actually continue to the next episode.
 - [ ] Implement a download queue 
-- [ ] Get artwork from podcast available to track-player and in the iOS background
+- [ ] Get playback integrated with the iOS operating system.
+- [ ] Is streaming audio playback supported?
 
 
 ## Other

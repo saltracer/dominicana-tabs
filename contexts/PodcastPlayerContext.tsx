@@ -5,6 +5,8 @@ import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreference
 import { useAuth } from './AuthContext';
 import { Platform } from 'react-native';
 import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
+import { AudioStateManager } from '../lib/audio-state-manager';
+import { ensureImageCached } from '../lib/podcast/storage';
 
 // Conditionally import TrackPlayer only on native
 let TrackPlayer: any = null;
@@ -66,6 +68,18 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const trackPlayerProgress = Platform.OS !== 'web' && useProgress ? useProgress() : { position: 0, duration: 0 };
   
   const isInitializedRef = useRef(false);
+  const pauseRef = useRef<(() => Promise<void>) | null>(null);
+  const resumeRef = useRef<(() => Promise<void>) | null>(null);
+  
+  // Cleanup: Unregister handlers when component unmounts
+  useEffect(() => {
+    return () => {
+      if (Platform.OS !== 'web') {
+        AudioStateManager.unregisterAudioHandlers('podcast');
+        console.log('[PodcastPlayerContext] Unregistered podcast handlers on unmount');
+      }
+    };
+  }, []);
 
   // Load user preferences
   const loadPreferences = useCallback(async () => {
@@ -151,7 +165,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       try {
         // Listen for play state changes
         TrackPlayer.addEventListener('playback-state', (data: any) => {
-          console.log('[PodcastPlayerContext] TrackPlayer playback-state:', data);
+          // console.log('[PodcastPlayerContext] TrackPlayer playback-state:', data);
           if (data.state === 'playing') {
             setIsPlaying(true);
             setIsPaused(false);
@@ -166,10 +180,10 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
 
         // Listen for track changes
         TrackPlayer.addEventListener('playback-track-changed', (data: any) => {
-          console.log('[PodcastPlayerContext] TrackPlayer track-changed:', data);
+          // console.log('[PodcastPlayerContext] TrackPlayer track-changed:', data);
         });
 
-        console.log('[PodcastPlayerContext] TrackPlayer event listeners set up');
+        // console.log('[PodcastPlayerContext] TrackPlayer event listeners set up');
       } catch (error) {
         console.error('[PodcastPlayerContext] Error setting up TrackPlayer events:', error);
       }
@@ -320,16 +334,43 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           console.warn('[PodcastPlayerContext] Error stopping current playback:', e);
         }
 
-        console.log('[PodcastPlayerContext] Adding episode to TrackPlayer queue');
-        // Add episode to queue
+        // DIAGNOSTIC: Log episode artwork info
+        console.log('[PodcastPlayerContext] Episode artwork diagnostic:', {
+          hasArtworkUrl: !!episode.artworkUrl,
+          artworkUrl: episode.artworkUrl,
+          artworkUrlType: typeof episode.artworkUrl,
+          episodeKeys: Object.keys(episode),
+        });
+
+        // Cache artwork for iOS controls before adding track
+        let artworkPath = episode.artworkUrl;
+        if (episode.artworkUrl) {
+          try {
+            console.log('[PodcastPlayerContext] Caching artwork for iOS controls:', episode.artworkUrl);
+            const { path } = await ensureImageCached(episode.artworkUrl);
+            // Use file:// URL for iOS
+            artworkPath = path.startsWith('file://') ? path : `file://${path}`;
+            console.log('[PodcastPlayerContext] Artwork cached at:', artworkPath);
+          } catch (e) {
+            console.warn('[PodcastPlayerContext] Failed to cache artwork, using remote URL:', e);
+            artworkPath = episode.artworkUrl;
+          }
+        } else {
+          console.warn('[PodcastPlayerContext] No artwork URL provided for episode');
+        }
+
+        console.log('[PodcastPlayerContext] Adding episode to TrackPlayer queue with artwork:', artworkPath);
+        // Add episode to queue with cached artwork
         await TrackPlayer.add({
           id: episode.id,
           url: audioUrl,
           title: episode.title,
           artist: 'Podcast',
-          artwork: episode.artworkUrl,
+          artwork: artworkPath,
           duration: episode.duration,
         });
+        
+        console.log('[PodcastPlayerContext] Track added to TrackPlayer successfully');
 
         console.log('[PodcastPlayerContext] Loading saved progress');
         // Load saved progress
@@ -349,6 +390,25 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         setIsLoading(false);
         console.log('[PodcastPlayerContext] Native playback setup complete');
         
+        // Register podcast handlers with AudioStateManager for remote controls
+        AudioStateManager.registerAudioHandlers('podcast', {
+          play: async () => {
+            if (resumeRef.current) await resumeRef.current();
+          },
+          pause: async () => {
+            if (pauseRef.current) await pauseRef.current();
+          },
+          stop: async () => {
+            if (TrackPlayer) {
+              await TrackPlayer.stop();
+              setIsPlaying(false);
+              setIsPaused(false);
+            }
+          },
+        });
+        AudioStateManager.setActiveAudioType('podcast');
+        console.log('[PodcastPlayerContext] Registered podcast handlers with AudioStateManager');
+        
         // Add a small delay to ensure state is updated
         setTimeout(() => {
           console.log('[PodcastPlayerContext] State after delay:', {
@@ -366,6 +426,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   }, [audio, markCompleted, getDownloadedEpisodePath]);
 
   const pause = useCallback(async () => {
+    console.log('[PodcastPlayerContext] pause called');
     if (Platform.OS === 'web') {
       if (audio) {
         audio.pause();
@@ -375,12 +436,19 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     } else {
       if (TrackPlayer) {
         await TrackPlayer.pause();
+        setIsPlaying(false);
         setIsPaused(true);
       }
     }
   }, [audio]);
+  
+  // Update ref when pause changes
+  useEffect(() => {
+    pauseRef.current = pause;
+  }, [pause]);
 
   const resume = useCallback(async () => {
+    console.log('[PodcastPlayerContext] resume called');
     if (Platform.OS === 'web') {
       if (audio) {
         await audio.play();
@@ -395,6 +463,11 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       }
     }
   }, [audio]);
+  
+  // Update ref when resume changes
+  useEffect(() => {
+    resumeRef.current = resume;
+  }, [resume]);
 
   const seek = useCallback(async (position: number) => {
     if (Platform.OS === 'web') {
