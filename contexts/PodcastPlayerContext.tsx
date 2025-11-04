@@ -8,6 +8,9 @@ import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 import { AudioStateManager } from '../lib/audio-state-manager';
 import { ensureImageCached } from '../lib/podcast/storage';
 
+// Default artwork for podcast playback (iOS lock screen)
+const DEFAULT_ARTWORK = require('../assets/images/dominicana_logo-icon-white.png');
+
 // Conditionally import TrackPlayer only on native
 let TrackPlayer: any = null;
 let useProgress: any = null;
@@ -335,7 +338,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         }
 
         // Cache artwork for iOS controls before adding track
-        let artworkPath: string | number = require('../assets/images/dominicana_logo-icon-white.png');
+        let artworkPath: string | number = DEFAULT_ARTWORK;
         if (episode.artworkUrl) {
           try {
             console.log('[PodcastPlayerContext] Caching artwork for iOS controls:', episode.artworkUrl);
@@ -345,7 +348,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
             console.log('[PodcastPlayerContext] Artwork cached at:', artworkPath);
           } catch (e) {
             console.warn('[PodcastPlayerContext] Failed to cache artwork, using default logo:', e);
-            artworkPath = require('../assets/images/dominicana_logo-icon-white.png');
+            artworkPath = DEFAULT_ARTWORK;
           }
         } else {
           console.log('[PodcastPlayerContext] No artwork URL, using default dominicana logo');

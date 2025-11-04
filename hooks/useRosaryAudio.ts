@@ -19,6 +19,10 @@ import { RosaryAudioDownloadService } from '../services/RosaryAudioDownloadServi
 import { AudioSettings, RosaryBead } from '../types/rosary-types';
 import { AudioStateManager } from '../lib/audio-state-manager';
 
+// Default artwork for rosary playback (iOS lock screen)
+// const DEFAULT_ARTWORK = require('../assets/images/dominicana_logo.png');
+const DEFAULT_ARTWORK = require('../assets/images/dominicana_logo-icon-red.png');
+
 interface UseRosaryAudioOptions {
   beads: RosaryBead[];
   voice: string;
@@ -210,7 +214,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
             title: 'Faith, Hope, and Charity',
             artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
             album: mysteryName,
-            artwork: require('../assets/images/dominicana_logo-icon-white.png'),
+            artwork: DEFAULT_ARTWORK,
             beadId: bead.id,
           });
           beadIdMapRef.current.set(trackIndex, bead.id);
@@ -233,7 +237,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
             title: 'Glory Be',
             artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
             album: mysteryName,
-            artwork: require('../assets/images/dominicana_logo-icon-white.png'),
+            artwork: DEFAULT_ARTWORK,
             beadId: bead.id,
           });
           beadIdMapRef.current.set(trackIndex, bead.id);
@@ -254,7 +258,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
             title: 'Alleluia',
             artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
             album: mysteryName,
-            artwork: require('../assets/images/dominicana_logo-icon-white.png'),
+            artwork: DEFAULT_ARTWORK,
             beadId: bead.id, // Same bead ID as Glory Be
           });
           beadIdMapRef.current.set(trackIndex, bead.id);
@@ -280,7 +284,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
               title: bead.title, // Keep the combined title
               artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
               album: mysteryName,
-              artwork: require('../assets/images/dominicana_logo-icon-white.png'),
+              artwork: DEFAULT_ARTWORK,
               beadId: bead.id, // Same bead ID for all tracks
             });
             beadIdMapRef.current.set(trackIndex, bead.id);
@@ -307,7 +311,7 @@ export function useRosaryAudio(options: UseRosaryAudioOptions): UseRosaryAudioRe
         title: bead.title,
         artist: `${rosaryForm.charAt(0).toUpperCase() + rosaryForm.slice(1)} Rosary`,
         album: mysteryName,
-        artwork: require('../assets/images/dominicana_logo-icon-white.png'),
+        artwork: DEFAULT_ARTWORK,
         beadId: bead.id,
       });
       
