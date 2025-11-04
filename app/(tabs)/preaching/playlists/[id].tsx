@@ -37,9 +37,9 @@ export default function PlaylistDetailScreen() {
   const [downloadedDurations, setDownloadedDurations] = useState<Record<string, number | undefined>>({});
   const [localData, setLocalData] = useState<any[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [isReordering, setIsReordering] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [initialResolutionComplete, setInitialResolutionComplete] = useState(false);
+  const [hasEverResolved, setHasEverResolved] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
 
   // Sync hook items to local state
@@ -154,6 +154,7 @@ export default function PlaylistDetailScreen() {
         setDownloadedDurations(durMap);
         // Mark initial resolution as complete for downloaded playlists
         setInitialResolutionComplete(true);
+        setHasEverResolved(true);
       }
     })();
     return () => { alive = false; };
@@ -161,18 +162,15 @@ export default function PlaylistDetailScreen() {
 
   const data = isDownloaded ? downloadedItems : items;
 
-  // Sync local data for drag operations - but not during active reordering
-  // Also wait for initial resolution to complete before syncing
+  // Sync local data for drag operations - wait for initial resolution to complete before syncing
   useEffect(() => {
-    if (!isReordering && initialResolutionComplete) {
-      if (__DEV__) console.log('[PlaylistDetail] ✅ Syncing localData from data source, length:', data.length, 'resolutionComplete:', initialResolutionComplete);
+    if (initialResolutionComplete) {
+      if (__DEV__) console.log('[PlaylistDetail] ✅ Syncing localData from data source, length:', data.length);
       setLocalData(data as any);
-    } else if (isReordering) {
-      if (__DEV__) console.log('[PlaylistDetail] ⏸️  Skipping data sync - reordering in progress');
     } else {
-      if (__DEV__) console.log('[PlaylistDetail] ⏸️  Skipping data sync - waiting for initial resolution, resolutionComplete:', initialResolutionComplete);
+      if (__DEV__) console.log('[PlaylistDetail] ⏸️  Skipping data sync - waiting for initial resolution');
     }
-  }, [data, isReordering, initialResolutionComplete]);
+  }, [data, initialResolutionComplete]);
 
   // Resolve playlist items to episodes when possible for richer rendering
   useEffect(() => {
@@ -474,6 +472,7 @@ export default function PlaylistDetailScreen() {
         setArtByPodcast(artMap);
         // Mark initial resolution as complete for regular playlists
         setInitialResolutionComplete(true);
+        setHasEverResolved(true);
       }
     })();
     return () => { alive = false; };
@@ -508,22 +507,16 @@ export default function PlaylistDetailScreen() {
     
     if (movedItem) {
       const newIndex = newData.findIndex(i => i.id === movedItem.id);
-      console.log('[PlaylistDetail] Moving item:', movedItem.id, 'to index:', newIndex);
+      if (__DEV__) console.log('[PlaylistDetail] 🔄 Moving item:', movedItem.id, 'to index:', newIndex);
       try {
-        // Block data syncs during the move operation
-        setIsReordering(true);
+        // Don't block - moveItem now does non-blocking background sync
         await moveItem(movedItem.id, newIndex);
-        console.log('[PlaylistDetail] moveItem completed, waiting for backend sync...');
-        // Wait a bit longer for backend to fully propagate
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setIsReordering(false);
-        console.log('[PlaylistDetail] Reordering complete');
+        if (__DEV__) console.log('[PlaylistDetail] ✅ Move queued, no repaint needed');
       } catch (error) {
         console.error('[PlaylistDetail] Failed to reorder item:', error);
         Alert.alert('Error', 'Failed to reorder item. Please try again.');
         // Revert on error
         setLocalData(data as any);
-        setIsReordering(false);
       }
     }
   };
@@ -567,8 +560,6 @@ export default function PlaylistDetailScreen() {
   };
 
   const handleRefresh = async () => {
-    if (isReordering) return; // Don't refresh during reordering
-    
     setRefreshing(true);
     try {
       if (isDownloaded) {
@@ -578,6 +569,7 @@ export default function PlaylistDetailScreen() {
       } else if (user?.id && id) {
         // For user playlists, sync with backend
         await syncUp(user.id);
+        // Force a full sync on manual refresh
         await syncDown(user.id);
       }
     } catch (error) {
@@ -606,8 +598,8 @@ export default function PlaylistDetailScreen() {
     );
   };
 
-  // Show loading indicator during initial resolution
-  const isInitiallyLoading = !initialResolutionComplete && (loading || dlLoading || data.length > 0);
+  // Only show loading indicator on FIRST load, not on subsequent resolutions (reorders, etc)
+  const isInitiallyLoading = !hasEverResolved && !initialResolutionComplete && (loading || dlLoading || data.length > 0);
 
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>

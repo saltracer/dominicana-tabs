@@ -130,16 +130,15 @@ export function usePlaylistItems(playlistId?: string) {
     await setCachedItems(playlistId, resequenced);
     if (__DEV__) console.log('[usePlaylistItems] ✅ Optimistic reorder complete in', Date.now() - moveStart, 'ms');
     
-    // Background sync (non-blocking)
+    // Background sync (non-blocking) - only sync to DB, don't update state
     (async () => {
       const syncStart = Date.now();
       await enqueueMutation(userId, { type: 'moveItem', playlistId, itemId, toIndex });
       await syncUp(userId);
-      // Refresh to ensure consistency
+      // Update cache with DB response but DON'T call setItems to avoid repaint
       const freshItems = await PlaylistService.getItems(playlistId);
       await setCachedItems(playlistId, freshItems);
-      setItems(freshItems);
-      if (__DEV__) console.log('[usePlaylistItems] 🔄 Background sync complete in', Date.now() - syncStart, 'ms');
+      if (__DEV__) console.log('[usePlaylistItems] 🔄 Background sync complete in', Date.now() - syncStart, 'ms (no state update to avoid repaint)');
     })();
   }, [userId, playlistId, items]);
 
