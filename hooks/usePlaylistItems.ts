@@ -57,7 +57,11 @@ export function usePlaylistItems(playlistId?: string) {
 
   const addItem = useCallback(async (payload: { episode_id?: string; external_ref?: ExternalEpisodeRef }, position?: number) => {
     if (!userId || !playlistId) return;
-    // optimistic
+    
+    if (__DEV__) console.log('[usePlaylistItems] 🎯 Adding item (optimistic)');
+    const addStart = Date.now();
+    
+    // Optimistic update - shows immediately!
     const optimistic: PlaylistItem = {
       id: `temp-${Date.now()}`,
       playlist_id: playlistId,
@@ -67,45 +71,76 @@ export function usePlaylistItems(playlistId?: string) {
       added_at: new Date().toISOString(),
     };
     const next = [...items, optimistic];
-    setItems(next);
+    setItems(next); // ← Episode appears in UI immediately!
     await setCachedItems(playlistId, next);
-    await enqueueMutation(userId, { type: 'addItem', playlistId, payload: { ...payload, position } as any });
-    await syncUp(userId);
-    // Refresh only current playlist items (not all playlists)
-    const freshItems = await PlaylistService.getItems(playlistId);
-    await setCachedItems(playlistId, freshItems);
-    setItems(freshItems);
+    if (__DEV__) console.log('[usePlaylistItems] ✅ Optimistic update complete in', Date.now() - addStart, 'ms');
+    
+    // Background sync (non-blocking)
+    (async () => {
+      const syncStart = Date.now();
+      await enqueueMutation(userId, { type: 'addItem', playlistId, payload: { ...payload, position } as any });
+      await syncUp(userId);
+      // Refresh to get real ID from DB
+      const freshItems = await PlaylistService.getItems(playlistId);
+      await setCachedItems(playlistId, freshItems);
+      setItems(freshItems);
+      if (__DEV__) console.log('[usePlaylistItems] 🔄 Background sync complete in', Date.now() - syncStart, 'ms');
+    })();
   }, [userId, playlistId, items]);
 
   const removeItem = useCallback(async (itemId: string) => {
     if (!userId || !playlistId) return;
+    
+    if (__DEV__) console.log('[usePlaylistItems] 🗑️  Removing item (optimistic)');
+    const removeStart = Date.now();
+    
+    // Optimistic update - removes immediately!
     const next = items.filter(i => i.id !== itemId);
-    setItems(next);
+    setItems(next); // ← Episode disappears from UI immediately!
     await setCachedItems(playlistId, next);
-    await enqueueMutation(userId, { type: 'removeItem', itemId });
-    await syncUp(userId);
-    // Refresh only current playlist items (not all playlists)
-    const freshItems = await PlaylistService.getItems(playlistId);
-    await setCachedItems(playlistId, freshItems);
-    setItems(freshItems);
+    if (__DEV__) console.log('[usePlaylistItems] ✅ Optimistic removal complete in', Date.now() - removeStart, 'ms');
+    
+    // Background sync (non-blocking)
+    (async () => {
+      const syncStart = Date.now();
+      await enqueueMutation(userId, { type: 'removeItem', itemId });
+      await syncUp(userId);
+      // Refresh to ensure consistency
+      const freshItems = await PlaylistService.getItems(playlistId);
+      await setCachedItems(playlistId, freshItems);
+      setItems(freshItems);
+      if (__DEV__) console.log('[usePlaylistItems] 🔄 Background sync complete in', Date.now() - syncStart, 'ms');
+    })();
   }, [userId, playlistId, items]);
 
   const moveItem = useCallback(async (itemId: string, toIndex: number) => {
     if (!userId || !playlistId) return;
+    
+    if (__DEV__) console.log('[usePlaylistItems] 🔄 Moving item (optimistic)');
+    const moveStart = Date.now();
+    
+    // Optimistic update - reorders immediately!
     const arr = items.slice();
     const from = arr.findIndex(i => i.id === itemId);
     if (from === -1) return;
     const [moved] = arr.splice(from, 1);
     arr.splice(Math.max(0, Math.min(toIndex, arr.length)), 0, moved);
     const resequenced = arr.map((i, idx) => ({ ...i, position: idx }));
-    setItems(resequenced);
+    setItems(resequenced); // ← Reorder happens in UI immediately!
     await setCachedItems(playlistId, resequenced);
-    await enqueueMutation(userId, { type: 'moveItem', playlistId, itemId, toIndex });
-    await syncUp(userId);
-    // Refresh only current playlist items (not all playlists)
-    const freshItems = await PlaylistService.getItems(playlistId);
-    await setCachedItems(playlistId, freshItems);
-    setItems(freshItems);
+    if (__DEV__) console.log('[usePlaylistItems] ✅ Optimistic reorder complete in', Date.now() - moveStart, 'ms');
+    
+    // Background sync (non-blocking)
+    (async () => {
+      const syncStart = Date.now();
+      await enqueueMutation(userId, { type: 'moveItem', playlistId, itemId, toIndex });
+      await syncUp(userId);
+      // Refresh to ensure consistency
+      const freshItems = await PlaylistService.getItems(playlistId);
+      await setCachedItems(playlistId, freshItems);
+      setItems(freshItems);
+      if (__DEV__) console.log('[usePlaylistItems] 🔄 Background sync complete in', Date.now() - syncStart, 'ms');
+    })();
   }, [userId, playlistId, items]);
 
   return { items, loading, error, addItem, removeItem, moveItem };

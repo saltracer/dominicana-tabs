@@ -7,13 +7,14 @@ import { Colors } from '../constants/Colors';
 import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 import HtmlRenderer from './HtmlRenderer';
 import { getEpisodesMap } from '../lib/podcast/cache';
-import { ensureImageCached } from '../lib/podcast/storage';
+import { ensureImageCached, removeKey } from '../lib/podcast/storage';
 import { getFeed } from '../lib/podcast/cache';
 import { fileExists } from '../lib/podcast/storage';
 import { PodcastDownloadService } from '../services/PodcastDownloadService';
 import PlaylistService from '../services/PlaylistService';
 import { PodcastService } from '../services/PodcastService';
 import { usePlaylists } from '../hooks/usePlaylists';
+import { keys as playlistCacheKeys, getCachedItems, setCachedItems } from '../lib/playlist/cache';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -244,6 +245,9 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
 
   const addToTarget = useCallback(async (playlistId: string, playlistName: string) => {
     try {
+      if (__DEV__) console.log('[EpisodeListItem] 🎯 Adding episode to playlist:', playlistName);
+      const addStart = Date.now();
+      
       const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(episode.id);
       
       // Try to find episode in database (check by ID first, then by guid)
@@ -275,26 +279,64 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
         }
       }
       
-      if (dbEpisode) {
-        // Use the database episode_id (the actual primary key)
-        await PlaylistService.addItem(playlistId, { episode_id: dbEpisode.id });
-      } else {
-        // Include full metadata in external_ref so episode displays properly even without cache
-        await PlaylistService.addItem(playlistId, { 
-          external_ref: { 
-            podcastId: episode.podcastId, 
-            guid: episode.guid, 
-            audioUrl: episode.audioUrl,
-            title: episode.title,
-            description: episode.description,
-            duration: episode.duration,
-            publishedAt: episode.publishedAt,
-            artworkUrl: episode.artworkUrl,
-          } as any 
-        });
-      }
+      // Optimistically update cache BEFORE database call - episode appears instantly in playlist!
+      const cachedItems = await getCachedItems(playlistId);
+      const optimisticItem = {
+        id: `temp-${Date.now()}`,
+        playlist_id: playlistId,
+        episode_id: dbEpisode ? dbEpisode.id : null,
+        external_ref: dbEpisode ? null : { 
+          podcastId: episode.podcastId, 
+          guid: episode.guid, 
+          audioUrl: episode.audioUrl,
+          title: episode.title,
+          description: episode.description,
+          duration: episode.duration,
+          publishedAt: episode.publishedAt,
+          artworkUrl: episode.artworkUrl,
+        } as any,
+        position: cachedItems.length,
+        added_at: new Date().toISOString(),
+      };
+      const updatedCache = [...cachedItems, optimisticItem];
+      await setCachedItems(playlistId, updatedCache);
+      if (__DEV__) console.log('[EpisodeListItem] ✅ Optimistic cache update complete in', Date.now() - addStart, 'ms');
+      
+      // Show success message immediately
       setPickerVisible(false);
       Alert.alert('Added', `Added to ${playlistName}`);
+      
+      // Database insert happens in background (non-blocking for user)
+      (async () => {
+        const dbStart = Date.now();
+        try {
+          if (dbEpisode) {
+            await PlaylistService.addItem(playlistId, { episode_id: dbEpisode.id });
+          } else {
+            await PlaylistService.addItem(playlistId, { 
+              external_ref: { 
+                podcastId: episode.podcastId, 
+                guid: episode.guid, 
+                audioUrl: episode.audioUrl,
+                title: episode.title,
+                description: episode.description,
+                duration: episode.duration,
+                publishedAt: episode.publishedAt,
+                artworkUrl: episode.artworkUrl,
+              } as any 
+            });
+          }
+          
+          // Refresh cache with real data from DB (replaces temp ID with real ID)
+          const freshItems = await PlaylistService.getItems(playlistId);
+          await setCachedItems(playlistId, freshItems);
+          if (__DEV__) console.log('[EpisodeListItem] 🔄 Background DB sync complete in', Date.now() - dbStart, 'ms');
+        } catch (e) {
+          if (__DEV__) console.error('[EpisodeListItem] ❌ Background sync failed:', e);
+          // Revert optimistic update on error
+          await setCachedItems(playlistId, cachedItems);
+        }
+      })();
     } catch (e) {
       setPickerVisible(false);
       Alert.alert('Error', 'Failed to add to playlist');

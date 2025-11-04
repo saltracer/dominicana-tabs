@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-item';
@@ -14,7 +14,7 @@ import { usePlaylists } from '../../../../hooks/usePlaylists';
 import { usePlaylistItems } from '../../../../hooks/usePlaylistItems';
 import { useDownloadedPlaylist } from '../../../../hooks/useDownloadedPlaylist';
 import { usePodcastDownloads } from '../../../../hooks/usePodcastDownloads';
-import { syncDown, syncUp } from '../../../../lib/playlist/cache';
+import { syncDown, syncUp, getCachedItems } from '../../../../lib/playlist/cache';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { PodcastService } from '../../../../services/PodcastService';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
@@ -29,8 +29,9 @@ export default function PlaylistDetailScreen() {
   const playlist = useMemo(() => (isDownloaded ? { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any : playlists.find(p => p.id === id)), [isDownloaded, id, playlists]);
 
   const { items: downloadedItems, loading: dlLoading, refetch: refetchDownloaded } = useDownloadedPlaylist();
-  const { items, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
+  const { items: hookItems, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
   const { isEpisodeDownloaded, downloadEpisode, deleteDownloadedEpisode } = usePodcastDownloads();
+  const [items, setItems] = useState(hookItems);
   const [resolved, setResolved] = useState<Record<string, PodcastEpisode | null>>({});
   const [artByPodcast, setArtByPodcast] = useState<Record<string, string | null>>({});
   const [downloadedDurations, setDownloadedDurations] = useState<Record<string, number | undefined>>({});
@@ -40,6 +41,25 @@ export default function PlaylistDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [initialResolutionComplete, setInitialResolutionComplete] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
+
+  // Sync hook items to local state
+  useEffect(() => {
+    setItems(hookItems);
+  }, [hookItems]);
+
+  // Refresh items from cache when screen comes into focus (picks up optimistic updates from other screens)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (__DEV__) console.log('[PlaylistDetail] 👁️  Screen focused, reloading from cache');
+      if (!isDownloaded && id) {
+        (async () => {
+          const cached = await getCachedItems(id as string);
+          if (__DEV__) console.log('[PlaylistDetail] 📦 Loaded', cached.length, 'items from cache on focus');
+          setItems(cached);
+        })();
+      }
+    }, [id, isDownloaded])
+  );
 
   // Load artwork and duration for downloaded items
   useEffect(() => {
