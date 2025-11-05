@@ -15,6 +15,8 @@ import {
 } from '../lib/podcast/storage';
 import { getEpisodesMap } from '../lib/podcast/cache';
 import { setJson, keys, hashString } from '../lib/podcast/storage';
+import { DownloadStatusCache } from './DownloadStatusCache';
+import { EpisodeMetadataCache } from './EpisodeMetadataCache';
 
 export interface DownloadProgress {
   episodeId: string;
@@ -93,6 +95,16 @@ export class PodcastDownloadService {
       // Invalidate cache since we added a download
       this.downloadedEpisodesCache = null;
 
+      // Update download status cache
+      DownloadStatusCache.markDownloaded(episode.id, result.path);
+
+      // Update episode metadata cache
+      EpisodeMetadataCache.update(episode.id, {
+        isDownloaded: true,
+        downloadStatus: 'completed',
+        downloadProgress: 100,
+      });
+
       // Persist localAudioPath into cache episodes map for accurate per-feed usage
       try {
         const cacheEpisodeId = episode.guid || await hashString(episode.audioUrl);
@@ -165,6 +177,16 @@ export class PodcastDownloadService {
 
         // Invalidate cache since we deleted a download
         this.downloadedEpisodesCache = null;
+
+        // Update download status cache
+        DownloadStatusCache.markDeleted(episodeId);
+
+        // Update episode metadata cache
+        EpisodeMetadataCache.update(episodeId, {
+          isDownloaded: false,
+          downloadStatus: null,
+          downloadProgress: 0,
+        });
 
         // Also clear localAudioPath in cache map if present
         if (download.podcastId) {

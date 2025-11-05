@@ -9,6 +9,8 @@ import { Platform } from 'react-native';
 import { PodcastEpisode } from '../types/podcast-types';
 import { PodcastDownloadService, DownloadProgress } from './PodcastDownloadService';
 import { UserLiturgyPreferencesService } from './UserLiturgyPreferencesService';
+import { DownloadStatusCache } from './DownloadStatusCache';
+import { EpisodeMetadataCache } from './EpisodeMetadataCache';
 
 export type QueueItemStatus = 'pending' | 'downloading' | 'completed' | 'failed' | 'paused';
 export type PausedReason = 'network' | 'manual' | 'error';
@@ -138,6 +140,19 @@ export class PodcastDownloadQueueService {
     try {
       state.lastUpdated = new Date().toISOString();
       await AsyncStorage.setItem(this.QUEUE_KEY, JSON.stringify(state));
+      
+      // Update download status cache with current queue state
+      state.items.forEach(item => {
+        DownloadStatusCache.updateQueueItem(item);
+        
+        // Also update episode metadata cache
+        EpisodeMetadataCache.update(item.episodeId, {
+          downloadStatus: item.status,
+          downloadProgress: item.progress,
+          queuePosition: state.items.findIndex(i => i.id === item.id),
+        });
+      });
+      
       await this.notifyListeners();
     } catch (error) {
       console.error('[DownloadQueue] Error saving queue state:', error);
@@ -238,6 +253,13 @@ export class PodcastDownloadQueueService {
     // Remove from queue
     state.items = state.items.filter(i => i.id !== queueItemId);
     await this.saveQueueState(state);
+
+    // Update caches
+    DownloadStatusCache.removeQueueItem(item.episodeId);
+    EpisodeMetadataCache.update(item.episodeId, {
+      downloadStatus: null,
+      queuePosition: null,
+    });
 
     // Process queue to start next pending item
     this.processQueue();
@@ -401,7 +423,7 @@ export class PodcastDownloadQueueService {
       );
 
       console.log('[DownloadQueue] ✅ Download completed successfully');
-      // Mark as completed
+      // Mark as completed (this will update caches via saveQueueState)
       await this.markCompleted(item.id);
     } catch (error) {
       console.error('[DownloadQueue] ❌ Download failed:', error);
