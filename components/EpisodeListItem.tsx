@@ -15,6 +15,7 @@ import PlaylistService from '../services/PlaylistService';
 import { PodcastService } from '../services/PodcastService';
 import { usePlaylists } from '../hooks/usePlaylists';
 import { keys as playlistCacheKeys, getCachedItems, setCachedItems } from '../lib/playlist/cache';
+import { useSharedPlaylistHooks } from '../contexts/SharedPlaylistHooksContext';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -83,15 +84,31 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     };
   }, [colorScheme]);
   
-  // Use hoisted hooks if provided (for performance), otherwise call hooks locally (backward compatibility)
+  // Check for shared hooks from context or props (for performance when rendering many items)
+  const sharedContext = useSharedPlaylistHooks();
+  const effectiveDownloadHooks = sharedDownloadHooks || sharedContext.downloadHooks;
+  const effectivePlaylistsHooks = sharedPlaylistsHooks || sharedContext.playlistsHooks;
+  
+  // Call local hooks (required by React's rules - hooks must be called unconditionally)
+  // But we'll only USE them if shared hooks aren't available
   const localDownloadHooks = usePodcastDownloads();
+  const localPlaylistsHooks = usePlaylists();
+  
+  // Prefer shared hooks from context/props (avoids duplicate initialization)
   const { 
     isDownloadsEnabled, 
     isEpisodeDownloaded, 
     getDownloadState, 
     downloadEpisode, 
     deleteDownloadedEpisode 
-  } = sharedDownloadHooks || localDownloadHooks;
+  } = effectiveDownloadHooks || localDownloadHooks;
+  
+  // Log when using shared hooks vs local hooks
+  if (__DEV__ && effectiveDownloadHooks) {
+    // Using shared hooks - good! No duplicate initialization
+  } else if (__DEV__) {
+    // Using local hooks - this item is calling its own hooks
+  }
 
   const [artPath, setArtPath] = useState<string | null>(artworkLocalPath || null);
   useEffect(() => {
@@ -259,14 +276,13 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
 
   const handleDownloadPress = useCallback((e: any) => {
     e?.stopPropagation?.();
-    handleDownload(e);
+    handleDownload();
   }, [handleDownload]);
 
   const hasProgress = showProgress && progress > 0 && progress < 1;
 
-  // Use hoisted playlists hook if provided (for performance), otherwise call hook locally (backward compatibility)
-  const localPlaylistsHooks = usePlaylists();
-  const { playlists } = sharedPlaylistsHooks || localPlaylistsHooks;
+  // Use shared playlists from context/props or local hook
+  const { playlists } = effectivePlaylistsHooks || localPlaylistsHooks;
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const handleAddToPlaylist = useCallback((e: any) => {

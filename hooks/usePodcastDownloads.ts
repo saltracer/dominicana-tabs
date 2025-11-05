@@ -10,6 +10,7 @@ import { PodcastDownloadService, DownloadProgress, DownloadedEpisode } from '../
 import { PodcastDownloadQueueService, QueueItem, QueueState } from '../services/PodcastDownloadQueueService';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
 import { useAuth } from '../contexts/AuthContext';
+import { useSharedPlaylistHooks } from '../contexts/SharedPlaylistHooksContext';
 
 export interface DownloadState {
   episodeId: string;
@@ -27,6 +28,10 @@ export function usePodcastDownloads() {
   const [isLoading, setIsLoading] = useState(true);
   const [queueState, setQueueState] = useState<QueueState | null>(null);
   const [useQueue, setUseQueue] = useState(true); // Enable queue by default
+  
+  // Check if we're in a context that provides download hooks already
+  const sharedContext = useSharedPlaylistHooks();
+  const hasSharedDownloadHooks = !!sharedContext.downloadHooks;
 
   // Load user preferences
   const loadPreferences = useCallback(async () => {
@@ -50,17 +55,56 @@ export function usePodcastDownloads() {
     }
   }, []);
 
-  // Initialize queue service and subscribe to changes (only once)
+  // Initialize queue service and subscribe to changes (only once globally)
   useEffect(() => {
+    // If context provides download hooks, skip queue initialization entirely
+    if (hasSharedDownloadHooks) {
+      if (__DEV__) console.log('[usePodcastDownloads] 🎯 Using shared context, skipping queue initialization');
+      return;
+    }
+    
     if (Platform.OS === 'web' || !useQueue) {
       return;
+    }
+
+    // Only initialize if not already initialized (prevents duplicate initializations)
+    const isAlreadyInitialized = (PodcastDownloadQueueService as any)._isInitialized;
+    if (isAlreadyInitialized) {
+      if (__DEV__) {
+        console.log('[usePodcastDownloads] Queue service already initialized, skipping');
+      }
+      let mounted = true;
+      
+      // Still need to subscribe to changes
+      const unsubscribe = PodcastDownloadQueueService.subscribe((state) => {
+        if (!mounted) return;
+        setQueueState(state);
+        const newStates = new Map<string, DownloadState>();
+        state.items.forEach(item => {
+          newStates.set(item.episodeId, {
+            episodeId: item.episodeId,
+            status: item.status as any,
+            progress: item.progress,
+            error: item.error,
+            queueItem: item,
+          });
+        });
+        setDownloadStates(newStates);
+      });
+      
+      return () => {
+        console.log('[usePodcastDownloads] Cleaning up queue service');
+        mounted = false;
+        unsubscribe();
+      };
     }
 
     console.log('[usePodcastDownloads] Initializing queue service');
     let mounted = true;
 
-    // Initialize queue service
+    // Initialize queue service and mark as initialized
     PodcastDownloadQueueService.initialize(user?.id).catch(console.error);
+    (PodcastDownloadQueueService as any)._isInitialized = true;
 
     // Subscribe to queue state changes
     const unsubscribe = PodcastDownloadQueueService.subscribe((state) => {
@@ -103,10 +147,16 @@ export function usePodcastDownloads() {
       unsubscribe();
       // Don't call cleanup here - let it persist across component lifecycles
     };
-  }, [user?.id, useQueue]);
+  }, [user?.id, useQueue, hasSharedDownloadHooks]);
 
   // Initialize
   useEffect(() => {
+    // If context provides download hooks, skip initialization
+    if (hasSharedDownloadHooks) {
+      setIsLoading(false);
+      return;
+    }
+    
     const initialize = async () => {
       setIsLoading(true);
       await Promise.all([
@@ -117,7 +167,7 @@ export function usePodcastDownloads() {
     };
     
     initialize();
-  }, [loadPreferences, loadDownloadedEpisodes]);
+  }, [loadPreferences, loadDownloadedEpisodes, hasSharedDownloadHooks]);
 
   // Check if downloads are enabled
   const isDownloadsEnabled = preferences?.podcast_downloads_enabled ?? true;

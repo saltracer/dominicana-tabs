@@ -1,7 +1,20 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef, useContext } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import PlaylistService, { Playlist } from '../services/PlaylistService';
 import { enqueueMutation, getCachedPlaylists, setCachedPlaylists, syncDown, syncUp } from '../lib/playlist/cache';
+import { useSharedPlaylistHooks } from '../contexts/SharedPlaylistHooksContext';
+
+// Global singleton to share playlists across all hook instances
+let globalPlaylistsInstance: {
+  playlists: Playlist[];
+  loading: boolean;
+  error: unknown;
+  timestamp: number;
+  userId: string;
+} | null = null;
+
+let loadInProgress = false;
+const CACHE_TTL = 5000; // 5 seconds
 
 export function usePlaylists() {
   const { user } = useAuth();
@@ -9,14 +22,73 @@ export function usePlaylists() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<unknown>(null);
+  const instanceRef = useRef({ isFirstInstance: false });
+  
+  // Check if we're in a context that provides playlists already
+  const sharedContext = useSharedPlaylistHooks();
+  const hasSharedPlaylists = sharedContext.playlistsHooks?.playlists;
 
   useEffect(() => {
+    // If context provides playlists, use those and skip expensive work
+    if (hasSharedPlaylists) {
+      if (__DEV__) console.log('[usePlaylists] 🎯 Using playlists from shared context, skipping load');
+      setPlaylists(hasSharedPlaylists);
+      setLoading(false);
+      return;
+    }
+    
     let isMounted = true;
+    
+    // Check global cache first
+    const now = Date.now();
+    const isCacheValid = globalPlaylistsInstance && 
+                        globalPlaylistsInstance.userId === userId &&
+                        (now - globalPlaylistsInstance.timestamp) < CACHE_TTL;
+    
+    if (isCacheValid && globalPlaylistsInstance) {
+      if (__DEV__) console.log('[usePlaylists] ⚡ Using global singleton cache (', globalPlaylistsInstance.playlists.length, 'playlists)');
+      setPlaylists(globalPlaylistsInstance.playlists);
+      setLoading(globalPlaylistsInstance.loading);
+      setError(globalPlaylistsInstance.error);
+      return;
+    }
+    
+    // Check if another instance is already loading
+    if (loadInProgress && !instanceRef.current.isFirstInstance) {
+      if (__DEV__) console.log('[usePlaylists] ⏳ Load already in progress, waiting for global instance...');
+      
+      // Wait for the load to complete and use that result
+      const checkInterval = setInterval(() => {
+        if (globalPlaylistsInstance && globalPlaylistsInstance.userId === userId) {
+          if (isMounted) {
+            setPlaylists(globalPlaylistsInstance.playlists);
+            setLoading(false);
+            setError(globalPlaylistsInstance.error);
+          }
+          clearInterval(checkInterval);
+        }
+      }, 50);
+      
+      return () => {
+        clearInterval(checkInterval);
+        isMounted = false;
+      };
+    }
+    
+    // This is the first instance - do the load
+    if (!instanceRef.current.isFirstInstance) {
+      instanceRef.current.isFirstInstance = true;
+    }
+    
     (async () => {
       if (!userId) {
         setPlaylists([]);
+        globalPlaylistsInstance = null;
         return;
       }
+      
+      loadInProgress = true;
+      
       try {
         const loadStart = Date.now();
         setLoading(true);
@@ -48,16 +120,29 @@ export function usePlaylists() {
           setPlaylists(fresh);
         }
         if (__DEV__) console.log('[usePlaylists] Loaded', fresh.length, 'playlists in', Date.now() - loadStart, 'ms');
+        
+        // Update global cache
+        globalPlaylistsInstance = {
+          playlists: fresh,
+          loading: false,
+          error: null,
+          timestamp: Date.now(),
+          userId,
+        };
       } catch (e) {
         setError(e);
+        if (globalPlaylistsInstance && globalPlaylistsInstance.userId === userId) {
+          globalPlaylistsInstance.error = e;
+        }
       } finally {
         setLoading(false);
+        loadInProgress = false;
       }
     })();
     return () => {
       isMounted = false;
     };
-  }, [userId]);
+  }, [userId, hasSharedPlaylists]);
 
   const createPlaylist = useCallback(async (name: string) => {
     if (!userId) return;
@@ -79,6 +164,9 @@ export function usePlaylists() {
     const freshPlaylists = await PlaylistService.getPlaylists();
     await setCachedPlaylists(userId, freshPlaylists);
     setPlaylists(freshPlaylists);
+    
+    // Invalidate global cache
+    globalPlaylistsInstance = null;
   }, [userId, playlists]);
 
   const renamePlaylist = useCallback(async (id: string, name: string) => {
@@ -92,6 +180,9 @@ export function usePlaylists() {
     const freshPlaylists = await PlaylistService.getPlaylists();
     await setCachedPlaylists(userId, freshPlaylists);
     setPlaylists(freshPlaylists);
+    
+    // Invalidate global cache
+    globalPlaylistsInstance = null;
   }, [userId, playlists]);
 
   const deletePlaylist = useCallback(async (id: string) => {
@@ -105,6 +196,9 @@ export function usePlaylists() {
     const freshPlaylists = await PlaylistService.getPlaylists();
     await setCachedPlaylists(userId, freshPlaylists);
     setPlaylists(freshPlaylists);
+    
+    // Invalidate global cache
+    globalPlaylistsInstance = null;
   }, [userId, playlists]);
 
   const updatePlaylistsOrder = useCallback(async (orderedPlaylists: Playlist[]) => {
@@ -130,6 +224,9 @@ export function usePlaylists() {
     }
     await setCachedPlaylists(userId, freshPlaylists);
     setPlaylists(freshPlaylists);
+    
+    // Invalidate global cache
+    globalPlaylistsInstance = null;
   }, [userId, playlists]);
 
   return {

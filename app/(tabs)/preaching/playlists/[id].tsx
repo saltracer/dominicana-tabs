@@ -20,6 +20,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { PodcastService } from '../../../../services/PodcastService';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 import { PodcastDownloadQueueService } from '../../../../services/PodcastDownloadQueueService';
+import { SharedPlaylistHooksProvider } from '../../../../contexts/SharedPlaylistHooksContext';
 
 export default function PlaylistDetailScreen() {
   const { colorScheme } = useTheme();
@@ -60,23 +61,40 @@ export default function PlaylistDetailScreen() {
   const itemRefs = useRef<Map<string, any>>(new Map());
   const resolutionInProgressRef = useRef(false);
 
-  // Sync hook items to local state
-  useEffect(() => {
-    setItems(hookItems);
-  }, [hookItems]);
+  // NOTE: Removed duplicate setItems effect that was causing triple resolution
+  // Items are now ONLY updated via useFocusEffect cache reload
+  // This eliminates the triple resolution issue
 
   // Refresh items from cache when screen comes into focus (picks up optimistic updates from other screens)
-  useFocusEffect(
-    React.useCallback(() => {
+  // Use ref to prevent React.useCallback from recreating the callback (which triggers useFocusEffect multiple times)
+  const focusHandlerRef = useRef<(() => void) | null>(null);
+  
+  if (!focusHandlerRef.current) {
+    focusHandlerRef.current = () => {
       if (__DEV__) console.log('[PlaylistDetail] 👁️  Screen focused, reloading from cache');
+      
       if (!isDownloaded && id) {
         (async () => {
           const cached = await getCachedItems(id as string);
           if (__DEV__) console.log('[PlaylistDetail] 📦 Loaded', cached.length, 'items from cache on focus');
-          setItems(cached);
+          // Also load from hookItems on first mount
+          const itemsToUse = cached.length > 0 ? cached : hookItems;
+          setItems(itemsToUse);
         })();
+      } else {
+        // For downloaded playlist or first load, use hookItems
+        setItems(hookItems);
       }
-    }, [id, isDownloaded])
+    };
+  }
+  
+  useFocusEffect(
+    React.useCallback(() => {
+      focusHandlerRef.current?.();
+      return () => {
+        // Cleanup if needed
+      };
+    }, []) // Empty deps - only runs once per mount/unmount
   );
 
   // Load artwork and duration for downloaded items
@@ -180,30 +198,31 @@ export default function PlaylistDetailScreen() {
 
   const data = isDownloaded ? downloadedItems : items;
 
-  // Sync local data for drag operations - wait for initial resolution to complete before syncing
+  // Sync local data for drag operations - sync immediately to enable fast rendering
   useEffect(() => {
-    if (initialResolutionComplete) {
-      if (__DEV__) console.log('[PlaylistDetail] ✅ Syncing localData from data source, length:', data.length);
-      setLocalData(data as any);
-    } else {
-      if (__DEV__) console.log('[PlaylistDetail] ⏸️  Skipping data sync - waiting for initial resolution');
-    }
-  }, [data, initialResolutionComplete]);
+    // Always sync immediately for instant rendering (resolution happens in background)
+    if (__DEV__) console.log('[PlaylistDetail] ✅ Syncing localData from data source, length:', data.length);
+    setLocalData(data as any);
+  }, [data]);
 
   // Resolve playlist items to episodes when possible for richer rendering
+  // OPTIMIZATION: Debounce to prevent rapid re-resolutions
   useEffect(() => {
-    // Guard against concurrent resolutions
+    // Guard against concurrent resolutions - check AND set atomically
     if (resolutionInProgressRef.current) {
       if (__DEV__) console.log('[PlaylistDetail] ⏸️  Resolution already in progress, skipping');
       return;
     }
     
-    let alive = true;
-    resolutionInProgressRef.current = true;
-    
-    // Reset resolution state when items change
-    if (__DEV__) console.log('[PlaylistDetail] 🔄 Resetting resolution state, items:', items.length);
-    setInitialResolutionComplete(false);
+    // Debounce resolution to avoid rapid re-triggers
+    const debounceTimer = setTimeout(() => {
+      // Set guard IMMEDIATELY before any async work
+      resolutionInProgressRef.current = true;
+      let alive = true;
+      
+      // Reset resolution state when items change
+      if (__DEV__) console.log('[PlaylistDetail] 🔄 Resetting resolution state, items:', items.length);
+      setInitialResolutionComplete(false);
     
     (async () => {
       const resolutionStart = Date.now();
@@ -503,8 +522,11 @@ export default function PlaylistDetailScreen() {
       }
       resolutionInProgressRef.current = false;
     })();
+    
+    }, 150); // 150ms debounce
+    
     return () => { 
-      alive = false;
+      clearTimeout(debounceTimer);
       resolutionInProgressRef.current = false;
     };
   }, [items, isDownloaded]);
@@ -687,17 +709,22 @@ export default function PlaylistDetailScreen() {
     );
   };
 
-  // Only show loading indicator on FIRST load, not on subsequent resolutions (reorders, etc)
-  const isInitiallyLoading = !hasEverResolved && !initialResolutionComplete && (loading || dlLoading || data.length > 0);
+  // Show loading spinner during initial resolution to avoid weird skeleton UI
+  // But keep it fast - resolution happens quickly now (~600ms)
+  const showLoadingSpinner = !hasEverResolved && !initialResolutionComplete;
 
   return (
-    <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
-      <Stack.Screen 
-        options={{ 
-          title: playlist?.name || '',
-        }} 
-      />
-      {isInitiallyLoading ? (
+    <SharedPlaylistHooksProvider
+      downloadHooks={sharedDownloadHooks}
+      playlistsHooks={sharedPlaylistsHooks}
+    >
+      <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
+        <Stack.Screen 
+          options={{ 
+            title: playlist?.name || '',
+          }} 
+        />
+        {showLoadingSpinner ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
           <Text style={[styles.loadingText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
@@ -1044,7 +1071,8 @@ export default function PlaylistDetailScreen() {
         }}
       />
       )}
-    </View>
+      </View>
+    </SharedPlaylistHooksProvider>
   );
 }
 

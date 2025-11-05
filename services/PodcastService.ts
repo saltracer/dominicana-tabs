@@ -8,6 +8,10 @@ import { Podcast, PodcastEpisode, PodcastFilters, PodcastListResponse, PodcastWi
 import { withRetry, formatBackendError } from '../lib/network-utils';
 
 export class PodcastService {
+  // Cache for frequently accessed episodes (30 second TTL)
+  private static episodeCache = new Map<string, { data: PodcastEpisode, timestamp: number }>();
+  private static readonly EPISODE_CACHE_TTL = 30000; // 30 seconds
+  
   /**
    * Transform database row to Podcast type
    */
@@ -163,6 +167,13 @@ export class PodcastService {
    * Get a single episode by ID
    */
   static async getEpisode(id: string, silent = false): Promise<PodcastEpisode> {
+    // Check cache first
+    const cached = this.episodeCache.get(id);
+    if (cached && (Date.now() - cached.timestamp) < this.EPISODE_CACHE_TTL) {
+      if (__DEV__) console.log('[PodcastService.getEpisode] Cache hit for', id);
+      return cached.data;
+    }
+    
     const queryStart = Date.now();
     const { data, error } = await supabase
       .from('podcast_episodes')
@@ -179,13 +190,29 @@ export class PodcastService {
       throw new Error(`Failed to fetch episode: ${error.message}`);
     }
 
-    return this.transformEpisode(data);
+    const episode = this.transformEpisode(data);
+    
+    // Cache the result
+    this.episodeCache.set(id, {
+      data: episode,
+      timestamp: Date.now(),
+    });
+
+    return episode;
   }
 
   /**
    * Get a single episode by guid (RSS feed guid)
    */
   static async getEpisodeByGuid(podcastId: string, guid: string, silent = false): Promise<PodcastEpisode | null> {
+    // Check cache first (use composite key)
+    const cacheKey = `${podcastId}:${guid}`;
+    const cached = this.episodeCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < this.EPISODE_CACHE_TTL) {
+      if (__DEV__) console.log('[PodcastService.getEpisodeByGuid] Cache hit for', guid.substring(0, 20));
+      return cached.data;
+    }
+    
     const queryStart = Date.now();
     const { data, error } = await supabase
       .from('podcast_episodes')
@@ -204,7 +231,13 @@ export class PodcastService {
       return null;
     }
 
-    return this.transformEpisode(data);
+    const episode = this.transformEpisode(data);
+    
+    // Cache the result (using both regular id and composite key)
+    this.episodeCache.set(cacheKey, { data: episode, timestamp: Date.now() });
+    this.episodeCache.set(episode.id, { data: episode, timestamp: Date.now() });
+
+    return episode;
   }
 
   /**

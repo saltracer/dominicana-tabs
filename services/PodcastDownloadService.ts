@@ -39,6 +39,13 @@ export interface DownloadedEpisode {
 export class PodcastDownloadService {
   private static readonly METADATA_KEY = 'podcast_downloads_metadata';
   
+  // Cache for getDownloadedEpisodes to prevent multiple filesystem scans
+  private static downloadedEpisodesCache: {
+    data: DownloadedEpisode[];
+    timestamp: number;
+  } | null = null;
+  private static readonly CACHE_TTL = 2000; // 2 seconds
+  
   // Storage initialization handled by podcast storage helpers
 
   /**
@@ -82,6 +89,9 @@ export class PodcastDownloadService {
         guid: episode.guid,
         title: episode.title,
       });
+
+      // Invalidate cache since we added a download
+      this.downloadedEpisodesCache = null;
 
       // Persist localAudioPath into cache episodes map for accurate per-feed usage
       try {
@@ -153,6 +163,9 @@ export class PodcastDownloadService {
         await this.deleteDownloadMetadata(episodeId);
         console.log(`[PodcastDownload] Deleted metadata for episode: ${episodeId}`);
 
+        // Invalidate cache since we deleted a download
+        this.downloadedEpisodesCache = null;
+
         // Also clear localAudioPath in cache map if present
         if (download.podcastId) {
           try {
@@ -186,6 +199,13 @@ export class PodcastDownloadService {
       return [];
     }
 
+    // Check cache first to avoid redundant filesystem scans
+    const now = Date.now();
+    if (this.downloadedEpisodesCache && (now - this.downloadedEpisodesCache.timestamp) < this.CACHE_TTL) {
+      if (__DEV__) console.log('[PodcastDownload] getDownloadedEpisodes: returning cached result (', this.downloadedEpisodesCache.data.length, 'items)');
+      return this.downloadedEpisodesCache.data;
+    }
+
     try {
       const metadata = await this.getDownloadMetadata();
       if (__DEV__) console.log('[PodcastDownload] getDownloadedEpisodes: found', metadata.length, 'metadata entries');
@@ -210,6 +230,13 @@ export class PodcastDownloadService {
       }
       
       if (__DEV__) console.log('[PodcastDownload] getDownloadedEpisodes: returning', validDownloads.length, 'valid downloads');
+      
+      // Cache the result
+      this.downloadedEpisodesCache = {
+        data: validDownloads,
+        timestamp: now,
+      };
+      
       return validDownloads;
     } catch (error) {
       console.error('[PodcastDownload] Error getting downloaded episodes:', error);
