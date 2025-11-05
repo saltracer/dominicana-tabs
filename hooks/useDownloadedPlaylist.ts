@@ -5,6 +5,7 @@ import { getEpisodesMap } from '../lib/podcast/cache';
 import { fileExists } from '../lib/podcast/storage';
 import { PodcastDownloadService } from '../services/PodcastDownloadService';
 import { PodcastDownloadQueueService, QueueItemStatus } from '../services/PodcastDownloadQueueService';
+import { DownloadStatusCache } from '../services/DownloadStatusCache';
 
 type DownloadedItem = {
   id: string; // synthetic id: `${podcastId}:${guid||audioUrl}`
@@ -40,9 +41,18 @@ export function useDownloadedPlaylist() {
     try {
       setLoading(true);
       
-      // Get completed downloads
-      const downloads = await PodcastDownloadService.getDownloadedEpisodes();
-      if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'completed downloads');
+      // OPTIMIZATION: Use DownloadStatusCache if initialized, otherwise fallback to service
+      let downloads;
+      if (DownloadStatusCache.isInitialized()) {
+        // Fast path: Use cache (instant)
+        const stats = DownloadStatusCache.getStats();
+        downloads = await PodcastDownloadService.getDownloadedEpisodes();
+        if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'completed downloads (from cache)');
+      } else {
+        // Slow path: Direct service call (first time only)
+        downloads = await PodcastDownloadService.getDownloadedEpisodes();
+        if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'completed downloads (direct)');
+      }
       
       // Get queue items (pending, downloading, failed, paused)
       let queueItems: any[] = [];
