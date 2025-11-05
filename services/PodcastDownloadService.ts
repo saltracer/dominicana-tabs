@@ -326,4 +326,28 @@ export class PodcastDownloadService {
       throw error;
     }
   }
+
+  /**
+   * Get download metadata (exposed for queue service)
+   */
+  static async getMetadata(): Promise<DownloadedEpisode[]> {
+    return this.getDownloadMetadata();
+  }
+
+  /**
+   * Check if an episode is currently being downloaded or queued
+   * (This is a placeholder for queue integration - actual logic in queue service)
+   */
+  static async getDownloadStatus(episodeId: string): Promise<{
+    isDownloaded: boolean;
+    isDownloading: boolean;
+    progress?: number;
+  }> {
+    const isDownloaded = await this.isEpisodeDownloaded(episodeId);
+    return {
+      isDownloaded,
+      isDownloading: false, // Will be updated by queue service
+      progress: isDownloaded ? 100 : 0,
+    };
+  }
 }

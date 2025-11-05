@@ -19,6 +19,7 @@ import { syncDown, syncUp, getCachedItems } from '../../../../lib/playlist/cache
 import { useAuth } from '../../../../contexts/AuthContext';
 import { PodcastService } from '../../../../services/PodcastService';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
+import { PodcastDownloadQueueService } from '../../../../services/PodcastDownloadQueueService';
 
 export default function PlaylistDetailScreen() {
   const { colorScheme } = useTheme();
@@ -31,7 +32,7 @@ export default function PlaylistDetailScreen() {
 
   const { items: downloadedItems, loading: dlLoading, refetch: refetchDownloaded } = useDownloadedPlaylist();
   const { items: hookItems, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
-  const { isEpisodeDownloaded, downloadEpisode, deleteDownloadedEpisode } = usePodcastDownloads();
+  const { isEpisodeDownloaded, downloadEpisode, deleteDownloadedEpisode, retryDownload, pauseDownload, resumeDownload, removeFromQueue, getDownloadState } = usePodcastDownloads();
   const [items, setItems] = useState(hookItems);
   const [resolved, setResolved] = useState<Record<string, PodcastEpisode | null>>({});
   const [artByPodcast, setArtByPodcast] = useState<Record<string, string | null>>({});
@@ -542,15 +543,46 @@ export default function PlaylistDetailScreen() {
     }
   };
 
-  const handleDeleteDownload = async (episode: PodcastEpisode) => {
+  const handleDeleteDownload = async (episode: PodcastEpisode, item?: any) => {
     try {
-      await deleteDownloadedEpisode(episode.id);
+      // Check if this is a queue item
+      const downloadStatus = (item as any)?.downloadStatus;
+      
+      if (downloadStatus && downloadStatus !== 'completed') {
+        // This is a queue item - remove from queue
+        const queueItemId = (item as any).id?.replace('queue-', '');
+        if (queueItemId) {
+          await removeFromQueue(queueItemId);
+          refetchDownloaded();
+        }
+      } else {
+        // This is a completed download - delete the file
+        await deleteDownloadedEpisode(episode.id);
+        refetchDownloaded();
+      }
+      
       // Close the swipe item after action
       const ref = itemRefs.current.get(episode.id);
       if (ref) ref.close();
     } catch (error) {
       console.error('Error deleting download:', error);
       Alert.alert('Error', 'Failed to delete download');
+    }
+  };
+
+  const handleRetryDownload = async (item: any) => {
+    try {
+      const queueItemId = (item as any).id?.replace('queue-', '');
+      if (queueItemId) {
+        await retryDownload(queueItemId);
+        refetchDownloaded();
+      }
+      // Close the swipe item after action
+      const ref = itemRefs.current.get((item as any).episodeId);
+      if (ref) ref.close();
+    } catch (error) {
+      console.error('Error retrying download:', error);
+      Alert.alert('Error', 'Failed to retry download');
     }
   };
 
@@ -588,13 +620,40 @@ export default function PlaylistDetailScreen() {
     </View>
   );
 
-  // Underlay component for left swipe (download/delete download)
+  // Underlay component for left swipe (download/delete download/retry)
   const UnderlayLeft = ({ item, episode }: { item: any; episode?: PodcastEpisode }) => {
-    const downloaded = episode ? isEpisodeDownloaded(episode.id) : false;
+    const downloadStatus = (item as any)?.downloadStatus;
+    const isFailed = downloadStatus === 'failed';
+    const isPaused = downloadStatus === 'paused';
+    const isQueued = downloadStatus === 'pending' || downloadStatus === 'downloading';
+    const isCompleted = downloadStatus === 'completed' || (!downloadStatus && episode && isEpisodeDownloaded(episode.id));
+    
+    let actionText = 'Download';
+    let iconName: any = 'cloud-download';
+    let bgColor = '#388e3c';
+    
+    if (isFailed) {
+      actionText = 'Retry';
+      iconName = 'refresh';
+      bgColor = '#ff9800';
+    } else if (isPaused) {
+      actionText = 'Resume';
+      iconName = 'play';
+      bgColor = '#2196f3';
+    } else if (isQueued) {
+      actionText = 'Cancel';
+      iconName = 'close';
+      bgColor = '#f57c00';
+    } else if (isCompleted) {
+      actionText = 'Delete';
+      iconName = 'trash';
+      bgColor = '#f57c00';
+    }
+    
     return (
-      <View style={[styles.underlayLeft, { backgroundColor: downloaded ? '#f57c00' : '#388e3c' }]}>
-        <Text style={styles.underlayText}>{downloaded ? 'Delete' : 'Download'}</Text>
-        <Ionicons name={downloaded ? 'trash' : 'cloud-download'} size={24} color="#fff" />
+      <View style={[styles.underlayLeft, { backgroundColor: bgColor }]}>
+        <Text style={styles.underlayText}>{actionText}</Text>
+        <Ionicons name={iconName} size={24} color="#fff" />
       </View>
     );
   };
@@ -668,7 +727,7 @@ export default function PlaylistDetailScreen() {
               hasDuration: ep.duration !== undefined && ep.duration !== null 
             });
             return (
-              <ScaleDecorator>
+              <ScaleDecorator key={`downloaded-item-${(item as any).id}`}>
                 <SwipeableItem
                   key={ep.id}
                   item={item}
@@ -723,32 +782,41 @@ export default function PlaylistDetailScreen() {
                       hideDescription
                       onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: ep.id, podcastId: ep.podcastId, guid: ep.guid, audioUrl: ep.audioUrl } })}
                       onPlay={() => {
+                        // Only allow play if download is completed
+                        const downloadStatus = (item as any)?.downloadStatus;
+                        if (downloadStatus && downloadStatus !== 'completed') {
+                          Alert.alert('Download Not Ready', 'This episode is still downloading. Please wait for it to complete.');
+                          return;
+                        }
+                        
                         if (currentEpisode?.id === ep.id && isPlaying) {
                           pause();
                         } else if (currentEpisode?.id === ep.id && isPaused) {
                           resume();
                         } else {
-                          // Build episode list from downloaded items
-                          const allEpisodes = localData.map(item => {
-                            const itemId = (item as any).id;
-                            const cachedDur = downloadedDurations[itemId];
-                            return {
-                              id: (item as any).episodeId || itemId,
-                              podcastId: (item as any).podcastId,
-                              title: (item as any).title,
-                              description: (item as any).description || '',
-                              audioUrl: (item as any).audioUrl,
-                              duration: (item as any).duration || cachedDur,
-                              publishedAt: (item as any).publishedAt,
-                              episodeNumber: (item as any).episodeNumber,
-                              seasonNumber: (item as any).seasonNumber,
-                              guid: (item as any).guid,
-                              artworkUrl: (item as any).artworkUrl || undefined,
-                              fileSize: (item as any).fileSize,
-                              mimeType: (item as any).mimeType,
-                              createdAt: new Date().toISOString(),
-                            } as any;
-                          });
+                          // Build episode list from downloaded items (completed only)
+                          const allEpisodes = localData
+                            .filter((item: any) => !item.downloadStatus || item.downloadStatus === 'completed')
+                            .map(item => {
+                              const itemId = (item as any).id;
+                              const cachedDur = downloadedDurations[itemId];
+                              return {
+                                id: (item as any).episodeId || itemId,
+                                podcastId: (item as any).podcastId,
+                                title: (item as any).title,
+                                description: (item as any).description || '',
+                                audioUrl: (item as any).audioUrl,
+                                duration: (item as any).duration || cachedDur,
+                                publishedAt: (item as any).publishedAt,
+                                episodeNumber: (item as any).episodeNumber,
+                                seasonNumber: (item as any).seasonNumber,
+                                guid: (item as any).guid,
+                                artworkUrl: (item as any).artworkUrl || undefined,
+                                fileSize: (item as any).fileSize,
+                                mimeType: (item as any).mimeType,
+                                createdAt: new Date().toISOString(),
+                              } as any;
+                            });
                           playEpisode(ep, {
                             type: 'downloaded',
                             episodes: allEpisodes,
@@ -782,7 +850,7 @@ export default function PlaylistDetailScreen() {
             //   publishedAt: ep.publishedAt
             // });
             return (
-              <ScaleDecorator>
+              <ScaleDecorator key={`playlist-item-${(item as any).id}`}>
                 <SwipeableItem
                   key={ep.id}
                   item={item}
@@ -884,7 +952,7 @@ export default function PlaylistDetailScreen() {
           });
           
           return (
-            <ScaleDecorator>
+            <ScaleDecorator key={`fallback-${item.id || fallbackId}`}>
               <SwipeableItem
                 key={fallbackId}
                 item={item}

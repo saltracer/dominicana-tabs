@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Platform } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { getEpisodesMap } from '../lib/podcast/cache';
 import { fileExists } from '../lib/podcast/storage';
 import { PodcastDownloadService } from '../services/PodcastDownloadService';
+import { PodcastDownloadQueueService, QueueItemStatus } from '../services/PodcastDownloadQueueService';
 
 type DownloadedItem = {
   id: string; // synthetic id: `${podcastId}:${guid||audioUrl}`
@@ -12,7 +14,7 @@ type DownloadedItem = {
   description?: string;
   audioUrl: string;
   artworkUrl?: string | null;
-  localAudioPath: string;
+  localAudioPath?: string;
   downloadedAt: number;
   guid?: string;
   duration?: number;
@@ -21,6 +23,10 @@ type DownloadedItem = {
   seasonNumber?: number;
   fileSize?: number;
   mimeType?: string;
+  // Queue status fields
+  downloadStatus?: QueueItemStatus;
+  downloadProgress?: number;
+  downloadError?: string;
 };
 
 export function useDownloadedPlaylist() {
@@ -33,10 +39,28 @@ export function useDownloadedPlaylist() {
   const loadItems = async (alive: { current: boolean }) => {
     try {
       setLoading(true);
+      
+      // Get completed downloads
       const downloads = await PodcastDownloadService.getDownloadedEpisodes();
-      if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'downloads');
+      if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'completed downloads');
+      
+      // Get queue items (pending, downloading, failed, paused)
+      let queueItems: any[] = [];
+      if (Platform.OS !== 'web') {
+        try {
+          const queueState = await PodcastDownloadQueueService.getQueueState();
+          queueItems = queueState.items.filter(
+            item => item.status !== 'completed' // Don't duplicate completed items
+          );
+          if (__DEV__) console.log('[useDownloadedPlaylist] found', queueItems.length, 'queue items');
+        } catch (err) {
+          if (__DEV__) console.warn('[useDownloadedPlaylist] error loading queue:', err);
+        }
+      }
       
       const results: DownloadedItem[] = [];
+      
+      // Process completed downloads
       for (const d of downloads) {
         try {
           const exists = await fileExists(d.filePath);
@@ -106,13 +130,53 @@ export function useDownloadedPlaylist() {
             seasonNumber,
             fileSize,
             mimeType,
+            downloadStatus: 'completed',
           });
         } catch (err) {
           if (__DEV__) console.error('[useDownloadedPlaylist] error processing download:', d.episodeId, err);
         }
       }
-      results.sort((a, b) => b.downloadedAt - a.downloadedAt);
-      if (__DEV__) console.log('[useDownloadedPlaylist] returning', results.length, 'items');
+      
+      // Process queue items (pending, downloading, failed, paused)
+      for (const qItem of queueItems) {
+        try {
+          const ep = qItem.episode;
+          results.push({
+            id: `queue-${qItem.id}`,
+            podcastId: ep.podcastId,
+            episodeId: ep.id,
+            title: ep.title,
+            description: ep.description,
+            audioUrl: ep.audioUrl,
+            artworkUrl: ep.artworkUrl || null,
+            localAudioPath: undefined, // Not yet downloaded
+            downloadedAt: new Date(qItem.addedAt).getTime(),
+            guid: ep.guid,
+            duration: ep.duration,
+            publishedAt: ep.publishedAt,
+            episodeNumber: ep.episodeNumber,
+            seasonNumber: ep.seasonNumber,
+            fileSize: ep.fileSize,
+            mimeType: ep.mimeType,
+            downloadStatus: qItem.status,
+            downloadProgress: qItem.progress,
+            downloadError: qItem.error,
+          });
+        } catch (err) {
+          if (__DEV__) console.error('[useDownloadedPlaylist] error processing queue item:', qItem.id, err);
+        }
+      }
+      
+      // Sort: downloading/pending first, then completed by download date
+      results.sort((a, b) => {
+        const statusOrder = { downloading: 0, pending: 1, paused: 2, failed: 3, completed: 4 };
+        const aOrder = statusOrder[a.downloadStatus || 'completed'] ?? 4;
+        const bOrder = statusOrder[b.downloadStatus || 'completed'] ?? 4;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return b.downloadedAt - a.downloadedAt;
+      });
+      
+      if (__DEV__) console.log('[useDownloadedPlaylist] returning', results.length, 'total items (completed + queue)');
       if (alive.current) setItems(results);
     } catch (err) {
       console.error('[useDownloadedPlaylist] error:', err);
@@ -126,6 +190,18 @@ export function useDownloadedPlaylist() {
     loadItems(alive);
     return () => { alive.current = false; };
   }, [user?.id, refreshKey]);
+
+  // Subscribe to queue state changes to auto-refresh
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    
+    const unsubscribe = PodcastDownloadQueueService.subscribe((state) => {
+      if (__DEV__) console.log('[useDownloadedPlaylist] Queue state changed, refreshing...');
+      refetch();
+    });
+
+    return unsubscribe;
+  }, []);
 
   const refetch = () => {
     setRefreshKey(prev => prev + 1);

@@ -140,10 +140,28 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     return () => { cancelled = true; };
   }, [showArtwork, episode.artworkUrl, episode.podcastId, artworkLocalPath]);
 
-  // Download state and handlers
+  // Download state and handlers (with queue support)
   const isDownloadedMeta = isEpisodeDownloaded(episode.id);
   const isDownloaded = cacheDownloaded || isDownloadedMeta;
   const downloadState = getDownloadState(episode.id);
+  
+  // Check if download is in queue or downloading
+  const isInQueue = downloadState.status === 'pending';
+  const isDownloading = downloadState.status === 'downloading';
+  const isPausedDownload = downloadState.status === 'paused';
+  const hasDownloadError = downloadState.status === 'error' || downloadState.status === 'failed';
+  
+  // Get status icon for download state
+  const getDownloadStatusIcon = () => {
+    if (isDownloading) return { name: 'download' as const, color: '#2196f3' };
+    if (isInQueue) return { name: 'time' as const, color: '#ff9800' };
+    if (isPausedDownload) return { name: 'pause-circle' as const, color: '#ff9800' };
+    if (hasDownloadError) return { name: 'alert-circle' as const, color: '#f44336' };
+    if (isDownloaded) return { name: 'checkmark-circle' as const, color: '#4caf50' };
+    return null;
+  };
+  
+  const statusIcon = getDownloadStatusIcon();
 
   // Fast cache-based detection so the button reflects state before metadata loads
   useEffect(() => {
@@ -375,12 +393,26 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
                   <View style={[styles.artwork, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]} />
                 </>
               )}
+              {/* Download status badge */}
+              {statusIcon && (
+                <View style={[styles.statusBadge, { backgroundColor: statusIcon.color }]}>
+                  <Ionicons name={statusIcon.name} size={12} color="#fff" />
+                </View>
+              )}
             </View>
           )}
           <View style={styles.titleContainer}>
-            <Text numberOfLines={2} style={[styles.title, { color: themeStyles.text }]}>
-              {plainTitle}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text numberOfLines={2} style={[styles.title, { color: themeStyles.text, flex: 1 }]}>
+                {plainTitle}
+              </Text>
+              {/* Download status badge (when no artwork) */}
+              {!showArtwork && statusIcon && (
+                <View style={[styles.statusBadgeInline, { backgroundColor: statusIcon.color }]}>
+                  <Ionicons name={statusIcon.name} size={14} color="#fff" />
+                </View>
+              )}
+            </View>
             {(isPlaying || isPaused) && (
               <View style={[styles.playingIndicator, { backgroundColor: themeStyles.primary }]}>
                 <Ionicons name="radio" size={12} color="#fff" />
@@ -406,22 +438,51 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
               />
             </TouchableOpacity>
             
-            {/* Download Button */}
+            {/* Download Button with queue support */}
             {isDownloadsEnabled && (
               <TouchableOpacity
                 style={[
                   styles.downloadButton,
                   {
-                    backgroundColor: isDownloaded
+                    backgroundColor: isDownloaded || isDownloading || isInQueue
                       ? themeStyles.primary
+                      : isPausedDownload
+                      ? '#ff9800'
+                      : hasDownloadError
+                      ? '#f44336'
                       : Colors[colorScheme ?? 'light'].surface,
                   }
                 ]}
                 onPress={handleDownloadPress}
-                disabled={downloadState.status === 'downloading'}
+                disabled={isDownloading}
               >
-                {downloadState.status === 'downloading' ? (
-                  <ActivityIndicator size="small" color={themeStyles.primary} />
+                {isDownloading ? (
+                  <View style={{ position: 'relative' }}>
+                    <ActivityIndicator size="small" color="#fff" />
+                    {downloadState.progress !== undefined && (
+                      <Text style={{ fontSize: 8, color: '#fff', marginTop: 2 }}>
+                        {downloadState.progress.toFixed(0)}%
+                      </Text>
+                    )}
+                  </View>
+                ) : isInQueue ? (
+                  <Ionicons
+                    name="time"
+                    size={20}
+                    color="#fff"
+                  />
+                ) : isPausedDownload ? (
+                  <Ionicons
+                    name="pause-circle"
+                    size={20}
+                    color="#fff"
+                  />
+                ) : hasDownloadError ? (
+                  <Ionicons
+                    name="alert-circle"
+                    size={20}
+                    color="#fff"
+                  />
                 ) : (
                   <Ionicons
                     name={isDownloaded ? 'checkmark-circle' : 'cloud-download-outline'}
@@ -540,11 +601,32 @@ const styles = StyleSheet.create({
   artworkContainer: {
     marginRight: 10,
     alignSelf: 'flex-start',
+    position: 'relative',
   },
   artwork: {
     width: 44,
     height: 44,
     borderRadius: 4,
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  statusBadgeInline: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   header: {
     flexDirection: 'row',

@@ -28,7 +28,10 @@
         "NSLocationWhenInUseUsageDescription": "This app uses location to show nearby Dominican provinces and communities.",
         "ITSAppUsesNonExemptEncryption": false,
         "UIDesignRequiresCompatibility": true,
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio",
+          "fetch"
+        ]
       },
       "bundleIdentifier": "com.dominicana.dev"
     },
@@ -148,7 +151,8 @@
           ]
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true,

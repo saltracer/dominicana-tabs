@@ -5,13 +5,14 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import TrackPlayer, { 
   IOSCategory, 
   IOSCategoryMode, 
   IOSCategoryOptions,
   AndroidAudioContentType 
 } from 'react-native-track-player';
+import * as BackgroundTask from 'expo-background-task';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
 import { CalendarProvider } from '@/components/CalendarContext';
@@ -21,6 +22,8 @@ import { PodcastPlayerProvider } from '@/contexts/PodcastPlayerContext';
 import { UnifiedPlaybackService } from '@/services/UnifiedPlaybackService';
 import { AudioVersionService } from '@/services/AudioVersionService';
 import { RosaryAudioDownloadService } from '@/services/RosaryAudioDownloadService';
+import { defineDownloadTask, DOWNLOAD_TASK_NAME } from '@/lib/background/download-task';
+import { PodcastDownloadQueueService } from '@/services/PodcastDownloadQueueService';
 
 // Initialize TrackPlayer immediately at module level (before any component renders)
 let trackPlayerInitialized = false;
@@ -64,6 +67,11 @@ const initializeTrackPlayer = async () => {
 // Start initialization immediately
 initializeTrackPlayer();
 
+// Define background download task
+if (Platform.OS !== 'web') {
+  defineDownloadTask();
+}
+
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
@@ -97,6 +105,47 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
+
+  // Register background download task
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const registerBackgroundTask = async () => {
+      try {
+        const isRegistered = await BackgroundTask.isTaskRegisteredAsync(DOWNLOAD_TASK_NAME);
+        if (!isRegistered) {
+          await BackgroundTask.registerTaskAsync(DOWNLOAD_TASK_NAME, {
+            minimumInterval: 15 * 60, // 15 minutes minimum
+            stopOnTerminate: false,
+            startOnBoot: true,
+          });
+          console.log('[App] Background download task registered successfully');
+        } else {
+          console.log('[App] Background download task already registered');
+        }
+      } catch (error) {
+        console.error('[App] Failed to register background download task:', error);
+      }
+    };
+
+    // Initialize download queue service
+    const initDownloadQueue = async () => {
+      try {
+        await PodcastDownloadQueueService.initialize();
+        console.log('[App] Download queue service initialized');
+      } catch (error) {
+        console.error('[App] Failed to initialize download queue:', error);
+      }
+    };
+
+    registerBackgroundTask();
+    initDownloadQueue();
+
+    return () => {
+      // Cleanup queue service
+      PodcastDownloadQueueService.cleanup();
+    };
+  }, []);
 
   // Check for audio file updates in background (non-blocking)
   useEffect(() => {

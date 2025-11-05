@@ -1,5 +1,5 @@
 /**
- * Hook for managing podcast downloads
+ * Hook for managing podcast downloads with queue support
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -7,14 +7,16 @@ import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { PodcastEpisode } from '../types/podcast-types';
 import { PodcastDownloadService, DownloadProgress, DownloadedEpisode } from '../services/PodcastDownloadService';
+import { PodcastDownloadQueueService, QueueItem, QueueState } from '../services/PodcastDownloadQueueService';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
 import { useAuth } from '../contexts/AuthContext';
 
 export interface DownloadState {
   episodeId: string;
-  status: 'idle' | 'downloading' | 'downloaded' | 'error';
+  status: 'idle' | 'pending' | 'downloading' | 'downloaded' | 'error' | 'paused';
   progress?: number;
   error?: string;
+  queueItem?: QueueItem;
 }
 
 export function usePodcastDownloads() {
@@ -23,6 +25,8 @@ export function usePodcastDownloads() {
   const [downloadedEpisodes, setDownloadedEpisodes] = useState<DownloadedEpisode[]>([]);
   const [preferences, setPreferences] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [queueState, setQueueState] = useState<QueueState | null>(null);
+  const [useQueue, setUseQueue] = useState(true); // Enable queue by default
 
   // Load user preferences
   const loadPreferences = useCallback(async () => {
@@ -45,6 +49,61 @@ export function usePodcastDownloads() {
       console.error('[usePodcastDownloads] Error loading downloaded episodes:', error);
     }
   }, []);
+
+  // Initialize queue service and subscribe to changes (only once)
+  useEffect(() => {
+    if (Platform.OS === 'web' || !useQueue) {
+      return;
+    }
+
+    console.log('[usePodcastDownloads] Initializing queue service');
+    let mounted = true;
+
+    // Initialize queue service
+    PodcastDownloadQueueService.initialize(user?.id).catch(console.error);
+
+    // Subscribe to queue state changes
+    const unsubscribe = PodcastDownloadQueueService.subscribe((state) => {
+      if (!mounted) return;
+      
+      console.log('[usePodcastDownloads] 📊 Queue state updated:', {
+        total: state.items.length,
+        active: state.activeDownloads.length,
+        items: state.items.map(i => ({ id: i.episodeId, status: i.status, progress: i.progress }))
+      });
+      setQueueState(state);
+      
+      // Update download states based on queue items
+      const newStates = new Map<string, DownloadState>();
+      state.items.forEach(item => {
+        newStates.set(item.episodeId, {
+          episodeId: item.episodeId,
+          status: item.status as any,
+          progress: item.progress,
+          error: item.error,
+          queueItem: item,
+        });
+      });
+      setDownloadStates(newStates);
+      console.log('[usePodcastDownloads] Updated download states for', newStates.size, 'items');
+    });
+
+    // Load initial queue state
+    PodcastDownloadQueueService.getQueueState()
+      .then((state) => {
+        if (!mounted) return;
+        console.log('[usePodcastDownloads] Initial queue state loaded:', state.items.length, 'items');
+        setQueueState(state);
+      })
+      .catch(console.error);
+
+    return () => {
+      console.log('[usePodcastDownloads] Cleaning up queue service');
+      mounted = false;
+      unsubscribe();
+      // Don't call cleanup here - let it persist across component lifecycles
+    };
+  }, [user?.id, useQueue]);
 
   // Initialize
   useEffect(() => {
@@ -88,7 +147,7 @@ export function usePodcastDownloads() {
     return netInfo.type === 'wifi';
   }, [preferences?.podcast_wifi_only]);
 
-  // Download episode
+  // Download episode (with queue support)
   const downloadEpisode = useCallback(async (episode: PodcastEpisode): Promise<boolean> => {
     if (!isDownloadsEnabled) {
       console.warn('[usePodcastDownloads] Downloads are disabled');
@@ -100,6 +159,28 @@ export function usePodcastDownloads() {
       return false;
     }
 
+    // Use queue if enabled
+    if (useQueue) {
+      try {
+        console.log('[usePodcastDownloads] Adding episode to queue:', episode.title);
+        await PodcastDownloadQueueService.addToQueue(episode);
+        console.log('[usePodcastDownloads] ✅ Episode added to queue successfully');
+        // Don't reload downloaded episodes immediately - wait for download to complete
+        return true;
+      } catch (error) {
+        console.error('[usePodcastDownloads] ❌ Failed to add to queue:', error);
+        // If error is "already in queue" or "already downloaded", that's okay - return true
+        if (error instanceof Error && 
+            (error.message.includes('already in queue') || 
+             error.message.includes('already downloaded'))) {
+          console.log('[usePodcastDownloads] Episode already in queue or downloaded, returning success');
+          return true;
+        }
+        return false;
+      }
+    }
+
+    // Fallback to direct download (legacy behavior)
     // Check WiFi connection
     const hasWiFi = await checkWiFiConnection();
     if (!hasWiFi) {
@@ -151,7 +232,7 @@ export function usePodcastDownloads() {
       }));
       return false;
     }
-  }, [isDownloadsEnabled, checkWiFiConnection, preferences?.podcast_max_downloads, loadDownloadedEpisodes]);
+  }, [isDownloadsEnabled, checkWiFiConnection, preferences?.podcast_max_downloads, loadDownloadedEpisodes, useQueue]);
 
   // Delete downloaded episode
   const deleteDownloadedEpisode = useCallback(async (episodeId: string): Promise<boolean> => {
@@ -198,12 +279,56 @@ export function usePodcastDownloads() {
     await loadPreferences();
   }, [loadPreferences]);
 
+  // Queue operations
+  const addToQueue = useCallback(async (episode: PodcastEpisode): Promise<boolean> => {
+    if (Platform.OS === 'web') return false;
+    try {
+      await PodcastDownloadQueueService.addToQueue(episode);
+      return true;
+    } catch (error) {
+      console.error('[usePodcastDownloads] Failed to add to queue:', error);
+      return false;
+    }
+  }, []);
+
+  const removeFromQueue = useCallback(async (queueItemId: string): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    await PodcastDownloadQueueService.removeFromQueue(queueItemId);
+  }, []);
+
+  const pauseDownload = useCallback(async (queueItemId: string): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    await PodcastDownloadQueueService.pauseDownload(queueItemId, 'manual');
+  }, []);
+
+  const resumeDownload = useCallback(async (queueItemId: string): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    await PodcastDownloadQueueService.resumeDownload(queueItemId);
+  }, []);
+
+  const retryDownload = useCallback(async (queueItemId: string): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    await PodcastDownloadQueueService.retryDownload(queueItemId);
+  }, []);
+
+  const clearCompleted = useCallback(async (): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    await PodcastDownloadQueueService.clearCompleted();
+  }, []);
+
+  const getQueueStats = useCallback(async () => {
+    if (Platform.OS === 'web') return null;
+    return await PodcastDownloadQueueService.getStats();
+  }, []);
+
   return {
     // State
     downloadStates,
     downloadedEpisodes,
     preferences,
     isLoading,
+    queueState,
+    useQueue,
     
     // Computed
     isDownloadsEnabled,
@@ -215,9 +340,21 @@ export function usePodcastDownloads() {
     getTotalStorageUsed,
     refreshPreferences,
     
+    // Queue operations
+    addToQueue,
+    removeFromQueue,
+    pauseDownload,
+    resumeDownload,
+    retryDownload,
+    clearCompleted,
+    getQueueStats,
+    
     // Helpers
     isEpisodeDownloaded,
     getDownloadState,
     checkWiFiConnection,
+    
+    // Settings
+    setUseQueue,
   };
 }
