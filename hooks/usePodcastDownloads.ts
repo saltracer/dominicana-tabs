@@ -11,6 +11,7 @@ import { PodcastDownloadQueueService, QueueItem, QueueState } from '../services/
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
 import { useAuth } from '../contexts/AuthContext';
 import { useSharedPlaylistHooks } from '../contexts/SharedPlaylistHooksContext';
+import { DownloadStatusCache } from '../services/DownloadStatusCache';
 
 export interface DownloadState {
   episodeId: string;
@@ -48,6 +49,15 @@ export function usePodcastDownloads() {
   // Load downloaded episodes
   const loadDownloadedEpisodes = useCallback(async () => {
     try {
+      // OPTIMIZATION: Skip if DownloadStatusCache is initialized (already has this data)
+      if (DownloadStatusCache.isInitialized()) {
+        const stats = DownloadStatusCache.getStats();
+        if (__DEV__) console.log('[usePodcastDownloads] Using DownloadStatusCache, found', stats.downloaded, 'downloads (skipping service call)');
+        // Cache has the data, no need to call service
+        setDownloadedEpisodes([]); // We'll use cache for queries anyway
+        return;
+      }
+      
       const downloads = await PodcastDownloadService.getDownloadedEpisodes();
       setDownloadedEpisodes(downloads);
     } catch (error) {
@@ -174,11 +184,30 @@ export function usePodcastDownloads() {
 
   // Check if episode is downloaded
   const isEpisodeDownloaded = useCallback((episodeId: string): boolean => {
+    // OPTIMIZATION: Use DownloadStatusCache for instant lookup (O(1) vs O(n) array scan)
+    if (DownloadStatusCache.isInitialized()) {
+      return DownloadStatusCache.isDownloaded(episodeId);
+    }
     return downloadedEpisodes.some(ep => ep.episodeId === episodeId);
   }, [downloadedEpisodes]);
 
   // Get download state for episode
   const getDownloadState = useCallback((episodeId: string): DownloadState => {
+    // OPTIMIZATION: Use DownloadStatusCache for instant lookup
+    if (DownloadStatusCache.isInitialized()) {
+      const cachedStatus = DownloadStatusCache.get(episodeId);
+      return {
+        episodeId,
+        status: cachedStatus.isDownloaded ? 'downloaded' : 
+                cachedStatus.status === 'downloading' ? 'downloading' :
+                cachedStatus.status === 'pending' ? 'pending' :
+                cachedStatus.status === 'failed' ? 'error' :
+                cachedStatus.status === 'paused' ? 'paused' : 'idle',
+        progress: cachedStatus.progress,
+        error: cachedStatus.queueItem?.error,
+        queueItem: cachedStatus.queueItem || undefined,
+      };
+    }
     return downloadStates.get(episodeId) || { episodeId, status: 'idle' };
   }, [downloadStates]);
 

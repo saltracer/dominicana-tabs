@@ -41,18 +41,13 @@ export function useDownloadedPlaylist() {
     try {
       setLoading(true);
       
-      // OPTIMIZATION: Use DownloadStatusCache if initialized, otherwise fallback to service
-      let downloads;
-      if (DownloadStatusCache.isInitialized()) {
-        // Fast path: Use cache (instant)
-        const stats = DownloadStatusCache.getStats();
-        downloads = await PodcastDownloadService.getDownloadedEpisodes();
-        if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'completed downloads (from cache)');
-      } else {
-        // Slow path: Direct service call (first time only)
-        downloads = await PodcastDownloadService.getDownloadedEpisodes();
-        if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'completed downloads (direct)');
-      }
+      // OPTIMIZATION: Only call getDownloadedEpisodes if cache not initialized
+      // Otherwise we're just duplicating work that cache init already did
+      const downloads = DownloadStatusCache.isInitialized()
+        ? await PodcastDownloadService.getMetadata() // Direct metadata access (faster than getDownloadedEpisodes)
+        : await PodcastDownloadService.getDownloadedEpisodes();
+      
+      if (__DEV__) console.log('[useDownloadedPlaylist] found', downloads.length, 'completed downloads', DownloadStatusCache.isInitialized() ? '(via cache)' : '(direct)');
       
       // Get queue items (pending, downloading, failed, paused)
       let queueItems: any[] = [];

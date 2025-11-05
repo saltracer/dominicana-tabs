@@ -1,4 +1,4 @@
-import { getJson, setJson } from '../podcast/storage';
+import { getJson, setJson, multiGetJson } from '../podcast/storage';
 import PlaylistService, { Playlist, PlaylistItem } from '../../services/PlaylistService';
 
 type UserId = string;
@@ -34,6 +34,27 @@ export async function getCachedItems(playlistId: string): Promise<PlaylistItem[]
 
 export async function setCachedItems(playlistId: string, items: PlaylistItem[]): Promise<void> {
   await setJson(keys.playlistItems(playlistId), items);
+}
+
+/**
+ * OPTIMIZATION: Batch read playlists and specific playlist items in one AsyncStorage call
+ * Reduces AsyncStorage round trips from 2 to 1
+ */
+export async function getCachedPlaylistData(userId: string, playlistId: string): Promise<{
+  playlists: Playlist[];
+  items: PlaylistItem[];
+}> {
+  const cacheKeys = [
+    keys.playlists(userId),
+    keys.playlistItems(playlistId),
+  ];
+  
+  const results = await multiGetJson<any>(cacheKeys);
+  
+  return {
+    playlists: results[cacheKeys[0]] || [],
+    items: results[cacheKeys[1]] || [],
+  };
 }
 
 export async function enqueueMutation(userId: string, m: Mutation): Promise<void> {

@@ -15,7 +15,7 @@ import { usePlaylists } from '../../../../hooks/usePlaylists';
 import { usePlaylistItems } from '../../../../hooks/usePlaylistItems';
 import { useDownloadedPlaylist } from '../../../../hooks/useDownloadedPlaylist';
 import { usePodcastDownloads } from '../../../../hooks/usePodcastDownloads';
-import { syncDown, syncUp, getCachedItems } from '../../../../lib/playlist/cache';
+import { syncDown, syncUp, getCachedItems, getCachedPlaylistData } from '../../../../lib/playlist/cache';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { PodcastService } from '../../../../services/PodcastService';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
@@ -77,12 +77,23 @@ export default function PlaylistDetailScreen() {
       const focusTime = Date.now();
       if (__DEV__) console.log('[PlaylistDetail] 👁️  Screen focused, reloading from cache');
       
-      if (!isDownloaded && id) {
+      if (!isDownloaded && id && user?.id) {
+        (async () => {
+          const cacheStart = Date.now();
+          // OPTIMIZATION: Batch read playlist data in single AsyncStorage call
+          const { items: cached } = await getCachedPlaylistData(user.id, id as string);
+          if (__DEV__) console.log('[PlaylistDetail] 📦 Loaded', cached.length, 'items from batched cache in', Date.now() - cacheStart, 'ms');
+          // Also load from hookItems on first mount
+          const itemsToUse = cached.length > 0 ? cached : hookItems;
+          setItems(itemsToUse);
+          if (__DEV__) console.log('[PlaylistDetail] ⏱️ Total focus handler time:', Date.now() - focusTime, 'ms');
+        })();
+      } else if (!isDownloaded && id) {
+        // No user, fallback to regular cache read
         (async () => {
           const cacheStart = Date.now();
           const cached = await getCachedItems(id as string);
           if (__DEV__) console.log('[PlaylistDetail] 📦 Loaded', cached.length, 'items from cache in', Date.now() - cacheStart, 'ms');
-          // Also load from hookItems on first mount
           const itemsToUse = cached.length > 0 ? cached : hookItems;
           setItems(itemsToUse);
           if (__DEV__) console.log('[PlaylistDetail] ⏱️ Total focus handler time:', Date.now() - focusTime, 'ms');
