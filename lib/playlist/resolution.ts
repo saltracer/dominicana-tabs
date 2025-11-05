@@ -109,6 +109,10 @@ export async function resolvePlaylistItems(
   });
 
   if (itemsNeedingDb.length > 0) {
+    if (__DEV__) {
+      console.log('[Resolution] Fetching', itemsNeedingDb.length, 'episodes from database');
+    }
+    
     // Batch by splitting into chunks
     for (let i = 0; i < itemsNeedingDb.length; i += batchSize) {
       const batch = itemsNeedingDb.slice(i, i + batchSize);
@@ -125,6 +129,12 @@ export async function resolvePlaylistItems(
           const { item, episode } = result.value;
           resolved.set(item.id, episode);
           dbQueries++;
+        } else if (result.status === 'rejected') {
+          if (__DEV__) {
+            console.warn('[Resolution] Failed to fetch episode_id:', (batch[dbResults.indexOf(result)] as any).episode_id, result.reason);
+          }
+          // Mark as null so we don't try again
+          resolved.set(batch[dbResults.indexOf(result)].id, null);
         }
       });
     }
@@ -137,6 +147,9 @@ export async function resolvePlaylistItems(
   });
 
   if (itemsNeedingRss.length > 0) {
+    if (__DEV__) {
+      console.log('[Resolution] Looking up', itemsNeedingRss.length, 'episodes from RSS cache');
+    }
     // Group by podcastId for efficient RSS cache access
     const byPodcast = new Map<string, PlaylistItem[]>();
     itemsNeedingRss.forEach(item => {

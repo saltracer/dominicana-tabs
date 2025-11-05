@@ -118,19 +118,12 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
         setArtPath(null);
         return;
       }
-      // Prefer parent-provided local path, but verify it exists
+      // OPTIMIZATION: Trust parent-provided local path (pre-verified by resolution module)
+      // This eliminates redundant fileExists checks that cause jitter
       if (artworkLocalPath) {
-        try {
-          const exists = await fileExists(artworkLocalPath);
-          if (exists) {
-            if (__DEV__) console.log('[EpisodeListItem] artwork using localPath:', artworkLocalPath);
-            if (!cancelled) setArtPath(artworkLocalPath);
-            return;
-          }
-          if (__DEV__) console.warn('[EpisodeListItem] localPath does not exist:', artworkLocalPath);
-        } catch {
-          if (__DEV__) console.warn('[EpisodeListItem] failed to check localPath:', artworkLocalPath);
-        }
+        if (__DEV__) console.log('[EpisodeListItem] artwork using pre-resolved localPath:', artworkLocalPath);
+        if (!cancelled) setArtPath(artworkLocalPath);
+        return;
       }
       // Try episode artwork first
       if (episode.artworkUrl) {

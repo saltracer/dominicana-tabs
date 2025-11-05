@@ -74,19 +74,23 @@ export default function PlaylistDetailScreen() {
   
   if (!focusHandlerRef.current) {
     focusHandlerRef.current = () => {
+      const focusTime = Date.now();
       if (__DEV__) console.log('[PlaylistDetail] 👁️  Screen focused, reloading from cache');
       
       if (!isDownloaded && id) {
         (async () => {
+          const cacheStart = Date.now();
           const cached = await getCachedItems(id as string);
-          if (__DEV__) console.log('[PlaylistDetail] 📦 Loaded', cached.length, 'items from cache on focus');
+          if (__DEV__) console.log('[PlaylistDetail] 📦 Loaded', cached.length, 'items from cache in', Date.now() - cacheStart, 'ms');
           // Also load from hookItems on first mount
           const itemsToUse = cached.length > 0 ? cached : hookItems;
           setItems(itemsToUse);
+          if (__DEV__) console.log('[PlaylistDetail] ⏱️ Total focus handler time:', Date.now() - focusTime, 'ms');
         })();
       } else {
         // For downloaded playlist or first load, use hookItems
         setItems(hookItems);
+        if (__DEV__) console.log('[PlaylistDetail] ⏱️ Total focus handler time:', Date.now() - focusTime, 'ms');
       }
     };
   }
@@ -203,9 +207,10 @@ export default function PlaylistDetailScreen() {
 
   // Sync local data for drag operations - sync immediately to enable fast rendering
   useEffect(() => {
+    const syncStart = Date.now();
     // Always sync immediately for instant rendering (resolution happens in background)
-    if (__DEV__) console.log('[PlaylistDetail] ✅ Syncing localData from data source, length:', data.length);
     setLocalData(data as any);
+    if (__DEV__) console.log('[PlaylistDetail] ✅ Synced localData from data source in', Date.now() - syncStart, 'ms, length:', data.length);
   }, [data]);
 
   // NEW: Use centralized resolution module for playlist items
@@ -455,9 +460,12 @@ export default function PlaylistDetailScreen() {
     );
   };
 
-  // Show loading spinner during initial resolution to avoid weird skeleton UI
-  // But keep it fast - resolution happens quickly now (~600ms)
-  const showLoadingSpinner = !hasEverResolved && isResolving;
+  // Show loading spinner until resolution completes to avoid jitter
+  // For downloaded playlists, show spinner while loading downloads
+  // For regular playlists, wait until we have at least some resolved items to prevent fallback row flash
+  const showLoadingSpinner = isDownloaded 
+    ? (!hasEverResolved && dlLoading)
+    : (items.length > 0 && resolved.size === 0);
 
   return (
     <SharedPlaylistHooksProvider
@@ -701,9 +709,10 @@ export default function PlaylistDetailScreen() {
                       episode={ep}
                       showArtwork
                       artworkLocalPath={(() => {
-                        const path = artByPodcast[ep.podcastId] || null;
-                        // if (__DEV__) console.log('[PlaylistDetail] passing artwork to playlist item:', ep.podcastId, 'path=', path);
-                        return path;
+                        // Use artwork from resolution first, fallback to feed artwork
+                        const itemArtPath = artworkPaths.get((item as any).id);
+                        const feedArtPath = artByPodcast[ep.podcastId];
+                        return itemArtPath || feedArtPath || null;
                       })()}
                       showAddToPlaylist={false}
                       hideDescription
@@ -749,7 +758,9 @@ export default function PlaylistDetailScreen() {
           const fallbackTitle = extRef?.title || (item as any).title || 'Episode';
           const fallbackMeta = extRef?.audioUrl || (item as any).audioUrl || '';
           
-          if (__DEV__) console.log('[PlaylistDetail] Fallback row:', {
+          // Fallback rows should not render - resolution should always provide episode data
+          // Log warning in dev mode
+          if (__DEV__) console.warn('[PlaylistDetail] ⚠️ Fallback row rendering (resolution may have failed):', {
             itemId: fallbackId,
             hasExternalRef: !!extRef,
             externalRefTitle: extRef?.title,

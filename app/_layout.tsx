@@ -24,6 +24,7 @@ import { AudioVersionService } from '@/services/AudioVersionService';
 import { RosaryAudioDownloadService } from '@/services/RosaryAudioDownloadService';
 import { defineDownloadTask, DOWNLOAD_TASK_NAME } from '@/lib/background/download-task';
 import { PodcastDownloadQueueService } from '@/services/PodcastDownloadQueueService';
+import { useCacheInitialization } from '@/hooks/useCacheInitialization';
 
 // Initialize TrackPlayer immediately at module level (before any component renders)
 let trackPlayerInitialized = false;
@@ -217,6 +218,9 @@ function RootLayoutNav() {
 
 function ThemedNavigation() {
   const { colorScheme } = useTheme();
+  
+  // Initialize caches when user is authenticated
+  useCacheInitialization();
   
   return (
     <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

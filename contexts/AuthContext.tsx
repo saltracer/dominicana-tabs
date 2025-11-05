@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { User as AppUser, UserPreferences, Subscription } from '../types';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
+import { clearAllCaches } from '../hooks/useCacheInitialization';
 
 interface AuthContextType {
   user: User | null;
@@ -317,7 +318,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await UserLiturgyPreferencesService.clearAllCachedPreferences();
         console.log('AuthContext: Cached preferences cleared');
       } catch (prefError) {
-        console.warn('Error clearing cached preferences:', prefError);
+        console.error('AuthContext: Error clearing preferences:', prefError);
+      }
+      
+      // Clear episode/download caches
+      try {
+        clearAllCaches();
+        console.log('AuthContext: Episode caches cleared');
+      } catch (cacheError) {
+        console.error('AuthContext: Error clearing caches:', cacheError);
       }
 
       // Explicitly clear AsyncStorage to ensure session is completely removed
