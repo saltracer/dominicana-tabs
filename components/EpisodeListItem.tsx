@@ -431,33 +431,34 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
                 </View>
               )}
             </View>
-            {(isPlaying || isPaused) && (
+            {/* {(isPlaying || isPaused) && (
               <View style={[styles.playingIndicator, { backgroundColor: themeStyles.primary }]}>
                 <Ionicons name="radio" size={12} color="#fff" />
               </View>
-            )}
+            )} */}
           </View>
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[
-                styles.playButton,
-                {
-                  backgroundColor: isPlaying || isPaused
-                    ? themeStyles.primary
-                    : Colors[colorScheme ?? 'light'].surface,
-                }
-              ]}
+              // style={[
+              //   styles.playButton,
+              //   {
+              //     backgroundColor: isPlaying || isPaused
+              //       ? themeStyles.primary
+              //       : Colors[colorScheme ?? 'light'].surface,
+              //   }
+              // ]}
               onPress={handlePlay}
             >
               <Ionicons
-                name={isPaused ? 'play' : isPlaying ? 'pause' : 'play'}
+                name={isPaused ? 'play' : isPlaying ? 'pause' : 'play-outline'}
                 size={24}
-                color={isPlaying || isPaused ? '#fff' : themeStyles.primary}
+                color={themeStyles.primary}
+                // color={isPlaying || isPaused ? '#fff' : themeStyles.primary}
               />
             </TouchableOpacity>
             
             {/* Download Button with queue support */}
-            {isDownloadsEnabled && (
+            {/* {isDownloadsEnabled && (
               <TouchableOpacity
                 style={[
                   styles.downloadButton,
@@ -509,7 +510,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
                   />
                 )}
               </TouchableOpacity>
-            )}
+            )} */}
 
             {showAddToPlaylist && (
               <TouchableOpacity
@@ -520,7 +521,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
               </TouchableOpacity>
             )}
             
-            {rightAccessory}
+            {/* {rightAccessory} */}
           </View>
         </View>
 
@@ -611,7 +612,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginVertical: 0,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    borderBottomColor: 'rgba(0,0,0,0.15)',
   },
   content: {
     gap: 12,
@@ -684,7 +685,7 @@ const styles = StyleSheet.create({
   playButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    // borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },
