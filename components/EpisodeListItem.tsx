@@ -30,6 +30,17 @@ interface EpisodeListItemProps {
   showAddToPlaylist?: boolean;
   hideDescription?: boolean; // When true, hide description and show date/duration instead
   rightAccessory?: React.ReactNode; // Optional component to render on the right (e.g., drag handle)
+  // Hoisted hooks (optional - for performance when rendering many items)
+  sharedDownloadHooks?: {
+    isDownloadsEnabled: boolean;
+    isEpisodeDownloaded: (episodeId: string) => boolean;
+    getDownloadState: (episodeId: string) => any;
+    downloadEpisode: (episode: PodcastEpisode) => Promise<boolean>;
+    deleteDownloadedEpisode: (episodeId: string) => Promise<boolean>;
+  };
+  sharedPlaylistsHooks?: {
+    playlists: any[];
+  };
 }
 
 export const EpisodeListItem = React.memo(function EpisodeListItem({
@@ -46,6 +57,8 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   showAddToPlaylist = true,
   hideDescription = false,
   rightAccessory = null,
+  sharedDownloadHooks,
+  sharedPlaylistsHooks,
 }: EpisodeListItemProps) {
   const { colorScheme } = useTheme();
   const plainTitle = React.useMemo(() => {
@@ -69,13 +82,16 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
       border: Colors[theme].border,
     };
   }, [colorScheme]);
+  
+  // Use hoisted hooks if provided (for performance), otherwise call hooks locally (backward compatibility)
+  const localDownloadHooks = usePodcastDownloads();
   const { 
     isDownloadsEnabled, 
     isEpisodeDownloaded, 
     getDownloadState, 
     downloadEpisode, 
     deleteDownloadedEpisode 
-  } = usePodcastDownloads();
+  } = sharedDownloadHooks || localDownloadHooks;
 
   const [artPath, setArtPath] = useState<string | null>(artworkLocalPath || null);
   useEffect(() => {
@@ -248,7 +264,9 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
 
   const hasProgress = showProgress && progress > 0 && progress < 1;
 
-  const { playlists } = usePlaylists();
+  // Use hoisted playlists hook if provided (for performance), otherwise call hook locally (backward compatibility)
+  const localPlaylistsHooks = usePlaylists();
+  const { playlists } = sharedPlaylistsHooks || localPlaylistsHooks;
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const handleAddToPlaylist = useCallback((e: any) => {

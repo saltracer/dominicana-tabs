@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { PodcastService } from '../services/PodcastService';
 import { Podcast, PodcastFilters } from '../types';
+import { shouldSilentlyFail, formatBackendError } from '../lib/network-utils';
 
 export function usePodcasts(filters: PodcastFilters = {}) {
   const [podcasts, setPodcasts] = useState<Podcast[]>([]);
@@ -18,8 +19,20 @@ export function usePodcasts(filters: PodcastFilters = {}) {
       setPodcasts(result.podcasts);
       setTotalPages(result.totalPages);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load podcasts'));
-      console.error('Error loading podcasts:', err);
+      // For transient backend errors (500s, Cloudflare issues), provide user-friendly message
+      const friendlyMessage = formatBackendError(err);
+      const errorObj = new Error(friendlyMessage);
+      
+      setError(errorObj);
+      
+      // Only log to console if not a known transient error
+      if (!shouldSilentlyFail(err)) {
+        console.error('Error loading podcasts:', err);
+      } else {
+        if (__DEV__) {
+          console.warn('Transient error loading podcasts (will retry):', friendlyMessage);
+        }
+      }
     } finally {
       setLoading(false);
     }

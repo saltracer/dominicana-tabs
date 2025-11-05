@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import { Podcast, PodcastEpisode, PodcastFilters, PodcastListResponse, PodcastWithEpisodes } from '../types';
+import { withRetry, formatBackendError } from '../lib/network-utils';
 
 export class PodcastService {
   /**
@@ -89,15 +90,24 @@ export class PodcastService {
     // Apply pagination
     query = query.range(offset, offset + limit - 1);
 
-    const { data, error, count } = await query;
+    // Use retry logic for transient backend errors (500s, Cloudflare issues, etc.)
+    const result = await withRetry(async () => {
+      const { data, error, count } = await query;
 
-    if (error) {
-      console.error('Error listing podcasts:', error);
-      throw new Error(`Failed to list podcasts: ${error.message}`);
-    }
+      if (error) {
+        console.error('Error listing podcasts:', error);
+        throw new Error(`Failed to list podcasts: ${error.message}`);
+      }
 
-    const podcasts = (data || []).map(this.transformPodcast);
-    const total = count || 0;
+      return { data, count };
+    }, {
+      maxRetries: 2, // Retry up to 2 times (3 total attempts)
+      initialDelay: 1000, // Wait 1 second before first retry
+      maxDelay: 5000, // Max 5 seconds between retries
+    });
+
+    const podcasts = (result.data || []).map(this.transformPodcast);
+    const total = result.count || 0;
     const totalPages = Math.ceil(total / limit);
 
     return {
