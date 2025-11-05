@@ -40,7 +40,7 @@ type TabType = 'library' | 'subscriptions' | 'playlists' | 'queue';
 export default function PodcastsScreen() {
   const { colorScheme } = useTheme();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('library');
+  const [activeTab, setActiveTab] = useState<TabType>(user ? 'subscriptions' : 'library');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -256,22 +256,7 @@ export default function PodcastsScreen() {
 
       {/* Tabs */}
       <View style={[styles.tabContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => setActiveTab('library')}
-        >
-          <Ionicons 
-            name={activeTab === 'library' ? "library" : "library-outline"}
-            size={20}
-            color={activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
-          />
-          <Text style={[
-            styles.tabText,
-            { color: activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
-          ]}>
-            Library
-          </Text>
-        </TouchableOpacity>
+        
         <TouchableOpacity
           style={styles.tab}
           onPress={() => setActiveTab('subscriptions')}
@@ -318,6 +303,22 @@ export default function PodcastsScreen() {
             { color: activeTab === 'queue' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
           ]}>
             Queue
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tab}
+          onPress={() => setActiveTab('library')}
+        >
+          <Ionicons 
+            name={activeTab === 'library' ? "library" : "library-outline"}
+            size={20}
+            color={activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+          />
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'library' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
+          ]}>
+            Library
           </Text>
         </TouchableOpacity>
       </View>
