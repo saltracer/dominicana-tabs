@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PodcastService } from '../services/PodcastService';
 import { Podcast, PodcastFilters } from '../types';
 import { shouldSilentlyFail, formatBackendError } from '../lib/network-utils';
@@ -9,6 +9,16 @@ export function usePodcasts(filters: PodcastFilters = {}) {
   const [error, setError] = useState<Error | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // CRITICAL FIX: Stabilize filters object to prevent infinite loop
+  // JSON.stringify creates a stable key for object comparison
+  const filtersKey = useMemo(() => JSON.stringify(filters), [
+    filters.search,
+    filters.limit,
+    filters.category,
+    filters.isCurated,
+    filters.isActive,
+  ]);
 
   const loadPodcasts = useCallback(async () => {
     try {
@@ -36,7 +46,7 @@ export function usePodcasts(filters: PodcastFilters = {}) {
     } finally {
       setLoading(false);
     }
-  }, [filters, page]);
+  }, [filtersKey, page, filters.limit]);
 
   useEffect(() => {
     loadPodcasts();
