@@ -110,7 +110,31 @@ export default class PlaylistService {
       .order('position');
     if (__DEV__) console.log('[PlaylistService.getItems] Query took', Date.now() - queryStart, 'ms');
     if (error) throw error;
-    return data as unknown as PlaylistItem[];
+    
+    const items = data as unknown as PlaylistItem[];
+    
+    // Diagnostic logging: Show which items use UUID vs GUID
+    if (__DEV__ && items.length > 0) {
+      const uuidCount = items.filter(i => i.episode_id).length;
+      const guidCount = items.filter(i => !i.episode_id && i.external_ref?.guid).length;
+      
+      console.log(`[PlaylistService.getItems] 🔍 ID Analysis for playlist ${playlistId.substring(0, 8)}...`);
+      console.log(`  📊 Total: ${items.length} | 🆔 UUID: ${uuidCount} | 🏷️  GUID: ${guidCount}`);
+      
+      items.forEach((item, idx) => {
+        if (item.episode_id) {
+          console.log(`  ${idx + 1}. ✅ UUID: ${item.episode_id.substring(0, 8)}...`);
+        } else if (item.external_ref?.guid) {
+          const title = item.external_ref.title || 'Unknown';
+          const guid = item.external_ref.guid;
+          console.log(`  ${idx + 1}. ⚠️  GUID: "${title}" (${guid})`);
+        } else {
+          console.log(`  ${idx + 1}. ❌ No ID!`);
+        }
+      });
+    }
+    
+    return items;
   }
 
   static async addItem(

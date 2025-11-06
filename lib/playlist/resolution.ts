@@ -77,6 +77,46 @@ export async function resolvePlaylistItems(
     };
   }
 
+  // Diagnostic logging: Categorize items by ID type
+  if (__DEV__) {
+    const uuidItems: Array<{id: string, episodeId: string}> = [];
+    const guidItems: Array<{id: string, guid: string, title?: string}> = [];
+    
+    items.forEach(item => {
+      const episodeId = (item as any).episode_id;
+      const externalRef = (item as any).external_ref;
+      
+      if (episodeId) {
+        uuidItems.push({ id: item.id, episodeId });
+      } else if (externalRef?.guid) {
+        guidItems.push({ 
+          id: item.id, 
+          guid: externalRef.guid,
+          title: externalRef.title 
+        });
+      }
+    });
+
+    console.log('[Resolution] 🔍 Episode ID Analysis:');
+    console.log(`  📊 Total items: ${items.length}`);
+    console.log(`  🆔 UUID episodes (in database): ${uuidItems.length}`);
+    console.log(`  🏷️  GUID episodes (RSS only): ${guidItems.length}`);
+    
+    if (uuidItems.length > 0) {
+      console.log('  ✅ UUID Episodes:');
+      uuidItems.forEach(item => {
+        console.log(`    - ${item.episodeId.substring(0, 8)}...`);
+      });
+    }
+    
+    if (guidItems.length > 0) {
+      console.log('  ⚠️  GUID Episodes (not in database):');
+      guidItems.forEach(item => {
+        console.log(`    - "${item.title || 'Unknown'}" (${item.guid})`);
+      });
+    }
+  }
+
   // Phase 1: Check metadata cache for instant results
   if (useCache) {
     const episodeIds = items
