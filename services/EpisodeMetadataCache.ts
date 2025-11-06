@@ -13,6 +13,9 @@ export interface CachedEpisodeMetadata {
   downloadStatus: QueueItemStatus | null;
   downloadProgress: number;
   queuePosition: number | null;
+  played: boolean;
+  playbackProgress: number; // 0-1 normalized position
+  playbackPosition: number; // Position in seconds
   lastUpdated: number;
 }
 

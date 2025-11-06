@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 import { AudioStateManager } from '../lib/audio-state-manager';
 import { ensureImageCached } from '../lib/podcast/storage';
+import { EpisodeMetadataCache } from '../services/EpisodeMetadataCache';
 
 // Default artwork for podcast playback (iOS lock screen)
 const DEFAULT_ARTWORK = require('../assets/images/dominicana_logo-icon-white.png');
@@ -89,6 +90,11 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const resumeRef = useRef<(() => Promise<void>) | null>(null);
   const playNextEpisodeRef = useRef<(() => Promise<void>) | null>(null);
   const markCompletedRef = useRef<(() => Promise<void>) | null>(null);
+  
+  // Refs for progress saving (avoid recreating intervals on every position update)
+  const positionRef = useRef<number>(0);
+  const durationRef = useRef<number>(0);
+  const progressRef = useRef<PodcastPlaybackProgress | null>(null);
   
   // Cleanup: Unregister handlers when component unmounts
   useEffect(() => {
@@ -173,8 +179,18 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     if (Platform.OS !== 'web' && trackPlayerProgress) {
       setPosition(trackPlayerProgress.position);
       setDuration(trackPlayerProgress.duration);
+      // Update refs too for intervals
+      positionRef.current = trackPlayerProgress.position;
+      durationRef.current = trackPlayerProgress.duration;
     }
   }, [trackPlayerProgress]);
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    positionRef.current = position;
+    durationRef.current = duration;
+    progressRef.current = progress;
+  }, [position, duration, progress]);
 
   // TrackPlayer event listeners
   useEffect(() => {
@@ -264,18 +280,24 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     }
   };
 
-  const markCompleted = useCallback(async () => {
+  const markPlayed = useCallback(async () => {
     if (!currentEpisode || !user) return;
     
     try {
-      await PodcastPlaybackService.markCompleted(currentEpisode.id);
+      await PodcastPlaybackService.markPlayed(currentEpisode.id, duration);
       if (progress) {
-        setProgress({ ...progress, completed: true });
+        setProgress({ ...progress, played: true, position: 0 });
       }
+      // Invalidate cache so UI updates
+      EpisodeMetadataCache.update(currentEpisode.id, {
+        played: true,
+        playbackPosition: 0,
+        playbackProgress: 0,
+      });
     } catch (err) {
-      console.error('Error marking as completed:', err);
+      console.error('Error marking as played:', err);
     }
-  }, [currentEpisode, user, progress]);
+  }, [currentEpisode, user, progress, duration]);
 
   const playNextEpisode = useCallback(async () => {
     console.log('[PodcastPlayerContext] playNextEpisode called');
@@ -328,15 +350,119 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     playNextEpisodeRef.current = playNextEpisode;
   }, [playNextEpisode]);
   
-  // Update ref when markCompleted changes
+  // Update ref when markPlayed changes
   useEffect(() => {
-    markCompletedRef.current = markCompleted;
-  }, [markCompleted]);
+    markCompletedRef.current = markPlayed;
+  }, [markPlayed]);
+
+  // Auto-mark as played when within 25 seconds of end
+  useEffect(() => {
+    if (!currentEpisode || !user || !duration || duration === 0) return;
+    
+    const timeRemaining = duration - position;
+    
+    // If within 25 seconds of end and not already marked as played
+    if (timeRemaining <= 25 && timeRemaining > 0 && !progress?.played) {
+      console.log('[PodcastPlayerContext] Auto-marking episode as played (within 25s of end)');
+      markPlayed();
+    }
+  }, [position, duration, currentEpisode, user, progress?.played, markPlayed]);
+
+  // Save progress to cache every second while playing
+  useEffect(() => {
+    if (!currentEpisode || !user || !isPlaying) {
+      return;
+    }
+
+    if (__DEV__) console.log('[PodcastPlayerContext] Starting cache save interval (every 1s)');
+    
+    const cacheInterval = setInterval(() => {
+      const currentPosition = positionRef.current;
+      const currentDuration = durationRef.current;
+      
+      if (currentDuration === 0) return; // Skip if duration not loaded yet
+      
+      // Update cache immediately (no database call)
+      EpisodeMetadataCache.update(currentEpisode.id, {
+        playbackPosition: currentPosition,
+        playbackProgress: currentPosition / currentDuration,
+      });
+      if (__DEV__) console.log('[PodcastPlayerContext] Cache updated:', { 
+        position: currentPosition.toFixed(1), 
+        duration: currentDuration.toFixed(1), 
+        progress: (currentPosition / currentDuration * 100).toFixed(1) + '%' 
+      });
+    }, 1000);
+
+    return () => {
+      if (__DEV__) console.log('[PodcastPlayerContext] Clearing cache save interval');
+      clearInterval(cacheInterval);
+    };
+  }, [currentEpisode, user, isPlaying]);
+
+  // Sync progress to database every 15 seconds while playing
+  useEffect(() => {
+    if (!currentEpisode || !user || !isPlaying) {
+      return;
+    }
+
+    if (__DEV__) console.log('[PodcastPlayerContext] Starting DB sync interval (every 15s)');
+
+    const dbSyncInterval = setInterval(async () => {
+      const currentPosition = positionRef.current;
+      const currentDuration = durationRef.current;
+      const currentProgress = progressRef.current;
+      
+      if (currentDuration === 0) return; // Skip if duration not loaded yet
+      
+      try {
+        await PodcastPlaybackService.saveProgress(
+          currentEpisode.id,
+          currentPosition,
+          currentDuration,
+          currentProgress?.played || false
+        );
+        if (__DEV__) console.log('[PodcastPlayerContext] ✅ Auto-synced progress to database:', { 
+          position: currentPosition.toFixed(1), 
+          duration: currentDuration.toFixed(1), 
+          played: currentProgress?.played 
+        });
+      } catch (err) {
+        console.error('[PodcastPlayerContext] Error auto-syncing progress:', err);
+      }
+    }, 15000); // Every 15 seconds
+
+    return () => {
+      if (__DEV__) console.log('[PodcastPlayerContext] Clearing DB sync interval');
+      clearInterval(dbSyncInterval);
+    };
+  }, [currentEpisode, user, isPlaying]);
 
   const playEpisode = useCallback(async (episode: PodcastEpisode, context?: Partial<PlaybackContext>) => {
     console.log('[PodcastPlayerContext] playEpisode called with:', episode.title);
     console.log('[PodcastPlayerContext] Platform.OS:', Platform.OS);
     console.log('[PodcastPlayerContext] Context:', context);
+    
+    // Save progress for current episode before switching
+    if (currentEpisode && currentEpisode.id !== episode.id && user && duration > 0) {
+      try {
+        await PodcastPlaybackService.saveProgress(
+          currentEpisode.id,
+          position,
+          duration,
+          progress?.played || false
+        );
+        // Update cache immediately
+        EpisodeMetadataCache.update(currentEpisode.id, {
+          playbackPosition: position,
+          playbackProgress: position / duration,
+        });
+        if (__DEV__) console.log('[PodcastPlayerContext] Saved progress before switching episodes');
+      } catch (err) {
+        console.error('[PodcastPlayerContext] Error saving progress before switching:', err);
+      }
+    }
+    
     setIsLoading(true);
     
     // Update playback context if provided
@@ -532,10 +658,31 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       console.error('[PodcastPlayerContext] Error details:', err);
       setIsLoading(false);
     }
-  }, [audio, markCompleted, getDownloadedEpisodePath]);
+  }, [audio, markPlayed, getDownloadedEpisodePath, currentEpisode, user, duration, position, progress?.played, playbackContext]);
 
   const pause = useCallback(async () => {
     console.log('[PodcastPlayerContext] pause called');
+    
+    // Save progress when pausing
+    if (currentEpisode && user && duration > 0) {
+      try {
+        await PodcastPlaybackService.saveProgress(
+          currentEpisode.id,
+          position,
+          duration,
+          progress?.played || false
+        );
+        // Update cache immediately
+        EpisodeMetadataCache.update(currentEpisode.id, {
+          playbackPosition: position,
+          playbackProgress: position / duration,
+        });
+        if (__DEV__) console.log('[PodcastPlayerContext] Saved progress on pause');
+      } catch (err) {
+        console.error('[PodcastPlayerContext] Error saving progress on pause:', err);
+      }
+    }
+    
     if (Platform.OS === 'web') {
       if (audio) {
         audio.pause();
@@ -549,7 +696,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         setIsPaused(true);
       }
     }
-  }, [audio]);
+  }, [audio, currentEpisode, user, position, duration, progress?.played]);
   
   // Update ref when pause changes
   useEffect(() => {

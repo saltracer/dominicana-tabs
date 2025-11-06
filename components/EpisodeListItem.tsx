@@ -16,6 +16,8 @@ import { PodcastService } from '../services/PodcastService';
 import { usePlaylists } from '../hooks/usePlaylists';
 import { keys as playlistCacheKeys, getCachedItems, setCachedItems } from '../lib/playlist/cache';
 import { useSharedPlaylistHooks } from '../contexts/SharedPlaylistHooksContext';
+import { EpisodeMetadataCache } from '../services/EpisodeMetadataCache';
+import { PodcastPlaybackService } from '../services/PodcastPlaybackService';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -71,6 +73,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     }
   }, [episode.title]);
   const [cacheDownloaded, setCacheDownloaded] = useState<boolean>(false);
+  const [playedStatus, setPlayedStatus] = useState<{ played: boolean; position: number } | null>(null);
 
   // Memoize theme-dependent styles
   const themeStyles = useMemo(() => {
@@ -83,6 +86,57 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
       border: Colors[theme].border,
     };
   }, [colorScheme]);
+
+  // Fetch played status from cache or service
+  useEffect(() => {
+    let cancelled = false;
+    
+    const fetchPlayedStatus = async () => {
+      // Try cache first
+      const cached = EpisodeMetadataCache.get(episode.id);
+      if (cached) {
+        if (!cancelled) {
+          setPlayedStatus({
+            played: cached.played,
+            position: cached.playbackPosition,
+          });
+        }
+        return;
+      }
+      
+      // Fallback to service
+      try {
+        const progressData = await PodcastPlaybackService.getProgress(episode.id);
+        if (!cancelled) {
+          setPlayedStatus({
+            played: progressData?.played || false,
+            position: progressData?.position || 0,
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPlayedStatus({ played: false, position: 0 });
+        }
+      }
+    };
+    
+    fetchPlayedStatus();
+    
+    // Subscribe to cache updates
+    const unsubscribe = EpisodeMetadataCache.subscribe((episodeId, metadata) => {
+      if (episodeId === episode.id && metadata && !cancelled) {
+        setPlayedStatus({
+          played: metadata.played,
+          position: metadata.playbackPosition,
+        });
+      }
+    });
+    
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [episode.id]);
   
   // Check for shared hooks from context or props (for performance when rendering many items)
   const sharedContext = useSharedPlaylistHooks();
@@ -229,9 +283,21 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds % 60}`;
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
     }
     return `${minutes}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+  };
+
+  const formatTimeRemaining = (totalSeconds: number, currentPosition: number): string => {
+    const remaining = Math.max(0, totalSeconds - currentPosition);
+    const hours = Math.floor(remaining / 3600);
+    const minutes = Math.floor((remaining % 3600) / 60);
+    const secs = Math.floor(remaining % 60);
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} remaining`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')} remaining`;
   };
 
   const formatDate = (dateString?: string, useAbsolute = false): string => {
@@ -565,6 +631,14 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
         )}
 
         <View style={styles.meta}>
+          {playedStatus?.played && (
+            <View style={styles.metaItem}>
+              <Ionicons name="checkmark-circle" size={14} color="#4caf50" />
+              <Text style={[styles.metaText, { color: '#4caf50', fontSize: 12 }]}>
+                Played
+              </Text>
+            </View>
+          )}
           {episode.publishedAt && (
             <View style={styles.metaItem}>
               <Ionicons name="calendar-outline" size={14} color={themeStyles.textSecondary} />
@@ -575,20 +649,19 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
           )}
           {(() => {
             const dur = episode.duration;
-            // if (__DEV__ && hideDescription) {
-            //   console.log('[EpisodeListItem] duration check:', { 
-            //     duration: dur, 
-            //     type: typeof dur, 
-            //     isNumber: typeof dur === 'number',
-            //     isTruthy: !!dur 
-            //   });
-            // }
             return (dur !== undefined && dur !== null && dur > 0);
           })() && (
             <View style={styles.metaItem}>
               <Ionicons name="time-outline" size={14} color={themeStyles.textSecondary} />
               <Text style={[styles.metaText, { color: themeStyles.textSecondary }]}>
                 {formatDuration(episode.duration)}
+              </Text>
+            </View>
+          )}
+          {playedStatus && !playedStatus.played && playedStatus.position > 0 && episode.duration && episode.duration > 0 && (
+            <View style={styles.metaItem}>
+              <Text style={[styles.metaText, { color: themeStyles.textSecondary, fontSize: 12 }]}>
+                {formatTimeRemaining(episode.duration, playedStatus.position)}
               </Text>
             </View>
           )}

@@ -11,6 +11,7 @@ import { imagePathForUrl, fileExists } from '../podcast/storage';
 import { EpisodeMetadataCache } from '../../services/EpisodeMetadataCache';
 import { DownloadStatusCache } from '../../services/DownloadStatusCache';
 import { ArtworkCache } from '../../services/ArtworkCache';
+import { PodcastPlaybackService } from '../../services/PodcastPlaybackService';
 
 export interface ResolvedPlaylistItem {
   item: PlaylistItem;
@@ -338,12 +339,26 @@ export async function resolvePlaylistItems(
     });
   });
 
+  // Phase 5.5: Batch playback progress lookup
+  const playbackProgressMap = await PodcastPlaybackService.getProgressForMany(episodeIds);
+  const playbackProgresses = new Map<string, any>();
+  playbackProgressMap.forEach((progress, episodeId) => {
+    // Find item(s) with this episode
+    items.forEach(item => {
+      const episode = resolved.get(item.id);
+      if (episode?.id === episodeId) {
+        playbackProgresses.set(item.id, progress);
+      }
+    });
+  });
+
   // Phase 6: Update metadata cache with resolved data
   if (useCache) {
     resolved.forEach((episode, itemId) => {
       if (episode) {
         const downloadStatus = downloadStatuses.get(itemId);
         const artPath = artworkPaths.get(itemId);
+        const progress = playbackProgresses.get(itemId);
 
         EpisodeMetadataCache.set(episode.id, {
           episode,
@@ -352,6 +367,9 @@ export async function resolvePlaylistItems(
           downloadStatus: downloadStatus?.status || null,
           downloadProgress: downloadStatus?.progress || 0,
           queuePosition: null,
+          played: progress?.played || false,
+          playbackProgress: progress?.duration ? (progress.position / progress.duration) : 0,
+          playbackPosition: progress?.position || 0,
           lastUpdated: Date.now(),
         });
       }

@@ -19,7 +19,7 @@ export class PodcastPlaybackService {
     episodeId: string,
     position: number,
     duration?: number,
-    completed = false
+    played = false
   ): Promise<void> {
     // Skip database operations for non-UUID episode IDs (RSS-cached episodes)
     if (!isValidUuid(episodeId)) {
@@ -37,7 +37,7 @@ export class PodcastPlaybackService {
         episode_id: episodeId,
         position,
         duration,
-        completed,
+        played,
         last_played_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,episode_id',
@@ -80,19 +80,19 @@ export class PodcastPlaybackService {
       episodeId: data.episode_id,
       position: data.position,
       duration: data.duration || undefined,
-      completed: data.completed,
+      played: data.played,
       lastPlayedAt: data.last_played_at,
       playbackSpeed: data.playback_speed,
     };
   }
 
   /**
-   * Mark episode as completed
+   * Mark episode as played (and reset position to 0 for replay from start)
    */
-  static async markCompleted(episodeId: string, duration?: number): Promise<void> {
+  static async markPlayed(episodeId: string, duration?: number): Promise<void> {
     // Skip database operations for non-UUID episode IDs (RSS-cached episodes)
     if (!isValidUuid(episodeId)) {
-      if (__DEV__) console.log('[PodcastPlaybackService] Skipping mark completed for non-UUID episode:', episodeId);
+      if (__DEV__) console.log('[PodcastPlaybackService] Skipping mark played for non-UUID episode:', episodeId);
       return;
     }
     
@@ -104,9 +104,9 @@ export class PodcastPlaybackService {
       .upsert({
         user_id: user.id,
         episode_id: episodeId,
-        position: duration || 0,
+        position: 0,
         duration,
-        completed: true,
+        played: true,
         last_played_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,episode_id',
@@ -186,13 +186,13 @@ export class PodcastPlaybackService {
       episodeId: progress.episode_id,
       position: progress.position,
       duration: progress.duration || undefined,
-      completed: progress.completed,
+      played: progress.played,
       lastPlayedAt: progress.last_played_at,
     }));
   }
 
   /**
-   * Get in-progress episodes (started but not completed)
+   * Get in-progress episodes (started but not played)
    */
   static async getInProgressEpisodes(): Promise<PodcastPlaybackProgress[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -202,7 +202,7 @@ export class PodcastPlaybackService {
       .from('podcast_playback_progress')
       .select('*')
       .eq('user_id', user.id)
-      .eq('completed', false)
+      .eq('played', false)
       .order('last_played_at', { ascending: false });
 
     if (error) {
@@ -216,8 +216,51 @@ export class PodcastPlaybackService {
       episodeId: progress.episode_id,
       position: progress.position,
       duration: progress.duration || undefined,
-      completed: progress.completed,
+      played: progress.played,
       lastPlayedAt: progress.last_played_at,
     }));
+  }
+
+  /**
+   * Get playback progress for multiple episodes at once (batch fetch)
+   */
+  static async getProgressForMany(episodeIds: string[]): Promise<Map<string, PodcastPlaybackProgress>> {
+    const result = new Map<string, PodcastPlaybackProgress>();
+    
+    // Filter to only UUID episode IDs
+    const validIds = episodeIds.filter(id => isValidUuid(id));
+    
+    if (validIds.length === 0) {
+      return result;
+    }
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return result;
+
+    const { data, error } = await supabase
+      .from('podcast_playback_progress')
+      .select('*')
+      .eq('user_id', user.id)
+      .in('episode_id', validIds);
+
+    if (error) {
+      console.error('Error fetching progress for many:', error);
+      return result;
+    }
+
+    (data || []).forEach(progress => {
+      result.set(progress.episode_id, {
+        id: progress.id,
+        userId: progress.user_id,
+        episodeId: progress.episode_id,
+        position: progress.position,
+        duration: progress.duration || undefined,
+        played: progress.played,
+        lastPlayedAt: progress.last_played_at,
+        playbackSpeed: progress.playback_speed,
+      });
+    });
+
+    return result;
   }
 }

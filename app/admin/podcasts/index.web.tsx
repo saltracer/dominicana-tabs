@@ -25,6 +25,7 @@ export default function PodcastsListWebScreen() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'curated' | 'active' | 'inactive'>('all');
   const [sortBy, setSortBy] = useState<'title' | 'created_at' | 'last_fetched'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [refreshingAll, setRefreshingAll] = useState(false);
 
   const loadPodcasts = async () => {
     try {
@@ -132,6 +133,37 @@ export default function PodcastsListWebScreen() {
     );
   };
 
+  const handleRefreshAll = async () => {
+    const activePodcastCount = podcasts.filter(p => p.isActive).length;
+    
+    if (!confirm(`Fetch latest episodes from all ${activePodcastCount} active podcasts? This may take a few minutes.`)) {
+      return;
+    }
+
+    try {
+      setRefreshingAll(true);
+      
+      const stats = await AdminPodcastService.refreshAllEpisodes({ onlyActive: true });
+      
+      let message = `✅ Successfully refreshed ${stats.succeeded} of ${stats.total} podcasts.`;
+      if (stats.failed > 0) {
+        message += `\n\n⚠️ ${stats.failed} failed:\n`;
+        message += stats.errors.slice(0, 5).map(e => `• ${e.podcastTitle}: ${e.error}`).join('\n');
+        if (stats.errors.length > 5) {
+          message += `\n...and ${stats.errors.length - 5} more`;
+        }
+      }
+      
+      alert(message);
+      loadPodcasts();
+    } catch (error) {
+      console.error('Refresh all error:', error);
+      alert('Failed to refresh podcasts. Please try again.');
+    } finally {
+      setRefreshingAll(false);
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
       {/* Header */}
@@ -144,15 +176,31 @@ export default function PodcastsListWebScreen() {
             {podcasts.length} {podcasts.length === 1 ? 'podcast' : 'podcasts'}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-          onPress={() => router.push('/admin/podcasts/new')}
-        >
-          <Ionicons name="add" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-          <Text style={[styles.addButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-            Add Podcast
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[styles.refreshAllButton, { backgroundColor: '#3b82f6', opacity: refreshingAll || podcasts.length === 0 ? 0.5 : 1 }]}
+            onPress={handleRefreshAll}
+            disabled={refreshingAll || podcasts.length === 0}
+          >
+            {refreshingAll ? (
+              <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            ) : (
+              <Ionicons name="refresh" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            )}
+            <Text style={[styles.addButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Refresh All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+            onPress={() => router.push('/admin/podcasts/new')}
+          >
+            <Ionicons name="add" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            <Text style={[styles.addButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
+              Add Podcast
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filters */}
@@ -405,7 +453,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Georgia',
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  refreshAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,

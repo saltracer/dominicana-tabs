@@ -50,7 +50,7 @@ export interface PodcastPlaybackProgress {
   episodeId: string;
   position: number;
   duration?: number;
-  completed: boolean;
+  played: boolean;
   lastPlayedAt: string;
   playbackSpeed?: number;
 }

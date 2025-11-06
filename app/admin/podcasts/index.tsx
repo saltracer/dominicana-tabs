@@ -29,6 +29,7 @@ export default function PodcastsListScreen() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [refreshingAll, setRefreshingAll] = useState(false);
 
   useEffect(() => {
     loadPodcasts();
@@ -134,6 +135,47 @@ export default function PodcastsListScreen() {
     );
   };
 
+  const handleRefreshAll = async () => {
+    const activePodcastCount = podcasts.filter(p => p.isActive).length;
+    
+    Alert.alert(
+      'Refresh All Podcasts',
+      `Fetch latest episodes from all ${activePodcastCount} active podcasts? This may take a few minutes.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Refresh All',
+          style: 'default',
+          onPress: async () => {
+            try {
+              setRefreshingAll(true);
+              Alert.alert('Refreshing', 'Fetching latest episodes from all active podcasts...');
+              
+              const stats = await AdminPodcastService.refreshAllEpisodes({ onlyActive: true });
+              
+              let message = `✅ Successfully refreshed ${stats.succeeded} of ${stats.total} podcasts.`;
+              if (stats.failed > 0) {
+                message += `\n\n⚠️ ${stats.failed} failed:\n`;
+                message += stats.errors.slice(0, 3).map(e => `• ${e.podcastTitle}`).join('\n');
+                if (stats.errors.length > 3) {
+                  message += `\n...and ${stats.errors.length - 3} more`;
+                }
+              }
+              
+              Alert.alert('Refresh Complete', message);
+              loadPodcasts();
+            } catch (error) {
+              console.error('Refresh all error:', error);
+              Alert.alert('Error', 'Failed to refresh podcasts');
+            } finally {
+              setRefreshingAll(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading && podcasts.length === 0) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme ?? 'light'].background }]}>
@@ -154,15 +196,27 @@ export default function PodcastsListScreen() {
         <Text style={[styles.title, { color: Colors[colorScheme ?? 'light'].text }]}>
           Manage Podcasts
         </Text>
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-          onPress={() => router.push('/admin/podcasts/new')}
-        >
-          <Ionicons name="add" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
-          <Text style={[styles.addButtonText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
-            Add Podcast
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={[styles.refreshAllButton, { backgroundColor: '#3b82f6' }]}
+            onPress={handleRefreshAll}
+            disabled={refreshingAll || podcasts.length === 0}
+          >
+            {refreshingAll ? (
+              <ActivityIndicator size="small" color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            ) : (
+              <Ionicons name="refresh" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            )}
+            
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
+            onPress={() => router.push('/admin/podcasts/new')}
+          >
+            <Ionicons name="add" size={20} color={Colors[colorScheme ?? 'light'].dominicanWhite} />
+            
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Filters */}
@@ -323,7 +377,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 8,
+  },
+  refreshAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,

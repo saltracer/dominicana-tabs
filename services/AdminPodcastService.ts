@@ -260,6 +260,65 @@ export class AdminPodcastService {
   }
 
   /**
+   * Refresh all active podcasts from their RSS feeds
+   * Returns statistics about the refresh operation
+   */
+  static async refreshAllEpisodes(options: { onlyActive?: boolean; onlyCurated?: boolean } = {}): Promise<{
+    total: number;
+    succeeded: number;
+    failed: number;
+    errors: Array<{ podcastId: string; podcastTitle: string; error: string }>;
+  }> {
+    const { onlyActive = true, onlyCurated = false } = options;
+    
+    // Fetch all podcasts that match criteria
+    let query = supabase.from('podcasts').select('id, title, rss_url, is_active');
+    
+    if (onlyActive) {
+      query = query.eq('is_active', true);
+    }
+    
+    if (onlyCurated) {
+      query = query.eq('is_curated', true);
+    }
+    
+    const { data: podcasts, error } = await query;
+    
+    if (error) {
+      throw new Error(`Failed to fetch podcasts: ${error.message}`);
+    }
+    
+    const stats = {
+      total: podcasts?.length || 0,
+      succeeded: 0,
+      failed: 0,
+      errors: [] as Array<{ podcastId: string; podcastTitle: string; error: string }>,
+    };
+    
+    if (!podcasts || podcasts.length === 0) {
+      return stats;
+    }
+    
+    // Refresh each podcast sequentially to avoid overwhelming the system
+    for (const podcast of podcasts) {
+      try {
+        await this.refreshEpisodes(podcast.id);
+        stats.succeeded++;
+      } catch (error) {
+        stats.failed++;
+        stats.errors.push({
+          podcastId: podcast.id,
+          podcastTitle: podcast.title,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        console.error(`Failed to refresh podcast ${podcast.title}:`, error);
+      }
+    }
+    
+    return stats;
+  }
+
+  /**
    * Get episodes for a podcast
    */
   static async getEpisodes(podcastId: string, limit = 50): Promise<PodcastEpisode[]> {

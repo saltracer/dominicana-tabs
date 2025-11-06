@@ -44,7 +44,7 @@ interface UsePodcastPlayerReturn {
   
   // Progress management
   saveProgress: () => Promise<void>;
-  markCompleted: () => Promise<void>;
+  markPlayed: () => Promise<void>;
   
   // Simple HTML5 audio for web (basic implementation)
   audio: HTMLAudioElement | null;
@@ -241,18 +241,18 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
     }
   };
 
-  const markCompleted = useCallback(async () => {
+  const markPlayed = useCallback(async () => {
     if (!currentEpisode || !user) return;
     
     try {
-      await PodcastPlaybackService.markCompleted(currentEpisode.id);
+      await PodcastPlaybackService.markPlayed(currentEpisode.id, duration);
       if (progress) {
-        setProgress({ ...progress, completed: true });
+        setProgress({ ...progress, played: true, position: 0 });
       }
     } catch (err) {
-      console.error('Error marking as completed:', err);
+      console.error('Error marking as played:', err);
     }
-  }, [currentEpisode, user, progress]);
+  }, [currentEpisode, user, progress, duration]);
 
   const playEpisode = useCallback(async (episode: PodcastEpisode) => {
     console.log('[usePodcastPlayer] playEpisode called with:', episode.title);
@@ -291,7 +291,7 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
         
         newAudio.addEventListener('ended', () => {
           setIsPlaying(false);
-          markCompleted();
+          markPlayed();
         });
         
         newAudio.addEventListener('play', () => {
@@ -382,7 +382,7 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
       console.error('[usePodcastPlayer] Error details:', err);
       setIsLoading(false);
     }
-  }, [audio, markCompleted, getDownloadedEpisodePath]);
+  }, [audio, markPlayed, getDownloadedEpisodePath]);
 
   const pause = useCallback(async () => {
     if (Platform.OS === 'web') {
@@ -481,7 +481,7 @@ export function usePodcastPlayer(): UsePodcastPlayerReturn {
     seek,
     setSpeed,
     saveProgress,
-    markCompleted,
+    markPlayed,
     audio,
   };
 }
