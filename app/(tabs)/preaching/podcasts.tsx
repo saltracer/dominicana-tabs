@@ -2,7 +2,7 @@
  * Podcasts Page - Native
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -34,6 +34,7 @@ import { usePlaylists } from '../../../hooks/usePlaylists';
 import { useDownloadedPlaylist } from '../../../hooks/useDownloadedPlaylist';
 import { useQueue } from '../../../hooks/useQueue';
 import { getCurated, refreshCurated } from '../../../lib/podcast/cache';
+import * as Haptics from 'expo-haptics';
 
 type TabType = 'library' | 'subscriptions' | 'playlists' | 'queue';
 
@@ -50,6 +51,7 @@ export default function PodcastsScreen() {
   const [promptMode, setPromptMode] = useState<'create' | 'rename'>('create');
   const [promptTargetId, setPromptTargetId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const lastDragIndexRef = useRef<number>(-1);
 
   // Calculate number of columns for grid layout
   const numColumns = useMemo(() => {
@@ -187,6 +189,7 @@ export default function PodcastsScreen() {
 
   const handlePlaylistDragEnd = async ({ data: newData }: { data: any[] }) => {
     setIsDragging(false);
+    lastDragIndexRef.current = -1; // Reset drag tracking
     
     if (__DEV__) {
       console.log('[Podcasts] 🎯 Drag ended, new order:', newData.map((p, idx) => ({ 
@@ -240,8 +243,12 @@ export default function PodcastsScreen() {
       if (__DEV__) console.log('[Podcasts] 📤 Updating playlist order...');
       await updatePlaylistsOrder(userPlaylists);
       if (__DEV__) console.log('[Podcasts] ✅ Playlist order updated successfully');
+      // Haptic feedback on successful reorder
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       console.error('[Podcasts] ❌ Failed to update playlist order:', error);
+      // Haptic feedback on error
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to reorder playlists. Please try again.');
     }
   };
@@ -441,7 +448,20 @@ export default function PodcastsScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
                 onDragEnd={handlePlaylistDragEnd}
-                onDragBegin={() => setIsDragging(true)}
+                onDragBegin={(index) => {
+                  setIsDragging(true);
+                  // Haptic feedback when drag begins
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  // Track initial position for crossing detection
+                  lastDragIndexRef.current = index;
+                }}
+                onPlaceholderIndexChange={(index) => {
+                  // Haptic feedback when playlist crosses over another playlist
+                  if (lastDragIndexRef.current !== -1 && index !== lastDragIndexRef.current) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    lastDragIndexRef.current = index;
+                  }
+                }}
                 activationDistance={20}
                 animationConfig={{
                   reduceMotion: ReduceMotion.Never,
