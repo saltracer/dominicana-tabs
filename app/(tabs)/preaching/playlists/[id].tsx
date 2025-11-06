@@ -64,6 +64,7 @@ export default function PlaylistDetailScreen() {
   const [isResolving, setIsResolving] = useState(false);
   const [hasEverResolved, setHasEverResolved] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
+  const lastDragIndexRef = useRef<number>(-1);
 
   // NOTE: Removed duplicate setItems effect that was causing triple resolution
   // Items are now ONLY updated via useFocusEffect cache reload
@@ -290,6 +291,7 @@ export default function PlaylistDetailScreen() {
 
   const handleDragEnd = async ({ data: newData }: { data: any[] }) => {
     setIsDragging(false);
+    lastDragIndexRef.current = -1; // Reset drag tracking
     if (isDownloaded) return; // read-only
     
     // Check if order actually changed
@@ -499,14 +501,23 @@ export default function PlaylistDetailScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 120 }}
         onDragEnd={handleDragEnd}
-        onDragBegin={() => {
+        onDragBegin={({ from }) => {
           setIsDragging(true);
-          // Haptic feedback on drag begin
+          // Haptic feedback when drag begins
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          // Track initial position for crossing detection
+          lastDragIndexRef.current = from;
           // Close all open swipeable items when drag begins
           itemRefs.current.forEach((ref) => {
             if (ref) ref.close();
           });
+        }}
+        onPlaceholderIndexChange={(index) => {
+          // Haptic feedback when item crosses over another item
+          if (lastDragIndexRef.current !== -1 && index !== lastDragIndexRef.current) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            lastDragIndexRef.current = index;
+          }
         }}
         activationDistance={20}
         animationConfig={{
