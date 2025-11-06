@@ -73,7 +73,7 @@
 - [x] Improve performance of podcasts by using device caching
 - [ ] Add "Played" status to podcasts
 - [x] Playlist features don't actually continue to the next episode.
-- [ ] Implement a download queue 
+- [x] Implement a download queue 
 - [x] Get playback integrated with the iOS operating system.
 - [x] Is streaming audio playback supported - yes.
 
