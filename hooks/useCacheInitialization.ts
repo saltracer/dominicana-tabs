@@ -9,6 +9,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { DownloadStatusCache } from '../services/DownloadStatusCache';
 import { PodcastDownloadService } from '../services/PodcastDownloadService';
 import { PodcastDownloadQueueService } from '../services/PodcastDownloadQueueService';
+import { DownloadMetadataRecovery } from '../services/DownloadMetadataRecovery';
+import { DownloadPathMigration } from '../services/DownloadPathMigration';
 
 /**
  * Initialize caches with download and queue data
@@ -49,6 +51,20 @@ export function useCacheInitialization() {
           return;
         }
 
+        // STEP 1: Migrate file paths if app container changed (happens on simulator rebuilds)
+        const migrated = await DownloadPathMigration.migratePathsIfNeeded();
+        if (migrated > 0) {
+          console.log('[CacheInit] ✅ Migrated', migrated, 'file paths to current app container');
+        }
+
+        // STEP 2: Check if metadata recovery is needed (after migration)
+        const needsRecovery = await DownloadMetadataRecovery.isRecoveryNeeded();
+        if (needsRecovery) {
+          console.warn('[CacheInit] 🔧 Metadata recovery needed - rebuilding from disk...');
+          const recovered = await DownloadMetadataRecovery.rebuildMetadataFromDisk();
+          console.log('[CacheInit] ✅ Recovered', recovered, 'episodes from disk');
+        }
+
         // Fetch download metadata and queue state in parallel
         const [downloads, queueState] = await Promise.all([
           PodcastDownloadService.getDownloadedEpisodes(),
@@ -56,6 +72,20 @@ export function useCacheInitialization() {
         ]);
 
         if (cancelled) return;
+
+        console.log('[CacheInit] 📊 Fetched data:', {
+          downloads: downloads.length,
+          queueItems: queueState.items.length,
+        });
+        if (downloads.length > 0) {
+          console.log('[CacheInit] 📊 Sample download:', {
+            episodeId: downloads[0].episodeId,
+            filePath: downloads[0].filePath,
+            title: downloads[0].title?.substring(0, 50),
+          });
+        } else {
+          console.warn('[CacheInit] ⚠️ No downloads found after recovery attempt');
+        }
 
         // Initialize download status cache
         await DownloadStatusCache.initialize(
@@ -70,7 +100,7 @@ export function useCacheInitialization() {
           const duration = Date.now() - startTime;
           const stats = DownloadStatusCache.getStats();
           console.log('[CacheInit] ✅ Caches initialized successfully in', duration, 'ms');
-          console.log('[CacheInit] Stats:', stats);
+          console.log('[CacheInit] 📊 Final stats:', stats);
         }
       } catch (error) {
         console.error('[CacheInit] ❌ Cache initialization error:', error);

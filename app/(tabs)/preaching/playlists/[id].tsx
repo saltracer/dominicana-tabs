@@ -119,20 +119,14 @@ export default function PlaylistDetailScreen() {
   useEffect(() => {
     let alive = true;
     
-    // Reset resolution state when downloaded items change
-    if (isDownloaded) {
-      setInitialResolutionComplete(false);
-    }
-    
     (async () => {
       if (!isDownloaded) {
         // For non-downloaded playlists, wait for the regular resolution to complete
         return;
       }
       
-      // If empty downloaded playlist and not loading, mark as complete immediately
+      // If empty downloaded playlist and not loading, just return
       if (downloadedItems.length === 0 && !dlLoading) {
-        setInitialResolutionComplete(true);
         return;
       }
       
@@ -206,8 +200,6 @@ export default function PlaylistDetailScreen() {
         if (__DEV__) console.log('[PlaylistDetail] Downloaded items resolution complete for', downloadedItems.length, 'items');
         setArtByPodcast(artMap);
         setDownloadedDurations(durMap);
-        // Mark initial resolution as complete for downloaded playlists
-        setInitialResolutionComplete(true);
         setHasEverResolved(true);
       }
     })();

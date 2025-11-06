@@ -229,8 +229,32 @@ export class PodcastDownloadService {
     }
 
     try {
-      const metadata = await this.getDownloadMetadata();
-      if (__DEV__) console.log('[PodcastDownload] getDownloadedEpisodes: found', metadata.length, 'metadata entries');
+      let metadata = await this.getDownloadMetadata();
+      console.log('[PodcastDownload] getDownloadedEpisodes: found', metadata.length, 'metadata entries');
+      
+      if (metadata.length === 0) {
+        console.warn('[PodcastDownload] ⚠️ WARNING: No metadata found in AsyncStorage!');
+        console.warn('[PodcastDownload] 🔑 Metadata key:', this.METADATA_KEY);
+        
+        // AUTOMATIC RECOVERY: Check if files exist on disk and rebuild metadata
+        const { DownloadMetadataRecovery } = require('./DownloadMetadataRecovery');
+        try {
+          const needsRecovery = await DownloadMetadataRecovery.isRecoveryNeeded();
+          if (needsRecovery) {
+            console.warn('[PodcastDownload] 🔧 RECOVERING: Rebuilding metadata from disk files...');
+            const recovered = await DownloadMetadataRecovery.rebuildMetadataFromDisk();
+            console.log('[PodcastDownload] ✅ AUTO-RECOVERY: Rebuilt metadata for', recovered, 'episodes');
+            
+            // Re-fetch metadata after recovery
+            if (recovered > 0) {
+              metadata = await this.getDownloadMetadata();
+              console.log('[PodcastDownload] ✅ After recovery: found', metadata.length, 'metadata entries');
+            }
+          }
+        } catch (recoveryError) {
+          console.error('[PodcastDownload] ❌ Auto-recovery failed:', recoveryError);
+        }
+      }
       
       // Verify files still exist and clean up metadata if not
       const validDownloads: DownloadedEpisode[] = [];
@@ -343,8 +367,15 @@ export class PodcastDownloadService {
       }
       
       await AsyncStorage.setItem(this.METADATA_KEY, JSON.stringify(metadata));
+      
+      if (__DEV__) {
+        console.log('[PodcastDownload] ✅ Saved metadata:', download.title?.substring(0, 50), '(total:', metadata.length, 'entries)');
+      }
+      
+      // Invalidate cache length tracker to log next read
+      (this as any)._lastMetadataLength = undefined;
     } catch (error) {
-      console.error('[PodcastDownload] Error saving download metadata:', error);
+      console.error('[PodcastDownload] ❌ Error saving download metadata:', error);
       throw error;
     }
   }
@@ -355,9 +386,27 @@ export class PodcastDownloadService {
   private static async getDownloadMetadata(): Promise<DownloadedEpisode[]> {
     try {
       const data = await AsyncStorage.getItem(this.METADATA_KEY);
-      return data ? JSON.parse(data) : [];
+      const parsed = data ? JSON.parse(data) : [];
+      
+      // Only log on first read or when metadata changes
+      if (__DEV__) {
+        const dataLength = data?.length || 0;
+        const prevLength = (this as any)._lastMetadataLength;
+        
+        if (prevLength === undefined || dataLength !== prevLength) {
+          console.log('[PodcastDownload] 📦 Metadata:', parsed.length, 'entries,', dataLength, 'chars');
+          if (parsed.length > 0) {
+            console.log('[PodcastDownload] 📋 Sample:', parsed[0].title?.substring(0, 50));
+          } else if (dataLength === 2) {
+            console.warn('[PodcastDownload] ⚠️ Metadata is empty array');
+          }
+          (this as any)._lastMetadataLength = dataLength;
+        }
+      }
+      
+      return parsed;
     } catch (error) {
-      console.error('[PodcastDownload] Error getting download metadata:', error);
+      console.error('[PodcastDownload] ❌ Error getting download metadata:', error);
       return [];
     }
   }

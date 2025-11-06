@@ -1,0 +1,338 @@
+{
+  "version": "2025.10.13",
+  "lastUpdated": "2025-10-13T19:55:16.068Z",
+  "voices": {
+    "alphonsus": {
+      "version": "2025.10.13",
+      "fileCount": 56,
+      "files": {
+        "alleluia.m4a": {
+          "size": 17632,
+          "lastModified": "2025-10-13T19:55:08.000Z",
+          "hash": "\"be8a8603cbd62303f2c23440e44ff21d\""
+        },
+        "alleluia-real.m4a": {
+          "size": 15563,
+          "lastModified": "2025-10-13T19:55:03.000Z",
+          "hash": "\"194c8c1d3c2d73cf49ae5b4230fa685b\""
+        },
+        "apostles-creed-1.m4a": {
+          "size": 796865,
+          "lastModified": "2025-10-13T01:19:59.000Z",
+          "hash": "\"546b4a6b16215b26172b7af00d87e862\""
+        },
+        "apostles-creed-2.m4a": {
+          "size": 617284,
+          "lastModified": "2025-10-13T01:27:19.000Z",
+          "hash": "\"c7473a27bb062e25f02099b5927ae878-1\""
+        },
+        "dominican-glory-be-1.m4a": {
+          "size": 130116,
+          "lastModified": "2025-10-13T01:35:31.000Z",
+          "hash": "\"de84c386591f5dde6f34a37b42686ed8\""
+        },
+        "dominican-glory-be-2.m4a": {
+          "size": 108791,
+          "lastModified": "2025-10-13T01:35:54.000Z",
+          "hash": "\"faef02612520ebf0d8dfab6e939d81eb-1\""
+        },
+        "dominican-glory-be-3.m4a": {
+          "size": 123303,
+          "lastModified": "2025-10-13T01:35:54.000Z",
+          "hash": "\"742bfd3b447601deb65a22cd886c95d8-1\""
+        },
+        "dominican-glory-be-4.m4a": {
+          "size": 122254,
+          "lastModified": "2025-10-13T01:35:54.000Z",
+          "hash": "\"668b5a8d259eacb6ff6dc7f1e431adcc-1\""
+        },
+        "dominican-glory-be-5.m4a": {
+          "size": 120098,
+          "lastModified": "2025-10-13T01:35:54.000Z",
+          "hash": "\"d6a395076dad63ad04301a622f191ebf-1\""
+        },
+        "dominican-opening-1.m4a": {
+          "size": 161265,
+          "lastModified": "2025-10-12T05:04:19.000Z",
+          "hash": "\"8132bffa27f67f24ef0577b98e90d9ea\""
+        },
+        "dominican-opening-2.m4a": {
+          "size": 82602,
+          "lastModified": "2025-10-12T05:04:27.000Z",
+          "hash": "\"e1c0b4e640084774dface23570e528a4\""
+        },
+        "dominican-opening-3.m4a": {
+          "size": 74169,
+          "lastModified": "2025-10-12T05:04:34.000Z",
+          "hash": "\"aef4fb7219cf15c3db01266c97d8371f\""
+        },
+        "dominican-opening-glory-be.m4a": {
+          "size": 123535,
+          "lastModified": "2025-10-12T05:32:22.000Z",
+          "hash": "\"14b933b3c14bc36442f664853cfc5079-1\""
+        },
+        "faith-hope-charity.m4a": {
+          "size": 33183,
+          "lastModified": "2025-10-13T00:33:15.000Z",
+          "hash": "\"8cd83b84ddf03a144a15f2a2751fbdba-1\""
+        },
+        "fatima-prayer.m4a": {
+          "size": 178210,
+          "lastModified": "2025-10-11T04:51:54.000Z",
+          "hash": "\"e489eaeb0d8be113f4e9c3b1b8a0453e-1\""
+        },
+        "final-prayer.m4a": {
+          "size": 424372,
+          "lastModified": "2025-10-11T04:51:52.000Z",
+          "hash": "\"89f1d44e73048a7f5519de0b1704abd7-1\""
+        },
+        "glory-be-1.m4a": {
+          "size": 194514,
+          "lastModified": "2025-10-13T01:34:46.000Z",
+          "hash": "\"0878d4f3a4246674d8057c301454b3ef\""
+        },
+        "glory-be-2.m4a": {
+          "size": 162609,
+          "lastModified": "2025-10-13T01:34:54.000Z",
+          "hash": "\"25c99f2301ac161c30a7ae1a95a14dfe-1\""
+        },
+        "glory-be-3.m4a": {
+          "size": 154506,
+          "lastModified": "2025-10-13T01:34:54.000Z",
+          "hash": "\"7a55caa7b4c9cdbf629e98a950c60553-1\""
+        },
+        "glory-be-4.m4a": {
+          "size": 164809,
+          "lastModified": "2025-10-13T01:34:54.000Z",
+          "hash": "\"da1be36d539a36515008326b17c5519d-1\""
+        },
+        "glory-be-5.m4a": {
+          "size": 148988,
+          "lastModified": "2025-10-13T01:34:54.000Z",
+          "hash": "\"95948b06a0d0e1ac713db4c12f5e5448-1\""
+        },
+        "hail-holy-queen.m4a": {
+          "size": 516250,
+          "lastModified": "2025-10-11T04:51:53.000Z",
+          "hash": "\"a609ac6986f01e19bb71b675a1a57c6e-1\""
+        },
+        "hail-mary-01.m4a": {
+          "size": 209117,
+          "lastModified": "2025-10-13T01:11:18.000Z",
+          "hash": "\"5822fbfbb6fd957e01693b0fcd970737-1\""
+        },
+        "hail-mary-02.m4a": {
+          "size": 220347,
+          "lastModified": "2025-10-13T01:11:18.000Z",
+          "hash": "\"c42eef83d38a1a015abcc5dfa1cd18fc-1\""
+        },
+        "hail-mary-03.m4a": {
+          "size": 203016,
+          "lastModified": "2025-10-13T01:11:17.000Z",
+          "hash": "\"0adbbc50a04d04d858b426fe9245a838-1\""
+        },
+        "hail-mary-04.m4a": {
+          "size": 237401,
+          "lastModified": "2025-10-13T01:11:18.000Z",
+          "hash": "\"0462d6821cdece7eeaccafa63bb56647-1\""
+        },
+        "hail-mary-05.m4a": {
+          "size": 226174,
+          "lastModified": "2025-10-13T01:11:18.000Z",
+          "hash": "\"899308c36ed513747928946e8143c7ec-1\""
+        },
+        "hail-mary-06.m4a": {
+          "size": 221648,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"3f0896405d098668ab6540124967d974-1\""
+        },
+        "hail-mary-07.m4a": {
+          "size": 224780,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"edf33cfab023fa70901989ee1b6ff802-1\""
+        },
+        "hail-mary-08.m4a": {
+          "size": 257239,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"c7f8cd0030b890a0fe822d5169ab0654-1\""
+        },
+        "hail-mary-09.m4a": {
+          "size": 222583,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"2957d95fcd0f4930c0556bb194a4fc3f-1\""
+        },
+        "hail-mary-10.m4a": {
+          "size": 240729,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"3342c31b1cb8d1318a7d20860be60ac1-1\""
+        },
+        "hail-mary-11.m4a": {
+          "size": 232390,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"8efc3f89567fc3774b12668eb43aa860-1\""
+        },
+        "hail-mary-12.m4a": {
+          "size": 246585,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"0d7790af97cfd4bc9cda3abf2a0b7384-1\""
+        },
+        "hail-mary-13.m4a": {
+          "size": 231556,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"58a0425785732b63c384c06dac13df76-1\""
+        },
+        "hail-mary-14.m4a": {
+          "size": 250924,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"23f3638b8af45990e2a031765052fbbd-1\""
+        },
+        "hail-mary-15.m4a": {
+          "size": 244060,
+          "lastModified": "2025-10-13T01:16:36.000Z",
+          "hash": "\"e6a20a73ab753b33373197a161403365-1\""
+        },
+        "hail-mary-16.m4a": {
+          "size": 231201,
+          "lastModified": "2025-10-13T01:16:38.000Z",
+          "hash": "\"d2100ff626edea1174e5c8ce9160dc8e-1\""
+        },
+        "hail-mary-17.m4a": {
+          "size": 267314,
+          "lastModified": "2025-10-13T01:16:38.000Z",
+          "hash": "\"b9367482dae12fa69403d2efaadcccc4-1\""
+        },
+        "hail-mary-18.m4a": {
+          "size": 220954,
+          "lastModified": "2025-10-13T01:16:38.000Z",
+          "hash": "\"eb4ea5118af1b18965ca7d0bfd68fdc3-1\""
+        },
+        "hail-mary-19.m4a": {
+          "size": 214782,
+          "lastModified": "2025-10-13T01:16:38.000Z",
+          "hash": "\"4a176e1014422dbc863ce9b31f250e06-1\""
+        },
+        "hail-mary-20.m4a": {
+          "size": 245552,
+          "lastModified": "2025-10-13T01:16:38.000Z",
+          "hash": "\"b2658b890175c3c7f6233c5f93d4d7f1-1\""
+        },
+        "joyful-decade-1.m4a": {
+          "size": 556376,
+          "lastModified": "2025-10-12T05:06:22.000Z",
+          "hash": "\"4c2ea780a275a9e2d57cd57d03ca3273-1\""
+        },
+        "joyful-decade-1-short.m4a": {
+          "size": 170368,
+          "lastModified": "2025-10-12T05:03:42.000Z",
+          "hash": "\"3c0a3c99b13a4cb5e0c825e0efde3189-1\""
+        },
+        "joyful-decade-2.m4a": {
+          "size": 612402,
+          "lastModified": "2025-10-13T05:39:20.000Z",
+          "hash": "\"c97d5836e7181ebb682807aa777ca322-1\""
+        },
+        "joyful-decade-2-short.m4a": {
+          "size": 166373,
+          "lastModified": "2025-10-12T05:03:42.000Z",
+          "hash": "\"78d8a0af7cb267ba1908abdc0b032ba1-1\""
+        },
+        "joyful-decade-3.m4a": {
+          "size": 563879,
+          "lastModified": "2025-10-13T05:39:33.000Z",
+          "hash": "\"d21de7b73d8d44164f4d4a5f2a00dcc3-1\""
+        },
+        "joyful-decade-3-short.m4a": {
+          "size": 100640,
+          "lastModified": "2025-10-13T05:39:32.000Z",
+          "hash": "\"bdda264c2bdf3375945cc2d31f08498f-1\""
+        },
+        "joyful-decade-4.m4a": {
+          "size": 717397,
+          "lastModified": "2025-10-13T05:39:33.000Z",
+          "hash": "\"ee24a9882de2c32b93944f0db5a7d892-1\""
+        },
+        "joyful-decade-4-short.m4a": {
+          "size": 165060,
+          "lastModified": "2025-10-13T05:39:32.000Z",
+          "hash": "\"719dfea458a0718a853a08e6747d6798-1\""
+        },
+        "joyful-decade-5.m4a": {
+          "size": 787019,
+          "lastModified": "2025-10-13T05:39:33.000Z",
+          "hash": "\"6260b5de1107992c46c5cf918c5781b5-1\""
+        },
+        "joyful-decade-5-short.m4a": {
+          "size": 128606,
+          "lastModified": "2025-10-13T05:39:32.000Z",
+          "hash": "\"c9c6b6f5642f55949073ac88e0b0e83d-1\""
+        },
+        "our-father-1.m4a": {
+          "size": 324144,
+          "lastModified": "2025-10-13T01:26:40.000Z",
+          "hash": "\"9f51a93ce84d1362c8a8407d50c8a963-1\""
+        },
+        "our-father-2.m4a": {
+          "size": 387204,
+          "lastModified": "2025-10-13T01:24:54.000Z",
+          "hash": "\"4d5e3a69482a120f1d4f89b4074f1016\""
+        },
+        "our-father-3.m4a": {
+          "size": 295982,
+          "lastModified": "2025-10-13T01:26:29.000Z",
+          "hash": "\"d9bf7bf9d929776e41e26691672f5d74-1\""
+        },
+        "sign-of-the-cross.m4a": {
+          "size": 88356,
+          "lastModified": "2025-10-11T04:51:54.000Z",
+          "hash": "\"34dfbfac59a29df2bfd2d7a2e1e05391-1\""
+        }
+      }
+    },
+    "catherine": {
+      "version": "2025.10.13",
+      "fileCount": 8,
+      "files": {
+        "alleluia.m4a": {
+          "size": 18691,
+          "lastModified": "2025-10-13T01:48:50.000Z",
+          "hash": "\"97d9209116511b3a4be409d8f7f3b124-1\""
+        },
+        "dominican-opening-1.m4a": {
+          "size": 205158,
+          "lastModified": "2025-10-13T01:48:50.000Z",
+          "hash": "\"76315962ab9894529d16a1a49a58d1d6-1\""
+        },
+        "dominican-opening-2.m4a": {
+          "size": 109145,
+          "lastModified": "2025-10-13T01:48:50.000Z",
+          "hash": "\"df4874b80d8ef9b878f7882b97e676af-1\""
+        },
+        "dominican-opening-3.m4a": {
+          "size": 100273,
+          "lastModified": "2025-10-13T01:48:50.000Z",
+          "hash": "\"328bfe1d679573df59dcbd864857823b-1\""
+        },
+        "dominican-opening-glory-be.m4a": {
+          "size": 171471,
+          "lastModified": "2025-10-13T01:48:50.000Z",
+          "hash": "\"243dfdf5052c07a784b2f6cac6593f70-1\""
+        },
+        "faith-hope-charity.m4a": {
+          "size": 42991,
+          "lastModified": "2025-10-13T01:48:50.000Z",
+          "hash": "\"f422bf084123fa2512769eed9bc5a1c3-1\""
+        },
+        "our-father-1.m4a": {
+          "size": 387449,
+          "lastModified": "2025-10-13T01:48:51.000Z",
+          "hash": "\"22714b7cea780ded7c458152daa814ca-1\""
+        },
+        "sign-of-the-cross.m4a": {
+          "size": 100777,
+          "lastModified": "2025-10-13T01:48:50.000Z",
+          "hash": "\"019fac4be458958066c291ea5a6e5a88-1\""
+        }
+      }
+    }
+  }
+}

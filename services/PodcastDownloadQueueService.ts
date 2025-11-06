@@ -206,6 +206,27 @@ export class PodcastDownloadQueueService {
       return existingItem;
     }
 
+    // Also check if episode is already downloaded (not just in queue)
+    const { PodcastDownloadService } = require('./PodcastDownloadService');
+    const isAlreadyDownloaded = await PodcastDownloadService.isEpisodeDownloaded(episode.id);
+    if (isAlreadyDownloaded) {
+      console.log('[DownloadQueue] ✅ Episode already downloaded, skipping queue add');
+      // Return a fake queue item so caller knows it succeeded
+      return {
+        id: `already-downloaded-${episode.id}`,
+        episodeId: episode.id,
+        episode,
+        status: 'completed' as const,
+        progress: 100,
+        bytesDownloaded: 0,
+        totalBytes: 0,
+        retryCount: 0,
+        maxRetries: 0,
+        addedAt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+    }
+
     // Create new queue item
     const queueItem: QueueItem = {
       id: `queue_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

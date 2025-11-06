@@ -172,8 +172,21 @@ export function useDownloadedPlaylist() {
         }
       }
       
+      // DEDUPLICATE: Remove duplicate episodes (can happen if episode is in both downloads and queue)
+      const seen = new Set<string>();
+      const deduplicated = results.filter(item => {
+        // Use episodeId for deduplication (more stable than synthetic id)
+        const key = item.episodeId || item.id;
+        if (seen.has(key)) {
+          if (__DEV__) console.warn('[useDownloadedPlaylist] 🗑️ Skipping duplicate:', item.title?.substring(0, 50));
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+      
       // Sort: downloading/pending first, then completed by download date
-      results.sort((a, b) => {
+      deduplicated.sort((a, b) => {
         const statusOrder = { downloading: 0, pending: 1, paused: 2, failed: 3, completed: 4 };
         const aOrder = statusOrder[a.downloadStatus || 'completed'] ?? 4;
         const bOrder = statusOrder[b.downloadStatus || 'completed'] ?? 4;
@@ -181,8 +194,8 @@ export function useDownloadedPlaylist() {
         return b.downloadedAt - a.downloadedAt;
       });
       
-      if (__DEV__) console.log('[useDownloadedPlaylist] returning', results.length, 'total items (completed + queue)');
-      if (alive.current) setItems(results);
+      if (__DEV__) console.log('[useDownloadedPlaylist] returning', deduplicated.length, 'total items (', results.length - deduplicated.length, 'duplicates removed)');
+      if (alive.current) setItems(deduplicated);
     } catch (err) {
       console.error('[useDownloadedPlaylist] error:', err);
     } finally {
