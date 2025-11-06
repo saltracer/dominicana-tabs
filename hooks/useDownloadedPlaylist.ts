@@ -6,6 +6,7 @@ import { fileExists } from '../lib/podcast/storage';
 import { PodcastDownloadService } from '../services/PodcastDownloadService';
 import { PodcastDownloadQueueService, QueueItemStatus } from '../services/PodcastDownloadQueueService';
 import { DownloadStatusCache } from '../services/DownloadStatusCache';
+import { DownloadedPlaylistOrdering } from '../services/DownloadedPlaylistOrdering';
 
 type DownloadedItem = {
   id: string; // synthetic id: `${podcastId}:${guid||audioUrl}`
@@ -194,8 +195,12 @@ export function useDownloadedPlaylist() {
         return b.downloadedAt - a.downloadedAt;
       });
       
-      if (__DEV__) console.log('[useDownloadedPlaylist] returning', deduplicated.length, 'total items (', results.length - deduplicated.length, 'duplicates removed)');
-      if (alive.current) setItems(deduplicated);
+      // Apply custom ordering
+      const customOrder = await DownloadedPlaylistOrdering.getOrder();
+      const ordered = DownloadedPlaylistOrdering.applyOrder(deduplicated, customOrder);
+      
+      if (__DEV__) console.log('[useDownloadedPlaylist] returning', ordered.length, 'total items (', results.length - deduplicated.length, 'duplicates removed)');
+      if (alive.current) setItems(ordered);
     } catch (err) {
       console.error('[useDownloadedPlaylist] error:', err);
     } finally {
@@ -225,7 +230,16 @@ export function useDownloadedPlaylist() {
     setRefreshKey(prev => prev + 1);
   };
 
-  return { items, loading, refetch };
+  const updateOrder = async (newOrder: typeof items) => {
+    // Extract episodeIds in new order
+    const episodeIds = newOrder.map(item => item.episodeId || item.id).filter(Boolean);
+    await DownloadedPlaylistOrdering.saveOrder(episodeIds);
+    
+    // Update local state immediately for responsive UI
+    setItems(newOrder);
+  };
+
+  return { items, loading, refetch, updateOrder };
 }
 
 export default useDownloadedPlaylist;
