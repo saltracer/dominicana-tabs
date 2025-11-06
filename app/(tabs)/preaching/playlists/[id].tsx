@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-item';
 import { ReduceMotion } from 'react-native-reanimated';
@@ -34,7 +35,7 @@ export default function PlaylistDetailScreen() {
   const { playlists, loading: playlistsLoading } = usePlaylists();
   const playlist = useMemo(() => (isDownloaded ? { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any : playlists.find(p => p.id === id)), [isDownloaded, id, playlists]);
 
-  const { items: downloadedItems, loading: dlLoading, refetch: refetchDownloaded, updateOrder: updateDownloadedOrder } = useDownloadedPlaylist();
+  const { items: downloadedItems, loading: dlLoading, refetch: refetchDownloaded } = useDownloadedPlaylist();
   const { items: hookItems, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
   
   // Call hooks once here and pass down to all EpisodeListItems for performance
@@ -289,35 +290,7 @@ export default function PlaylistDetailScreen() {
 
   const handleDragEnd = async ({ data: newData }: { data: any[] }) => {
     setIsDragging(false);
-    
-    // Handle downloaded playlist reordering
-    if (isDownloaded) {
-      // Check if order actually changed
-      const orderChanged = newData.some((item, idx) => {
-        const originalIdx = data.findIndex(d => d.id === item.id);
-        return originalIdx !== idx;
-      });
-      
-      if (!orderChanged) {
-        console.log('[PlaylistDetail] No order change detected');
-        return;
-      }
-      
-      // Update local data immediately
-      setLocalData(newData);
-      
-      // Save custom order
-      if (updateDownloadedOrder) {
-        try {
-          await updateDownloadedOrder(newData);
-          if (__DEV__) console.log('[PlaylistDetail] ✅ Downloaded playlist order saved');
-        } catch (error) {
-          console.error('[PlaylistDetail] Failed to save downloaded order:', error);
-          setLocalData(data as any); // Revert on error
-        }
-      }
-      return;
-    }
+    if (isDownloaded) return; // read-only
     
     // Check if order actually changed
     const orderChanged = newData.some((item, idx) => {
@@ -346,9 +319,13 @@ export default function PlaylistDetailScreen() {
       try {
         // Don't block - moveItem now does non-blocking background sync
         await moveItem(movedItem.id, newIndex);
+        // Haptic feedback on successful reorder
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         if (__DEV__) console.log('[PlaylistDetail] ✅ Move queued, no repaint needed');
       } catch (error) {
         console.error('[PlaylistDetail] Failed to reorder item:', error);
+        // Haptic feedback on error
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert('Error', 'Failed to reorder item. Please try again.');
         // Revert on error
         setLocalData(data as any);
@@ -524,6 +501,8 @@ export default function PlaylistDetailScreen() {
         onDragEnd={handleDragEnd}
         onDragBegin={() => {
           setIsDragging(true);
+          // Haptic feedback on drag begin
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           // Close all open swipeable items when drag begins
           itemRefs.current.forEach((ref) => {
             if (ref) ref.close();
@@ -669,11 +648,13 @@ export default function PlaylistDetailScreen() {
                       }}
                       isPlaying={currentEpisode?.id === ep.id && isPlaying}
                       isPaused={currentEpisode?.id === ep.id && isPaused}
-                      onLongPress={drag}
+                      onLongPress={!isDownloaded ? drag : undefined}
                       rightAccessory={
-                        <View style={styles.dragHandle}>
-                          <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                        </View>
+                        !isDownloaded ? (
+                          <View style={styles.dragHandle}>
+                            <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                          </View>
+                        ) : null
                       }
                     />
                   </View>
@@ -767,11 +748,13 @@ export default function PlaylistDetailScreen() {
                       }}
                       isPlaying={currentEpisode?.id === ep.id && isPlaying}
                       isPaused={currentEpisode?.id === ep.id && isPaused}
-                      onLongPress={drag}
+                      onLongPress={!isDownloaded ? drag : undefined}
                       rightAccessory={
-                        <View style={styles.dragHandle}>
-                          <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                        </View>
+                        !isDownloaded ? (
+                          <View style={styles.dragHandle}>
+                            <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                          </View>
+                        ) : null
                       }
                     />
                   </View>
@@ -827,7 +810,7 @@ export default function PlaylistDetailScreen() {
                 <TouchableOpacity 
                   style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
                   onPress={() => router.push({ pathname: '/preaching/episode/[id]', params: { id: (item as any).episodeId || extRef?.guid || (item as any).guid || extRef?.audioUrl || (item as any).audioUrl, podcastId: extRef?.podcastId || (item as any).podcastId, guid: extRef?.guid || (item as any).guid, audioUrl: extRef?.audioUrl || (item as any).audioUrl } })}
-                  onLongPress={drag}
+                  onLongPress={!isDownloaded ? drag : undefined}
                   activeOpacity={0.7}
                 >
                   <View style={[styles.itemRow, { backgroundColor: Colors[colorScheme ?? 'light'].card, flex: 1 }]}> 
@@ -842,9 +825,11 @@ export default function PlaylistDetailScreen() {
                         </TouchableOpacity>
                       )}
                     </View>
-                    <View style={styles.dragHandle}>
-                      <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                    </View>
+                    {!isDownloaded && (
+                      <View style={styles.dragHandle}>
+                        <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               </SwipeableItem>
