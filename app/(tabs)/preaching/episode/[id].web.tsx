@@ -18,6 +18,8 @@ import { PodcastEpisode, Podcast } from '../../../../types';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
 import HtmlRenderer from '../../../../components/HtmlRenderer';
 import { useIsMobile, useIsTablet } from '../../../../hooks/useMediaQuery';
+import { EpisodeMetadataCache } from '../../../../services/EpisodeMetadataCache';
+import { PodcastPlaybackService } from '../../../../services/PodcastPlaybackService';
 
 export default function EpisodeDetailWebScreen() {
   const { colorScheme } = useTheme();
@@ -29,6 +31,7 @@ export default function EpisodeDetailWebScreen() {
   const [episode, setEpisode] = useState<PodcastEpisode | null>(null);
   const [podcast, setPodcast] = useState<Podcast | null>(null);
   const [selectedSpeed, setSelectedSpeed] = useState(1.0);
+  const [playedStatus, setPlayedStatus] = useState<{ played: boolean; position: number } | null>(null);
 
   const playbackSpeeds = [0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
 
@@ -70,6 +73,59 @@ export default function EpisodeDetailWebScreen() {
       loadEpisode();
     }
   }, [id]);
+
+  // Fetch played status from cache or service
+  useEffect(() => {
+    if (!episode) return;
+    
+    let cancelled = false;
+    
+    const fetchPlayedStatus = async () => {
+      // Try cache first
+      const cached = EpisodeMetadataCache.get(episode.id);
+      if (cached) {
+        if (!cancelled) {
+          setPlayedStatus({
+            played: cached.played,
+            position: cached.playbackPosition,
+          });
+        }
+        return;
+      }
+      
+      // Fallback to service
+      try {
+        const progressData = await PodcastPlaybackService.getProgress(episode.id);
+        if (!cancelled) {
+          setPlayedStatus({
+            played: progressData?.played || false,
+            position: progressData?.position || 0,
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPlayedStatus({ played: false, position: 0 });
+        }
+      }
+    };
+    
+    fetchPlayedStatus();
+    
+    // Subscribe to cache updates
+    const unsubscribe = EpisodeMetadataCache.subscribe((episodeId, metadata) => {
+      if (episodeId === episode.id && metadata && !cancelled) {
+        setPlayedStatus({
+          played: metadata.played,
+          position: metadata.playbackPosition,
+        });
+      }
+    });
+    
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [episode?.id]);
 
   const loadEpisode = async () => {
     try {
@@ -202,6 +258,14 @@ export default function EpisodeDetailWebScreen() {
 
           {/* Episode Meta */}
           <View style={styles.metaContainer}>
+            {playedStatus?.played && (
+              <View style={styles.metaItem}>
+                <Ionicons name="checkmark-circle" size={16} color="#4caf50" />
+                <Text style={[styles.metaText, { color: '#4caf50' }]}>
+                  Played
+                </Text>
+              </View>
+            )}
             {episode.publishedAt && (
               <View style={styles.metaItem}>
                 <Ionicons name="calendar-outline" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
@@ -215,6 +279,22 @@ export default function EpisodeDetailWebScreen() {
                 <Ionicons name="time-outline" size={16} color={Colors[colorScheme ?? 'light'].textSecondary} />
                 <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                   {Math.floor(episode.duration / 60)} minutes
+                </Text>
+              </View>
+            )}
+            {playedStatus && !playedStatus.played && playedStatus.position > 0 && episode.duration && episode.duration > 0 && (
+              <View style={styles.metaItem}>
+                <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  {(() => {
+                    const remaining = Math.max(0, episode.duration - playedStatus.position);
+                    const hours = Math.floor(remaining / 3600);
+                    const minutes = Math.floor((remaining % 3600) / 60);
+                    const secs = Math.floor(remaining % 60);
+                    if (hours > 0) {
+                      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} remaining`;
+                    }
+                    return `${minutes}:${secs.toString().padStart(2, '0')} remaining`;
+                  })()}
                 </Text>
               </View>
             )}

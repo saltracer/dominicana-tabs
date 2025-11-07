@@ -44,6 +44,11 @@ export class PodcastPlaybackService {
       });
 
     if (error) {
+      // Ignore foreign key constraint errors (episode not in database yet)
+      if (error.code === '23503') {
+        if (__DEV__) console.log('[PodcastPlaybackService] Skipping progress save - episode not in database yet:', episodeId);
+        return;
+      }
       console.error('Error saving progress:', error);
     }
   }
@@ -99,7 +104,7 @@ export class PodcastPlaybackService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase
+    const { error } = await supabase
       .from('podcast_playback_progress')
       .upsert({
         user_id: user.id,
@@ -111,6 +116,15 @@ export class PodcastPlaybackService {
       }, {
         onConflict: 'user_id,episode_id',
       });
+
+    if (error) {
+      // Ignore foreign key constraint errors (episode not in database yet)
+      if (error.code === '23503') {
+        if (__DEV__) console.log('[PodcastPlaybackService] Skipping mark played - episode not in database yet:', episodeId);
+        return;
+      }
+      console.error('Error marking episode as played:', error);
+    }
   }
 
   /**
