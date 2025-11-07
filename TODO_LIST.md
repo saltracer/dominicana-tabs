@@ -75,6 +75,8 @@
 - [x] Improve performance of podcasts by using device caching
 - [x] Add "Played" status to podcasts
 - [ ] Add skip forward and skip backward buttons
+- [ ] Improve the swipable gestures, their functions, and their look and feel
+- [ ] Improve download reliability and the user feedback on what and when items are being downloaded
 - [x] Playlist features don't actually continue to the next episode.
 - [x] Implement a download queue 
 - [x] Get playback integrated with the iOS operating system.
