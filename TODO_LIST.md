@@ -71,7 +71,7 @@
 - [x] Podcasts - Create a downloaded podcasts section
 - [ ] Create podcast specific preferences
 - [x] Improve performance of podcasts by using device caching
-- [ ] Add "Played" status to podcasts
+- [x] Add "Played" status to podcasts
 - [ ] Add skip forward and skip backward buttons
 - [x] Playlist features don't actually continue to the next episode.
 - [x] Implement a download queue 
