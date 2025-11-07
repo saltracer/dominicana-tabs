@@ -96,6 +96,15 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const durationRef = useRef<number>(0);
   const progressRef = useRef<PodcastPlaybackProgress | null>(null);
   
+  // Track if we should check for completion (only after actually playing, not just loading)
+  const hasStartedPlaybackRef = useRef<boolean>(false);
+  
+  // Guard against concurrent episode loading
+  const isLoadingEpisodeRef = useRef<boolean>(false);
+  
+  // Debounce playNextEpisode to prevent race conditions from duplicate events
+  const playNextDebounceRef = useRef<number | null>(null);
+  
   // Cleanup: Unregister handlers when component unmounts
   useEffect(() => {
     return () => {
@@ -247,16 +256,38 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     try {
       const data = await PodcastPlaybackService.getProgress(episodeId);
       if (!data) return;
-      setProgress(data);
-      setPosition(data.position);
+      
+      // If episode has been played, always start from beginning (position 0)
+      const startPosition = data.played ? 0 : data.position;
+      
+      if (data.played) {
+        console.log('[PodcastPlayerContext] 🔄 Episode already played, starting from beginning and unmarking as played');
+        // Unmark as played since user is replaying it
+        await PodcastPlaybackService.saveProgress(episodeId, 0, data.duration, false);
+        // Update local state
+        setProgress({ ...data, played: false, position: 0 });
+        // Update cache
+        EpisodeMetadataCache.update(episodeId, {
+          played: false,
+          playbackPosition: 0,
+          playbackProgress: 0,
+        });
+      } else {
+        if (data.position > 0) {
+          console.log('[PodcastPlayerContext] ⏩ Resuming from saved position:', data.position.toFixed(1));
+        }
+        setProgress(data);
+      }
+      
+      setPosition(startPosition);
       setDuration(data.duration || 0);
       
-      // Seek to saved position if we have audio/TrackPlayer
+      // Seek to start position if we have audio/TrackPlayer
       if (Platform.OS === 'web' && audio) {
-        audio.currentTime = data.position;
+        audio.currentTime = startPosition;
       } else if (Platform.OS !== 'web' && TrackPlayer) {
         try {
-          await TrackPlayer.seekTo(data.position);
+          await TrackPlayer.seekTo(startPosition);
         } catch (e) {
           console.warn('Failed to seek to saved position:', e);
         }
@@ -301,6 +332,19 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
 
   const playNextEpisode = useCallback(async () => {
     console.log('[PodcastPlayerContext] playNextEpisode called');
+    
+    // Debounce: If called multiple times rapidly, only process the first call
+    if (playNextDebounceRef.current) {
+      console.log('[PodcastPlayerContext] ⚠️ Debouncing duplicate playNextEpisode call');
+      return;
+    }
+    
+    // Guard against concurrent calls
+    if (isLoadingEpisodeRef.current) {
+      console.log('[PodcastPlayerContext] ⚠️ Already loading episode, ignoring playNextEpisode');
+      return;
+    }
+    
     console.log('[PodcastPlayerContext] Current playbackContext:', playbackContext);
     
     if (!playbackContext) {
@@ -316,6 +360,11 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       return;
     }
     
+    // Set debounce timeout (500ms)
+    playNextDebounceRef.current = setTimeout(() => {
+      playNextDebounceRef.current = null;
+    }, 500);
+    
     const { episodes, currentIndex, type, sourceId } = playbackContext;
     const nextIndex = currentIndex + 1;
     
@@ -328,7 +377,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     
     if (nextIndex < episodes.length) {
       const nextEpisode = episodes[nextIndex];
-      console.log('[PodcastPlayerContext] Auto-playing next episode:', nextEpisode.title, `(${nextIndex + 1}/${episodes.length})`);
+      console.log('[PodcastPlayerContext] 🎵 Auto-playing next episode:', nextEpisode.title, `(${nextIndex + 1}/${episodes.length})`);
       
       // Play next episode with same context
       await playEpisode(nextEpisode, {
@@ -355,9 +404,24 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     markCompletedRef.current = markPlayed;
   }, [markPlayed]);
 
-  // Auto-mark as played when within 25 seconds of end
+  // Reset hasStartedPlayback flag when episode changes
+  useEffect(() => {
+    hasStartedPlaybackRef.current = false;
+  }, [currentEpisode?.id]);
+  
+  // Set hasStartedPlayback flag when actually playing
+  useEffect(() => {
+    if (isPlaying && currentEpisode) {
+      hasStartedPlaybackRef.current = true;
+    }
+  }, [isPlaying, currentEpisode]);
+
+  // Auto-mark as played when within 25 seconds of end (only if we've actually played)
   useEffect(() => {
     if (!currentEpisode || !user || !duration || duration === 0) return;
+    
+    // Only check for completion if we've actually started playback this session
+    if (!hasStartedPlaybackRef.current) return;
     
     const timeRemaining = duration - position;
     
@@ -439,9 +503,18 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   }, [currentEpisode, user, isPlaying]);
 
   const playEpisode = useCallback(async (episode: PodcastEpisode, context?: Partial<PlaybackContext>) => {
-    console.log('[PodcastPlayerContext] playEpisode called with:', episode.title);
+    console.log('[PodcastPlayerContext] 🎬 playEpisode called with:', episode.title);
     console.log('[PodcastPlayerContext] Platform.OS:', Platform.OS);
     console.log('[PodcastPlayerContext] Context:', context);
+    
+    // Guard against concurrent episode loading
+    if (isLoadingEpisodeRef.current) {
+      console.log('[PodcastPlayerContext] ⚠️ Already loading an episode, ignoring playEpisode call for:', episode.title);
+      return;
+    }
+    
+    isLoadingEpisodeRef.current = true;
+    console.log('[PodcastPlayerContext] 🔒 Locked episode loading');
     
     // Save progress for current episode before switching
     if (currentEpisode && currentEpisode.id !== episode.id && user && duration > 0) {
@@ -457,7 +530,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           playbackPosition: position,
           playbackProgress: position / duration,
         });
-        if (__DEV__) console.log('[PodcastPlayerContext] Saved progress before switching episodes');
+        if (__DEV__) console.log('[PodcastPlayerContext] 💾 Saved progress before switching episodes');
       } catch (err) {
         console.error('[PodcastPlayerContext] Error saving progress before switching:', err);
       }
@@ -610,8 +683,27 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         console.log('[PodcastPlayerContext] Loading saved progress');
         // Load saved progress
         const savedProgress = await PodcastPlaybackService.getProgress(episode.id);
-        if (savedProgress && savedProgress.position > 0) {
-          await TrackPlayer.seekTo(savedProgress.position);
+        if (savedProgress) {
+          // If episode has been played, always start from beginning
+          const startPosition = savedProgress.played ? 0 : savedProgress.position;
+          
+          if (savedProgress.played) {
+            console.log('[PodcastPlayerContext] 🔄 Episode already played, starting from beginning and unmarking as played');
+            // Unmark as played since user is replaying it
+            await PodcastPlaybackService.saveProgress(episode.id, 0, savedProgress.duration, false);
+            // Update cache
+            EpisodeMetadataCache.update(episode.id, {
+              played: false,
+              playbackPosition: 0,
+              playbackProgress: 0,
+            });
+          } else if (savedProgress.position > 0) {
+            console.log('[PodcastPlayerContext] ⏩ Resuming from saved position:', savedProgress.position.toFixed(1));
+          }
+          
+          if (startPosition > 0) {
+            await TrackPlayer.seekTo(startPosition);
+          }
         }
 
         console.log('[PodcastPlayerContext] Starting playback');
@@ -657,6 +749,10 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       console.error('[PodcastPlayerContext] Error playing episode:', err);
       console.error('[PodcastPlayerContext] Error details:', err);
       setIsLoading(false);
+    } finally {
+      // Always unlock episode loading
+      isLoadingEpisodeRef.current = false;
+      console.log('[PodcastPlayerContext] 🔓 Unlocked episode loading');
     }
   }, [audio, markPlayed, getDownloadedEpisodePath, currentEpisode, user, duration, position, progress?.played, playbackContext]);
 
