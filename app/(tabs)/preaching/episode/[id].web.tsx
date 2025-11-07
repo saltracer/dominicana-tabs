@@ -206,8 +206,15 @@ export default function EpisodeDetailWebScreen() {
   const isCurrentEpisode = currentEpisode?.id === episode.id;
   const isPlayingCurrent = isCurrentEpisode && isPlaying;
 
-  // Progress percentage
-  const progressValue = isCurrentEpisode && duration > 0 ? (position / duration) * 100 : 0;
+  // Progress percentage - show saved progress if not currently playing
+  const progressValue = (() => {
+    if (isCurrentEpisode && duration > 0) {
+      return (position / duration) * 100;
+    } else if (playedStatus && episode.duration && episode.duration > 0) {
+      return (playedStatus.position / episode.duration) * 100;
+    }
+    return 0;
+  })();
 
   return (
     <ScrollView
@@ -335,7 +342,7 @@ export default function EpisodeDetailWebScreen() {
             {/* Time Display */}
             <View style={styles.timeRow}>
               <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {formatTime(isCurrentEpisode ? position : 0)}
+                {formatTime(isCurrentEpisode ? position : (playedStatus?.position || 0))}
               </Text>
               <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                 {formatTime(duration || episode.duration || 0)}

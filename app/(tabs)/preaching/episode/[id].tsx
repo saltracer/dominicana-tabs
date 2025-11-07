@@ -623,7 +623,7 @@ export default function EpisodeDetailScreen() {
             {/* Time Display */}
             <View style={styles.timeRow}>
               <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {formatTime(isCurrentEpisode ? position : 0)}
+                {formatTime(isCurrentEpisode ? position : (playedStatus?.position || 0))}
               </Text>
               <Text style={[styles.timeText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                 {formatTime(duration || episode.duration || 0)}
@@ -653,7 +653,14 @@ export default function EpisodeDetailScreen() {
                   style={[
                     styles.progressFill,
                     {
-                      width: `${isCurrentEpisode && duration > 0 ? (position / duration) * 100 : 0}%`,
+                      width: `${(() => {
+                        if (isCurrentEpisode && duration > 0) {
+                          return (position / duration) * 100;
+                        } else if (playedStatus && episode.duration && episode.duration > 0) {
+                          return (playedStatus.position / episode.duration) * 100;
+                        }
+                        return 0;
+                      })()}%`,
                       backgroundColor: Colors[colorScheme ?? 'light'].primary,
                     }
                   ]}
@@ -662,7 +669,14 @@ export default function EpisodeDetailScreen() {
                   style={[
                     styles.progressThumb,
                     {
-                      left: `${isCurrentEpisode && duration > 0 ? (position / duration) * 100 : 0}%`,
+                      left: `${(() => {
+                        if (isCurrentEpisode && duration > 0) {
+                          return (position / duration) * 100;
+                        } else if (playedStatus && episode.duration && episode.duration > 0) {
+                          return (playedStatus.position / episode.duration) * 100;
+                        }
+                        return 0;
+                      })()}%`,
                       backgroundColor: Colors[colorScheme ?? 'light'].primary,
                     }
                   ]}
