@@ -694,12 +694,12 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         }
 
         console.log('[PodcastPlayerContext] Stopping current playback');
-        // Stop current playback
+        // Stop current playback and clear queue
         try {
-          await TrackPlayer.stop();
-          // Reset removed - TrackPlayer.add() will handle track replacement
+          await TrackPlayer.reset();
+          console.log('[PodcastPlayerContext] ✅ TrackPlayer queue reset');
         } catch (e) {
-          console.warn('[PodcastPlayerContext] Error stopping current playback:', e);
+          console.warn('[PodcastPlayerContext] Error resetting TrackPlayer:', e);
         }
 
         // Cache artwork for iOS controls before adding track
