@@ -61,12 +61,20 @@ export default function EpisodeDetailWebScreen() {
     isLoading: playerLoading,
     position,
     duration,
+    playbackSpeed,
     playEpisode,
     pause,
     resume,
     seek,
     setSpeed,
   } = usePodcastPlayer();
+
+  // Sync local speed state with player speed
+  useEffect(() => {
+    if (currentEpisode?.id === episode?.id && playbackSpeed) {
+      setSelectedSpeed(playbackSpeed);
+    }
+  }, [playbackSpeed, currentEpisode?.id, episode?.id]);
 
   useEffect(() => {
     if (id) {

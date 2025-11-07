@@ -85,6 +85,7 @@ export default function EpisodeDetailScreen() {
     isLoading: playerLoading,
     position,
     duration,
+    playbackSpeed,
     playEpisode,
     pause,
     resume,
@@ -92,6 +93,13 @@ export default function EpisodeDetailScreen() {
     setSpeed,
     progressPercentage,
   } = usePodcastPlayer();
+
+  // Sync local speed state with player speed
+  useEffect(() => {
+    if (currentEpisode?.id === episode?.id && playbackSpeed) {
+      setSelectedSpeed(playbackSpeed);
+    }
+  }, [playbackSpeed, currentEpisode?.id, episode?.id]);
 
   useEffect(() => {
     if (id) {
