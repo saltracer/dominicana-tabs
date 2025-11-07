@@ -870,13 +870,15 @@ const styles = StyleSheet.create({
   metaContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 24,
+    flexWrap: 'wrap',
+    gap: 12,
     marginBottom: 8,
+    paddingHorizontal: 16,
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
