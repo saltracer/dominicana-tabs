@@ -24,6 +24,8 @@ import { PodcastService } from '../services/PodcastService';
 import { Podcast } from '../types';
 import SpeedSelectorModal from './SpeedSelectorModal';
 import { ensureImageCached } from '../lib/podcast/storage';
+import { EpisodeMetadataCache } from '../services/EpisodeMetadataCache';
+import { PodcastPlaybackService } from '../services/PodcastPlaybackService';
 
 interface FullScreenPlayerProps {
   visible: boolean;
@@ -53,6 +55,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   const [showSpeedModal, setShowSpeedModal] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [artworkPath, setArtworkPath] = useState<string | null>(null);
+  const [playedStatus, setPlayedStatus] = useState<{ played: boolean; position: number } | null>(null);
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
   const episodeTitleStyle = useMemo(() => [
@@ -78,6 +81,59 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
         setArtworkPath(null);
       }
     }
+  }, [currentEpisode?.id]);
+
+  // Fetch played status from cache or service
+  useEffect(() => {
+    if (!currentEpisode) return;
+    
+    let cancelled = false;
+    
+    const fetchPlayedStatus = async () => {
+      // Try cache first
+      const cached = EpisodeMetadataCache.get(currentEpisode.id);
+      if (cached) {
+        if (!cancelled) {
+          setPlayedStatus({
+            played: cached.played,
+            position: cached.playbackPosition,
+          });
+        }
+        return;
+      }
+      
+      // Fallback to service
+      try {
+        const progressData = await PodcastPlaybackService.getProgress(currentEpisode.id);
+        if (!cancelled) {
+          setPlayedStatus({
+            played: progressData?.played || false,
+            position: progressData?.position || 0,
+          });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPlayedStatus({ played: false, position: 0 });
+        }
+      }
+    };
+    
+    fetchPlayedStatus();
+    
+    // Subscribe to cache updates
+    const unsubscribe = EpisodeMetadataCache.subscribe((episodeId, metadata) => {
+      if (episodeId === currentEpisode.id && metadata && !cancelled) {
+        setPlayedStatus({
+          played: metadata.played,
+          position: metadata.playbackPosition,
+        });
+      }
+    });
+    
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [currentEpisode?.id]);
 
   const loadPodcastData = async () => {
@@ -267,33 +323,52 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
               maxLines={3}
               style={episodeTitleStyle}
             />
-            {currentEpisode.publishedAt && (
-              <Text style={[styles.publishedDate, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                {formatDate(currentEpisode.publishedAt)}
-              </Text>
-            )}
-          </View>
-
-          {/* Episode Description */}
-          {currentEpisode.description && (
-            <View style={styles.descriptionContainer}>
-              <HtmlRenderer 
-                htmlContent={currentEpisode.description}
-                maxLines={isDescriptionExpanded ? undefined : 5}
-                style={descriptionStyle}
-              />
-              {currentEpisode.description.length > 200 && (
-                <TouchableOpacity 
-                  onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                  style={styles.readMoreButton}
-                >
-                  <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                    {isDescriptionExpanded ? 'Read less' : 'Read more'}
+            
+            {/* Episode Meta */}
+            <View style={styles.metaContainer}>
+              {playedStatus?.played && (
+                <View style={styles.metaItem}>
+                  <Ionicons name="checkmark-circle" size={14} color="#4caf50" />
+                  <Text style={[styles.metaText, { color: '#4caf50' }]}>
+                    Played
                   </Text>
-                </TouchableOpacity>
+                </View>
+              )}
+              {currentEpisode.publishedAt && (
+                <View style={styles.metaItem}>
+                  <Ionicons name="calendar-outline" size={14} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {formatDate(currentEpisode.publishedAt)}
+                  </Text>
+                </View>
+              )}
+              {currentEpisode.duration && (
+                <View style={styles.metaItem}>
+                  <Ionicons name="time-outline" size={14} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                  <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                    {Math.floor(currentEpisode.duration / 60)} min
+                  </Text>
+                </View>
+              )}
+              {playedStatus && !playedStatus.played && playedStatus.position > 0 && currentEpisode.duration && currentEpisode.duration > 0 && (
+                <View style={styles.metaItem}>
+                  <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary, fontSize: 12 }]}>
+                    {(() => {
+                      const remaining = Math.max(0, currentEpisode.duration - playedStatus.position);
+                      const hours = Math.floor(remaining / 3600);
+                      const minutes = Math.floor((remaining % 3600) / 60);
+                      const secs = Math.floor(remaining % 60);
+                      if (hours > 0) {
+                        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} left`;
+                      }
+                      return `${minutes}:${secs.toString().padStart(2, '0')} left`;
+                    })()}
+                  </Text>
+                </View>
               )}
             </View>
-          )}
+          </View>
+
 
           {/* Progress Bar */}
           <View style={styles.progressContainer}>
@@ -362,6 +437,27 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
               <Text style={[styles.queueText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                 {queue.length} episode{queue.length !== 1 ? 's' : ''} in queue
               </Text>
+            </View>
+          )}
+
+          {/* Episode Description */}
+          {currentEpisode.description && (
+            <View style={styles.descriptionContainer}>
+              <HtmlRenderer 
+                htmlContent={currentEpisode.description}
+                maxLines={isDescriptionExpanded ? undefined : 5}
+                style={descriptionStyle}
+              />
+              {currentEpisode.description.length > 200 && (
+                <TouchableOpacity 
+                  onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  style={styles.readMoreButton}
+                >
+                  <Text style={[styles.readMoreText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                    {isDescriptionExpanded ? 'Read less' : 'Read more'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </ScrollView>
@@ -444,12 +540,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     fontFamily: 'Georgia',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  publishedDate: {
-    fontSize: 14,
+  metaContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  metaText: {
+    fontSize: 12,
     fontFamily: 'Georgia',
-    textAlign: 'center',
+    fontWeight: '500',
   },
   descriptionContainer: {
     paddingHorizontal: 24,

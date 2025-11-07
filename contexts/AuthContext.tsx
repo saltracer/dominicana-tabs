@@ -74,23 +74,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthContext: Auth state change', { event, session: !!session, user: !!session?.user });
-      
-      // Handle signOut event specifically
-      if (event === 'SIGNED_OUT') {
-        console.log('AuthContext: SIGNED_OUT event received');
-        // Clear any pending profile fetch
-        if (profileFetchTimeout) {
-          clearTimeout(profileFetchTimeout);
-          setProfileFetchTimeout(null);
+      try {
+        console.log('AuthContext: Auth state change', { event, session: !!session, user: !!session?.user });
+        
+        // Handle signOut event specifically
+        if (event === 'SIGNED_OUT') {
+          console.log('AuthContext: SIGNED_OUT event received');
+          // Clear any pending profile fetch
+          if (profileFetchTimeout) {
+            clearTimeout(profileFetchTimeout);
+            setProfileFetchTimeout(null);
+          }
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          setProfileLoading(false);
+          return;
         }
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        setProfileLoading(false);
-        return;
-      }
       
       // Handle different auth events appropriately
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -116,6 +117,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setLoading(false);
           setProfileLoading(false);
         }
+      }
+      } catch (error) {
+        // Handle any errors in auth state change gracefully
+        console.log('AuthContext: Error in onAuthStateChange:', error?.message || error);
+        // Treat as signed out on error
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        setProfileLoading(false);
       }
     });
 
