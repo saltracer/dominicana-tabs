@@ -3,11 +3,12 @@ import { PodcastEpisode, PodcastPlaybackProgress } from '../types';
 import { PodcastPlaybackService } from '../services/PodcastPlaybackService';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
 import { useAuth } from './AuthContext';
-import { Platform } from 'react-native';
+import { Platform, AppState } from 'react-native';
 import { usePodcastDownloads } from '../hooks/usePodcastDownloads';
 import { AudioStateManager } from '../lib/audio-state-manager';
 import { ensureImageCached } from '../lib/podcast/storage';
 import { EpisodeMetadataCache } from '../services/EpisodeMetadataCache';
+import * as FileSystem from 'expo-file-system/legacy';
 
 // Default artwork for podcast playback (iOS lock screen)
 const DEFAULT_ARTWORK = require('../assets/images/dominicana_logo-icon-white.png');
@@ -311,6 +312,36 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     }
   };
 
+  const updateTrackMetadata = useCallback(async () => {
+    if (!currentEpisode || !TrackPlayer || Platform.OS === 'web') return;
+    
+    let artworkPath: string | number = DEFAULT_ARTWORK;
+    if (currentEpisode.artworkUrl) {
+      try {
+        const { path } = await ensureImageCached(currentEpisode.artworkUrl);
+        // Validate file
+        const fileInfo = await FileSystem.getInfoAsync(path);
+        if (fileInfo.exists && fileInfo.size && fileInfo.size > 0) {
+          artworkPath = path.startsWith('file://') ? path : `file://${path}`;
+        }
+      } catch (e) {
+        console.warn('[PodcastPlayerContext] Failed to cache artwork for metadata update:', e);
+        artworkPath = DEFAULT_ARTWORK;
+      }
+    }
+    
+    try {
+      await TrackPlayer.updateNowPlayingMetadata({
+        title: currentEpisode.title,
+        artist: 'Podcast',
+        artwork: artworkPath,
+      });
+      if (__DEV__) console.log('[PodcastPlayerContext] ✅ Updated track metadata with artwork');
+    } catch (e) {
+      console.warn('[PodcastPlayerContext] Failed to update metadata:', e);
+    }
+  }, [currentEpisode]);
+
   const markPlayed = useCallback(async () => {
     if (!currentEpisode || !user) return;
     
@@ -385,6 +416,8 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         episodes,
         sourceId,
       });
+      // Refresh metadata after auto-playing next episode
+      await updateTrackMetadata();
     } else {
       console.log('[PodcastPlayerContext] Reached end of list, no more episodes to play');
       setPlaybackContext(null);
@@ -392,7 +425,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       setIsPlaying(false);
       setIsPaused(false);
     }
-  }, [playbackContext, preferences?.podcast_auto_play_next]);
+  }, [playbackContext, preferences?.podcast_auto_play_next, updateTrackMetadata]);
   
   // Update ref when playNextEpisode changes
   useEffect(() => {
@@ -431,6 +464,22 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       markPlayed();
     }
   }, [position, duration, currentEpisode, user, progress?.played, markPlayed]);
+
+  // Refresh metadata when app returns from background
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active' && currentEpisode && TrackPlayer) {
+        if (__DEV__) console.log('[PodcastPlayerContext] 📱 App became active, refreshing metadata');
+        await updateTrackMetadata();
+      }
+    });
+    
+    return () => {
+      subscription.remove();
+    };
+  }, [currentEpisode, updateTrackMetadata]);
 
   // Save progress to cache every second while playing
   useEffect(() => {
@@ -648,7 +697,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         // Stop current playback
         try {
           await TrackPlayer.stop();
-          await TrackPlayer.reset();
+          // Reset removed - TrackPlayer.add() will handle track replacement
         } catch (e) {
           console.warn('[PodcastPlayerContext] Error stopping current playback:', e);
         }
@@ -659,15 +708,38 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           try {
             console.log('[PodcastPlayerContext] Caching artwork for iOS controls:', episode.artworkUrl);
             const { path } = await ensureImageCached(episode.artworkUrl);
-            // Use file:// URL for iOS
-            artworkPath = path.startsWith('file://') ? path : `file://${path}`;
-            console.log('[PodcastPlayerContext] Artwork cached at:', artworkPath);
+            
+            // Validate file exists and has content
+            const fileInfo = await FileSystem.getInfoAsync(path);
+            if (!fileInfo.exists || !fileInfo.size || fileInfo.size === 0) {
+              console.warn('[PodcastPlayerContext] Cached artwork file invalid:', path, fileInfo);
+              artworkPath = DEFAULT_ARTWORK;
+            } else {
+              // Use file:// URL for iOS
+              artworkPath = path.startsWith('file://') ? path : `file://${path}`;
+              console.log('[PodcastPlayerContext] Artwork cached at:', artworkPath);
+              
+              if (__DEV__) {
+                console.log('[PodcastPlayerContext] 🎨 Artwork Debug:', {
+                  episodeTitle: episode.title,
+                  hasArtworkUrl: !!episode.artworkUrl,
+                  artworkUrl: episode.artworkUrl?.substring(0, 100) + '...',
+                  cachedPath: path,
+                  fileExists: fileInfo.exists,
+                  fileSize: fileInfo.size,
+                  finalArtworkPath: typeof artworkPath === 'number' ? 'DEFAULT_ARTWORK (require)' : artworkPath,
+                  isRequire: typeof artworkPath === 'number',
+                  isFileUrl: typeof artworkPath === 'string' && artworkPath.startsWith('file://'),
+                });
+              }
+            }
           } catch (e) {
             console.warn('[PodcastPlayerContext] Failed to cache artwork, using default logo:', e);
             artworkPath = DEFAULT_ARTWORK;
           }
         } else {
-          console.log('[PodcastPlayerContext] No artwork URL, using default dominicana logo');
+          if (__DEV__) console.log('[PodcastPlayerContext] 🎨 No artwork URL, using DEFAULT_ARTWORK');
+          artworkPath = DEFAULT_ARTWORK;
         }
 
         // Add episode to queue with cached artwork (or default logo)
@@ -812,9 +884,11 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         await TrackPlayer.play();
         setIsPlaying(true);
         setIsPaused(false);
+        // Refresh metadata after resume
+        await updateTrackMetadata();
       }
     }
-  }, [audio]);
+  }, [audio, updateTrackMetadata]);
   
   // Update ref when resume changes
   useEffect(() => {
