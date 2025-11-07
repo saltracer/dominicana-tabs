@@ -6,6 +6,7 @@
 import { File, Directory, Paths } from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import { AudioVersionService } from './AudioVersionService';
+import { RosaryAudioCache } from './RosaryAudioCache';
 
 export interface DownloadProgress {
   fileName: string;
@@ -21,8 +22,7 @@ export class RosaryAudioDownloadService {
    * Get the cache directory path (must be accessed at runtime)
    */
   private static getAudioCacheDir(): string {
-    // Paths.cache is a Directory object, we need its uri property
-    return `${Paths.cache.uri}rosary-audio`;
+    return RosaryAudioCache.getAudioCacheDir();
   }
   
   /**
@@ -380,38 +380,10 @@ export class RosaryAudioDownloadService {
 
   /**
    * Get list of cached files with voice and fileName parsed
+   * @deprecated Use RosaryAudioCache.getCachedFiles() instead
    */
   static async getCachedFiles(): Promise<Array<{ voice: string; fileName: string }>> {
-    try {
-      const directory = new Directory(this.getAudioCacheDir());
-      
-      if (!directory.exists) {
-        return [];
-      }
-      
-      const items = await directory.list();
-      const cachedFiles: Array<{ voice: string; fileName: string }> = [];
-      
-      for (const item of items) {
-        if (item instanceof File) {
-          // Extract filename from full path: "voice_filename.m4a"
-          const fullFileName = item.uri.split('/').pop() || '';
-          
-          // Parse format: "voice_filename.m4a" → { voice: "voice", fileName: "filename.m4a" }
-          const match = fullFileName.match(/^([^_]+)_(.+)$/);
-          if (match) {
-            const [, voice, fileName] = match;
-            cachedFiles.push({ voice, fileName });
-          }
-        }
-      }
-      
-      console.log('[RosaryAudio] Found', cachedFiles.length, 'cached files');
-      return cachedFiles;
-    } catch (error) {
-      console.error('Error getting cached files:', error);
-      return [];
-    }
+    return RosaryAudioCache.getCachedFiles();
   }
 }
 

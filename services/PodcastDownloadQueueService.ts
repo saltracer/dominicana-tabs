@@ -116,6 +116,23 @@ export class PodcastDownloadQueueService {
       
       const state: QueueState = JSON.parse(data);
       
+      // Validate and ensure state has correct shape
+      // This handles cases where stored data might be from old version or corrupted
+      if (!Array.isArray(state.items)) {
+        console.warn('[DownloadQueue] Invalid state.items, resetting to empty array');
+        state.items = [];
+      }
+      if (!Array.isArray(state.activeDownloads)) {
+        console.warn('[DownloadQueue] Invalid state.activeDownloads, resetting to empty array');
+        state.activeDownloads = [];
+      }
+      if (typeof state.completedToday !== 'number') {
+        state.completedToday = 0;
+      }
+      if (!state.lastUpdated) {
+        state.lastUpdated = new Date().toISOString();
+      }
+      
       // Clean up completed items older than 24 hours
       const now = new Date().getTime();
       state.items = state.items.filter(item => {

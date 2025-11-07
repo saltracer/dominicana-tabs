@@ -117,20 +117,7 @@ export function useCacheInitialization() {
 
 /**
  * Clear all caches (useful on logout)
+ * @deprecated Use clearAllCaches from CacheService instead
  */
-export function clearAllCaches() {
-  if (Platform.OS === 'web') {
-    return;
-  }
-
-  try {
-    DownloadStatusCache.clear();
-    
-    if (__DEV__) {
-      console.log('[CacheInit] 🧹 All caches cleared');
-    }
-  } catch (error) {
-    console.error('[CacheInit] Error clearing caches:', error);
-  }
-}
+export { clearAllCaches } from '../services/CacheService';
 

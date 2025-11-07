@@ -6,7 +6,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { AudioVersionManifest, CachedManifest, UpdateCheckResult } from '../types/audio-version-types';
-import { RosaryAudioDownloadService } from './RosaryAudioDownloadService';
+import { RosaryAudioCache } from './RosaryAudioCache';
 
 export class AudioVersionService {
   private static readonly MANIFEST_CACHE_KEY = 'rosary_audio_manifest';
@@ -214,7 +214,7 @@ export class AudioVersionService {
       console.log('[AudioVersion] Version changed:', oldManifest.version, '→', newManifest.version);
 
       // Get list of files user actually has cached (only check these)
-      const cachedFiles = await RosaryAudioDownloadService.getCachedFiles();
+      const cachedFiles = await RosaryAudioCache.getCachedFiles();
       console.log('[AudioVersion] Checking updates for', cachedFiles.length, 'cached files only');
 
       // Check only cached files for updates

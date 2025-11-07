@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
 import { User as AppUser, UserPreferences, Subscription } from '../types';
 import { UserLiturgyPreferencesService } from '../services/UserLiturgyPreferencesService';
-import { clearAllCaches } from '../hooks/useCacheInitialization';
+import { clearAllCaches } from '../services/CacheService';
 
 interface AuthContextType {
   user: User | null;
