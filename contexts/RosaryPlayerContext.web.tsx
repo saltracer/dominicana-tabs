@@ -8,6 +8,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { RosaryBead, RosaryForm, MysterySet, AudioSettings } from '../types/rosary-types';
 import { useRosaryAudio } from '../hooks/useRosaryAudio.web';
 import { AudioStateManager } from '../lib/audio-state-manager';
+import { 
+  saveRosaryState, 
+  loadRosaryState, 
+  clearRosaryState,
+  PersistedRosaryState 
+} from '../lib/playback-state-persistence';
 
 interface RosaryPlayerContextType {
   // Current session
@@ -94,6 +100,12 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
   // Flag to prevent saving bead during rebuild operations
   const isRebuildingQueueRef = useRef<boolean>(false);
   
+  // Track if we've attempted to restore state on mount
+  const hasRestoredStateRef = useRef<boolean>(false);
+  
+  // Debounce timer for saving state
+  const saveStateDebounceRef = useRef<number | null>(null);
+  
   // Track change handler
   const handleTrackChange = useCallback((beadId: string, trackIndex: number) => {
     console.log('[RosaryPlayerContext] Track changed to bead:', beadId);
@@ -135,9 +147,12 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
   }, [beads]);
   
   // Queue complete handler
-  const handleQueueComplete = useCallback(() => {
+  const handleQueueComplete = useCallback(async () => {
     console.log('[RosaryPlayerContext] Rosary queue completed');
     // Keep session active but mark as completed
+    
+    // Clear persisted state when rosary completes
+    await clearRosaryState();
     
     // Call original callback if provided
     if (onQueueCompleteRef.current) {
@@ -196,10 +211,95 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     return () => clearInterval(checkInterval);
   }, [rosaryAudio.isPlaying, isSessionActive]);
   
-  // Flag to trigger initialization after state updates
-  const [shouldInitialize, setShouldInitialize] = useState(false);
+  // Restore persisted rosary state on mount
+  useEffect(() => {
+    if (hasRestoredStateRef.current) return;
+    hasRestoredStateRef.current = true;
+    
+    const restoreState = async () => {
+      try {
+        const savedState = await loadRosaryState();
+        if (!savedState) {
+          if (__DEV__) console.log('[RosaryPlayerContext.web] No saved rosary state found');
+          return;
+        }
+        
+        if (__DEV__) {
+          console.log('[RosaryPlayerContext.web] Restoring saved rosary state:', {
+            mystery: savedState.currentMystery,
+            form: savedState.rosaryForm,
+            beadId: savedState.currentBeadId,
+            speed: savedState.currentSpeed,
+          });
+        }
+        
+        // Restore session variables
+        setCurrentMystery(savedState.currentMystery as MysterySet);
+        setRosaryForm(savedState.rosaryForm as RosaryForm);
+        setVoice(savedState.voice);
+        setBeads(savedState.beads);
+        setCurrentBeadId(savedState.currentBeadId);
+        setCurrentSpeed(savedState.currentSpeed);
+        lastKnownBeadIdRef.current = savedState.currentBeadId;
+        
+        // Mark session as active (mini-player will show in paused state)
+        setIsSessionActive(true);
+        
+        // Initialize the rosary audio queue with restored beads (no auto-play)
+        setShouldInitializeOnly(true);
+        
+        if (__DEV__) {
+          console.log('[RosaryPlayerContext.web] Rosary state restored successfully');
+        }
+      } catch (error) {
+        console.error('[RosaryPlayerContext.web] Error restoring rosary state:', error);
+      }
+    };
+    
+    restoreState();
+  }, []);
   
-  // Initialize queue when beads are ready
+  // Save rosary state to AsyncStorage (debounced) when it changes
+  useEffect(() => {
+    // Don't save if we haven't restored yet or if no active session
+    if (!hasRestoredStateRef.current || !isSessionActive) return;
+    
+    // Clear any existing debounce timer
+    if (saveStateDebounceRef.current) {
+      clearTimeout(saveStateDebounceRef.current);
+    }
+    
+    // Debounce saving to avoid excessive writes
+    saveStateDebounceRef.current = setTimeout(() => {
+      if (currentMystery && rosaryForm && beads.length > 0) {
+        const state: PersistedRosaryState = {
+          currentMystery: currentMystery,
+          rosaryForm: rosaryForm,
+          voice: voice,
+          currentBeadId: lastKnownBeadIdRef.current || currentBeadId || beads[0].id,
+          currentSpeed: currentSpeed,
+          beads: beads,
+          savedAt: new Date().toISOString(),
+        };
+        
+        saveRosaryState(state).catch(err => 
+          console.error('[RosaryPlayerContext.web] Error saving state:', err)
+        );
+      }
+    }, 2000); // Save 2 seconds after last change
+    
+    return () => {
+      if (saveStateDebounceRef.current) {
+        clearTimeout(saveStateDebounceRef.current);
+      }
+    };
+  }, [isSessionActive, currentMystery, rosaryForm, voice, currentBeadId, currentSpeed, beads]);
+  
+  // Flags to trigger initialization after state updates
+  const [shouldInitialize, setShouldInitialize] = useState(false);
+  const [shouldInitializeOnly, setShouldInitializeOnly] = useState(false);
+  
+  // Initialize queue when beads are ready (with auto-play)
   useEffect(() => {
     if (shouldInitialize && beads.length > 0) {
       const initializeAndPlay = async () => {
@@ -209,6 +309,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
         
         // Set rosary as active audio type
         AudioStateManager.setActiveAudioType('rosary');
+        setIsActiveAudioType(true); // Update UI state immediately
         
         setShouldInitialize(false);
       };
@@ -217,6 +318,28 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldInitialize, beads.length]);
+  
+  // Initialize queue when beads are ready (restoration - no auto-play)
+  useEffect(() => {
+    if (shouldInitializeOnly && beads.length > 0) {
+      const initializeOnly = async () => {
+        console.log('[RosaryPlayerContext.web] Initializing queue for restoration with', beads.length, 'beads (no auto-play)');
+        await rosaryAudio.initializeQueue();
+        
+        // Skip to saved bead without playing
+        const beadToRestore = lastKnownBeadIdRef.current;
+        if (beadToRestore) {
+          console.log('[RosaryPlayerContext.web] Restoring to bead:', beadToRestore);
+          await rosaryAudio.skipToBead(beadToRestore);
+        }
+        
+        setShouldInitializeOnly(false);
+      };
+      
+      initializeOnly();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldInitializeOnly, beads.length]);
   
   // Start a new rosary session
   const startRosary = useCallback(async (
@@ -277,6 +400,10 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     setVoice(null);
     setBeads([]);
     onTrackChangeRef.current = null;
+    lastKnownBeadIdRef.current = null;
+    
+    // Clear persisted state
+    await clearRosaryState();
     onQueueCompleteRef.current = null;
     
     // Clear active audio type if it's rosary
@@ -289,6 +416,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
   const play = useCallback(async () => {
     await rosaryAudio.play();
     AudioStateManager.setActiveAudioType('rosary');
+    setIsActiveAudioType(true); // Update UI state immediately
   }, [rosaryAudio]);
   
   // Pause control
@@ -314,6 +442,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
       // IMPORTANT: Claim audio type BEFORE rebuilding queue
       // This prevents podcast from reacting to TrackPlayer events during rebuild
       AudioStateManager.setActiveAudioType('rosary');
+      setIsActiveAudioType(true); // Update UI state immediately
       console.log('[RosaryPlayerContext.web] Claimed audio type before rebuild');
       
       // Set flag to prevent saving spurious track change events during rebuild
@@ -343,6 +472,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
       await rosaryAudio.play();
       // Set active audio type when not reclaiming (just resuming)
       AudioStateManager.setActiveAudioType('rosary');
+      setIsActiveAudioType(true); // Update UI state immediately
     }
   }, [rosaryAudio, currentBeadId]);
   

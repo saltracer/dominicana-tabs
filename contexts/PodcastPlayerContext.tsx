@@ -9,6 +9,12 @@ import { AudioStateManager } from '../lib/audio-state-manager';
 import { ensureImageCached } from '../lib/podcast/storage';
 import { EpisodeMetadataCache } from '../services/EpisodeMetadataCache';
 import * as FileSystem from 'expo-file-system/legacy';
+import { 
+  savePodcastState, 
+  loadPodcastState, 
+  clearPodcastState,
+  PersistedPodcastState 
+} from '../lib/playback-state-persistence';
 
 // Default artwork for podcast playback (iOS lock screen)
 const DEFAULT_ARTWORK = require('../assets/images/dominicana_logo-icon-white.png');
@@ -106,18 +112,55 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   // Guard against concurrent episode loading
   const isLoadingEpisodeRef = useRef<boolean>(false);
   
+  // Track if we've attempted to restore state on mount
+  const hasRestoredStateRef = useRef<boolean>(false);
+  
+  // Debounce timer for saving state
+  const saveStateDebounceRef = useRef<number | null>(null);
+  
   // Debounce playNextEpisode to prevent race conditions from duplicate events
   const playNextDebounceRef = useRef<number | null>(null);
   
-  // Cleanup: Unregister handlers when component unmounts
+  // Store current values in refs for cleanup
+  const currentEpisodeRef = useRef(currentEpisode);
+  const playbackContextRef = useRef(playbackContext);
+  const playbackSpeedRef = useRef(playbackSpeed);
+  
+  useEffect(() => {
+    currentEpisodeRef.current = currentEpisode;
+    playbackContextRef.current = playbackContext;
+    playbackSpeedRef.current = playbackSpeed;
+  }, [currentEpisode, playbackContext, playbackSpeed]);
+  
+  // Cleanup: Unregister handlers when component ACTUALLY unmounts
   useEffect(() => {
     return () => {
       if (Platform.OS !== 'web') {
         AudioStateManager.unregisterAudioHandlers('podcast');
         console.log('[PodcastPlayerContext] Unregistered podcast handlers on unmount');
       }
+      
+      // Save state before unmounting (use refs to get latest values)
+      const episode = currentEpisodeRef.current;
+      const pos = lastKnownPositionRef.current || positionRef.current;
+      if (episode && pos > 0) {
+        const state: PersistedPodcastState = {
+          episode: episode,
+          position: pos,
+          playbackContext: playbackContextRef.current || {
+            type: 'single',
+            episodes: [episode],
+            currentIndex: 0,
+          },
+          playbackSpeed: playbackSpeedRef.current,
+          savedAt: new Date().toISOString(),
+        };
+        savePodcastState(state).catch(err => 
+          console.error('[PodcastPlayerContext] Error saving state on unmount:', err)
+        );
+      }
     };
-  }, []);
+  }, []); // Empty array = only run on actual unmount
   
   // Track when we're the active audio type for UI state updates
   const [isActiveAudioType, setIsActiveAudioType] = useState(true);
@@ -139,6 +182,93 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     
     return () => clearInterval(checkInterval);
   }, [isPlaying, currentEpisode]);
+  
+  // Restore persisted playback state on mount
+  useEffect(() => {
+    if (hasRestoredStateRef.current) return;
+    hasRestoredStateRef.current = true;
+    
+    console.log('[PodcastPlayerContext] Attempting to restore saved state...');
+    
+    const restoreState = async () => {
+      try {
+        const savedState = await loadPodcastState();
+        if (!savedState) {
+          console.log('[PodcastPlayerContext] No saved state found');
+          return;
+        }
+        
+        console.log('[PodcastPlayerContext] Restoring saved state:', {
+          episode: savedState.episode.title,
+          position: savedState.position,
+          speed: savedState.playbackSpeed,
+        });
+        
+        // Restore episode and context
+        setCurrentEpisode(savedState.episode);
+        setPlaybackContext(savedState.playbackContext);
+        setPlaybackSpeed(savedState.playbackSpeed);
+        
+        // Restore position
+        setPosition(savedState.position);
+        lastKnownPositionRef.current = savedState.position;
+        positionRef.current = savedState.position;
+        
+        // Restore duration if available
+        if (savedState.episode.duration) {
+          setDuration(savedState.episode.duration);
+          durationRef.current = savedState.episode.duration;
+        }
+        
+        // Set to paused state (user must click play to resume)
+        setIsPlaying(false);
+        setIsPaused(true);
+        setIsLoading(false);
+        
+        console.log('[PodcastPlayerContext] State restored successfully');
+      } catch (error) {
+        console.error('[PodcastPlayerContext] Error restoring state:', error);
+      }
+    };
+    
+    restoreState();
+  }, []);
+  
+  // Save playback state to AsyncStorage (debounced) when it changes
+  useEffect(() => {
+    // Don't save if we haven't restored yet or if no episode
+    if (!hasRestoredStateRef.current || !currentEpisode) return;
+    
+    // Clear any existing debounce timer
+    if (saveStateDebounceRef.current) {
+      clearTimeout(saveStateDebounceRef.current);
+    }
+    
+    // Debounce saving to avoid excessive writes
+    saveStateDebounceRef.current = setTimeout(() => {
+      const state: PersistedPodcastState = {
+        episode: currentEpisode,
+        position: lastKnownPositionRef.current || position,
+        playbackContext: playbackContext || {
+          type: 'single',
+          episodes: [currentEpisode],
+          currentIndex: 0,
+        },
+        playbackSpeed,
+        savedAt: new Date().toISOString(),
+      };
+      
+      savePodcastState(state).catch(err => 
+        console.error('[PodcastPlayerContext] Error saving state:', err)
+      );
+    }, 2000); // Save 2 seconds after last change
+    
+    return () => {
+      if (saveStateDebounceRef.current) {
+        clearTimeout(saveStateDebounceRef.current);
+      }
+    };
+  }, [currentEpisode, position, playbackContext, playbackSpeed]);
 
   // Load user preferences
   const loadPreferences = useCallback(async () => {
@@ -487,6 +617,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       setCurrentEpisode(null);
       setIsPlaying(false);
       setIsPaused(false);
+      
+      // Clear persisted state when reaching end of playlist
+      await clearPodcastState();
     }
   }, [playbackContext, preferences?.podcast_auto_play_next, updateTrackMetadata]);
   
@@ -744,6 +877,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           setIsPaused(false);
           // Set podcast as active audio type (will trigger rosary to pause)
           AudioStateManager.setActiveAudioType('podcast');
+          setIsActiveAudioType(true); // Update UI state immediately
         } catch (playError) {
           console.log('[PodcastPlayerContext] Autoplay prevented:', playError);
           // Even if autoplay fails, we should show the mini player
@@ -767,6 +901,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         // IMPORTANT: Claim audio type BEFORE resetting TrackPlayer
         // This prevents rosary from saving incorrect position when TrackPlayer fires events
         AudioStateManager.setActiveAudioType('podcast');
+        setIsActiveAudioType(true); // Update UI state immediately
         console.log('[PodcastPlayerContext] Claimed audio type before reset');
         
         // Tell rosary to ignore events during our TrackPlayer operations
@@ -972,6 +1107,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         setIsPaused(false);
         // Set podcast as active audio type (will trigger rosary to pause)
         AudioStateManager.setActiveAudioType('podcast');
+        setIsActiveAudioType(true); // Update UI state immediately
       }
     } else {
       if (TrackPlayer && currentEpisode) {
@@ -1040,6 +1176,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         setIsPaused(false);
         // Set podcast as active audio type (will trigger rosary to pause)
         AudioStateManager.setActiveAudioType('podcast');
+        setIsActiveAudioType(true); // Update UI state immediately
         // Refresh metadata after resume
         await updateTrackMetadata();
       }
