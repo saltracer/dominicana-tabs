@@ -24,6 +24,7 @@ interface AudioTypeHandlers {
 class AudioStateManagerClass {
   private activeAudioType: AudioType = null;
   private registeredHandlers: Map<AudioType, AudioHandlers> = new Map();
+  private isResettingTrackPlayer: boolean = false;
 
   /**
    * Register handlers for a specific audio type
@@ -66,6 +67,20 @@ class AudioStateManagerClass {
    */
   getActiveAudioType(): AudioType {
     return this.activeAudioType;
+  }
+
+  /**
+   * Set flag indicating TrackPlayer is being reset (to prevent spurious event handling)
+   */
+  setIsResettingTrackPlayer(isResetting: boolean): void {
+    this.isResettingTrackPlayer = isResetting;
+  }
+
+  /**
+   * Check if TrackPlayer is currently being reset
+   */
+  getIsResettingTrackPlayer(): boolean {
+    return this.isResettingTrackPlayer;
   }
 
   /**

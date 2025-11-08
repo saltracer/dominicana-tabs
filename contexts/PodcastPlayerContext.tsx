@@ -761,6 +761,14 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         }
 
         console.log('[PodcastPlayerContext] Stopping current playback');
+        // IMPORTANT: Claim audio type BEFORE resetting TrackPlayer
+        // This prevents rosary from saving incorrect position when TrackPlayer fires events
+        AudioStateManager.setActiveAudioType('podcast');
+        console.log('[PodcastPlayerContext] Claimed audio type before reset');
+        
+        // Tell rosary to ignore events during our TrackPlayer operations
+        AudioStateManager.setIsResettingTrackPlayer(true);
+        
         // Stop current playback and clear queue
         try {
           await TrackPlayer.reset();
@@ -768,6 +776,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         } catch (e) {
           console.warn('[PodcastPlayerContext] Error resetting TrackPlayer:', e);
         }
+        
+        // Clear the flag after reset completes
+        AudioStateManager.setIsResettingTrackPlayer(false);
 
         // Cache artwork for iOS controls before adding track
         let artworkPath: string | number = DEFAULT_ARTWORK;
@@ -872,7 +883,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
             }
           },
         });
-        AudioStateManager.setActiveAudioType('podcast');
+        // Note: Audio type already set earlier before TrackPlayer reset
         console.log('[PodcastPlayerContext] Registered podcast handlers with AudioStateManager');
         
         // Add a small delay to ensure state is updated
@@ -975,6 +986,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           console.log('[PodcastPlayerContext] Current position ref:', positionRef.current);
           console.log('[PodcastPlayerContext] Current position state:', position);
           
+          // Tell rosary to ignore events during our TrackPlayer operations
+          AudioStateManager.setIsResettingTrackPlayer(true);
+          
           // Stop and reset TrackPlayer
           await TrackPlayer.stop();
           await TrackPlayer.reset();
@@ -1013,6 +1027,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
             await TrackPlayer.seekTo(savedPosition);
             console.log('[PodcastPlayerContext] Seeked to:', savedPosition);
           }
+          
+          // Clear the flag after all operations complete
+          AudioStateManager.setIsResettingTrackPlayer(false);
         }
         
         await TrackPlayer.play();

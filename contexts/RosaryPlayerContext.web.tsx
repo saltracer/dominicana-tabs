@@ -91,14 +91,27 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
   // Preserve last known bead when rosary was active (for resuming after podcast takeover)
   const lastKnownBeadIdRef = useRef<string | null>(null);
   
+  // Flag to prevent saving bead during rebuild operations
+  const isRebuildingQueueRef = useRef<boolean>(false);
+  
   // Track change handler
   const handleTrackChange = useCallback((beadId: string, trackIndex: number) => {
     console.log('[RosaryPlayerContext] Track changed to bead:', beadId);
     setCurrentBeadId(beadId);
     
-    // Update last known bead (for resuming after podcast takeover)
-    lastKnownBeadIdRef.current = beadId;
-    console.log('[RosaryPlayerContext] Saved last known bead:', beadId);
+    // IMPORTANT: Only update last known bead if rosary is the active audio type
+    // AND we're not currently rebuilding the queue (which fires spurious events)
+    // AND TrackPlayer is not being reset by another audio type
+    const activeType = AudioStateManager.getActiveAudioType();
+    const isRebuilding = isRebuildingQueueRef.current;
+    const isResetting = AudioStateManager.getIsResettingTrackPlayer();
+    
+    if (activeType === 'rosary' && !isRebuilding && !isResetting) {
+      lastKnownBeadIdRef.current = beadId;
+      console.log('[RosaryPlayerContext] Saved last known bead:', beadId);
+    } else {
+      console.log('[RosaryPlayerContext] NOT saving bead (active:', activeType, ', rebuilding:', isRebuilding, ', resetting:', isResetting, ')');
+    }
     
     // Find the bead and update title and number
     const bead = beads.find(b => b.id === beadId);
@@ -162,18 +175,21 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     };
   }, [rosaryAudio.play, rosaryAudio.pause, rosaryAudio.stop, rosaryAudio.skipToNext, rosaryAudio.skipToPrevious]);
   
-  // Listen for audio type changes and mark as paused if podcast takes over
+  // Track when we're the active audio type for UI state updates
+  const [isActiveAudioType, setIsActiveAudioType] = useState(true);
+  
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const activeType = AudioStateManager.getActiveAudioType();
+      const isActive = activeType === 'rosary';
+      setIsActiveAudioType(isActive);
       
-      // If podcast becomes active while rosary is playing, mark as paused
-      // Don't call TrackPlayer methods because podcast owns it now
-      // Keep session active so mini player stays visible
+      // Log when podcast takes over (for debugging)
       if (activeType === 'podcast' && rosaryAudio.isPlaying && isSessionActive) {
-        console.log('[RosaryPlayerContext.web] Podcast took over TrackPlayer, marking rosary as paused');
-        // DON'T call rosaryAudio.pause() - it would pause the podcast track!
-        // The rosary hook will naturally become paused when TrackPlayer is reset
+        // Logged once when transition happens (state will update via setIsActiveAudioType)
+        if (isActive) {
+          console.log('[RosaryPlayerContext.web] Podcast took over TrackPlayer, marking rosary as paused');
+        }
       }
     }, 500);
     
@@ -295,6 +311,15 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
       console.log('[RosaryPlayerContext.web] Current bead:', currentBeadId);
       console.log('[RosaryPlayerContext.web] Will resume at bead:', resumeBeadId);
       
+      // IMPORTANT: Claim audio type BEFORE rebuilding queue
+      // This prevents podcast from reacting to TrackPlayer events during rebuild
+      AudioStateManager.setActiveAudioType('rosary');
+      console.log('[RosaryPlayerContext.web] Claimed audio type before rebuild');
+      
+      // Set flag to prevent saving spurious track change events during rebuild
+      isRebuildingQueueRef.current = true;
+      console.log('[RosaryPlayerContext.web] Set rebuilding flag to true');
+      
       // Rebuild the entire rosary queue
       await rosaryAudio.initializeQueue();
       console.log('[RosaryPlayerContext.web] Queue rebuilt');
@@ -306,16 +331,19 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
         console.log('[RosaryPlayerContext.web] Jumped to bead:', resumeBeadId);
       }
       
+      // Clear rebuild flag - now we can save position again
+      isRebuildingQueueRef.current = false;
+      console.log('[RosaryPlayerContext.web] Cleared rebuilding flag');
+      
       // Now start playing from that position
       await rosaryAudio.play();
       console.log('[RosaryPlayerContext.web] Playing from resumed bead');
     } else {
       console.log('[RosaryPlayerContext.web] No need to reclaim, just playing');
       await rosaryAudio.play();
+      // Set active audio type when not reclaiming (just resuming)
+      AudioStateManager.setActiveAudioType('rosary');
     }
-    
-    console.log('[RosaryPlayerContext.web] Setting active audio type to rosary');
-    AudioStateManager.setActiveAudioType('rosary');
   }, [rosaryAudio, currentBeadId]);
   
   // Skip to next bead
@@ -339,6 +367,10 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     await rosaryAudio.setSpeed(speed);
   }, [rosaryAudio]);
   
+  // Compute effective playing state - only truly playing if rosary is the active audio type
+  const effectiveIsPlaying = rosaryAudio.isPlaying && isActiveAudioType;
+  const effectiveIsPaused = !effectiveIsPlaying && isSessionActive;
+  
   const value: RosaryPlayerContextType = {
     // Current session
     currentMystery,
@@ -351,8 +383,8 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     beads,
     
     // Playback state
-    isPlaying: rosaryAudio.isPlaying,
-    isPaused: rosaryAudio.isPaused,
+    isPlaying: effectiveIsPlaying,
+    isPaused: effectiveIsPaused,
     isLoading: rosaryAudio.isLoading,
     progress: rosaryAudio.progress,
     downloadProgress: rosaryAudio.downloadProgress,

@@ -130,11 +130,16 @@ export class UserLiturgyPreferencesService {
           await this.cachePreferences(userId, defaultPreferences);
           return defaultPreferences;
         }
-        console.error('Error fetching user liturgy preferences:', error);
+        // Log error in development only - error is handled gracefully with cached data
+        if (__DEV__) {
+          console.warn('Error fetching user liturgy preferences (using cached data):', error.message || error);
+        }
         
         // If we have cached data and server request failed, return cached data
         if (cachedPreferences) {
-          console.log('Returning cached preferences due to server error');
+          if (__DEV__) {
+            console.log('Returning cached preferences due to server error');
+          }
           return cachedPreferences;
         }
         
