@@ -30,6 +30,7 @@
 - [ ] generate the rosary audio for the different voices
 - [ ] Only show audio button for pages/books/rosary mysterys that have audio
 - [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
+- [ ] where is the voice cache clearable in the application?
 - [ ] text highlighting as the audio is read
 - [x] Redesign Prayer section navigation on native
 - [ ] Get exsurge working on the web
