@@ -119,18 +119,21 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     };
   }, []);
   
-  // Listen for audio type changes and mark as paused if rosary takes over
+  // Track when we're the active audio type for UI state updates
+  const [isActiveAudioType, setIsActiveAudioType] = useState(true);
+  
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const activeType = AudioStateManager.getActiveAudioType();
+      const isActive = activeType === 'podcast';
+      setIsActiveAudioType(isActive);
       
-      // If rosary becomes active while podcast is playing, mark as paused
-      // Don't call TrackPlayer methods because rosary owns it now
-      // Keep currentEpisode so mini player stays visible
+      // Log when rosary takes over (for debugging)
       if (activeType === 'rosary' && isPlaying && currentEpisode) {
-        console.log('[PodcastPlayerContext] Rosary took over TrackPlayer, marking podcast as paused');
-        // DON'T call pause() - it would pause the rosary track!
-        // The podcast state will naturally become paused when TrackPlayer is reset
+        // Logged once when transition happens (state will update via setIsActiveAudioType)
+        if (isActive) {
+          console.log('[PodcastPlayerContext] Rosary took over TrackPlayer, marking podcast as paused');
+        }
       }
     }, 500);
     
@@ -1088,10 +1091,14 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   // Calculate progress percentage
   const progressPercentage = duration > 0 ? (position / duration) * 100 : 0;
 
+  // Compute effective playing state - only truly playing if podcast is the active audio type
+  const effectiveIsPlaying = isPlaying && isActiveAudioType;
+  const effectiveIsPaused = !effectiveIsPlaying && currentEpisode !== null;
+
   const value: PodcastPlayerContextType = {
     currentEpisode,
-    isPlaying,
-    isPaused,
+    isPlaying: effectiveIsPlaying,
+    isPaused: effectiveIsPaused,
     isLoading,
     position,
     duration,
