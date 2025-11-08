@@ -26,7 +26,7 @@
 - [x] a voice for Francis de Sales
 - [x] a voice for Hildegard
 - [ ] a voice for St Patrick
-- [ ] Migrate the rosary player to the bottom "track player" solution used for podcasts
+- [x] Migrate the rosary player to the bottom "track player" solution used for podcasts
 - [ ] generate the rosary audio for the different voices
 - [ ] Only show audio button for pages/books/rosary mysterys that have audio
 - [ ] allow the voices to be deleted without needing to reselect the voice and then clear the cache
