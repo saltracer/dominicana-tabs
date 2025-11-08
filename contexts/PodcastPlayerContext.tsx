@@ -103,6 +103,10 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const durationRef = useRef<number>(0);
   const progressRef = useRef<PodcastPlaybackProgress | null>(null);
   
+  // Track last cached/synced values to prevent redundant updates
+  const lastCachedPositionRef = useRef<number>(0);
+  const lastSyncedPositionRef = useRef<number>(0);
+  
   // Preserve last known position when podcast was active (for resuming after rosary takeover)
   const lastKnownPositionRef = useRef<number>(0);
   
@@ -685,17 +689,28 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
 
     if (__DEV__) console.log('[PodcastPlayerContext] Starting cache save interval (every 1s)');
     
+    // Reset tracking refs when starting interval for new episode
+    lastCachedPositionRef.current = positionRef.current;
+    
     const cacheInterval = setInterval(() => {
       const currentPosition = positionRef.current;
       const currentDuration = durationRef.current;
       
       if (currentDuration === 0) return; // Skip if duration not loaded yet
       
+      // Only update cache if position has changed (more than 0.5 seconds difference)
+      const positionDelta = Math.abs(currentPosition - lastCachedPositionRef.current);
+      if (positionDelta < 0.5) {
+        // No significant change, skip cache update
+        return;
+      }
+      
       // Update cache immediately (no database call)
       EpisodeMetadataCache.update(currentEpisode.id, {
         playbackPosition: currentPosition,
         playbackProgress: currentPosition / currentDuration,
       });
+      lastCachedPositionRef.current = currentPosition;
       if (__DEV__) console.log('[PodcastPlayerContext] Cache updated:', { 
         position: currentPosition.toFixed(1), 
         duration: currentDuration.toFixed(1), 
@@ -717,12 +732,22 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
 
     if (__DEV__) console.log('[PodcastPlayerContext] Starting DB sync interval (every 15s)');
 
+    // Reset tracking refs when starting interval for new episode
+    lastSyncedPositionRef.current = positionRef.current;
+
     const dbSyncInterval = setInterval(async () => {
       const currentPosition = positionRef.current;
       const currentDuration = durationRef.current;
       const currentProgress = progressRef.current;
       
       if (currentDuration === 0) return; // Skip if duration not loaded yet
+      
+      // Only sync to database if position has changed (more than 0.5 seconds difference)
+      const positionDelta = Math.abs(currentPosition - lastSyncedPositionRef.current);
+      if (positionDelta < 0.5) {
+        // No significant change, skip database sync
+        return;
+      }
       
       try {
         await PodcastPlaybackService.saveProgress(
@@ -731,6 +756,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           currentDuration,
           currentProgress?.played || false
         );
+        lastSyncedPositionRef.current = currentPosition;
         if (__DEV__) console.log('[PodcastPlayerContext] ✅ Auto-synced progress to database:', { 
           position: currentPosition.toFixed(1), 
           duration: currentDuration.toFixed(1), 
