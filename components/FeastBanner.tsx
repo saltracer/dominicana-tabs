@@ -19,7 +19,9 @@ import { useScrollContext } from '../contexts/ScrollContext';
 import { LiturgicalDay } from '../types';
 import { parseISO, format } from 'date-fns';
 import PodcastMiniPlayer from './PodcastMiniPlayer';
+import RosaryMiniPlayer from './RosaryMiniPlayer';
 import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
+import { useRosaryPlayer } from '../contexts/RosaryPlayerContext';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
@@ -34,14 +36,23 @@ export default function FeastBanner({
   const { shouldHideUI } = useScrollContext();
   const { selectedDate, setSelectedDate } = useCalendar();
   const { currentEpisode, isPlaying, isPaused, isLoading, position, duration, seek } = usePodcastPlayer();
+  const { 
+    isPlaying: rosaryIsPlaying, 
+    isPaused: rosaryIsPaused,
+    isSessionActive: rosarySessionActive 
+  } = useRosaryPlayer();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Determine if we should show the podcast player
-  // Show if there's a current episode and it's either playing, paused, or loading
-  const showPodcastPlayer = currentEpisode && (isPlaying || isPaused || isLoading);
+  // Show if there's a current episode (playing, paused, stopped, or loading)
+  const showPodcastPlayer = !!currentEpisode;
+  
+  // Determine if we should show the rosary player
+  // Show if there's an active session (playing, paused, or stopped)
+  const showRosaryPlayer = rosarySessionActive;
   
   // Debug logging
   // console.log('[FeastBanner] Podcast player state:', {
@@ -177,6 +188,13 @@ export default function FeastBanner({
             {showPodcastPlayer && (
               <View style={styles.carouselItem}>
                 <PodcastMiniPlayer />
+              </View>
+            )}
+            
+            {/* Rosary Player Section - SECOND (when playing) */}
+            {showRosaryPlayer && (
+              <View style={styles.carouselItem}>
+                <RosaryMiniPlayer />
               </View>
             )}
             
@@ -322,18 +340,38 @@ export default function FeastBanner({
               />
             )}
             
+            {/* Rosary Player Indicator (only when visible) */}
+            {showRosaryPlayer && (
+              <TouchableOpacity
+                style={[
+                  styles.carouselDot,
+                  { 
+                    backgroundColor: currentCarouselIndex === (showPodcastPlayer ? 1 : 0) 
+                      ? Colors[colorScheme ?? 'light'].primary 
+                      : Colors[colorScheme ?? 'light'].textMuted 
+                  }
+                ]}
+                onPress={() => {
+                  const targetIndex = showPodcastPlayer ? 1 : 0;
+                  scrollViewRef.current?.scrollTo({ x: targetIndex * Dimensions.get('window').width, animated: true });
+                  setCurrentCarouselIndex(targetIndex);
+                }}
+                activeOpacity={0.7}
+              />
+            )}
+            
             {/* Saint/Feast Indicator */}
             <TouchableOpacity
               style={[
                 styles.carouselDot,
                 { 
-                  backgroundColor: currentCarouselIndex === (showPodcastPlayer ? 1 : 0)
+                  backgroundColor: currentCarouselIndex === ((showPodcastPlayer ? 1 : 0) + (showRosaryPlayer ? 1 : 0))
                     ? Colors[colorScheme ?? 'light'].primary 
                     : Colors[colorScheme ?? 'light'].textMuted 
                 }
               ]}
               onPress={() => {
-                const targetIndex = showPodcastPlayer ? 1 : 0;
+                const targetIndex = (showPodcastPlayer ? 1 : 0) + (showRosaryPlayer ? 1 : 0);
                 scrollViewRef.current?.scrollTo({ x: targetIndex * Dimensions.get('window').width, animated: true });
                 setCurrentCarouselIndex(targetIndex);
               }}
@@ -345,13 +383,13 @@ export default function FeastBanner({
               style={[
                 styles.carouselDot,
                 { 
-                  backgroundColor: currentCarouselIndex === (showPodcastPlayer ? 2 : 1)
+                  backgroundColor: currentCarouselIndex === ((showPodcastPlayer ? 1 : 0) + (showRosaryPlayer ? 1 : 0) + 1)
                     ? Colors[colorScheme ?? 'light'].primary 
                     : Colors[colorScheme ?? 'light'].textMuted 
                 }
               ]}
               onPress={() => {
-                const targetIndex = showPodcastPlayer ? 2 : 1;
+                const targetIndex = (showPodcastPlayer ? 1 : 0) + (showRosaryPlayer ? 1 : 0) + 1;
                 scrollViewRef.current?.scrollTo({ x: targetIndex * Dimensions.get('window').width, animated: true });
                 setCurrentCarouselIndex(targetIndex);
               }}

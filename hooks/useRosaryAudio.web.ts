@@ -18,6 +18,7 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 import { RosaryAudioDownloadService } from '../services/RosaryAudioDownloadService.web';
 import { AudioSettings, RosaryBead } from '../types/rosary-types';
+import { AudioStateManager } from '../lib/audio-state-manager';
 
 interface UseRosaryAudioOptions {
   beads: RosaryBead[];
@@ -100,6 +101,12 @@ export function useRosaryAudio({
 
   // Update state from track player
   useEffect(() => {
+    // Only update if rosary is the active audio type
+    const activeType = AudioStateManager.getActiveAudioType();
+    if (activeType !== 'rosary') {
+      return;
+    }
+    
     if (playbackState.state === State.Playing) {
       setIsPlaying(true);
       setIsPaused(false);
@@ -115,6 +122,13 @@ export function useRosaryAudio({
   // Track player events - combine both for better handling
   useTrackPlayerEvents([Event.PlaybackTrackChanged, Event.PlaybackQueueEnded], (event) => {
     console.log('[useRosaryAudio Web] TrackPlayer event received:', event.type);
+    
+    // Only handle events if rosary is the active audio type
+    const activeType = AudioStateManager.getActiveAudioType();
+    if (activeType !== 'rosary') {
+      console.log('[useRosaryAudio Web] Ignoring event, active type is:', activeType);
+      return;
+    }
     
     if (event.type === Event.PlaybackQueueEnded) {
       console.log('[useRosaryAudio Web] Queue ended - Rosary complete!');
@@ -531,11 +545,17 @@ export function useRosaryAudio({
   const skipToBead = useCallback(async (beadId: string): Promise<void> => {
     try {
       const trackIndex = beadToTrackMapRef.current.get(beadId);
+      console.log('[useRosaryAudio Web] skipToBead called with beadId:', beadId);
+      console.log('[useRosaryAudio Web] Bead map has', beadToTrackMapRef.current.size, 'entries');
+      console.log('[useRosaryAudio Web] Found trackIndex:', trackIndex);
+      
       if (trackIndex !== undefined) {
+        console.log('[useRosaryAudio Web] Skipping to bead:', beadId, 'at track index:', trackIndex);
         await TrackPlayer.skip(trackIndex);
-        console.log(`[useRosaryAudio Web] Skipped to bead ${beadId} (track ${trackIndex})`);
+        console.log('[useRosaryAudio Web] Skipped successfully');
       } else {
-        console.warn(`[useRosaryAudio Web] No track found for bead: ${beadId}`);
+        console.warn('[useRosaryAudio Web] No track found for bead:', beadId);
+        console.warn('[useRosaryAudio Web] Available bead IDs:', Array.from(beadToTrackMapRef.current.keys()).slice(0, 10));
       }
     } catch (error) {
       console.error('[useRosaryAudio Web] Failed to skip to bead:', error);

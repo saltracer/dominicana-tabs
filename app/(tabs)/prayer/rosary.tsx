@@ -32,7 +32,7 @@ import { getTodaysMystery, ROSARY_MYSTERIES } from '../../../constants/rosaryDat
 import { UserLiturgyPreferencesService } from '../../../services/UserLiturgyPreferencesService';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useProfilePanel } from '../../../contexts/ProfilePanelContext';
-import { useRosaryAudio } from '../../../hooks/useRosaryAudio';
+import { useRosaryPlayer } from '../../../contexts/RosaryPlayerContext';
 import RosaryAudioControls from '../../../components/RosaryAudioControls';
 
 export default function RosaryScreen() {
@@ -73,39 +73,34 @@ export default function RosaryScreen() {
     playBellSounds: true,
   });
 
-  // Initialize rosary audio hook with full queue approach
+  // Use global rosary player context
+  const rosaryPlayer = useRosaryPlayer();
   const isLentSeason = liturgicalDay?.season.name === 'Lent' || liturgicalDay?.season.name === 'Holy Week';
   
-  const rosaryAudio = useRosaryAudio({
-    beads,
-    voice: rosaryVoice,
-    settings: audioSettings,
-    rosaryForm,
-    mysteryName: ROSARY_MYSTERIES.find(m => m.name === selectedMystery)?.name || '',
-    showMysteryMeditations,
-    isLentSeason: isLentSeason || false,
-    onTrackChange: (beadId) => {
-      console.log('[Rosary] Track changed to bead:', beadId);
-      setCurrentBeadId(beadId);
+  // Sync local audio playing state with global context
+  useEffect(() => {
+    if (rosaryPlayer.isSessionActive) {
+      setIsAudioPlaying(rosaryPlayer.isPlaying);
+      setIsAudioPaused(rosaryPlayer.isPaused);
       
-      // Mark previous beads as complete
-      const beadIndex = beads.findIndex(b => b.id === beadId);
-      if (beadIndex >= 0) {
-        const completed = beads.slice(0, beadIndex).map(b => b.id);
-        setCompletedBeadIds(completed);
+      // Sync current bead from context
+      if (rosaryPlayer.currentBeadId && rosaryPlayer.currentBeadId !== currentBeadId) {
+        setCurrentBeadId(rosaryPlayer.currentBeadId);
+        
+        // Mark previous beads as complete
+        const beadIndex = beads.findIndex(b => b.id === rosaryPlayer.currentBeadId);
+        if (beadIndex >= 0) {
+          const completed = beads.slice(0, beadIndex).map(b => b.id);
+          setCompletedBeadIds(completed);
+        }
       }
-    },
-    onQueueComplete: () => {
-      console.log('[Rosary] Queue complete - Rosary finished!');
-      setIsPraying(false);
-      setAudioSettings(prev => ({ ...prev, isEnabled: false }));
-    },
-  });
+    }
+  }, [rosaryPlayer.isPlaying, rosaryPlayer.isPaused, rosaryPlayer.currentBeadId, rosaryPlayer.isSessionActive]);
 
   // Navigation callbacks - with audio, skip tracks in queue; without audio, manual navigation
   const nextBead = useCallback(() => {
     if (audioSettings.isEnabled) {
-      rosaryAudio.skipToNext();
+      rosaryPlayer.skipToNext();
     } else {
       const next = rosaryService.getNextBead(beads, currentBeadId);
       if (next) {
@@ -113,11 +108,11 @@ export default function RosaryScreen() {
         setCurrentBeadId(next.id);
       }
     }
-  }, [beads, currentBeadId, completedBeadIds, audioSettings.isEnabled, rosaryAudio]);
+  }, [beads, currentBeadId, completedBeadIds, audioSettings.isEnabled, rosaryPlayer]);
 
   const previousBead = useCallback(() => {
     if (audioSettings.isEnabled) {
-      rosaryAudio.skipToPrevious();
+      rosaryPlayer.skipToPrevious();
     } else {
       const prev = rosaryService.getPreviousBead(beads, currentBeadId);
       if (prev) {
@@ -125,7 +120,7 @@ export default function RosaryScreen() {
         setCurrentBeadId(prev.id);
       }
     }
-  }, [beads, currentBeadId, completedBeadIds, audioSettings.isEnabled, rosaryAudio]);
+  }, [beads, currentBeadId, completedBeadIds, audioSettings.isEnabled, rosaryPlayer]);
 
   // Generate beads when form or mystery changes
   useEffect(() => {
@@ -148,65 +143,8 @@ export default function RosaryScreen() {
     }
   }, [currentBeadId, beads, selectedMystery, showMysteryMeditations]);
 
-  // Audio playback is now handled by the full queue approach in useRosaryAudio
+  // Audio playback is now handled by the global RosaryPlayerContext
   // TrackPlayer auto-advances through the queue - no per-bead playback logic needed
-
-  // Sync hook state with component state
-  useEffect(() => {
-    setIsAudioPlaying(rosaryAudio.isPlaying);
-    setIsAudioPaused(rosaryAudio.isPaused);
-  }, [rosaryAudio.isPlaying, rosaryAudio.isPaused]);
-
-  // Cleanup audio when exiting rosary
-  useEffect(() => {
-    if (!isPraying) {
-      rosaryAudio.cleanup();
-    }
-  }, [isPraying, rosaryAudio]);
-
-  // Rebuild queue when key settings change (if audio is enabled)
-  useEffect(() => {
-    const rebuildQueueIfNeeded = async () => {
-      // Only rebuild if audio is currently enabled and playing
-      if (!audioSettings.isEnabled || !isPraying) {
-        return;
-      }
-
-      console.log('[Rosary] Key settings changed, rebuilding audio queue...');
-      
-      try {
-        // Get current track position if possible
-        const currentTrackIndex = rosaryAudio.currentTrackIndex;
-        
-        // Rebuild the queue with new settings
-        await rosaryAudio.initializeQueue();
-        
-        // Try to resume at a similar position (or restart if not possible)
-        if (currentTrackIndex > 0 && currentTrackIndex < beads.length) {
-          console.log('[Rosary] Attempting to resume at track', currentTrackIndex);
-          await rosaryAudio.skipToTrack(currentTrackIndex);
-        }
-        
-        // Resume playback
-        await rosaryAudio.play();
-        
-        console.log('[Rosary] Queue rebuilt successfully');
-      } catch (error) {
-        console.error('[Rosary] Failed to rebuild queue:', error);
-      }
-    };
-
-    rebuildQueueIfNeeded();
-  }, [
-    // Rebuild when these settings change:
-    showMysteryMeditations, // Long vs short meditations
-    rosaryForm, // Dominican vs Standard
-    selectedMystery, // Joyful, Sorrowful, etc.
-    rosaryVoice, // Voice selection
-    isLentSeason, // Affects Alleluia
-    finalPrayersConfig, // Final prayers configuration
-    // Note: Don't include audioSettings.isEnabled or isPraying to avoid infinite loop
-  ]);
 
   // Load user's rosary preferences
   const loadUserPreferences = useCallback(async () => {
@@ -335,7 +273,7 @@ export default function RosaryScreen() {
     // If audio is enabled, also jump to that bead in the audio queue
     if (audioSettings.isEnabled) {
       console.log('[Rosary Native] Jumping audio to bead:', beadId);
-      await rosaryAudio.skipToBead(beadId);
+      await rosaryPlayer.skipToBead(beadId);
     }
   };
 
@@ -366,7 +304,7 @@ export default function RosaryScreen() {
     
     // Apply to current playback if audio is enabled
     if (audioSettings.isEnabled) {
-      await rosaryAudio.setSpeed(speed);
+      await rosaryPlayer.setSpeed(speed);
     }
     
     // Save to user preferences
@@ -427,28 +365,40 @@ export default function RosaryScreen() {
         return;
       }
       
-      // Enable audio and initialize queue
+      // Enable audio and start global rosary session
       try {
-        console.log('[Rosary] Initializing audio queue...');
-        setAudioSettings(prev => ({ ...prev, isEnabled: true }));
+        console.log('[Rosary] Starting global rosary session...');
+        setAudioSettings(prev => ({ ...prev, isEnabled: true, speed: playbackSpeed }));
         
-        // Build and load the full queue
-        await rosaryAudio.initializeQueue();
-        
-        // Apply current playback speed
-        await rosaryAudio.setSpeed(playbackSpeed);
-        
-        // Jump to current bead before starting playback
-        if (currentBeadId) {
-          console.log('[Rosary] Jumping to current bead:', currentBeadId);
-          await rosaryAudio.skipToBead(currentBeadId);
-        }
-        
-        // Start playback from current position
-        await rosaryAudio.play();
+        // Start rosary session in global context
+        await rosaryPlayer.startRosary(
+          selectedMystery,
+          rosaryForm,
+          beads,
+          rosaryVoice,
+          { ...audioSettings, isEnabled: true, speed: playbackSpeed },
+          showMysteryMeditations,
+          isLentSeason || false,
+          (beadId, trackIndex) => {
+            console.log('[Rosary] Track changed to bead:', beadId);
+            setCurrentBeadId(beadId);
+            
+            // Mark previous beads as complete
+            const beadIndex = beads.findIndex(b => b.id === beadId);
+            if (beadIndex >= 0) {
+              const completed = beads.slice(0, beadIndex).map(b => b.id);
+              setCompletedBeadIds(completed);
+            }
+          },
+          () => {
+            console.log('[Rosary] Queue complete - Rosary finished!');
+            setIsPraying(false);
+            setAudioSettings(prev => ({ ...prev, isEnabled: false }));
+          }
+        );
         
         setIsAudioPaused(false);
-        console.log('[Rosary] Audio queue initialized and playing from current bead');
+        console.log('[Rosary] Global rosary session started');
         
         // Check for failed audio files and log them
         const failedAudioFiles = await checkForFailedAudioFiles();
@@ -463,15 +413,17 @@ export default function RosaryScreen() {
       }
     } else if (isAudioPlaying && !isAudioPaused) {
       // Pause audio
-      await rosaryAudio.pause();
+      await rosaryPlayer.pause();
       setIsAudioPaused(true);
-    } else if (isAudioPaused) {
-      // Resume audio
-      await rosaryAudio.play();
+    } else if (isAudioPaused || (rosaryPlayer.isSessionActive && !rosaryPlayer.isPlaying)) {
+      // Resume audio (either from pause or after podcast took over)
+      console.log('[Rosary] Resuming rosary (paused or session active but not playing)');
+      await rosaryPlayer.resume();
       setIsAudioPaused(false);
     } else {
-      // Disable audio (when not currently playing)
-      await rosaryAudio.stop();
+      // Disable audio (when not currently playing and no active session)
+      console.log('[Rosary] Stopping rosary session (audio toggle off)');
+      await rosaryPlayer.stopRosary();
       setAudioSettings(prev => ({ ...prev, isEnabled: false }));
       setIsAudioPaused(false);
     }
@@ -481,11 +433,17 @@ export default function RosaryScreen() {
     return currentBeadId === beads[beads.length - 1]?.id;
   };
 
-  const completeRosary = () => {
+  const completeRosary = async () => {
     setCompletedBeadIds([...completedBeadIds, currentBeadId]);
     setIsPraying(false);
     setCurrentBeadId('');
     setCompletedBeadIds([]);
+    
+    // Stop global rosary session if active
+    if (audioSettings.isEnabled) {
+      await rosaryPlayer.stopRosary();
+    }
+    
     setAudioSettings(prev => ({ ...prev, isEnabled: false }));
     setIsAudioPaused(false);
   };
@@ -607,8 +565,8 @@ export default function RosaryScreen() {
           isEnabled={audioSettings.isEnabled}
           isPlaying={isAudioPlaying}
           isPaused={isAudioPaused}
-          isLoading={rosaryAudio.isLoading}
-          downloadProgress={rosaryAudio.downloadProgress}
+          isLoading={rosaryPlayer.isLoading}
+          downloadProgress={rosaryPlayer.downloadProgress}
           currentSpeed={playbackSpeed}
           onToggleAudio={handleAudioToggle}
           onSkipPrevious={previousBead}

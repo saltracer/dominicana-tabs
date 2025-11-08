@@ -20,7 +20,9 @@ import { parseISO, format } from 'date-fns';
 import { useIsMobile, useIsTablet } from '@/hooks/useMediaQuery';
 import { spacing } from '@/constants/Spacing';
 import PodcastMiniPlayer from './PodcastMiniPlayer.web';
+import RosaryMiniPlayer from './RosaryMiniPlayer.web';
 import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
+import { useRosaryPlayer } from '../contexts/RosaryPlayerContext';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
@@ -34,6 +36,11 @@ export default function FeastBanner({
   const { colorScheme } = useTheme();
   const { selectedDate, setSelectedDate } = useCalendar();
   const { currentEpisode, isPlaying, isPaused, isLoading, position, duration, seek } = usePodcastPlayer();
+  const { 
+    isPlaying: rosaryIsPlaying, 
+    isPaused: rosaryIsPaused,
+    isSessionActive: rosarySessionActive 
+  } = useRosaryPlayer();
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
@@ -43,8 +50,12 @@ export default function FeastBanner({
   const [touchEnd, setTouchEnd] = useState(0);
 
   // Determine if we should show the podcast player
-  // Show if there's a current episode and it's either playing, paused, or loading
-  const showPodcastPlayer = currentEpisode && (isPlaying || isPaused || isLoading);
+  // Show if there's a current episode (playing, paused, stopped, or loading)
+  const showPodcastPlayer = !!currentEpisode;
+  
+  // Determine if we should show the rosary player
+  // Show if there's an active session (playing, paused, or stopped)
+  const showRosaryPlayer = rosarySessionActive;
   
   // Debug logging
   console.log('[FeastBanner.web] Podcast player state:', {
@@ -323,6 +334,13 @@ export default function FeastBanner({
             </View>
           )}
           
+          {/* Rosary Player Section - Only on mobile when playing */}
+          {isMobile && showRosaryPlayer && carouselIndex === 3 && (
+            <View style={Object.assign({}, styles.rightSection, { flex: 1, alignItems: 'center' })}>
+              <RosaryMiniPlayer />
+            </View>
+          )}
+          
           {/* Feast Section - Hidden on mobile when carousel is on date view */}
           {primaryFeast && (!isMobile || carouselIndex === 1) && (
             <View style={Object.assign({}, styles.rightSection, isMobile ? { flex: 1, alignItems: 'center' } : {})}>
@@ -382,7 +400,7 @@ export default function FeastBanner({
         </View>
 
         {/* Mobile Carousel Indicators */}
-        {isMobile && (primaryFeast || showPodcastPlayer) && (
+        {isMobile && (primaryFeast || showPodcastPlayer || showRosaryPlayer) && (
           <View style={styles.carouselIndicators}>
             <TouchableOpacity
               style={Object.assign(
@@ -415,6 +433,18 @@ export default function FeastBanner({
                 )}
                 onPress={() => setCarouselIndex(2)}
                 accessibilityLabel="View podcast player"
+                accessibilityRole="button"
+              />
+            )}
+            {showRosaryPlayer && (
+              <TouchableOpacity
+                style={Object.assign(
+                  {},
+                  styles.carouselDot,
+                  carouselIndex === 3 ? { backgroundColor: Colors[colorScheme ?? 'light'].primary, width: 20 } : { backgroundColor: Colors[colorScheme ?? 'light'].border, width: 8 }
+                )}
+                onPress={() => setCarouselIndex(3)}
+                accessibilityLabel="View rosary player"
                 accessibilityRole="button"
               />
             )}

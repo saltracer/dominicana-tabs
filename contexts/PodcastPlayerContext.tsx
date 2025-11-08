@@ -97,6 +97,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const durationRef = useRef<number>(0);
   const progressRef = useRef<PodcastPlaybackProgress | null>(null);
   
+  // Preserve last known position when podcast was active (for resuming after rosary takeover)
+  const lastKnownPositionRef = useRef<number>(0);
+  
   // Track if we should check for completion (only after actually playing, not just loading)
   const hasStartedPlaybackRef = useRef<boolean>(false);
   
@@ -115,6 +118,24 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       }
     };
   }, []);
+  
+  // Listen for audio type changes and mark as paused if rosary takes over
+  useEffect(() => {
+    const checkInterval = setInterval(() => {
+      const activeType = AudioStateManager.getActiveAudioType();
+      
+      // If rosary becomes active while podcast is playing, mark as paused
+      // Don't call TrackPlayer methods because rosary owns it now
+      // Keep currentEpisode so mini player stays visible
+      if (activeType === 'rosary' && isPlaying && currentEpisode) {
+        console.log('[PodcastPlayerContext] Rosary took over TrackPlayer, marking podcast as paused');
+        // DON'T call pause() - it would pause the rosary track!
+        // The podcast state will naturally become paused when TrackPlayer is reset
+      }
+    }, 500);
+    
+    return () => clearInterval(checkInterval);
+  }, [isPlaying, currentEpisode]);
 
   // Load user preferences
   const loadPreferences = useCallback(async () => {
@@ -187,13 +208,21 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   // Update position/duration from TrackPlayer on native
   useEffect(() => {
     if (Platform.OS !== 'web' && trackPlayerProgress) {
-      setPosition(trackPlayerProgress.position);
-      setDuration(trackPlayerProgress.duration);
-      // Update refs too for intervals
-      positionRef.current = trackPlayerProgress.position;
-      durationRef.current = trackPlayerProgress.duration;
+      // IMPORTANT: Only update if podcast is active to avoid rosary progress affecting podcast
+      const activeType = AudioStateManager.getActiveAudioType();
+      if (activeType === 'podcast' && currentEpisode) {
+        setPosition(trackPlayerProgress.position);
+        setDuration(trackPlayerProgress.duration);
+        // Update refs too for intervals
+        positionRef.current = trackPlayerProgress.position;
+        durationRef.current = trackPlayerProgress.duration;
+        // Also update last known position when podcast is actually playing
+        if (isPlaying && trackPlayerProgress.position > 0) {
+          lastKnownPositionRef.current = trackPlayerProgress.position;
+        }
+      }
     }
-  }, [trackPlayerProgress]);
+  }, [trackPlayerProgress, currentEpisode, isPlaying]);
   
   // Keep refs in sync with state
   useEffect(() => {
@@ -209,8 +238,27 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     const setupTrackPlayerEvents = async () => {
       try {
         // Listen for play state changes
-        TrackPlayer.addEventListener('playback-state', (data: any) => {
+        TrackPlayer.addEventListener('playback-state', async (data: any) => {
           // console.log('[PodcastPlayerContext] TrackPlayer playback-state:', data);
+          // IMPORTANT: Only update state if podcast is active
+          const activeType = AudioStateManager.getActiveAudioType();
+          if (activeType !== 'podcast') {
+            // Ignore playback state changes when podcast is not active
+            return;
+          }
+          
+          // Also check if we actually have a track loaded
+          try {
+            const queue = await TrackPlayer.getQueue();
+            if (queue.length === 0) {
+              // No tracks loaded yet, ignore this event
+              return;
+            }
+          } catch (e) {
+            // TrackPlayer not ready, ignore
+            return;
+          }
+          
           if (data.state === 'playing') {
             setIsPlaying(true);
             setIsPaused(false);
@@ -226,11 +274,23 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         // Listen for track changes
         TrackPlayer.addEventListener('playback-track-changed', (data: any) => {
           // console.log('[PodcastPlayerContext] TrackPlayer track-changed:', data);
+          // IMPORTANT: Only handle if podcast is active
+          const activeType = AudioStateManager.getActiveAudioType();
+          if (activeType !== 'podcast') {
+            return;
+          }
         });
 
         // Listen for playback queue ended (episode finished)
         TrackPlayer.addEventListener('playback-queue-ended', async (data: any) => {
           console.log('[PodcastPlayerContext] TrackPlayer playback-queue-ended:', data);
+          // IMPORTANT: Only handle if podcast is active
+          const activeType = AudioStateManager.getActiveAudioType();
+          if (activeType !== 'podcast') {
+            console.log('[PodcastPlayerContext] Ignoring queue-ended (not podcast audio)');
+            return;
+          }
+          
           setIsPlaying(false);
           if (markCompletedRef.current) await markCompletedRef.current();
           // Auto-play next episode if available
@@ -646,7 +706,12 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         });
         
         newAudio.addEventListener('timeupdate', () => {
-          setPosition(newAudio.currentTime);
+          const currentTime = newAudio.currentTime;
+          setPosition(currentTime);
+          // Update last known position for resume after interruption
+          if (currentTime > 0) {
+            lastKnownPositionRef.current = currentTime;
+          }
         });
         
         newAudio.addEventListener('ended', async () => {
@@ -674,6 +739,8 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           console.log('[PodcastPlayerContext] Audio play successful');
           setIsPlaying(true);
           setIsPaused(false);
+          // Set podcast as active audio type (will trigger rosary to pause)
+          AudioStateManager.setActiveAudioType('podcast');
         } catch (playError) {
           console.log('[PodcastPlayerContext] Autoplay prevented:', playError);
           // Even if autoplay fails, we should show the mini player
@@ -829,7 +896,13 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   }, [audio, markPlayed, getDownloadedEpisodePath, currentEpisode, user, duration, position, progress?.played, playbackContext]);
 
   const pause = useCallback(async () => {
-    console.log('[PodcastPlayerContext] pause called');
+    console.log('[PodcastPlayerContext] pause called, position:', position);
+    
+    // Save last known position when pausing
+    if (position > 0) {
+      lastKnownPositionRef.current = position;
+      console.log('[PodcastPlayerContext] Saved last known position on pause:', position);
+    }
     
     // Save progress when pausing
     if (currentEpisode && user && duration > 0) {
@@ -872,23 +945,86 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   }, [pause]);
 
   const resume = useCallback(async () => {
-    console.log('[PodcastPlayerContext] resume called');
+    console.log('[PodcastPlayerContext] resume called, currentEpisode:', currentEpisode?.title, 'position:', position);
     if (Platform.OS === 'web') {
       if (audio) {
+        // Restore position from last known position if current position is 0 but we have a saved position
+        if (audio.currentTime === 0 && lastKnownPositionRef.current > 0) {
+          console.log('[PodcastPlayerContext] Web: Restoring position from', lastKnownPositionRef.current);
+          audio.currentTime = lastKnownPositionRef.current;
+        }
         await audio.play();
         setIsPlaying(true);
         setIsPaused(false);
+        // Set podcast as active audio type (will trigger rosary to pause)
+        AudioStateManager.setActiveAudioType('podcast');
       }
     } else {
-      if (TrackPlayer) {
+      if (TrackPlayer && currentEpisode) {
+        // Check if we need to reclaim TrackPlayer from rosary
+        const activeType = AudioStateManager.getActiveAudioType();
+        console.log('[PodcastPlayerContext] Current active audio type:', activeType);
+        
+        if (activeType === 'rosary') {
+          console.log('[PodcastPlayerContext] Reclaiming TrackPlayer from rosary');
+          
+          // IMPORTANT: Use last known position when podcast was active
+          // Don't use current position/positionRef as they may have been reset to 0
+          const savedPosition = lastKnownPositionRef.current;
+          console.log('[PodcastPlayerContext] Using last known position:', savedPosition);
+          console.log('[PodcastPlayerContext] Current position ref:', positionRef.current);
+          console.log('[PodcastPlayerContext] Current position state:', position);
+          
+          // Stop and reset TrackPlayer
+          await TrackPlayer.stop();
+          await TrackPlayer.reset();
+          
+          // Re-add the podcast track
+          const downloadedPath = await getDownloadedEpisodePath(currentEpisode.id);
+          const audioUrl = downloadedPath || currentEpisode.audioUrl;
+          
+          // Cache artwork
+          let artworkPath: string | number = DEFAULT_ARTWORK;
+          if (currentEpisode.artworkUrl) {
+            try {
+              const { path } = await ensureImageCached(currentEpisode.artworkUrl);
+              const fileInfo = await FileSystem.getInfoAsync(path);
+              if (fileInfo.exists && fileInfo.size && fileInfo.size > 0) {
+                artworkPath = path.startsWith('file://') ? path : `file://${path}`;
+              }
+            } catch (e) {
+              console.warn('[PodcastPlayerContext] Failed to cache artwork on resume');
+              artworkPath = DEFAULT_ARTWORK;
+            }
+          }
+          
+          await TrackPlayer.add({
+            id: currentEpisode.id,
+            url: audioUrl,
+            title: currentEpisode.title,
+            artist: 'Podcast',
+            artwork: artworkPath,
+            duration: currentEpisode.duration,
+          });
+          
+          // Seek to saved position (use ref value, not state)
+          console.log('[PodcastPlayerContext] Seeking to saved position:', savedPosition);
+          if (savedPosition > 0) {
+            await TrackPlayer.seekTo(savedPosition);
+            console.log('[PodcastPlayerContext] Seeked to:', savedPosition);
+          }
+        }
+        
         await TrackPlayer.play();
         setIsPlaying(true);
         setIsPaused(false);
+        // Set podcast as active audio type (will trigger rosary to pause)
+        AudioStateManager.setActiveAudioType('podcast');
         // Refresh metadata after resume
         await updateTrackMetadata();
       }
     }
-  }, [audio, updateTrackMetadata]);
+  }, [audio, currentEpisode, updateTrackMetadata, getDownloadedEpisodePath]);
   
   // Update ref when resume changes
   useEffect(() => {
