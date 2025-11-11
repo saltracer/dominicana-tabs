@@ -336,16 +336,30 @@ export default function FeastBanner({
             </View>
           )}
           
-          {/* Podcast Player Section - Only on mobile when playing */}
+          {/* Podcast Player Section - Mobile: carousel view, Desktop: always visible in right section */}
           {isMobile && showPodcastPlayer && carouselIndex === 2 && (
             <View style={Object.assign({}, styles.rightSection, { flex: 1, alignItems: 'center' })}>
               <PodcastMiniPlayer />
             </View>
           )}
           
-          {/* Rosary Player Section - Only on mobile when playing */}
+          {/* Desktop/Tablet Podcast Player - Always visible when playing */}
+          {!isMobile && showPodcastPlayer && (
+            <View style={styles.desktopPlayerSection}>
+              <PodcastMiniPlayer />
+            </View>
+          )}
+          
+          {/* Rosary Player Section - Mobile: carousel view, Desktop: always visible */}
           {isMobile && showRosaryPlayer && carouselIndex === 3 && (
             <View style={Object.assign({}, styles.rightSection, { flex: 1, alignItems: 'center' })}>
+              <RosaryMiniPlayer />
+            </View>
+          )}
+          
+          {/* Desktop/Tablet Rosary Player - Always visible when playing */}
+          {!isMobile && showRosaryPlayer && (
+            <View style={styles.desktopPlayerSection}>
               <RosaryMiniPlayer />
             </View>
           )}
@@ -789,6 +803,12 @@ const styles = StyleSheet.create({
     flex: 'none',
     alignItems: 'center',
     width: '100%',
+  },
+  desktopPlayerSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    paddingHorizontal: spacing.md,
   },
   navButton: {
     padding: spacing.sm,
