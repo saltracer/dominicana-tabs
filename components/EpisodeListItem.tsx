@@ -157,12 +157,6 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
     deleteDownloadedEpisode 
   } = effectiveDownloadHooks || localDownloadHooks;
   
-  // Log when using shared hooks vs local hooks
-  if (__DEV__ && effectiveDownloadHooks) {
-    // Using shared hooks - good! No duplicate initialization
-  } else if (__DEV__) {
-    // Using local hooks - this item is calling its own hooks
-  }
 
   const [artPath, setArtPath] = useState<string | null>(artworkLocalPath || null);
   useEffect(() => {
@@ -224,28 +218,13 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   const isDownloaded = isEpisodeDownloaded(episode.id);
   const downloadState = getDownloadState(episode.id);
   
+  
   // Check if download is in queue or downloading
   const isInQueue = downloadState.status === 'pending';
   const isDownloading = downloadState.status === 'downloading';
   const isPausedDownload = downloadState.status === 'paused';
   const hasDownloadError = downloadState.status === 'error' || downloadState.status === 'failed';
   
-  // Debug logging for ALL download states (temporary for debugging)
-  if (__DEV__) {
-    const titleShort = episode.title.substring(0, 40);
-    if (isDownloading || isInQueue || isPausedDownload || hasDownloadError) {
-      console.log('[EpisodeListItem] ACTIVE Download state for', titleShort, ':', {
-        episodeId: episode.id,
-        status: downloadState.status,
-        progress: downloadState.progress,
-        isDownloading,
-        isInQueue,
-        isPausedDownload,
-        hasDownloadError,
-        queueItem: downloadState.queueItem ? 'present' : 'none'
-      });
-    }
-  }
   
   // Get status icon for download state
   const getDownloadStatusIcon = () => {

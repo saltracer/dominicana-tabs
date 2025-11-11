@@ -42,10 +42,14 @@ export class DownloadStatusCache {
     });
 
     // Add/update queue items
+    // IMPORTANT: Only mark as downloaded if the file actually exists (i.e., was in downloadedEpisodes)
+    // Don't trust queue status alone - files may have been deleted
     queueItems.forEach(item => {
       const existing = this.cache.get(item.episodeId);
       this.cache.set(item.episodeId, {
-        isDownloaded: existing?.isDownloaded || item.status === 'completed',
+        // Only preserve isDownloaded if it was already set from downloadedEpisodes
+        // Queue status 'completed' alone doesn't mean the file exists
+        isDownloaded: existing?.isDownloaded || false,
         queueItem: item,
         localPath: existing?.localPath || null,
         status: item.status,
@@ -67,7 +71,9 @@ export class DownloadStatusCache {
    */
   static get(episodeId: string): DownloadStatus {
     const cached = this.cache.get(episodeId);
-    if (cached) return cached;
+    if (cached) {
+      return cached;
+    }
 
     // Return default status if not in cache
     return {
@@ -107,35 +113,29 @@ export class DownloadStatusCache {
 
     this.cache.set(episodeId, updated);
     this.notifyListeners(episodeId, updated);
-
-    if (__DEV__) {
-      console.log(`[DownloadStatusCache] Marked ${episodeId} as downloaded`);
-    }
   }
 
   /**
    * Update queue item status
    */
   static updateQueueItem(queueItem: QueueItem): void {
-    if (__DEV__) {
-      console.log('[DownloadStatusCache] updateQueueItem called for:', queueItem.episodeId, 'status:', queueItem.status, 'progress:', queueItem.progress);
-    }
-    
     const existing = this.cache.get(queueItem.episodeId);
+    
+    // CRITICAL: Only preserve isDownloaded if already true, never set it based on queue status
+    // The ONLY way to mark as downloaded is via markDownloaded() which verifies the file exists
+    // Queue status 'completed' alone is NOT reliable (files may have been deleted)
+    const isDownloaded = existing?.isDownloaded === true;
+    const localPath = existing?.localPath || null;
+    
     const updated: DownloadStatus = {
-      isDownloaded: existing?.isDownloaded || queueItem.status === 'completed',
+      isDownloaded,
       queueItem,
-      localPath: existing?.localPath || null,
+      localPath,
       status: queueItem.status,
       progress: queueItem.progress,
     };
 
     this.cache.set(queueItem.episodeId, updated);
-    
-    if (__DEV__) {
-      console.log('[DownloadStatusCache] About to notify listeners, listener count:', this.listeners.size);
-    }
-    
     this.notifyListeners(queueItem.episodeId, updated);
   }
 
@@ -226,15 +226,8 @@ export class DownloadStatusCache {
    * Notify all listeners of a status change
    */
   private static notifyListeners(episodeId: string, status: DownloadStatus): void {
-    if (__DEV__) {
-      console.log('[DownloadStatusCache] notifyListeners called for:', episodeId, 'with', this.listeners.size, 'listeners');
-    }
-    
     this.listeners.forEach(listener => {
       try {
-        if (__DEV__) {
-          console.log('[DownloadStatusCache] Calling listener for episode:', episodeId);
-        }
         listener(episodeId, status);
       } catch (error) {
         console.error('[DownloadStatusCache] Listener error:', error);

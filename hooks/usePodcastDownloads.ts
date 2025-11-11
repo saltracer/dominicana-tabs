@@ -86,6 +86,21 @@ export function usePodcastDownloads() {
       }
       let mounted = true;
       
+      // Initialize cache if not already done (async, non-blocking)
+      if (!DownloadStatusCache.isInitialized()) {
+        (async () => {
+          const downloads = await PodcastDownloadService.getDownloadedEpisodes();
+          const queueState = await PodcastDownloadQueueService.getQueueState();
+          await DownloadStatusCache.initialize(downloads, queueState.items);
+          if (__DEV__) {
+            console.log('[usePodcastDownloads] ✅ Initialized DownloadStatusCache (late init)');
+          }
+          if (mounted) {
+            setCacheVersion(prev => prev + 1);
+          }
+        })();
+      }
+      
       // Still need to subscribe to changes
       const unsubscribe = PodcastDownloadQueueService.subscribe((state) => {
         if (!mounted) return;
@@ -112,9 +127,28 @@ export function usePodcastDownloads() {
 
     console.log('[usePodcastDownloads] Initializing queue service');
     let mounted = true;
+    let cacheInitialized = false;
 
     // Initialize queue service and mark as initialized
-    PodcastDownloadQueueService.initialize(user?.id).catch(console.error);
+    PodcastDownloadQueueService.initialize(user?.id).then(async () => {
+      if (!mounted) return;
+      
+      // Initialize DownloadStatusCache with downloaded episodes and queue items
+      if (!cacheInitialized) {
+        const downloads = await PodcastDownloadService.getDownloadedEpisodes();
+        const queueState = await PodcastDownloadQueueService.getQueueState();
+        
+        await DownloadStatusCache.initialize(downloads, queueState.items);
+        cacheInitialized = true;
+        
+        if (__DEV__) {
+          console.log('[usePodcastDownloads] ✅ Initialized DownloadStatusCache with', downloads.length, 'downloads and', queueState.items.length, 'queue items');
+        }
+        
+        // Trigger a cache version update to refresh components
+        setCacheVersion(prev => prev + 1);
+      }
+    }).catch(console.error);
     (PodcastDownloadQueueService as any)._isInitialized = true;
 
     // Subscribe to queue state changes
@@ -161,16 +195,18 @@ export function usePodcastDownloads() {
   }, [user?.id, useQueue, hasSharedDownloadHooks]);
 
   // Subscribe to DownloadStatusCache changes to trigger re-renders
+  // IMPORTANT: Must run even when using shared hooks, because the shared hooks instance
+  // needs to notify its consumers (playlist screens) when downloads complete!
   useEffect(() => {
-    if (hasSharedDownloadHooks || Platform.OS === 'web') {
+    if (Platform.OS === 'web') {
       if (__DEV__) {
-        console.log('[usePodcastDownloads] Skipping DownloadStatusCache subscription (hasSharedDownloadHooks:', hasSharedDownloadHooks, 'web:', Platform.OS === 'web', ')');
+        console.log('[usePodcastDownloads] Skipping DownloadStatusCache subscription (web platform)');
       }
       return;
     }
     
     if (__DEV__) {
-      console.log('[usePodcastDownloads] Subscribing to DownloadStatusCache');
+      console.log('[usePodcastDownloads] ✅ Subscribing to DownloadStatusCache (hasSharedDownloadHooks:', hasSharedDownloadHooks, ')');
     }
     
     const unsubscribe = DownloadStatusCache.subscribe((episodeId, status) => {
@@ -191,7 +227,7 @@ export function usePodcastDownloads() {
       }
       unsubscribe();
     };
-  }, [hasSharedDownloadHooks]);
+  }, []); // No dependencies - subscribe once and stay subscribed
   
   // Initialize
   useEffect(() => {
