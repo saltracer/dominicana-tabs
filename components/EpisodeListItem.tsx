@@ -73,7 +73,6 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
       return episode.title;
     }
   }, [episode.title]);
-  const [cacheDownloaded, setCacheDownloaded] = useState<boolean>(false);
   const [playedStatus, setPlayedStatus] = useState<{ played: boolean; position: number } | null>(null);
 
   // Memoize theme-dependent styles
@@ -222,8 +221,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   }, [showArtwork, episode.artworkUrl, episode.podcastId, artworkLocalPath]);
 
   // Download state and handlers (with queue support)
-  const isDownloadedMeta = isEpisodeDownloaded(episode.id);
-  const isDownloaded = cacheDownloaded || isDownloadedMeta;
+  const isDownloaded = isEpisodeDownloaded(episode.id);
   const downloadState = getDownloadState(episode.id);
   
   // Check if download is in queue or downloading
@@ -260,33 +258,6 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   };
   
   const statusIcon = getDownloadStatusIcon();
-
-  // Fast cache-based detection so the button reflects state before metadata loads
-  useEffect(() => {
-    let cancelled = false;
-    const check = async () => {
-      try {
-        // First, check download metadata directly for this episode id
-        const directPath = await PodcastDownloadService.getDownloadedEpisodePath(episode.id);
-        if (directPath) {
-          if (!cancelled) setCacheDownloaded(true);
-          return;
-        }
-
-        const map = await getEpisodesMap(episode.podcastId);
-        // match by guid or audioUrl
-        const entry = Object.values(map).find(e => (e.guid && e.guid === episode.guid) || e.audioUrl === episode.audioUrl);
-        if (entry && entry.localAudioPath) {
-          const exists = await fileExists(entry.localAudioPath);
-          if (!cancelled) setCacheDownloaded(!!exists);
-          return;
-        }
-      } catch {}
-      if (!cancelled) setCacheDownloaded(false);
-    };
-    check();
-    return () => { cancelled = true; };
-  }, [episode.id, episode.podcastId, episode.guid, episode.audioUrl]);
 
   const handleDownload = async () => {
     if (isDownloaded) {

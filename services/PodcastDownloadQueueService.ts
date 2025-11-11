@@ -212,32 +212,38 @@ export class PodcastDownloadQueueService {
 
     const state = await this.getQueueState();
     
-    // Check if already in queue or downloaded
+    // Also check if episode is already downloaded (not just in queue)
+    const { PodcastDownloadService } = require('./PodcastDownloadService');
+    const isAlreadyDownloaded = await PodcastDownloadService.isEpisodeDownloaded(episode.id);
+    
+    // Check if already in queue
     const existingItem = state.items.find(item => item.episodeId === episode.id);
     if (existingItem) {
       console.log('[DownloadQueue] Episode already in queue, status:', existingItem.status);
       if (existingItem.status === 'completed') {
-        console.log('[DownloadQueue] Episode already downloaded, cleaning up from queue');
-        // Remove completed item from queue and return success
-        // (They can see it in the Downloaded playlist)
-        await this.removeFromQueue(existingItem.id);
-        // Don't throw error - just return the item as if it was added
-        return existingItem;
-      }
-      if (existingItem.status === 'downloading' || existingItem.status === 'pending') {
+        // Check if file actually exists
+        if (isAlreadyDownloaded) {
+          console.log('[DownloadQueue] Episode already downloaded, cleaning up from queue');
+          // Remove completed item from queue and return success
+          await this.removeFromQueue(existingItem.id);
+          return existingItem;
+        } else {
+          console.log('[DownloadQueue] ⚠️  Episode marked completed but file missing, removing stale queue item');
+          // File was deleted, remove stale queue item and continue to re-download
+          await this.removeFromQueue(existingItem.id);
+          // Fall through to create new download
+        }
+      } else if (existingItem.status === 'downloading' || existingItem.status === 'pending') {
         console.log('[DownloadQueue] Episode already in queue with status:', existingItem.status);
         // Don't throw error - just return the existing item
         return existingItem;
+      } else {
+        // If failed or paused, we can re-add it
+        console.log('[DownloadQueue] Reusing existing failed/paused item');
+        return existingItem;
       }
-      // If failed or paused, we can re-add it
-      console.log('[DownloadQueue] Reusing existing failed/paused item');
-      return existingItem;
-    }
-
-    // Also check if episode is already downloaded (not just in queue)
-    const { PodcastDownloadService } = require('./PodcastDownloadService');
-    const isAlreadyDownloaded = await PodcastDownloadService.isEpisodeDownloaded(episode.id);
-    if (isAlreadyDownloaded) {
+    } else if (isAlreadyDownloaded) {
+      // Not in queue but file exists
       console.log('[DownloadQueue] ✅ Episode already downloaded, skipping queue add');
       // Return a fake queue item so caller knows it succeeded
       return {

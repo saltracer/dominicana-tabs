@@ -223,7 +223,7 @@ export function usePodcastDownloads() {
       return DownloadStatusCache.isDownloaded(episodeId);
     }
     return downloadedEpisodes.some(ep => ep.episodeId === episodeId);
-  }, [downloadedEpisodes]);
+  }, [downloadedEpisodes, cacheVersion]); // Add cacheVersion to force updates
 
   // Get download state for episode
   const getDownloadState = useCallback((episodeId: string): DownloadState => {
