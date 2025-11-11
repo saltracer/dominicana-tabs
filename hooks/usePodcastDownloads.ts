@@ -195,39 +195,26 @@ export function usePodcastDownloads() {
   }, [user?.id, useQueue, hasSharedDownloadHooks]);
 
   // Subscribe to DownloadStatusCache changes to trigger re-renders
-  // IMPORTANT: Must run even when using shared hooks, because the shared hooks instance
-  // needs to notify its consumers (playlist screens) when downloads complete!
+  // Only subscribe if this hook instance will actually be used (not shadowed by shared hooks)
   useEffect(() => {
     if (Platform.OS === 'web') {
-      if (__DEV__) {
-        console.log('[usePodcastDownloads] Skipping DownloadStatusCache subscription (web platform)');
-      }
       return;
     }
     
-    if (__DEV__) {
-      console.log('[usePodcastDownloads] ✅ Subscribing to DownloadStatusCache (hasSharedDownloadHooks:', hasSharedDownloadHooks, ')');
+    // If shared hooks are available, skip subscription (the shared instance will handle it)
+    if (hasSharedDownloadHooks) {
+      return;
     }
     
     const unsubscribe = DownloadStatusCache.subscribe((episodeId, status) => {
-      if (__DEV__) {
-        console.log('[usePodcastDownloads] DownloadStatusCache updated for episode:', episodeId, 'status:', status?.status, 'progress:', status?.progress);
-      }
       // Increment cache version to force components to re-render
       setCacheVersion(prev => prev + 1);
     });
     
-    if (__DEV__) {
-      console.log('[usePodcastDownloads] Successfully subscribed to DownloadStatusCache');
-    }
-    
     return () => {
-      if (__DEV__) {
-        console.log('[usePodcastDownloads] Unsubscribing from DownloadStatusCache');
-      }
       unsubscribe();
     };
-  }, []); // No dependencies - subscribe once and stay subscribed
+  }, [hasSharedDownloadHooks]); // Re-subscribe if shared hooks availability changes
   
   // Initialize
   useEffect(() => {

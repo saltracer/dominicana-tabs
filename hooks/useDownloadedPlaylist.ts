@@ -58,7 +58,6 @@ export function useDownloadedPlaylist() {
           queueItems = queueState.items.filter(
             item => item.status !== 'completed' // Don't duplicate completed items
           );
-          if (__DEV__) console.log('[useDownloadedPlaylist] found', queueItems.length, 'queue items');
         } catch (err) {
           if (__DEV__) console.warn('[useDownloadedPlaylist] error loading queue:', err);
         }
@@ -179,7 +178,6 @@ export function useDownloadedPlaylist() {
         // Use episodeId for deduplication (more stable than synthetic id)
         const key = item.episodeId || item.id;
         if (seen.has(key)) {
-          if (__DEV__) console.warn('[useDownloadedPlaylist] 🗑️ Skipping duplicate:', item.title?.substring(0, 50));
           return false;
         }
         seen.add(key);
@@ -199,7 +197,6 @@ export function useDownloadedPlaylist() {
       const customOrder = await DownloadedPlaylistOrdering.getOrder();
       const ordered = DownloadedPlaylistOrdering.applyOrder(deduplicated, customOrder);
       
-      if (__DEV__) console.log('[useDownloadedPlaylist] returning', ordered.length, 'total items (', results.length - deduplicated.length, 'duplicates removed)');
       if (alive.current) setItems(ordered);
     } catch (err) {
       console.error('[useDownloadedPlaylist] error:', err);
@@ -219,7 +216,6 @@ export function useDownloadedPlaylist() {
     if (Platform.OS === 'web') return;
     
     const unsubscribe = PodcastDownloadQueueService.subscribe((state) => {
-      if (__DEV__) console.log('[useDownloadedPlaylist] Queue state changed, refreshing...');
       refetch();
     });
 

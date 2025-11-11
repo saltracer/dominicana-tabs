@@ -118,6 +118,14 @@ export default function PlaylistDetailScreen() {
     }, []) // Empty deps - only runs once per mount/unmount
   );
 
+  // Sync local items state with hookItems when they change (e.g., after removeItem)
+  useEffect(() => {
+    if (!isDownloaded) {
+      // For regular playlists, keep local state in sync with hook updates
+      setItems(hookItems);
+    }
+  }, [hookItems, isDownloaded]);
+
   // Load artwork and duration for downloaded items
   useEffect(() => {
     let alive = true;

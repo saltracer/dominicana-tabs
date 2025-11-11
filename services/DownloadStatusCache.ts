@@ -145,25 +145,30 @@ export class DownloadStatusCache {
   static markDeleted(episodeId: string): void {
     const existing = this.cache.get(episodeId);
     
-    // If there's a queue item, keep it but mark as not downloaded
+    // If there's a queue item, decide what to do based on its status
     if (existing?.queueItem) {
-      const updated: DownloadStatus = {
-        isDownloaded: false,
-        queueItem: existing.queueItem,
-        localPath: null,
-        status: existing.queueItem.status,
-        progress: existing.queueItem.progress,
-      };
-      this.cache.set(episodeId, updated);
-      this.notifyListeners(episodeId, updated);
+      // If the queue item is "completed", it's now stale (file is gone) - remove it
+      // If it's actively downloading/pending/paused, keep the queue item but mark as not downloaded
+      if (existing.queueItem.status === 'completed') {
+        // Stale completed entry - remove entirely
+        this.cache.delete(episodeId);
+        this.notifyListeners(episodeId, this.get(episodeId));
+      } else {
+        // Active/pending/paused download - keep queue item but mark as not downloaded
+        const updated: DownloadStatus = {
+          isDownloaded: false,
+          queueItem: existing.queueItem,
+          localPath: null,
+          status: existing.queueItem.status,
+          progress: existing.queueItem.progress,
+        };
+        this.cache.set(episodeId, updated);
+        this.notifyListeners(episodeId, updated);
+      }
     } else {
       // No queue item, remove from cache entirely
       this.cache.delete(episodeId);
       this.notifyListeners(episodeId, this.get(episodeId));
-    }
-
-    if (__DEV__) {
-      console.log(`[DownloadStatusCache] Marked ${episodeId} as deleted`);
     }
   }
 

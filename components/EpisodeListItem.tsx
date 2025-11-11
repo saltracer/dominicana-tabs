@@ -482,9 +482,6 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
           </View>
           <View style={styles.actions}>
             {(() => {
-              if (isDownloading && __DEV__) {
-                console.log('[EpisodeListItem] Rendering progress circle, progress:', downloadState.progress);
-              }
               return isDownloading ? (
               <View style={styles.progressCircle}>
                 <Svg width={44} height={44} viewBox="0 0 44 44">

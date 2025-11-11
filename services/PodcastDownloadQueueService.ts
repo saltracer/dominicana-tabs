@@ -59,6 +59,9 @@ export class PodcastDownloadQueueService {
       return;
     }
 
+    // Clean up stale queue entries (duplicates, old completed items)
+    await this.cleanupQueue();
+    
     // Set up network monitoring
     this.setupNetworkMonitoring(userId);
     
@@ -158,15 +161,8 @@ export class PodcastDownloadQueueService {
       state.lastUpdated = new Date().toISOString();
       await AsyncStorage.setItem(this.QUEUE_KEY, JSON.stringify(state));
       
-      if (__DEV__) {
-        console.log('[DownloadQueue] Saving queue state with', state.items.length, 'items');
-      }
-      
       // Update download status cache with current queue state
       state.items.forEach(item => {
-        if (__DEV__) {
-          console.log('[DownloadQueue] Updating cache for episode:', item.episode.title.substring(0, 40), 'status:', item.status, 'progress:', item.progress);
-        }
         DownloadStatusCache.updateQueueItem(item);
         
         // Also update episode metadata cache
@@ -176,10 +172,6 @@ export class PodcastDownloadQueueService {
           queuePosition: state.items.findIndex(i => i.id === item.id),
         });
       });
-      
-      if (__DEV__) {
-        console.log('[DownloadQueue] About to notify listeners, items:', state.items.map(i => ({ id: i.episodeId, status: i.status })));
-      }
       
       await this.notifyListeners();
     } catch (error) {
@@ -397,6 +389,86 @@ export class PodcastDownloadQueueService {
   }
 
   /**
+   * Clean up stale queue entries (duplicates and old completed items)
+   * Should be called during initialization
+   */
+  private static async cleanupQueue(): Promise<void> {
+    try {
+      const state = await this.getQueueState();
+      const originalCount = state.items.length;
+      
+      if (originalCount === 0) {
+        return;
+      }
+      
+      // Step 1: Remove duplicates (keep most recent entry for each episode)
+      // Use a Map to track the newest item for each episodeId
+      const episodeMap = new Map<string, QueueItem>();
+      
+      for (const item of state.items) {
+        const existing = episodeMap.get(item.episodeId);
+        if (!existing) {
+          episodeMap.set(item.episodeId, item);
+        } else {
+          // Keep the item with the most recent addedAt timestamp
+          const existingTime = new Date(existing.addedAt).getTime();
+          const currentTime = new Date(item.addedAt).getTime();
+          if (currentTime > existingTime) {
+            episodeMap.set(item.episodeId, item);
+          }
+        }
+      }
+      
+      // Step 2: Filter out completed items that don't have actual files
+      // Only keep completed items that are truly downloaded
+      const cleanedItems: QueueItem[] = [];
+      
+      for (const item of episodeMap.values()) {
+        // Keep non-completed items (pending, downloading, paused, failed)
+        if (item.status !== 'completed') {
+          cleanedItems.push(item);
+          continue;
+        }
+        
+        // For completed items, verify the file exists
+        try {
+          const filePath = await PodcastDownloadService.getEpisodeLocalPath(item.episodeId);
+          if (filePath) {
+            // File exists, keep the item
+            cleanedItems.push(item);
+          } else {
+            // File doesn't exist, remove this stale entry
+            if (__DEV__) {
+              console.log('[DownloadQueue] 🗑️  Removing stale completed item (file missing):', item.episode.title.substring(0, 40));
+            }
+          }
+        } catch (error) {
+          // Error checking file, remove to be safe
+          if (__DEV__) {
+            console.log('[DownloadQueue] 🗑️  Removing problematic item:', item.episode.title.substring(0, 40), error);
+          }
+        }
+      }
+      
+      state.items = cleanedItems;
+      
+      // Step 3: Clear active downloads list if any items in it aren't actually downloading
+      state.activeDownloads = state.activeDownloads.filter(episodeId => 
+        cleanedItems.some(item => item.episodeId === episodeId && item.status === 'downloading')
+      );
+      
+      if (originalCount !== cleanedItems.length) {
+        await this.saveQueueState(state);
+        if (__DEV__) {
+          console.log(`[DownloadQueue] 🧹 Cleaned queue: ${originalCount} → ${cleanedItems.length} items (removed ${originalCount - cleanedItems.length} stale/duplicate entries)`);
+        }
+      }
+    } catch (error) {
+      console.error('[DownloadQueue] Error cleaning up queue:', error);
+    }
+  }
+
+  /**
    * Process the download queue
    */
   private static async processQueue(): Promise<void> {
@@ -472,7 +544,6 @@ export class PodcastDownloadQueueService {
         item.episode,
         (progress: DownloadProgress) => {
           // Update progress
-          console.log('[DownloadQueue] 📊 Progress:', progress.progress, '%');
           this.updateProgress(item.id, progress).catch(console.error);
         }
       );
