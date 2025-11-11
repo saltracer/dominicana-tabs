@@ -21,7 +21,7 @@ export function usePlaylistItems(playlistId?: string) {
         const loadStart = Date.now();
         setLoading(true);
         
-        // Load from cache first
+        // Load from cache first (fast initial render)
         const cached = await getCachedItems(playlistId);
         if (__DEV__) console.log('[usePlaylistItems] Loaded', cached.length, 'items from cache in', Date.now() - loadStart, 'ms');
         if (isMounted && cached.length) setItems(cached);
@@ -31,17 +31,12 @@ export function usePlaylistItems(playlistId?: string) {
         await syncUp(userId);
         if (__DEV__) console.log('[usePlaylistItems] syncUp completed in', Date.now() - syncUpStart, 'ms');
         
-        // Only do full syncDown if cache was empty (first load)
-        // Skip DB refresh if we have cached data (it's already fresh from optimistic updates)
-        if (cached.length === 0) {
-          if (__DEV__) console.log('[usePlaylistItems] Cache empty, doing full syncDown');
-          const syncDownStart = Date.now();
-          await syncDown(userId);
-          if (__DEV__) console.log('[usePlaylistItems] syncDown completed in', Date.now() - syncDownStart, 'ms');
-        } else {
-          // Cache hit - use cached data (already synchronized via optimistic updates)
-          if (__DEV__) console.log('[usePlaylistItems] ✅ Cache hit, using cached data (skipping DB refresh)');
-        }
+        // Always sync down to get latest from Supabase (ensures cross-device consistency)
+        // This is essential for multi-device sync - device 2 needs to see device 1's changes
+        if (__DEV__) console.log('[usePlaylistItems] Syncing down from Supabase...');
+        const syncDownStart = Date.now();
+        await syncDown(userId);
+        if (__DEV__) console.log('[usePlaylistItems] syncDown completed in', Date.now() - syncDownStart, 'ms');
         
         const fresh = await getCachedItems(playlistId);
         if (isMounted) setItems(fresh);

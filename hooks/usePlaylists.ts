@@ -93,7 +93,7 @@ export function usePlaylists() {
         const loadStart = Date.now();
         setLoading(true);
         
-        // Cache-first
+        // Load from cache first (fast initial render)
         const cached = await getCachedPlaylists(userId);
         if (__DEV__) console.log('[usePlaylists] Loaded', cached.length, 'playlists from cache in', Date.now() - loadStart, 'ms');
         if (isMounted && cached.length) setPlaylists(cached);
@@ -103,17 +103,11 @@ export function usePlaylists() {
         await syncUp(userId);
         if (__DEV__) console.log('[usePlaylists] syncUp completed in', Date.now() - syncUpStart, 'ms');
         
-        // Only do full syncDown if cache was empty (first load)
-        // Skip DB refresh if we have cached data (it's already fresh from optimistic updates)
-        if (cached.length === 0) {
-          if (__DEV__) console.log('[usePlaylists] Cache empty, doing full syncDown');
-          const syncDownStart = Date.now();
-          await syncDown(userId);
-          if (__DEV__) console.log('[usePlaylists] syncDown completed in', Date.now() - syncDownStart, 'ms');
-        } else {
-          // Cache hit - use cached data (already synchronized via optimistic updates)
-          if (__DEV__) console.log('[usePlaylists] ✅ Cache hit, using cached data (skipping DB refresh)');
-        }
+        // Always sync down to get latest from Supabase (ensures cross-device consistency)
+        if (__DEV__) console.log('[usePlaylists] Syncing down from Supabase...');
+        const syncDownStart = Date.now();
+        await syncDown(userId);
+        if (__DEV__) console.log('[usePlaylists] syncDown completed in', Date.now() - syncDownStart, 'ms');
         
         const fresh = await getCachedPlaylists(userId);
         if (isMounted) {
