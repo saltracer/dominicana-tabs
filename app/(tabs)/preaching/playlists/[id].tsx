@@ -65,7 +65,7 @@ export default function PlaylistDetailScreen() {
   const [hasEverResolved, setHasEverResolved] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
   const lastDragIndexRef = useRef<number>(-1);
-  const swipeDirectionRef = useRef<Map<string, string>>(new Map()); // Track swipe direction per item
+  const swipeDirectionRef = useRef<Map<string, string>>(new Map()); // Track which items are currently swiped open
 
   // NOTE: Removed duplicate setItems effect that was causing triple resolution
   // Items are now ONLY updated via useFocusEffect cache reload
@@ -448,27 +448,31 @@ export default function PlaylistDetailScreen() {
   };
 
   // Underlay component for right swipe (remove from playlist)
-  const UnderlayRight = ({ item }: { item: any }) => {
+  const UnderlayRight = ({ item, onPress }: { item: any; onPress: () => void }) => {
     const theme = colorScheme ?? 'light';
     const isDark = theme === 'dark';
     
     return (
       <View style={styles.underlayRight}>
-        <View style={[
-          styles.underlayCard,
-          { backgroundColor: isDark ? '#c62828' : '#e53935' }
-        ]}>
+        <TouchableOpacity 
+          style={[
+            styles.underlayCard,
+            { backgroundColor: isDark ? '#c62828' : '#e53935' }
+          ]}
+          onPress={onPress}
+          activeOpacity={0.8}
+        >
           <View style={styles.underlayContent}>
             <Ionicons name="trash" size={32} color="#fff" />
             <Text style={styles.underlayText}>Remove</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };
 
   // Underlay component for left swipe (download/delete download/retry)
-  const UnderlayLeft = ({ item, episode }: { item: any; episode?: PodcastEpisode }) => {
+  const UnderlayLeft = ({ item, episode, onPress }: { item: any; episode?: PodcastEpisode; onPress: () => void }) => {
     const theme = colorScheme ?? 'light';
     const isDark = theme === 'dark';
     const downloadStatus = (item as any)?.downloadStatus;
@@ -501,12 +505,16 @@ export default function PlaylistDetailScreen() {
     
     return (
       <View style={styles.underlayLeft}>
-        <View style={[styles.underlayCard, { backgroundColor: bgColor }]}>
+        <TouchableOpacity 
+          style={[styles.underlayCard, { backgroundColor: bgColor }]}
+          onPress={onPress}
+          activeOpacity={0.8}
+        >
           <View style={styles.underlayContent}>
             <Ionicons name={iconName} size={32} color="#fff" />
             <Text style={styles.underlayText}>{actionText}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -607,52 +615,72 @@ export default function PlaylistDetailScreen() {
                     if (ref) itemRefs.current.set(ep.id, ref);
                   }}
                   onChange={({ openDirection, snapPoint }) => {
-                    const prevDirection = swipeDirectionRef.current.get(ep.id) || 'none';
-                    
-                    // Haptic feedback when swipe begins
-                    if (prevDirection === 'none' && openDirection !== 'none') {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                    
-                    // Update tracked direction
-                    swipeDirectionRef.current.set(ep.id, openDirection);
+                    const prevDirection = swipeDirectionRef.current.get(ep.id);
                     
                     if (openDirection !== 'none') {
+                      // Prevent opening in opposite direction immediately after closing
+                      if (prevDirection && prevDirection !== openDirection) {
+                        // Was open in different direction, close this item instead
+                        const ref = itemRefs.current.get(ep.id);
+                        if (ref) {
+                          setTimeout(() => ref.close(), 0);
+                        }
+                        return;
+                      }
+                      
+                      // Haptic feedback when swipe opens
+                      if (!prevDirection) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      }
+                      
                       // Close other open items
                       itemRefs.current.forEach((ref, key) => {
                         if (key !== ep.id && ref) ref.close();
                       });
                       
                       // Haptic feedback when reaching snap point
-                      if (snapPoint === 150) {
+                      if (snapPoint === 150 && !prevDirection) {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        
-                        // Trigger action when fully swiped
-                        setTimeout(() => {
-                          if (openDirection === 'left') {
-                            const downloaded = isEpisodeDownloaded(ep.id);
-                            if (downloaded) {
-                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                              handleDeleteDownload(ep);
-                            } else {
-                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                              handleDownload(ep);
-                            }
-                          } else if (openDirection === 'right' && !isDownloaded) {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                            handleSwipeRemove((item as any).id);
-                          }
-                        }, 50);
                       }
+                      
+                      // Track that this item is open
+                      swipeDirectionRef.current.set(ep.id, openDirection);
+                    } else {
+                      // Clear tracking when swipe closes
+                      swipeDirectionRef.current.delete(ep.id);
                     }
                   }}
                   overSwipe={20}
-                  renderUnderlayLeft={() => <UnderlayLeft item={item} episode={ep} />}
-                  renderUnderlayRight={() => <UnderlayRight item={item} />}
+                  renderUnderlayLeft={() => <UnderlayLeft 
+                    item={item} 
+                    episode={ep}
+                    onPress={() => {
+                      const downloaded = isEpisodeDownloaded(ep.id);
+                      if (downloaded) {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                        handleDeleteDownload(ep);
+                      } else {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        handleDownload(ep);
+                      }
+                      const ref = itemRefs.current.get(ep.id);
+                      if (ref) ref.close();
+                    }}
+                  />}
+                  renderUnderlayRight={() => <UnderlayRight 
+                    item={item}
+                    onPress={() => {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                      handleSwipeRemove((item as any).id);
+                      const ref = itemRefs.current.get(ep.id);
+                      if (ref) ref.close();
+                    }}
+                  />}
                   snapPointsLeft={[150]}
                   snapPointsRight={[150]}
                   swipeEnabled={!isDragging}
-                  activationThreshold={15}
+                  activationThreshold={10}
+                  swipeDamping={0.7}
                 >
                   <View 
                     style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
@@ -746,52 +774,72 @@ export default function PlaylistDetailScreen() {
                     if (ref) itemRefs.current.set(ep.id, ref);
                   }}
                   onChange={({ openDirection, snapPoint }) => {
-                    const prevDirection = swipeDirectionRef.current.get(ep.id) || 'none';
-                    
-                    // Haptic feedback when swipe begins
-                    if (prevDirection === 'none' && openDirection !== 'none') {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                    
-                    // Update tracked direction
-                    swipeDirectionRef.current.set(ep.id, openDirection);
+                    const prevDirection = swipeDirectionRef.current.get(ep.id);
                     
                     if (openDirection !== 'none') {
+                      // Prevent opening in opposite direction immediately after closing
+                      if (prevDirection && prevDirection !== openDirection) {
+                        // Was open in different direction, close this item instead
+                        const ref = itemRefs.current.get(ep.id);
+                        if (ref) {
+                          setTimeout(() => ref.close(), 0);
+                        }
+                        return;
+                      }
+                      
+                      // Haptic feedback when swipe opens
+                      if (!prevDirection) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      }
+                      
                       // Close other open items
                       itemRefs.current.forEach((ref, key) => {
                         if (key !== ep.id && ref) ref.close();
                       });
                       
                       // Haptic feedback when reaching snap point
-                      if (snapPoint === 150) {
+                      if (snapPoint === 150 && !prevDirection) {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                        
-                        // Trigger action when fully swiped
-                        setTimeout(() => {
-                          if (openDirection === 'left') {
-                            const downloaded = isEpisodeDownloaded(ep.id);
-                            if (downloaded) {
-                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                              handleDeleteDownload(ep);
-                            } else {
-                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                              handleDownload(ep);
-                            }
-                          } else if (openDirection === 'right' && !isDownloaded) {
-                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                            handleSwipeRemove((item as any).id);
-                          }
-                        }, 50);
                       }
+                      
+                      // Track that this item is open
+                      swipeDirectionRef.current.set(ep.id, openDirection);
+                    } else {
+                      // Clear tracking when swipe closes
+                      swipeDirectionRef.current.delete(ep.id);
                     }
                   }}
                   overSwipe={20}
-                  renderUnderlayLeft={() => <UnderlayLeft item={item} episode={ep} />}
-                  renderUnderlayRight={() => <UnderlayRight item={item} />}
+                  renderUnderlayLeft={() => <UnderlayLeft 
+                    item={item} 
+                    episode={ep}
+                    onPress={() => {
+                      const downloaded = isEpisodeDownloaded(ep.id);
+                      if (downloaded) {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                        handleDeleteDownload(ep);
+                      } else {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        handleDownload(ep);
+                      }
+                      const ref = itemRefs.current.get(ep.id);
+                      if (ref) ref.close();
+                    }}
+                  />}
+                  renderUnderlayRight={() => <UnderlayRight 
+                    item={item}
+                    onPress={() => {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                      handleSwipeRemove((item as any).id);
+                      const ref = itemRefs.current.get(ep.id);
+                      if (ref) ref.close();
+                    }}
+                  />}
                   snapPointsLeft={[150]}
                   snapPointsRight={[150]}
                   swipeEnabled={!isDragging}
-                  activationThreshold={15}
+                  activationThreshold={10}
+                  swipeDamping={0.7}
                 >
                   <View 
                     style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
@@ -867,25 +915,55 @@ export default function PlaylistDetailScreen() {
                   if (ref) itemRefs.current.set(fallbackId, ref);
                 }}
                 onChange={({ openDirection, snapPoint }) => {
+                  const prevDirection = swipeDirectionRef.current.get(fallbackId);
+                  
                   if (openDirection !== 'none') {
+                    // Prevent opening in opposite direction immediately after closing
+                    if (prevDirection && prevDirection !== openDirection) {
+                      // Was open in different direction, close this item instead
+                      const ref = itemRefs.current.get(fallbackId);
+                      if (ref) {
+                        setTimeout(() => ref.close(), 0);
+                      }
+                      return;
+                    }
+                    
+                    // Haptic feedback when swipe opens
+                    if (!prevDirection) {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                    
                     // Close other open items
                     itemRefs.current.forEach((ref, key) => {
                       if (key !== fallbackId && ref) ref.close();
                     });
                     
-                    // Trigger action when fully swiped
-                    if (snapPoint === 150 && openDirection === 'right' && !isDownloaded) {
-                      setTimeout(() => {
-                        handleSwipeRemove((item as any).id);
-                      }, 100);
+                    // Haptic feedback when reaching snap point
+                    if (snapPoint === 150 && !prevDirection) {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     }
+                    
+                    // Track that this item is open
+                    swipeDirectionRef.current.set(fallbackId, openDirection);
+                  } else {
+                    // Clear tracking when swipe closes
+                    swipeDirectionRef.current.delete(fallbackId);
                   }
                 }}
                 overSwipe={20}
-                renderUnderlayRight={() => <UnderlayRight item={item} />}
+                renderUnderlayRight={() => <UnderlayRight 
+                  item={item}
+                  onPress={() => {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    handleSwipeRemove((item as any).id);
+                    const ref = itemRefs.current.get((item as any).id);
+                    if (ref) ref.close();
+                  }}
+                />}
                 snapPointsRight={[150]}
                 swipeEnabled={!isDragging && !isDownloaded}
-                activationThreshold={20}
+                activationThreshold={10}
+                swipeDamping={0.7}
               >
                 <TouchableOpacity 
                   style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
