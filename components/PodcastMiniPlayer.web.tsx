@@ -43,13 +43,25 @@ export default function PodcastMiniPlayer() {
     { color: Colors[colorScheme ?? 'light'].text }
   ], [colorScheme]);
 
-  console.log('[PodcastMiniPlayer.web] Rendering with:', {
-    currentEpisode: currentEpisode?.title,
-    isPlaying,
-    isPaused,
-    position,
-    duration
-  });
+  // Memoize episode title to prevent HtmlRenderer re-renders
+  const episodeTitle = useMemo(() => currentEpisode?.title || '', [currentEpisode?.title]);
+
+  // Debug logging (only log state changes, not position updates)
+  const lastLoggedState = React.useRef<string>('');
+  React.useEffect(() => {
+    const stateKey = `${currentEpisode?.id}-${isPlaying}-${isPaused}-${isLoading}`;
+    if (stateKey !== lastLoggedState.current) {
+      if (__DEV__) {
+        console.log('[PodcastMiniPlayer.web] Podcast state changed:', {
+          currentEpisode: currentEpisode?.title,
+          isPlaying,
+          isPaused,
+          isLoading
+        });
+      }
+      lastLoggedState.current = stateKey;
+    }
+  }, [currentEpisode?.id, currentEpisode?.title, isPlaying, isPaused, isLoading]);
 
   // Fetch podcast data when episode changes
   useEffect(() => {
@@ -138,7 +150,7 @@ export default function PodcastMiniPlayer() {
       {/* Episode Info */}
       <View style={styles.infoContainer}>
         <HtmlRenderer
-          htmlContent={currentEpisode.title}
+          htmlContent={episodeTitle}
           maxLines={1}
           style={episodeTitleStyle}
         />

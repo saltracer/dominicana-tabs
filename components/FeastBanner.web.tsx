@@ -57,14 +57,23 @@ export default function FeastBanner({
   // Show if there's an active session (playing, paused, or stopped)
   const showRosaryPlayer = rosarySessionActive;
   
-  // Debug logging
-  console.log('[FeastBanner.web] Podcast player state:', {
-    currentEpisode: currentEpisode?.title,
-    isPlaying,
-    isPaused,
-    isLoading,
-    showPodcastPlayer
-  });
+  // Debug logging (only log state changes, not on every render)
+  const lastLoggedState = React.useRef<string>('');
+  React.useEffect(() => {
+    const stateKey = `${currentEpisode?.id}-${isPlaying}-${isPaused}-${isLoading}`;
+    if (stateKey !== lastLoggedState.current) {
+      if (__DEV__) {
+        console.log('[FeastBanner.web] Podcast player state changed:', {
+          currentEpisode: currentEpisode?.title,
+          isPlaying,
+          isPaused,
+          isLoading,
+          showPodcastPlayer
+        });
+      }
+      lastLoggedState.current = stateKey;
+    }
+  }, [currentEpisode?.id, currentEpisode?.title, isPlaying, isPaused, isLoading, showPodcastPlayer]);
 
   const navigateToPreviousDay = () => {
     const currentDate = parseISO(liturgicalDay.date);

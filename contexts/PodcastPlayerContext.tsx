@@ -351,6 +351,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   // Initialize on mount
   useEffect(() => {
     initializeTrackPlayer();
+    // Reset loading guard on mount in case it got stuck
+    isLoadingEpisodeRef.current = false;
+    console.log('[PodcastPlayerContext] Reset loading guard on mount');
   }, [initializeTrackPlayer]);
 
   // Load preferences on mount
@@ -503,13 +506,14 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         setProgress(data);
       }
       
+      // Store position/duration in state (will be applied when audio loads)
       setPosition(startPosition);
       setDuration(data.duration || 0);
       
-      // Seek to start position if we have audio/TrackPlayer
-      if (Platform.OS === 'web' && audio) {
-        audio.currentTime = startPosition;
-      } else if (Platform.OS !== 'web' && TrackPlayer) {
+      // On web, DON'T seek immediately - wait for metadata to load
+      // The audio element's loadedmetadata event will handle seeking
+      // On native, use TrackPlayer
+      if (Platform.OS !== 'web' && TrackPlayer) {
         try {
           await TrackPlayer.seekTo(startPosition);
         } catch (e) {
@@ -521,15 +525,15 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       const savedSpeed = data.playbackSpeed || preferences?.podcast_default_speed || 1.0;
       setPlaybackSpeed(savedSpeed);
       
-      if (Platform.OS === 'web' && audio) {
-        audio.playbackRate = savedSpeed;
-      } else if (Platform.OS !== 'web' && TrackPlayer) {
+      // On native, apply speed to TrackPlayer
+      if (Platform.OS !== 'web' && TrackPlayer) {
         try {
           await TrackPlayer.setRate(savedSpeed);
         } catch (e) {
           console.warn('Failed to set saved speed:', e);
         }
       }
+      // Speed for web audio will be applied when audio element is created
     } catch (err) {
       console.error('Error loading progress:', err);
     }
@@ -813,23 +817,51 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     isLoadingEpisodeRef.current = true;
     console.log('[PodcastPlayerContext] 🔒 Locked episode loading');
     
+    // Safety timeout: auto-unlock after 10 seconds to prevent permanent lock
+    const unlockTimeout = setTimeout(() => {
+      if (isLoadingEpisodeRef.current) {
+        console.warn('[PodcastPlayerContext] 🔓 Auto-unlocking episode loading after timeout');
+        isLoadingEpisodeRef.current = false;
+      }
+    }, 10000);
+    
     // Save progress for current episode before switching
     if (currentEpisode && currentEpisode.id !== episode.id && user && duration > 0) {
-      try {
-        await PodcastPlaybackService.saveProgress(
+      // On web: Don't block playback - save progress in background
+      if (Platform.OS === 'web') {
+        PodcastPlaybackService.saveProgress(
           currentEpisode.id,
           position,
           duration,
           progress?.played || false
-        );
-        // Update cache immediately
-        EpisodeMetadataCache.update(currentEpisode.id, {
-          playbackPosition: position,
-          playbackProgress: position / duration,
+        ).then(() => {
+          // Update cache after save
+          EpisodeMetadataCache.update(currentEpisode.id, {
+            playbackPosition: position,
+            playbackProgress: position / duration,
+          });
+          if (__DEV__) console.log('[PodcastPlayerContext Web] 💾 Saved previous episode progress (background)');
+        }).catch(err => {
+          console.error('[PodcastPlayerContext Web] Error saving progress:', err);
         });
-        if (__DEV__) console.log('[PodcastPlayerContext] 💾 Saved progress before switching episodes');
-      } catch (err) {
-        console.error('[PodcastPlayerContext] Error saving progress before switching:', err);
+      } else {
+        // On native: Keep blocking behavior for TrackPlayer coordination
+        try {
+          await PodcastPlaybackService.saveProgress(
+            currentEpisode.id,
+            position,
+            duration,
+            progress?.played || false
+          );
+          // Update cache immediately
+          EpisodeMetadataCache.update(currentEpisode.id, {
+            playbackPosition: position,
+            playbackProgress: position / duration,
+          });
+          if (__DEV__) console.log('[PodcastPlayerContext] 💾 Saved progress before switching episodes');
+        } catch (err) {
+          console.error('[PodcastPlayerContext] Error saving progress before switching:', err);
+        }
       }
     }
     
@@ -868,11 +900,18 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     }
     
     try {
-      // Check if episode is downloaded first
-      console.log('[PodcastPlayerContext] Getting downloaded path for episode:', episode.id);
-      const downloadedPath = await getDownloadedEpisodePath(episode.id);
-      const audioUrl = downloadedPath || episode.audioUrl;
-      console.log('[PodcastPlayerContext] Using audio URL:', audioUrl);
+      // Get audio URL
+      let audioUrl = episode.audioUrl;
+      
+      // Check if episode is downloaded (native only - web doesn't have downloads)
+      if (Platform.OS !== 'web') {
+        console.log('[PodcastPlayerContext] Checking for downloaded file:', episode.id);
+        const downloadedPath = await getDownloadedEpisodePath(episode.id);
+        audioUrl = downloadedPath || episode.audioUrl;
+        console.log('[PodcastPlayerContext] Using audio URL:', audioUrl);
+      } else {
+        console.log('[PodcastPlayerContext Web] Using streaming URL:', audioUrl);
+      }
       
       if (Platform.OS === 'web') {
         console.log('[PodcastPlayerContext] Web platform - setting up HTML5 audio');
@@ -882,15 +921,62 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
           setAudio(null);
         }
         
-        console.log('[PodcastPlayerContext] Setting current episode:', episode.title);
+        console.log('[PodcastPlayerContext Web] Setting current episode:', episode.title);
         setCurrentEpisode(episode);
-        console.log('[PodcastPlayerContext] Set current episode:', episode.title);
+        console.log('[PodcastPlayerContext Web] Set current episode:', episode.title);
         
         const newAudio = new Audio(audioUrl);
         
+        // Set default playback speed immediately (will be overridden if saved progress loads)
+        const defaultSpeed = preferences?.podcast_default_speed || 1.0;
+        newAudio.playbackRate = defaultSpeed;
+        
+        // Track if we've applied saved progress
+        let progressApplied = false;
+        
         newAudio.addEventListener('loadedmetadata', () => {
+          console.log('[PodcastPlayerContext Web] Metadata loaded, duration:', newAudio.duration);
           setDuration(newAudio.duration);
           setIsLoading(false);
+          
+          // Load saved progress asynchronously (non-blocking)
+          // Audio will already be playing while this loads
+          PodcastPlaybackService.getProgress(episode.id)
+            .then(async (savedProgress) => {
+              if (!savedProgress || progressApplied) return;
+              
+              const savedPosition = savedProgress.played ? 0 : (savedProgress.position || 0);
+              const savedSpeed = savedProgress.playbackSpeed || defaultSpeed;
+              
+              if (savedProgress.played) {
+                console.log('[PodcastPlayerContext Web] Episode was played, unmarking (non-blocking)');
+                // Unmark as played (fire and forget)
+                PodcastPlaybackService.saveProgress(episode.id, 0, savedProgress.duration, false).catch(console.error);
+              }
+              
+              // Apply saved position only if:
+              // 1. It's valid
+              // 2. It's greater than 0
+              // 3. Audio hasn't progressed too far (within 2 seconds)
+              if (isFinite(savedPosition) && savedPosition > 0 && isFinite(newAudio.duration) && newAudio.currentTime < 2) {
+                const clampedPosition = Math.min(savedPosition, newAudio.duration);
+                newAudio.currentTime = clampedPosition;
+                setPosition(clampedPosition);
+                console.log('[PodcastPlayerContext Web] Applied saved position:', clampedPosition);
+              }
+              
+              // Apply saved speed
+              if (isFinite(savedSpeed) && savedSpeed > 0 && savedSpeed !== newAudio.playbackRate) {
+                newAudio.playbackRate = savedSpeed;
+                setPlaybackSpeed(savedSpeed);
+                console.log('[PodcastPlayerContext Web] Applied saved speed:', savedSpeed);
+              }
+              
+              progressApplied = true;
+            })
+            .catch(err => {
+              console.warn('[PodcastPlayerContext Web] Could not load progress:', err);
+            });
         });
         
         newAudio.addEventListener('timeupdate', () => {
@@ -903,7 +989,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         });
         
         newAudio.addEventListener('ended', async () => {
-          console.log('[PodcastPlayerContext] Episode ended');
+          console.log('[PodcastPlayerContext Web] Episode ended');
           setIsPlaying(false);
           if (markCompletedRef.current) await markCompletedRef.current();
           // Auto-play next episode if available
@@ -911,18 +997,27 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         });
         
         newAudio.addEventListener('play', () => {
-          console.log('[PodcastPlayerContext] Audio play event');
+          console.log('[PodcastPlayerContext Web] Audio play event');
           setIsPlaying(true);
           setIsPaused(false);
         });
         
         newAudio.addEventListener('pause', () => {
-          console.log('[PodcastPlayerContext] Audio pause event');
+          console.log('[PodcastPlayerContext Web] Audio pause event');
           setIsPlaying(false);
           setIsPaused(true);
         });
         
+        newAudio.addEventListener('error', (e) => {
+          console.error('[PodcastPlayerContext Web] Audio error event:', e);
+          console.error('[PodcastPlayerContext Web] Audio error details:', newAudio.error);
+          setIsLoading(false);
+          setIsPlaying(false);
+          setIsPaused(false);
+        });
+        
         try {
+          console.log('[PodcastPlayerContext Web] Attempting to play audio...');
           await newAudio.play();
           console.log('[PodcastPlayerContext Web] Audio play successful');
           setIsPlaying(true);
@@ -934,7 +1029,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
             console.log('[PodcastPlayerContext Web] Emitted audio-play-started event');
           }
         } catch (playError) {
-          console.log('[PodcastPlayerContext Web] Autoplay prevented:', playError);
+          console.log('[PodcastPlayerContext Web] Autoplay prevented or play failed:', playError);
           // Even if autoplay fails, we should show the mini player
           // The user can manually start playback
           setIsPlaying(false);
@@ -943,6 +1038,7 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         }
         
         setAudio(newAudio);
+        console.log('[PodcastPlayerContext Web] Audio element configured and ready');
       } else {
         console.log('[PodcastPlayerContext] Native platform - setting up TrackPlayer');
         // Native implementation with TrackPlayer
@@ -1093,7 +1189,8 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       console.error('[PodcastPlayerContext] Error details:', err);
       setIsLoading(false);
     } finally {
-      // Always unlock episode loading
+      // Always unlock episode loading and clear timeout
+      clearTimeout(unlockTimeout);
       isLoadingEpisodeRef.current = false;
       console.log('[PodcastPlayerContext] 🔓 Unlocked episode loading');
     }
@@ -1108,33 +1205,55 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       console.log('[PodcastPlayerContext] Saved last known position on pause:', position);
     }
     
-    // Save progress when pausing
-    if (currentEpisode && user && duration > 0) {
-      try {
-        await PodcastPlaybackService.saveProgress(
-          currentEpisode.id,
-          position,
-          duration,
-          progress?.played || false
-        );
-        // Update cache immediately
-        EpisodeMetadataCache.update(currentEpisode.id, {
-          playbackPosition: position,
-          playbackProgress: position / duration,
-        });
-        if (__DEV__) console.log('[PodcastPlayerContext] Saved progress on pause');
-      } catch (err) {
-        console.error('[PodcastPlayerContext] Error saving progress on pause:', err);
-      }
-    }
-    
     if (Platform.OS === 'web') {
+      // On web: Pause IMMEDIATELY, then save progress in background
       if (audio) {
         audio.pause();
         setIsPlaying(false);
         setIsPaused(true);
+        console.log('[PodcastPlayerContext Web] Paused immediately');
+      }
+      
+      // Save progress in background (non-blocking)
+      if (currentEpisode && user && duration > 0) {
+        PodcastPlaybackService.saveProgress(
+          currentEpisode.id,
+          position,
+          duration,
+          progress?.played || false
+        ).then(() => {
+          // Update cache after save
+          EpisodeMetadataCache.update(currentEpisode.id, {
+            playbackPosition: position,
+            playbackProgress: position / duration,
+          });
+          if (__DEV__) console.log('[PodcastPlayerContext Web] 💾 Saved progress on pause (background)');
+        }).catch(err => {
+          console.error('[PodcastPlayerContext Web] Error saving progress on pause:', err);
+        });
       }
     } else {
+      // On native: Keep blocking behavior for TrackPlayer state consistency
+      // Save progress when pausing
+      if (currentEpisode && user && duration > 0) {
+        try {
+          await PodcastPlaybackService.saveProgress(
+            currentEpisode.id,
+            position,
+            duration,
+            progress?.played || false
+          );
+          // Update cache immediately
+          EpisodeMetadataCache.update(currentEpisode.id, {
+            playbackPosition: position,
+            playbackProgress: position / duration,
+          });
+          if (__DEV__) console.log('[PodcastPlayerContext] Saved progress on pause');
+        } catch (err) {
+          console.error('[PodcastPlayerContext] Error saving progress on pause:', err);
+        }
+      }
+      
       if (TrackPlayer) {
         await TrackPlayer.pause();
         setIsPlaying(false);
@@ -1150,21 +1269,47 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
 
   const resume = useCallback(async () => {
     console.log('[PodcastPlayerContext] resume called, currentEpisode:', currentEpisode?.title, 'position:', position);
+    console.log('[PodcastPlayerContext] Audio element exists?', !!audio, 'Audio paused?', audio?.paused);
+    
     if (Platform.OS === 'web') {
+      if (audio && !audio.paused) {
+        console.log('[PodcastPlayerContext Web] Audio already playing, nothing to do');
+        return;
+      }
+      
       if (audio) {
-        // Restore position from last known position if current position is 0 but we have a saved position
-        if (audio.currentTime === 0 && lastKnownPositionRef.current > 0) {
-          console.log('[PodcastPlayerContext Web] Restoring position from', lastKnownPositionRef.current);
-          audio.currentTime = lastKnownPositionRef.current;
+        console.log('[PodcastPlayerContext Web] Audio element exists, resuming...');
+        try {
+          // Restore position from last known position if current position is 0 but we have a saved position
+          const lastKnownPosition = lastKnownPositionRef.current;
+          if (audio.currentTime === 0 && isFinite(lastKnownPosition) && lastKnownPosition > 0) {
+            console.log('[PodcastPlayerContext Web] Restoring position from', lastKnownPosition);
+            audio.currentTime = lastKnownPosition;
+          }
+          console.log('[PodcastPlayerContext Web] Calling audio.play()...');
+          await audio.play();
+          console.log('[PodcastPlayerContext Web] Resume play successful');
+          setIsPlaying(true);
+          setIsPaused(false);
+          // Set podcast as active audio type and emit event
+          AudioStateManager.setActiveAudioType('podcast');
+          if (typeof AudioStateManager.emit === 'function') {
+            AudioStateManager.emit('audio-play-started', { type: 'podcast' });
+            console.log('[PodcastPlayerContext Web] Emitted audio-play-started event on resume');
+          }
+        } catch (error) {
+          console.error('[PodcastPlayerContext Web] Resume play failed:', error);
+          setIsPlaying(false);
+          setIsPaused(true);
         }
-        await audio.play();
-        setIsPlaying(true);
-        setIsPaused(false);
-        // Set podcast as active audio type and emit event
-        AudioStateManager.setActiveAudioType('podcast');
-        if (typeof AudioStateManager.emit === 'function') {
-          AudioStateManager.emit('audio-play-started', { type: 'podcast' });
-          console.log('[PodcastPlayerContext Web] Emitted audio-play-started event on resume');
+      } else {
+        // No audio element - need to recreate it by playing the episode
+        console.warn('[PodcastPlayerContext Web] No audio element exists, recreating by playing episode');
+        if (currentEpisode) {
+          // Use playEpisode to recreate audio element and start playback
+          await playEpisode(currentEpisode, playbackContext || undefined);
+        } else {
+          console.error('[PodcastPlayerContext Web] Cannot resume: no current episode');
         }
       }
     } else {
@@ -1247,10 +1392,24 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   }, [resume]);
 
   const seek = useCallback(async (position: number) => {
+    // Validate position is a finite number
+    if (!isFinite(position) || position < 0) {
+      console.warn('[PodcastPlayerContext] Invalid seek position:', position);
+      return;
+    }
+    
     if (Platform.OS === 'web') {
       if (audio) {
-        audio.currentTime = position;
-        setPosition(position);
+        // Additional safety check - ensure audio has loaded
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          // Clamp position to valid range
+          const clampedPosition = Math.max(0, Math.min(position, audio.duration));
+          audio.currentTime = clampedPosition;
+          setPosition(clampedPosition);
+          console.log('[PodcastPlayerContext Web] Seeked to:', clampedPosition);
+        } else {
+          console.warn('[PodcastPlayerContext Web] Cannot seek: audio not loaded yet');
+        }
       }
     } else {
       if (TrackPlayer) {
@@ -1290,7 +1449,9 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
   const effectiveIsPlaying = isPlaying && isActiveAudioType;
   const effectiveIsPaused = !effectiveIsPlaying && currentEpisode !== null;
 
-  const value: PodcastPlayerContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  // Only recreate when actual values change, not on every position update
+  const value: PodcastPlayerContextType = React.useMemo(() => ({
     currentEpisode,
     isPlaying: effectiveIsPlaying,
     isPaused: effectiveIsPaused,
@@ -1306,7 +1467,23 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     seek,
     setSpeed,
     progressPercentage,
-  };
+  }), [
+    currentEpisode,
+    effectiveIsPlaying,
+    effectiveIsPaused,
+    isLoading,
+    position,
+    duration,
+    playbackSpeed,
+    progress,
+    playbackContext,
+    playEpisode,
+    pause,
+    resume,
+    seek,
+    setSpeed,
+    progressPercentage,
+  ]);
 
   return (
     <PodcastPlayerContext.Provider value={value}>
