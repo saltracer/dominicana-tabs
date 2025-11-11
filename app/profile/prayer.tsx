@@ -180,6 +180,7 @@ export default function PrayerSettingsScreen() {
                 options={[
                   { label: 'Alphonsus', value: 'alphonsus' },
                   { label: 'Catherine', value: 'catherine' },
+                  { label: 'Teresa', value: 'teresa' },
                 ]}
                 onValueChange={(value) => updateLiturgyPreference('rosary_voice', value)}
                 icon="mic-outline"

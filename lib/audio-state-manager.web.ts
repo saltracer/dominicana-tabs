@@ -1,8 +1,7 @@
 /**
- * Audio State Manager
- * Global state coordinator for all audio playback in the app.
- * Manages multiple audio types (rosary, podcast, etc.) and coordinates
- * remote control events from iOS/Android system controls.
+ * Audio State Manager - Web Version
+ * Simplified global state coordinator for audio playback on web.
+ * Uses event emitter pattern for coordination instead of TrackPlayer-specific logic.
  */
 
 export type AudioType = 'rosary' | 'podcast' | 'other' | null;
@@ -16,15 +15,9 @@ export interface AudioHandlers {
   seekTo?: (position: number) => Promise<void> | void;
 }
 
-interface AudioTypeHandlers {
-  type: AudioType;
-  handlers: AudioHandlers;
-}
-
 class AudioStateManagerClass {
   private activeAudioType: AudioType = null;
   private registeredHandlers: Map<AudioType, AudioHandlers> = new Map();
-  private isResettingTrackPlayer: boolean = false;
   private listeners: Map<string, Set<Function>> = new Map();
 
   /**
@@ -32,11 +25,11 @@ class AudioStateManagerClass {
    */
   registerAudioHandlers(type: AudioType, handlers: AudioHandlers): void {
     if (!type) {
-      console.warn('[AudioStateManager] Cannot register handlers for null type');
+      console.warn('[AudioStateManager Web] Cannot register handlers for null type');
       return;
     }
     
-    console.log(`[AudioStateManager] Registering handlers for: ${type}`);
+    console.log(`[AudioStateManager Web] Registering handlers for: ${type}`);
     this.registeredHandlers.set(type, handlers);
   }
 
@@ -46,7 +39,7 @@ class AudioStateManagerClass {
   unregisterAudioHandlers(type: AudioType): void {
     if (!type) return;
     
-    console.log(`[AudioStateManager] Unregistering handlers for: ${type}`);
+    console.log(`[AudioStateManager Web] Unregistering handlers for: ${type}`);
     this.registeredHandlers.delete(type);
     
     // If the active type is being unregistered, clear it
@@ -59,7 +52,7 @@ class AudioStateManagerClass {
    * Set the currently active audio type
    */
   setActiveAudioType(type: AudioType): void {
-    console.log(`[AudioStateManager] Setting active audio type: ${type}`);
+    console.log(`[AudioStateManager Web] Setting active audio type: ${type}`);
     this.activeAudioType = type;
   }
 
@@ -68,20 +61,6 @@ class AudioStateManagerClass {
    */
   getActiveAudioType(): AudioType {
     return this.activeAudioType;
-  }
-
-  /**
-   * Set flag indicating TrackPlayer is being reset (to prevent spurious event handling)
-   */
-  setIsResettingTrackPlayer(isResetting: boolean): void {
-    this.isResettingTrackPlayer = isResetting;
-  }
-
-  /**
-   * Check if TrackPlayer is currently being reset
-   */
-  getIsResettingTrackPlayer(): boolean {
-    return this.isResettingTrackPlayer;
   }
 
   /**
@@ -109,57 +88,60 @@ class AudioStateManagerClass {
     const handlers = this.getActiveHandlers();
     
     if (!handlers) {
-      console.warn(`[AudioStateManager] No active handlers for command: ${command}`);
+      console.warn(`[AudioStateManager Web] No active handlers for command: ${command}`);
       return false;
     }
 
     const handler = handlers[command];
     if (!handler) {
-      console.warn(`[AudioStateManager] No handler registered for command: ${command}`);
+      console.warn(`[AudioStateManager Web] No handler registered for command: ${command}`);
       return false;
     }
 
     try {
-      console.log(`[AudioStateManager] Executing ${command} for ${this.activeAudioType}`);
+      console.log(`[AudioStateManager Web] Executing ${command} for ${this.activeAudioType}`);
       await handler(...args);
       return true;
     } catch (error) {
-      console.error(`[AudioStateManager] Error executing ${command}:`, error);
+      console.error(`[AudioStateManager Web] Error executing ${command}:`, error);
       return false;
     }
   }
 
   /**
-   * Subscribe to events (for web coordination)
+   * Subscribe to events
    */
   on(event: string, callback: Function): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event)!.add(callback);
+    console.log(`[AudioStateManager Web] Subscribed to event: ${event}`);
   }
 
   /**
-   * Unsubscribe from events (for web coordination)
+   * Unsubscribe from events
    */
   off(event: string, callback: Function): void {
     const eventListeners = this.listeners.get(event);
     if (eventListeners) {
       eventListeners.delete(callback);
+      console.log(`[AudioStateManager Web] Unsubscribed from event: ${event}`);
     }
   }
 
   /**
-   * Emit an event to all subscribers (for web coordination)
+   * Emit an event to all subscribers
    */
   emit(event: string, data?: any): void {
     const eventListeners = this.listeners.get(event);
     if (eventListeners) {
+      console.log(`[AudioStateManager Web] Emitting event: ${event}`, data);
       eventListeners.forEach(callback => {
         try {
           callback(data);
         } catch (error) {
-          console.error(`[AudioStateManager] Error in event listener for ${event}:`, error);
+          console.error(`[AudioStateManager Web] Error in event listener for ${event}:`, error);
         }
       });
     }
@@ -169,7 +151,7 @@ class AudioStateManagerClass {
    * Clear all registered handlers (useful for cleanup/testing)
    */
   clearAll(): void {
-    console.log('[AudioStateManager] Clearing all handlers');
+    console.log('[AudioStateManager Web] Clearing all handlers');
     this.registeredHandlers.clear();
     this.listeners.clear();
     this.activeAudioType = null;
@@ -179,7 +161,7 @@ class AudioStateManagerClass {
    * Debug: Log current state
    */
   logState(): void {
-    console.log('[AudioStateManager] Current state:', {
+    console.log('[AudioStateManager Web] Current state:', {
       activeType: this.activeAudioType,
       registeredTypes: Array.from(this.registeredHandlers.keys()),
       registeredEvents: Array.from(this.listeners.keys()),

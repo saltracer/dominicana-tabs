@@ -57,6 +57,7 @@ interface RosaryPlayerContextType {
   skipToPrevious: () => Promise<void>;
   skipToBead: (beadId: string) => Promise<void>;
   setSpeed: (speed: number) => Promise<void>;
+  cleanup: () => Promise<void>;
   
   // Session active flag
   isSessionActive: boolean;
@@ -498,6 +499,11 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     await rosaryAudio.setSpeed(speed);
   }, [rosaryAudio]);
   
+  // Cleanup audio resources
+  const cleanup = useCallback(async () => {
+    await rosaryAudio.cleanup();
+  }, [rosaryAudio]);
+  
   // Compute effective playing state - only truly playing if rosary is the active audio type
   const effectiveIsPlaying = rosaryAudio.isPlaying && isActiveAudioType;
   const effectiveIsPaused = !effectiveIsPlaying && isSessionActive;
@@ -533,6 +539,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     skipToPrevious,
     skipToBead,
     setSpeed: setSpeedControl,
+    cleanup,
     
     // Session active flag
     isSessionActive,

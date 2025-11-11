@@ -166,10 +166,36 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
     };
   }, []); // Empty array = only run on actual unmount
   
-  // Track when we're the active audio type for UI state updates
+  // Listen for other audio starting - pause podcast when rosary plays (web only)
+  useEffect(() => {
+    if (Platform.OS !== 'web') return; // Only on web
+    
+    const handleOtherAudioStart = ({ type }: { type: string }) => {
+      if (type !== 'podcast' && audio && !audio.paused) {
+        console.log('[PodcastPlayerContext Web] Other audio started, pausing podcast');
+        audio.pause();
+        setIsPlaying(false);
+        setIsPaused(true);
+      }
+    };
+    
+    if (typeof AudioStateManager.on === 'function') {
+      AudioStateManager.on('audio-play-started', handleOtherAudioStart);
+    }
+    
+    return () => {
+      if (typeof AudioStateManager.off === 'function') {
+        AudioStateManager.off('audio-play-started', handleOtherAudioStart);
+      }
+    };
+  }, [audio]);
+  
+  // Track when we're the active audio type for UI state updates (native only)
   const [isActiveAudioType, setIsActiveAudioType] = useState(true);
   
   useEffect(() => {
+    if (Platform.OS === 'web') return; // Skip polling on web
+    
     const checkInterval = setInterval(() => {
       const activeType = AudioStateManager.getActiveAudioType();
       const isActive = activeType === 'podcast';
@@ -898,14 +924,17 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
         
         try {
           await newAudio.play();
-          console.log('[PodcastPlayerContext] Audio play successful');
+          console.log('[PodcastPlayerContext Web] Audio play successful');
           setIsPlaying(true);
           setIsPaused(false);
-          // Set podcast as active audio type (will trigger rosary to pause)
+          // Set podcast as active audio type and emit event
           AudioStateManager.setActiveAudioType('podcast');
-          setIsActiveAudioType(true); // Update UI state immediately
+          if (typeof AudioStateManager.emit === 'function') {
+            AudioStateManager.emit('audio-play-started', { type: 'podcast' });
+            console.log('[PodcastPlayerContext Web] Emitted audio-play-started event');
+          }
         } catch (playError) {
-          console.log('[PodcastPlayerContext] Autoplay prevented:', playError);
+          console.log('[PodcastPlayerContext Web] Autoplay prevented:', playError);
           // Even if autoplay fails, we should show the mini player
           // The user can manually start playback
           setIsPlaying(false);
@@ -1125,15 +1154,18 @@ export function PodcastPlayerProvider({ children }: { children: React.ReactNode 
       if (audio) {
         // Restore position from last known position if current position is 0 but we have a saved position
         if (audio.currentTime === 0 && lastKnownPositionRef.current > 0) {
-          console.log('[PodcastPlayerContext] Web: Restoring position from', lastKnownPositionRef.current);
+          console.log('[PodcastPlayerContext Web] Restoring position from', lastKnownPositionRef.current);
           audio.currentTime = lastKnownPositionRef.current;
         }
         await audio.play();
         setIsPlaying(true);
         setIsPaused(false);
-        // Set podcast as active audio type (will trigger rosary to pause)
+        // Set podcast as active audio type and emit event
         AudioStateManager.setActiveAudioType('podcast');
-        setIsActiveAudioType(true); // Update UI state immediately
+        if (typeof AudioStateManager.emit === 'function') {
+          AudioStateManager.emit('audio-play-started', { type: 'podcast' });
+          console.log('[PodcastPlayerContext Web] Emitted audio-play-started event on resume');
+        }
       }
     } else {
       if (TrackPlayer && currentEpisode) {

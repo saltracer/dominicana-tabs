@@ -6,12 +6,22 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Alert, Platform } from 'react-native';
-import TrackPlayer, { 
-  IOSCategory, 
-  IOSCategoryMode, 
-  IOSCategoryOptions,
-  AndroidAudioContentType 
-} from 'react-native-track-player';
+
+// Conditionally import TrackPlayer only on native
+let TrackPlayer: any = null;
+let IOSCategory: any = null;
+let IOSCategoryMode: any = null;
+let IOSCategoryOptions: any = null;
+let AndroidAudioContentType: any = null;
+
+if (Platform.OS !== 'web') {
+  const RNTrackPlayer = require('react-native-track-player');
+  TrackPlayer = RNTrackPlayer.default || RNTrackPlayer;
+  IOSCategory = RNTrackPlayer.IOSCategory;
+  IOSCategoryMode = RNTrackPlayer.IOSCategoryMode;
+  IOSCategoryOptions = RNTrackPlayer.IOSCategoryOptions;
+  AndroidAudioContentType = RNTrackPlayer.AndroidAudioContentType;
+}
 import * as BackgroundTask from 'expo-background-task';
 
 import { ThemeProvider, useTheme } from '@/components/ThemeProvider';
@@ -28,10 +38,22 @@ import { PodcastDownloadQueueService } from '@/services/PodcastDownloadQueueServ
 import { useCacheInitialization } from '@/hooks/useCacheInitialization';
 
 // Initialize TrackPlayer immediately at module level (before any component renders)
+// Skip on web - use HTML5 Audio instead
 let trackPlayerInitialized = false;
 
 const initializeTrackPlayer = async () => {
+  // Skip TrackPlayer initialization on web
+  if (Platform.OS === 'web') {
+    console.log('[App] Skipping TrackPlayer initialization on web (using HTML5 Audio)');
+    return;
+  }
+  
   if (trackPlayerInitialized) return;
+  
+  if (!TrackPlayer) {
+    console.warn('[App] TrackPlayer not available');
+    return;
+  }
   
   try {
     TrackPlayer.registerPlaybackService(() => UnifiedPlaybackService);
@@ -66,7 +88,7 @@ const initializeTrackPlayer = async () => {
   }
 };
 
-// Start initialization immediately
+// Start initialization immediately (skips on web)
 initializeTrackPlayer();
 
 // Define background download task
