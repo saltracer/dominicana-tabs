@@ -158,8 +158,15 @@ export class PodcastDownloadQueueService {
       state.lastUpdated = new Date().toISOString();
       await AsyncStorage.setItem(this.QUEUE_KEY, JSON.stringify(state));
       
+      if (__DEV__) {
+        console.log('[DownloadQueue] Saving queue state with', state.items.length, 'items');
+      }
+      
       // Update download status cache with current queue state
       state.items.forEach(item => {
+        if (__DEV__) {
+          console.log('[DownloadQueue] Updating cache for episode:', item.episode.title.substring(0, 40), 'status:', item.status, 'progress:', item.progress);
+        }
         DownloadStatusCache.updateQueueItem(item);
         
         // Also update episode metadata cache
@@ -169,6 +176,10 @@ export class PodcastDownloadQueueService {
           queuePosition: state.items.findIndex(i => i.id === item.id),
         });
       });
+      
+      if (__DEV__) {
+        console.log('[DownloadQueue] About to notify listeners, items:', state.items.map(i => ({ id: i.episodeId, status: i.status })));
+      }
       
       await this.notifyListeners();
     } catch (error) {
@@ -480,6 +491,14 @@ export class PodcastDownloadQueueService {
       return;
     }
 
+    // Ensure status is 'downloading' (it should be, but make sure)
+    if (item.status !== 'downloading') {
+      if (__DEV__) {
+        console.log('[DownloadQueue] ⚠️  updateProgress: item status was', item.status, ', setting to downloading');
+      }
+      item.status = 'downloading';
+    }
+    
     item.progress = progress.progress;
     item.bytesDownloaded = progress.downloadedBytes;
     item.totalBytes = progress.totalBytes;

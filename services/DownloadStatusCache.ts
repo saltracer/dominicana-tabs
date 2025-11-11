@@ -117,6 +117,10 @@ export class DownloadStatusCache {
    * Update queue item status
    */
   static updateQueueItem(queueItem: QueueItem): void {
+    if (__DEV__) {
+      console.log('[DownloadStatusCache] updateQueueItem called for:', queueItem.episodeId, 'status:', queueItem.status, 'progress:', queueItem.progress);
+    }
+    
     const existing = this.cache.get(queueItem.episodeId);
     const updated: DownloadStatus = {
       isDownloaded: existing?.isDownloaded || queueItem.status === 'completed',
@@ -127,6 +131,11 @@ export class DownloadStatusCache {
     };
 
     this.cache.set(queueItem.episodeId, updated);
+    
+    if (__DEV__) {
+      console.log('[DownloadStatusCache] About to notify listeners, listener count:', this.listeners.size);
+    }
+    
     this.notifyListeners(queueItem.episodeId, updated);
   }
 
@@ -217,8 +226,15 @@ export class DownloadStatusCache {
    * Notify all listeners of a status change
    */
   private static notifyListeners(episodeId: string, status: DownloadStatus): void {
+    if (__DEV__) {
+      console.log('[DownloadStatusCache] notifyListeners called for:', episodeId, 'with', this.listeners.size, 'listeners');
+    }
+    
     this.listeners.forEach(listener => {
       try {
+        if (__DEV__) {
+          console.log('[DownloadStatusCache] Calling listener for episode:', episodeId);
+        }
         listener(episodeId, status);
       } catch (error) {
         console.error('[DownloadStatusCache] Listener error:', error);

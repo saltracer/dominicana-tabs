@@ -29,6 +29,7 @@ export function usePodcastDownloads() {
   const [isLoading, setIsLoading] = useState(true);
   const [queueState, setQueueState] = useState<QueueState | null>(null);
   const [useQueue, setUseQueue] = useState(true); // Enable queue by default
+  const [cacheVersion, setCacheVersion] = useState(0); // Force re-render when cache changes
   
   // Check if we're in a context that provides download hooks already
   const sharedContext = useSharedPlaylistHooks();
@@ -159,6 +160,39 @@ export function usePodcastDownloads() {
     };
   }, [user?.id, useQueue, hasSharedDownloadHooks]);
 
+  // Subscribe to DownloadStatusCache changes to trigger re-renders
+  useEffect(() => {
+    if (hasSharedDownloadHooks || Platform.OS === 'web') {
+      if (__DEV__) {
+        console.log('[usePodcastDownloads] Skipping DownloadStatusCache subscription (hasSharedDownloadHooks:', hasSharedDownloadHooks, 'web:', Platform.OS === 'web', ')');
+      }
+      return;
+    }
+    
+    if (__DEV__) {
+      console.log('[usePodcastDownloads] Subscribing to DownloadStatusCache');
+    }
+    
+    const unsubscribe = DownloadStatusCache.subscribe((episodeId, status) => {
+      if (__DEV__) {
+        console.log('[usePodcastDownloads] DownloadStatusCache updated for episode:', episodeId, 'status:', status?.status, 'progress:', status?.progress);
+      }
+      // Increment cache version to force components to re-render
+      setCacheVersion(prev => prev + 1);
+    });
+    
+    if (__DEV__) {
+      console.log('[usePodcastDownloads] Successfully subscribed to DownloadStatusCache');
+    }
+    
+    return () => {
+      if (__DEV__) {
+        console.log('[usePodcastDownloads] Unsubscribing from DownloadStatusCache');
+      }
+      unsubscribe();
+    };
+  }, [hasSharedDownloadHooks]);
+  
   // Initialize
   useEffect(() => {
     // If context provides download hooks, skip initialization
@@ -209,7 +243,7 @@ export function usePodcastDownloads() {
       };
     }
     return downloadStates.get(episodeId) || { episodeId, status: 'idle' };
-  }, [downloadStates]);
+  }, [downloadStates, cacheVersion]); // Add cacheVersion to force updates
 
   // Check WiFi connection
   const checkWiFiConnection = useCallback(async (): Promise<boolean> => {

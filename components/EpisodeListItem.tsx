@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
 import { PodcastEpisode } from '../types';
 import { useTheme } from './ThemeProvider';
 import { Colors } from '../constants/Colors';
@@ -231,6 +232,23 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   const isPausedDownload = downloadState.status === 'paused';
   const hasDownloadError = downloadState.status === 'error' || downloadState.status === 'failed';
   
+  // Debug logging for ALL download states (temporary for debugging)
+  if (__DEV__) {
+    const titleShort = episode.title.substring(0, 40);
+    if (isDownloading || isInQueue || isPausedDownload || hasDownloadError) {
+      console.log('[EpisodeListItem] ACTIVE Download state for', titleShort, ':', {
+        episodeId: episode.id,
+        status: downloadState.status,
+        progress: downloadState.progress,
+        isDownloading,
+        isInQueue,
+        isPausedDownload,
+        hasDownloadError,
+        queueItem: downloadState.queueItem ? 'present' : 'none'
+      });
+    }
+  }
+  
   // Get status icon for download state
   const getDownloadStatusIcon = () => {
     if (isDownloading) return { name: 'download' as const, color: '#2196f3' };
@@ -460,7 +478,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
       onPress={onPress}
       onLongPress={onLongPress}
     >
-      <View style={styles.content}>
+      <View style={[styles.content, !isDownloaded && styles.contentDimmed]}>
         <View style={styles.body}>
         <View style={styles.header}>
           {showArtwork && (
@@ -513,24 +531,51 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
             )} */}
           </View>
           <View style={styles.actions}>
-            <TouchableOpacity
-              // style={[
-              //   styles.playButton,
-              //   {
-              //     backgroundColor: isPlaying || isPaused
-              //       ? themeStyles.primary
-              //       : Colors[colorScheme ?? 'light'].surface,
-              //   }
-              // ]}
-              onPress={handlePlay}
-            >
-              <Ionicons
-                name={isPaused ? 'play' : isPlaying ? 'pause' : 'play-outline'}
-                size={24}
-                color={themeStyles.primary}
-                // color={isPlaying || isPaused ? '#fff' : themeStyles.primary}
-              />
-            </TouchableOpacity>
+            {(() => {
+              if (isDownloading && __DEV__) {
+                console.log('[EpisodeListItem] Rendering progress circle, progress:', downloadState.progress);
+              }
+              return isDownloading ? (
+              <View style={styles.progressCircle}>
+                <Svg width={44} height={44} viewBox="0 0 44 44">
+                  {/* Background circle */}
+                  <Circle
+                    cx={22}
+                    cy={22}
+                    r={18}
+                    stroke={themeStyles.border}
+                    strokeWidth={3}
+                    fill="none"
+                  />
+                  {/* Progress arc */}
+                  <Circle
+                    cx={22}
+                    cy={22}
+                    r={18}
+                    stroke={themeStyles.primary}
+                    strokeWidth={3}
+                    fill="none"
+                    strokeDasharray={2 * Math.PI * 18}
+                    strokeDashoffset={2 * Math.PI * 18 * (1 - (downloadState.progress || 0) / 100)}
+                    strokeLinecap="round"
+                    transform="rotate(-90 22 22)"
+                  />
+                </Svg>
+                {/* Percentage text in center */}
+                <Text style={[styles.progressText, { color: themeStyles.primary }]}>
+                  {Math.round(downloadState.progress || 0)}%
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={handlePlay}>
+                <Ionicons
+                  name={isPaused ? 'play' : isPlaying ? 'pause' : 'play-outline'}
+                  size={24}
+                  color={themeStyles.primary}
+                />
+              </TouchableOpacity>
+            );
+            })()}
             
             {/* Download Button with queue support */}
             {/* {isDownloadsEnabled && (
@@ -631,6 +676,12 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
         )}
 
         <View style={styles.meta}>
+          {/* Cloud icon for non-downloaded episodes */}
+          {!isDownloaded && (
+            <View style={styles.metaItem}>
+              <Ionicons name="cloud-outline" size={14} color={themeStyles.textSecondary} />
+            </View>
+          )}
           {playedStatus?.played && (
             <View style={styles.metaItem}>
               <Ionicons name="checkmark-circle" size={14} color="#4caf50" />
@@ -812,5 +863,21 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 2,
+  },
+  progressCircle: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  progressText: {
+    position: 'absolute',
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Georgia',
+  },
+  contentDimmed: {
+    opacity: 0.5,
   },
 });
