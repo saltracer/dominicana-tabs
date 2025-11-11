@@ -228,11 +228,68 @@ export default function FeastBanner({
             ]}
             onPress={(e) => {
               // Calculate the position based on where the user clicked
-              const { locationX, target } = e.nativeEvent;
-              const { width } = (target as any).getBoundingClientRect?.() || { width: window.innerWidth };
-              const percentage = locationX / width;
-              const newPosition = Math.max(0, Math.min(duration, duration * percentage));
-              seek(newPosition);
+              console.log('[FeastBanner.web] Progress bar clicked. Duration:', duration, 'isPlaying:', isPlaying, 'position:', position);
+              
+              if (!isFinite(duration) || duration <= 0) {
+                console.warn('[FeastBanner.web] Cannot seek: audio metadata not loaded yet (duration:', duration, ')');
+                console.log('[FeastBanner.web] Wait for audio to load before seeking');
+                return;
+              }
+              
+              const nativeEvent = e.nativeEvent as any;
+              const target = nativeEvent.target;
+              
+              // Get click position - React Native Web uses different event properties than native
+              // On web: use pageX and element bounds, locationX is undefined
+              let clickX = 0;
+              let elementLeft = 0;
+              let width = 0;
+              
+              if (target && typeof target.getBoundingClientRect === 'function') {
+                const rect = target.getBoundingClientRect();
+                width = rect.width;
+                elementLeft = rect.left;
+                
+                // Use pageX (global) or clientX (viewport relative)
+                const pageX = nativeEvent.pageX ?? nativeEvent.clientX ?? 0;
+                clickX = pageX - elementLeft; // Position relative to element
+                
+                console.log('[FeastBanner.web] Click calculation:', {
+                  pageX,
+                  elementLeft,
+                  clickX,
+                  width,
+                  percentage: ((clickX / width) * 100).toFixed(1) + '%'
+                });
+              } else {
+                console.warn('[FeastBanner.web] Cannot get element bounds');
+                return;
+              }
+              
+              if (!width || width <= 0) {
+                console.warn('[FeastBanner.web] Cannot seek: invalid width', width);
+                return;
+              }
+              
+              if (clickX < 0 || clickX > width) {
+                console.warn('[FeastBanner.web] Click outside bounds:', clickX, 'width:', width);
+                // Clamp to bounds
+                clickX = Math.max(0, Math.min(width, clickX));
+              }
+              
+              const percentage = clickX / width;
+              const newPosition = duration * percentage;
+              
+              // Validate calculated position
+              if (!isFinite(newPosition) || newPosition < 0) {
+                console.warn('[FeastBanner.web] Cannot seek: invalid position calculated', newPosition);
+                return;
+              }
+              
+              const clampedPosition = Math.max(0, Math.min(duration, newPosition));
+              console.log('[FeastBanner.web] Seeking to:', clampedPosition.toFixed(1), 'seconds', `(${(percentage * 100).toFixed(1)}%)`);
+              
+              seek(clampedPosition);
             }}
             activeOpacity={1}
           >
