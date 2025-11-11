@@ -695,6 +695,9 @@ const styles = StyleSheet.create({
     marginVertical: 0,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.15)',
+    // Ensure background is fully opaque to prevent underlay bleed-through
+    // The backgroundColor is set inline via themeStyles.card
+    overflow: 'hidden', // Clip content to prevent visual artifacts
   },
   content: {
     gap: 12,

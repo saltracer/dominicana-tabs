@@ -65,6 +65,7 @@ export default function PlaylistDetailScreen() {
   const [hasEverResolved, setHasEverResolved] = useState(false);
   const itemRefs = useRef<Map<string, any>>(new Map());
   const lastDragIndexRef = useRef<number>(-1);
+  const swipeDirectionRef = useRef<Map<string, string>>(new Map()); // Track swipe direction per item
 
   // NOTE: Removed duplicate setItems effect that was causing triple resolution
   // Items are now ONLY updated via useFocusEffect cache reload
@@ -447,15 +448,29 @@ export default function PlaylistDetailScreen() {
   };
 
   // Underlay component for right swipe (remove from playlist)
-  const UnderlayRight = ({ item }: { item: any }) => (
-    <View style={[styles.underlayRight, { backgroundColor: '#d32f2f' }]}>
-      <Ionicons name="trash" size={24} color="#fff" />
-      <Text style={styles.underlayText}>Remove</Text>
-    </View>
-  );
+  const UnderlayRight = ({ item }: { item: any }) => {
+    const theme = colorScheme ?? 'light';
+    const isDark = theme === 'dark';
+    
+    return (
+      <View style={styles.underlayRight}>
+        <View style={[
+          styles.underlayCard,
+          { backgroundColor: isDark ? '#c62828' : '#e53935' }
+        ]}>
+          <View style={styles.underlayContent}>
+            <Ionicons name="trash" size={32} color="#fff" />
+            <Text style={styles.underlayText}>Remove</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   // Underlay component for left swipe (download/delete download/retry)
   const UnderlayLeft = ({ item, episode }: { item: any; episode?: PodcastEpisode }) => {
+    const theme = colorScheme ?? 'light';
+    const isDark = theme === 'dark';
     const downloadStatus = (item as any)?.downloadStatus;
     const isFailed = downloadStatus === 'failed';
     const isPaused = downloadStatus === 'paused';
@@ -464,30 +479,34 @@ export default function PlaylistDetailScreen() {
     
     let actionText = 'Download';
     let iconName: any = 'cloud-download';
-    let bgColor = '#388e3c';
+    let bgColor = isDark ? '#2e7d32' : '#43a047';
     
     if (isFailed) {
       actionText = 'Retry';
       iconName = 'refresh';
-      bgColor = '#ff9800';
+      bgColor = isDark ? '#f57c00' : '#fb8c00';
     } else if (isPaused) {
       actionText = 'Resume';
       iconName = 'play';
-      bgColor = '#2196f3';
+      bgColor = isDark ? '#1976d2' : '#2196f3';
     } else if (isQueued) {
       actionText = 'Cancel';
       iconName = 'close';
-      bgColor = '#f57c00';
+      bgColor = isDark ? '#e65100' : '#f57c00';
     } else if (isCompleted) {
       actionText = 'Delete';
       iconName = 'trash';
-      bgColor = '#f57c00';
+      bgColor = isDark ? '#e65100' : '#f57c00';
     }
     
     return (
-      <View style={[styles.underlayLeft, { backgroundColor: bgColor }]}>
-        <Text style={styles.underlayText}>{actionText}</Text>
-        <Ionicons name={iconName} size={24} color="#fff" />
+      <View style={styles.underlayLeft}>
+        <View style={[styles.underlayCard, { backgroundColor: bgColor }]}>
+          <View style={styles.underlayContent}>
+            <Ionicons name={iconName} size={32} color="#fff" />
+            <Text style={styles.underlayText}>{actionText}</Text>
+          </View>
+        </View>
       </View>
     );
   };
@@ -588,26 +607,42 @@ export default function PlaylistDetailScreen() {
                     if (ref) itemRefs.current.set(ep.id, ref);
                   }}
                   onChange={({ openDirection, snapPoint }) => {
+                    const prevDirection = swipeDirectionRef.current.get(ep.id) || 'none';
+                    
+                    // Haptic feedback when swipe begins
+                    if (prevDirection === 'none' && openDirection !== 'none') {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                    
+                    // Update tracked direction
+                    swipeDirectionRef.current.set(ep.id, openDirection);
+                    
                     if (openDirection !== 'none') {
                       // Close other open items
                       itemRefs.current.forEach((ref, key) => {
                         if (key !== ep.id && ref) ref.close();
                       });
                       
-                      // Trigger action when fully swiped
+                      // Haptic feedback when reaching snap point
                       if (snapPoint === 150) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        
+                        // Trigger action when fully swiped
                         setTimeout(() => {
                           if (openDirection === 'left') {
                             const downloaded = isEpisodeDownloaded(ep.id);
                             if (downloaded) {
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                               handleDeleteDownload(ep);
                             } else {
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                               handleDownload(ep);
                             }
                           } else if (openDirection === 'right' && !isDownloaded) {
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                             handleSwipeRemove((item as any).id);
                           }
-                        }, 100);
+                        }, 50);
                       }
                     }
                   }}
@@ -617,7 +652,7 @@ export default function PlaylistDetailScreen() {
                   snapPointsLeft={[150]}
                   snapPointsRight={[150]}
                   swipeEnabled={!isDragging}
-                  activationThreshold={20}
+                  activationThreshold={15}
                 >
                   <View 
                     style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
@@ -711,26 +746,42 @@ export default function PlaylistDetailScreen() {
                     if (ref) itemRefs.current.set(ep.id, ref);
                   }}
                   onChange={({ openDirection, snapPoint }) => {
+                    const prevDirection = swipeDirectionRef.current.get(ep.id) || 'none';
+                    
+                    // Haptic feedback when swipe begins
+                    if (prevDirection === 'none' && openDirection !== 'none') {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                    
+                    // Update tracked direction
+                    swipeDirectionRef.current.set(ep.id, openDirection);
+                    
                     if (openDirection !== 'none') {
                       // Close other open items
                       itemRefs.current.forEach((ref, key) => {
                         if (key !== ep.id && ref) ref.close();
                       });
                       
-                      // Trigger action when fully swiped
+                      // Haptic feedback when reaching snap point
                       if (snapPoint === 150) {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        
+                        // Trigger action when fully swiped
                         setTimeout(() => {
                           if (openDirection === 'left') {
                             const downloaded = isEpisodeDownloaded(ep.id);
                             if (downloaded) {
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                               handleDeleteDownload(ep);
                             } else {
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                               handleDownload(ep);
                             }
                           } else if (openDirection === 'right' && !isDownloaded) {
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                             handleSwipeRemove((item as any).id);
                           }
-                        }, 100);
+                        }, 50);
                       }
                     }
                   }}
@@ -740,7 +791,7 @@ export default function PlaylistDetailScreen() {
                   snapPointsLeft={[150]}
                   snapPointsRight={[150]}
                   swipeEnabled={!isDragging}
-                  activationThreshold={20}
+                  activationThreshold={15}
                 >
                   <View 
                     style={[styles.draggableItemContainer, isActive && styles.draggableItemActive]}
@@ -891,7 +942,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   draggableItemActive: {
-    opacity: 0.9,
+    opacity: 0.95,
+    transform: [{ scale: 1.02 }],
   },
   dragHandle: {
     paddingHorizontal: 8,
@@ -931,20 +983,42 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     flexDirection: 'row',
-    paddingLeft: 20,
+    paddingLeft: 16,
+    paddingVertical: 8,
   },
   underlayLeft: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
     flexDirection: 'row',
-    paddingRight: 20,
+    paddingRight: 16,
+    paddingVertical: 8,
+  },
+  underlayCard: {
+    borderRadius: 12,
+    minWidth: 80,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  underlayContent: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   underlayText: {
     color: '#fff',
     fontFamily: 'Georgia',
-    fontSize: 16,
-    fontWeight: '600',
-    marginHorizontal: 8,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
 });
