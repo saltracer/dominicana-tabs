@@ -66,6 +66,63 @@ export default function PlaylistDetailScreen() {
   const itemRefs = useRef<Map<string, any>>(new Map());
   const lastDragIndexRef = useRef<number>(-1);
   const swipeDirectionRef = useRef<Map<string, string>>(new Map()); // Track which items are currently swiped open
+  
+  // Create stable onPress handlers for each episode to prevent remounting of underlays
+  const underlayLeftHandlers = useRef<Map<string, () => void>>(new Map());
+  const getUnderlayLeftHandler = (ep: PodcastEpisode) => {
+    if (!underlayLeftHandlers.current.has(ep.id)) {
+      underlayLeftHandlers.current.set(ep.id, () => {
+        console.log('[PlaylistDetail] 👆 UnderlayLeft handler FIRED for:', ep.title.substring(0, 40));
+        const downloaded = isEpisodeDownloaded(ep.id);
+        if (downloaded) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          handleDeleteDownload(ep);
+        } else {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          handleDownload(ep);
+        }
+        const ref = itemRefs.current.get(ep.id);
+        if (ref) ref.close();
+      });
+    }
+    return underlayLeftHandlers.current.get(ep.id)!;
+  };
+  
+  // Create render functions for SwipeableItem underlays
+  // Cache by episode ID + download state to prevent unnecessary remounting
+  const underlayLeftRenderers = useRef<Map<string, () => React.ReactElement>>(new Map());
+  const getUnderlayLeftRenderer = React.useCallback((item: any, ep: PodcastEpisode) => {
+    const currentIsDownloaded = isEpisodeDownloaded(ep.id);
+    const downloadStatus = (item as any)?.downloadStatus;
+    // Cache key includes both episode ID and current state
+    const cacheKey = `${ep.id}-${currentIsDownloaded}-${downloadStatus}`;
+    
+    if (!underlayLeftRenderers.current.has(cacheKey)) {
+      underlayLeftRenderers.current.set(cacheKey, () => (
+        <UnderlayLeft 
+          item={item} 
+          episode={ep}
+          onPress={getUnderlayLeftHandler(ep)}
+          isDownloaded={currentIsDownloaded}
+        />
+      ));
+    }
+    return underlayLeftRenderers.current.get(cacheKey)!;
+  }, [isEpisodeDownloaded]);
+
+  const getUnderlayRightRenderer = React.useCallback((item: any, ep: PodcastEpisode) => {
+    return () => (
+      <UnderlayRight 
+        item={item}
+        onPress={() => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          handleSwipeRemove((item as any).id);
+          const ref = itemRefs.current.get(ep.id);
+          if (ref) ref.close();
+        }}
+      />
+    );
+  }, [handleSwipeRemove]);
 
   // NOTE: Removed duplicate setItems effect that was causing triple resolution
   // Items are now ONLY updated via useFocusEffect cache reload
@@ -374,17 +431,21 @@ export default function PlaylistDetailScreen() {
     ]);
   };
 
-  const handleDownload = async (episode: PodcastEpisode) => {
-    try {
-      await downloadEpisode(episode);
-      // Close the swipe item after action
-      const ref = itemRefs.current.get(episode.id);
-      if (ref) ref.close();
-    } catch (error) {
+  // Create stable download handler using useCallback to prevent re-creation
+  const handleDownload = React.useCallback((episode: PodcastEpisode) => {
+    console.log('[PlaylistDetail] 🔽 handleDownload CALLED for:', episode.title.substring(0, 40));
+    // Close the swipe item immediately (don't wait for download to queue)
+    const ref = itemRefs.current.get(episode.id);
+    if (ref) ref.close();
+    
+    // Fire and forget - don't await
+    downloadEpisode(episode).then(() => {
+      console.log('[PlaylistDetail] ✅ Episode queued successfully');
+    }).catch(error => {
       console.error('Error downloading episode:', error);
       Alert.alert('Error', 'Failed to download episode');
-    }
-  };
+    });
+  }, [downloadEpisode]);
 
   const handleDeleteDownload = async (episode: PodcastEpisode, item?: any) => {
     try {
@@ -480,14 +541,25 @@ export default function PlaylistDetailScreen() {
   };
 
   // Underlay component for left swipe (download/delete download/retry)
-  const UnderlayLeft = ({ item, episode, onPress }: { item: any; episode?: PodcastEpisode; onPress: () => void }) => {
+  // Memoized with custom comparison to detect download state changes
+  const UnderlayLeft = React.memo(({ 
+    item, 
+    episode, 
+    onPress, 
+    isDownloaded 
+  }: { 
+    item: any; 
+    episode?: PodcastEpisode; 
+    onPress: () => void;
+    isDownloaded: boolean;
+  }) => {
     const theme = colorScheme ?? 'light';
     const isDark = theme === 'dark';
     const downloadStatus = (item as any)?.downloadStatus;
     const isFailed = downloadStatus === 'failed';
     const isPaused = downloadStatus === 'paused';
     const isQueued = downloadStatus === 'pending' || downloadStatus === 'downloading';
-    const isCompleted = downloadStatus === 'completed' || (!downloadStatus && episode && isEpisodeDownloaded(episode.id));
+    const isCompleted = downloadStatus === 'completed' || (!downloadStatus && isDownloaded);
     
     let actionText = 'Download';
     let iconName: any = 'cloud-download';
@@ -512,20 +584,35 @@ export default function PlaylistDetailScreen() {
     }
     
     return (
-      <View style={styles.underlayLeft}>
+      <View style={styles.underlayLeft} pointerEvents="box-none">
         <TouchableOpacity 
           style={[styles.underlayCard, { backgroundColor: bgColor }]}
-          onPress={onPress}
+          onPress={() => {
+            console.log('[PlaylistDetail] 🖱️  TouchableOpacity in UnderlayLeft pressed, action:', actionText, 'episode:', episode?.title.substring(0, 40));
+            console.log('[PlaylistDetail] 🖱️  About to call onPress handler');
+            onPress();
+            console.log('[PlaylistDetail] 🖱️  onPress handler completed');
+          }}
+          onPressIn={() => console.log('[PlaylistDetail] 👇 TouchableOpacity onPressIn (touch started)')}
+          onPressOut={() => console.log('[PlaylistDetail] 👆 TouchableOpacity onPressOut (touch ended)')}
           activeOpacity={0.8}
+          pointerEvents="auto"
         >
-          <View style={styles.underlayContent}>
+          <View style={styles.underlayContent} pointerEvents="none">
             <Ionicons name={iconName} size={32} color="#fff" />
             <Text style={styles.underlayText}>{actionText}</Text>
           </View>
         </TouchableOpacity>
       </View>
     );
-  };
+  }, (prevProps, nextProps) => {
+    // Custom comparison: only re-render if download state or status changes
+    return (
+      prevProps.isDownloaded === nextProps.isDownloaded &&
+      (prevProps.item as any)?.downloadStatus === (nextProps.item as any)?.downloadStatus &&
+      prevProps.episode?.id === nextProps.episode?.id
+    );
+  });
 
   // Show loading spinner until resolution completes to avoid jitter
   // For downloaded playlists, show spinner while loading downloads
@@ -623,6 +710,7 @@ export default function PlaylistDetailScreen() {
                     if (ref) itemRefs.current.set(ep.id, ref);
                   }}
                   onChange={({ openDirection, snapPoint }) => {
+                    console.log('[PlaylistDetail] 🔄 [DOWNLOADED] SwipeableItem onChange for:', ep.title.substring(0, 40), 'direction:', openDirection);
                     const prevDirection = swipeDirectionRef.current.get(ep.id);
                     
                     if (openDirection !== 'none') {
@@ -641,10 +729,8 @@ export default function PlaylistDetailScreen() {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       }
                       
-                      // Close other open items
-                      itemRefs.current.forEach((ref, key) => {
-                        if (key !== ep.id && ref) ref.close();
-                      });
+                      // DON'T auto-close other items - it causes touch blocking during re-renders
+                      // Let users manually swipe items closed or tap outside
                       
                       // Haptic feedback when reaching snap point
                       if (snapPoint === 150 && !prevDirection) {
@@ -659,31 +745,8 @@ export default function PlaylistDetailScreen() {
                     }
                   }}
                   overSwipe={20}
-                  renderUnderlayLeft={() => <UnderlayLeft 
-                    item={item} 
-                    episode={ep}
-                    onPress={() => {
-                      const downloaded = isEpisodeDownloaded(ep.id);
-                      if (downloaded) {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                        handleDeleteDownload(ep);
-                      } else {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        handleDownload(ep);
-                      }
-                      const ref = itemRefs.current.get(ep.id);
-                      if (ref) ref.close();
-                    }}
-                  />}
-                  renderUnderlayRight={() => <UnderlayRight 
-                    item={item}
-                    onPress={() => {
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                      handleSwipeRemove((item as any).id);
-                      const ref = itemRefs.current.get(ep.id);
-                      if (ref) ref.close();
-                    }}
-                  />}
+                  renderUnderlayLeft={getUnderlayLeftRenderer(item, ep)}
+                  renderUnderlayRight={getUnderlayRightRenderer(item, ep)}
                   snapPointsLeft={[150]}
                   snapPointsRight={[150]}
                   swipeEnabled={!isDragging}
@@ -782,6 +845,7 @@ export default function PlaylistDetailScreen() {
                     if (ref) itemRefs.current.set(ep.id, ref);
                   }}
                   onChange={({ openDirection, snapPoint }) => {
+                    console.log('[PlaylistDetail] 🔄 SwipeableItem onChange for:', ep.title.substring(0, 40), 'direction:', openDirection, 'snap:', snapPoint);
                     const prevDirection = swipeDirectionRef.current.get(ep.id);
                     
                     if (openDirection !== 'none') {
@@ -794,17 +858,15 @@ export default function PlaylistDetailScreen() {
                         }
                         return;
                       }
-                      
+
                       // Haptic feedback when swipe opens
                       if (!prevDirection) {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       }
-                      
-                      // Close other open items
-                      itemRefs.current.forEach((ref, key) => {
-                        if (key !== ep.id && ref) ref.close();
-                      });
-                      
+
+                      // DON'T auto-close other items - it causes touch blocking during re-renders
+                      // Let users manually swipe items closed or tap outside
+
                       // Haptic feedback when reaching snap point
                       if (snapPoint === 150 && !prevDirection) {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -818,31 +880,8 @@ export default function PlaylistDetailScreen() {
                     }
                   }}
                   overSwipe={20}
-                  renderUnderlayLeft={() => <UnderlayLeft 
-                    item={item} 
-                    episode={ep}
-                    onPress={() => {
-                      const downloaded = isEpisodeDownloaded(ep.id);
-                      if (downloaded) {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                        handleDeleteDownload(ep);
-                      } else {
-                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                        handleDownload(ep);
-                      }
-                      const ref = itemRefs.current.get(ep.id);
-                      if (ref) ref.close();
-                    }}
-                  />}
-                  renderUnderlayRight={() => <UnderlayRight 
-                    item={item}
-                    onPress={() => {
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                      handleSwipeRemove((item as any).id);
-                      const ref = itemRefs.current.get(ep.id);
-                      if (ref) ref.close();
-                    }}
-                  />}
+                  renderUnderlayLeft={getUnderlayLeftRenderer(item, ep)}
+                  renderUnderlayRight={getUnderlayRightRenderer(item, ep)}
                   snapPointsLeft={[150]}
                   snapPointsRight={[150]}
                   swipeEnabled={!isDragging}

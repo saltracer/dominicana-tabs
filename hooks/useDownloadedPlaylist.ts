@@ -212,11 +212,26 @@ export function useDownloadedPlaylist() {
   }, [user?.id, refreshKey]);
 
   // Subscribe to queue state changes to auto-refresh
+  // Only refetch when items are added/removed/completed, not on progress updates
   useEffect(() => {
     if (Platform.OS === 'web') return;
     
+    let lastItemCount = 0;
+    let lastCompletedCount = 0;
+    
     const unsubscribe = PodcastDownloadQueueService.subscribe((state) => {
-      refetch();
+      const currentItemCount = state.items.length;
+      const currentCompleted = state.items.filter(i => i.status === 'completed').length;
+      
+      // Only refetch if items were added/removed or downloads completed
+      if (currentItemCount !== lastItemCount || currentCompleted !== lastCompletedCount) {
+        if (__DEV__) {
+          console.log('[useDownloadedPlaylist] Queue changed - items:', lastItemCount, '→', currentItemCount, 'completed:', lastCompletedCount, '→', currentCompleted);
+        }
+        lastItemCount = currentItemCount;
+        lastCompletedCount = currentCompleted;
+        refetch();
+      }
     });
 
     return unsubscribe;

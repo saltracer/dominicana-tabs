@@ -200,13 +200,18 @@ export class PodcastDownloadQueueService {
       throw new Error('Downloads not supported on web');
     }
 
-    console.log('[DownloadQueue] Adding episode to queue:', episode.title);
+    console.log('[DownloadQueue] 🎬 addToQueue CALLED for:', episode.title.substring(0, 40));
+    const startTime = Date.now();
 
+    const stateStart = Date.now();
     const state = await this.getQueueState();
+    console.log('[DownloadQueue] ⏱️  getQueueState took:', Date.now() - stateStart, 'ms');
     
     // Also check if episode is already downloaded (not just in queue)
+    const checkStart = Date.now();
     const { PodcastDownloadService } = require('./PodcastDownloadService');
     const isAlreadyDownloaded = await PodcastDownloadService.isEpisodeDownloaded(episode.id);
+    console.log('[DownloadQueue] ⏱️  isEpisodeDownloaded check took:', Date.now() - checkStart, 'ms');
     
     // Check if already in queue
     const existingItem = state.items.find(item => item.episodeId === episode.id);
@@ -268,11 +273,15 @@ export class PodcastDownloadQueueService {
     };
 
     state.items.push(queueItem);
+    const saveStart = Date.now();
     await this.saveQueueState(state);
+    console.log('[DownloadQueue] ⏱️  saveQueueState took:', Date.now() - saveStart, 'ms');
 
     console.log('[DownloadQueue] ✅ Episode added to queue, total items:', state.items.length);
+    console.log('[DownloadQueue] 🎯 Total addToQueue time:', Date.now() - startTime, 'ms');
 
     // Start processing the queue
+    console.log('[DownloadQueue] 🔄 Calling processQueue...');
     this.processQueue();
 
     return queueItem;
@@ -432,7 +441,7 @@ export class PodcastDownloadQueueService {
         
         // For completed items, verify the file exists
         try {
-          const filePath = await PodcastDownloadService.getEpisodeLocalPath(item.episodeId);
+          const filePath = await PodcastDownloadService.getDownloadedEpisodePath(item.episodeId);
           if (filePath) {
             // File exists, keep the item
             cleanedItems.push(item);
@@ -497,22 +506,26 @@ export class PodcastDownloadQueueService {
         return;
       }
 
-      // Start pending downloads up to max concurrent limit
-      while (state.activeDownloads.length < this.MAX_CONCURRENT) {
-        const nextItem = state.items.find(i => i.status === 'pending');
-        if (!nextItem) {
-          console.log('[DownloadQueue] No more pending items');
-          break; // No more pending items
+      // Collect pending items that can be started (up to MAX_CONCURRENT total)
+      const toStart: QueueItem[] = [];
+      for (const item of state.items) {
+        if (item.status === 'pending' && state.activeDownloads.length + toStart.length < this.MAX_CONCURRENT) {
+          toStart.push(item);
+          // Temporarily mark as active to prevent duplicate starts
+          state.activeDownloads.push(item.episodeId);
+          item.status = 'downloading';
         }
-
-        console.log('[DownloadQueue] 📥 Starting download for:', nextItem.episode.title);
-        // Start this download
-        await this.startDownload(nextItem);
+      }
+      
+      if (toStart.length > 0) {
+        // Save state with items marked as downloading
+        await this.saveQueueState(state);
+        console.log('[DownloadQueue] Starting', toStart.length, 'concurrent downloads');
         
-        // Reload state to get updated active downloads
-        const updatedState = await this.getQueueState();
-        state.activeDownloads = updatedState.activeDownloads;
-        state.items = updatedState.items;
+        // Start all downloads WITHOUT awaiting - they run in parallel
+        toStart.forEach(item => {
+          this.startDownload(item);
+        });
       }
       
       console.log('[DownloadQueue] ✅ Queue processing complete');
@@ -530,12 +543,17 @@ export class PodcastDownloadQueueService {
     console.log('[DownloadQueue] 🚀 Starting download for:', item.episode.title);
     const state = await this.getQueueState();
     
-    // Mark as downloading
-    item.status = 'downloading';
-    item.startedAt = new Date().toISOString();
-    state.activeDownloads.push(item.episodeId);
-    await this.saveQueueState(state);
-    console.log('[DownloadQueue] Marked as downloading, active count:', state.activeDownloads.length);
+    // Mark as downloading (only if not already marked)
+    const stateItem = state.items.find(i => i.id === item.id);
+    if (stateItem && stateItem.status !== 'downloading') {
+      stateItem.status = 'downloading';
+      stateItem.startedAt = new Date().toISOString();
+      if (!state.activeDownloads.includes(stateItem.episodeId)) {
+        state.activeDownloads.push(stateItem.episodeId);
+      }
+      await this.saveQueueState(state);
+      console.log('[DownloadQueue] Marked as downloading, active count:', state.activeDownloads.length);
+    }
 
     try {
       // Download the episode

@@ -285,6 +285,9 @@ export function usePodcastDownloads() {
 
   // Download episode (with queue support)
   const downloadEpisode = useCallback(async (episode: PodcastEpisode): Promise<boolean> => {
+    console.log('[usePodcastDownloads] 📥 downloadEpisode CALLED for:', episode.title.substring(0, 40));
+    const startTime = Date.now();
+    
     if (!isDownloadsEnabled) {
       console.warn('[usePodcastDownloads] Downloads are disabled');
       return false;
@@ -298,9 +301,11 @@ export function usePodcastDownloads() {
     // Use queue if enabled
     if (useQueue) {
       try {
-        console.log('[usePodcastDownloads] Adding episode to queue:', episode.title);
+        console.log('[usePodcastDownloads] ⏱️  Calling addToQueue...');
+        const addToQueueStart = Date.now();
         await PodcastDownloadQueueService.addToQueue(episode);
-        console.log('[usePodcastDownloads] ✅ Episode added to queue successfully');
+        console.log('[usePodcastDownloads] ✅ addToQueue returned in', Date.now() - addToQueueStart, 'ms');
+        console.log('[usePodcastDownloads] ✅ Total downloadEpisode time:', Date.now() - startTime, 'ms');
         // Don't reload downloaded episodes immediately - wait for download to complete
         return true;
       } catch (error) {
