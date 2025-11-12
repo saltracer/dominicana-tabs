@@ -244,6 +244,11 @@ export class PodcastDownloadService {
     }
 
     try {
+      // CRITICAL: Migrate paths BEFORE validating files
+      // This ensures we check the correct paths after app container changes
+      const { DownloadPathMigration } = require('./DownloadPathMigration');
+      await DownloadPathMigration.migratePathsIfNeeded();
+
       let metadata = await this.getDownloadMetadata();
       console.log('[PodcastDownload] getDownloadedEpisodes: found', metadata.length, 'metadata entries');
       

@@ -315,9 +315,28 @@ export async function getUsage() {
 
 export async function deleteFeedData(feedId: string, kind: 'audio' | 'images' | 'all' = 'all'): Promise<void> {
   const map = await getEpisodesMap(feedId);
+  
   if (kind === 'audio' || kind === 'all') {
     await deleteAllAudioForFeed(feedId);
+    
+    // Clear in-memory caches for all episodes in this feed
+    const { DownloadStatusCache } = require('../../services/DownloadStatusCache');
+    const { PodcastDownloadService } = require('../../services/PodcastDownloadService');
+    
+    if (__DEV__) {
+      console.log('[PodcastCache] 🧹 Clearing caches for feed:', feedId);
+    }
+    
+    // Mark all episodes from this feed as deleted in the cache
+    const episodeIds = Object.values(map).map((e: any) => e.id).filter(Boolean);
+    for (const episodeId of episodeIds) {
+      DownloadStatusCache.markDeleted(episodeId);
+    }
+    
+    // Invalidate downloaded episodes cache
+    PodcastDownloadService.downloadedEpisodesCache = null;
   }
+  
   if (kind === 'images' || kind === 'all') {
     const urls = Array.from(new Set(Object.values(map).map((e) => e.artworkUrl).filter(Boolean) as string[]));
     for (const url of urls) {

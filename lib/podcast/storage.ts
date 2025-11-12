@@ -307,13 +307,40 @@ export async function deleteAllPodcastData(): Promise<UsageBreakdown> {
   ]);
   await ensureBasePodcastDirs();
 
+  // Clear in-memory caches FIRST (before removing AsyncStorage keys)
+  const { DownloadStatusCache } = require('../../services/DownloadStatusCache');
+  const { PodcastDownloadService } = require('../../services/PodcastDownloadService');
+  const { PodcastDownloadQueueService } = require('../../services/PodcastDownloadQueueService');
+  
+  if (__DEV__) {
+    console.log('[PodcastStorage] 🧹 Clearing all podcast caches and data');
+  }
+  
+  // Clear download status cache
+  DownloadStatusCache.clear();
+  
+  // Invalidate downloaded episodes cache
+  PodcastDownloadService.downloadedEpisodesCache = null;
+  
+  // Completely remove the download queue from AsyncStorage (both old and new keys)
+  await PodcastDownloadQueueService.nukeQueue();
+  
   // Remove relevant AsyncStorage keys (keep settings)
+  // Note: Queue keys are already removed by nukeQueue() above
   const allKeys = await AsyncStorage.getAllKeys();
-  const podcastKeys = allKeys.filter((k) => k.startsWith(PODCAST_ASYNC_PREFIX) && k !== keys.settings());
-  if (podcastKeys.length) await AsyncStorage.multiRemove(podcastKeys);
+  const podcastKeys = allKeys.filter((k) => 
+    k.startsWith(PODCAST_ASYNC_PREFIX) && k !== keys.settings()
+  );
+  if (podcastKeys.length) {
+    if (__DEV__) {
+      console.log('[PodcastStorage] 🗑️  Removing', podcastKeys.length, 'AsyncStorage keys:', podcastKeys);
+    }
+    await AsyncStorage.multiRemove(podcastKeys);
+  }
 
   const empty: UsageBreakdown = { audioBytes: 0, imageBytes: 0 };
   await setUsage(empty);
+  
   return empty;
 }
 
