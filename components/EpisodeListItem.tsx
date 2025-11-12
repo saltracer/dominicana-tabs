@@ -218,6 +218,16 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   const isDownloaded = isEpisodeDownloaded(episode.id);
   const downloadState = getDownloadState(episode.id);
   
+  // Debug: Log cache lookup for downloaded playlist items
+  if (__DEV__ && episode.title.includes('Lure of Avarice')) {
+    console.log('[EpisodeListItem] 🔍 Cache lookup for episode:', {
+      title: episode.title.substring(0, 40),
+      episodeId: episode.id?.substring(0, 60),
+      isDownloaded,
+      downloadStatus: downloadState.status,
+    });
+  }
+  
   
   // Check if download is in queue or downloading
   const isInQueue = downloadState.status === 'pending';

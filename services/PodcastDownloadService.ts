@@ -80,6 +80,15 @@ export class PodcastDownloadService {
         }
       );
 
+      if (__DEV__) {
+        console.log('[PodcastDownloadService] 💾 Saving metadata for completed download:', {
+          title: episode.title?.substring(0, 40),
+          episodeId: episode.id?.substring(0, 60),
+          guid: episode.guid,
+          filePath: result.path?.substring(0, 80),
+        });
+      }
+      
       await this.saveDownloadMetadata({
         episodeId: episode.id,
         podcastId: episode.podcastId,
@@ -96,6 +105,12 @@ export class PodcastDownloadService {
       this.downloadedEpisodesCache = null;
 
       // Update download status cache
+      if (__DEV__) {
+        console.log('[PodcastDownloadService] 📝 Marking episode as downloaded in cache:', {
+          title: episode.title?.substring(0, 40),
+          episodeId: episode.id?.substring(0, 60),
+        });
+      }
       DownloadStatusCache.markDownloaded(episode.id, result.path);
 
       // Update episode metadata cache

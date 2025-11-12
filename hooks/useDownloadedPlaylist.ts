@@ -101,16 +101,31 @@ export function useDownloadedPlaylist() {
                 title = title || ep.title;
                 description = ep.description;
                 artworkUrl = ep.artworkUrl || null;
-                episodeId = ep.id as any;
+                // CRITICAL: Use UUID from metadata (d.episodeId), NOT from feed (ep.id)
+                // Feed cache has GUID as id, but we need the database UUID for cache lookups
+                episodeId = d.episodeId || (ep.id as any);
                 duration = ep.duration;
                 publishedAt = ep.publishedAt;
                 episodeNumber = ep.episodeNumber;
                 seasonNumber = ep.seasonNumber;
                 fileSize = ep.fileSize;
                 mimeType = ep.mimeType;
-                if (__DEV__) console.log('[useDownloadedPlaylist] matched episode from cache:', title);
+                if (__DEV__) {
+                  console.log('[useDownloadedPlaylist] ✅ Matched episode from cache:', {
+                    title: title?.substring(0, 40),
+                    uuid: episodeId,
+                    guid: guid,
+                    metadataEpisodeId: d.episodeId,
+                    feedId: ep.id,
+                  });
+                }
               } else if (__DEV__) {
-                console.warn('[useDownloadedPlaylist] episode not found in cache:', d.podcastId, guid || d.audioUrl);
+                console.warn('[useDownloadedPlaylist] ❌ Episode NOT found in cache:', {
+                  podcastId: d.podcastId,
+                  guid: guid,
+                  audioUrl: d.audioUrl?.substring(0, 60),
+                  metadataEpisodeId: d.episodeId,
+                });
               }
             } catch (err) {
               if (__DEV__) console.warn('[useDownloadedPlaylist] error loading cache for', d.podcastId, err);
@@ -118,8 +133,22 @@ export function useDownloadedPlaylist() {
             }
           }
           
+          const syntheticId = `${d.podcastId || 'unknown'}:${guid || d.audioUrl}`;
+          const finalId = episodeId || syntheticId;
+          
+          if (__DEV__) {
+            console.log('[useDownloadedPlaylist] 📦 Creating result item:', {
+              title: (title || 'Episode').substring(0, 40),
+              finalId: finalId.substring(0, 60),
+              episodeId: episodeId || 'none',
+              syntheticId: syntheticId.substring(0, 60),
+              metadataEpisodeId: d.episodeId || 'none',
+              usingUUID: !!episodeId,
+            });
+          }
+          
           results.push({
-            id: `${d.podcastId || 'unknown'}:${guid || d.audioUrl}`,
+            id: finalId,
             podcastId: d.podcastId || 'unknown',
             episodeId,
             title: title || 'Episode',

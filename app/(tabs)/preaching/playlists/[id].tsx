@@ -678,9 +678,22 @@ export default function PlaylistDetailScreen() {
         renderItem={({ item, drag, isActive }: RenderItemParams<any>) => {
           if (isDownloaded) {
             const itemId = (item as any).id;
+            const itemEpisodeId = (item as any).episodeId;
             const cachedDuration = downloadedDurations[itemId];
+            const finalEpisodeId = itemEpisodeId || itemId;
+            
+            if (__DEV__) {
+              console.log('[PlaylistDetail] 🎯 Constructing episode from downloaded item:', {
+                title: (item as any).title?.substring(0, 40),
+                itemId: itemId?.substring(0, 60),
+                itemEpisodeId: itemEpisodeId || 'none',
+                finalEpisodeId: finalEpisodeId?.substring(0, 60),
+                usingUUID: !!itemEpisodeId,
+              });
+            }
+            
             const ep: PodcastEpisode = {
-              id: (item as any).episodeId || itemId,
+              id: finalEpisodeId,
               podcastId: (item as any).podcastId,
               title: (item as any).title,
               description: (item as any).description || '',
