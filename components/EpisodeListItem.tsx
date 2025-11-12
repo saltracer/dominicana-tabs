@@ -218,40 +218,11 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   const isDownloaded = isEpisodeDownloaded(episode.id);
   const downloadState = getDownloadState(episode.id);
   
-  // Debug: Log download state for BTP-LR19
-  if (__DEV__ && episode.title.includes('BTP-LR19')) {
-    console.log('[EpisodeListItem] 🔍 BTP-LR19 download state:', {
-      title: episode.title.substring(0, 40),
-      episodeId: episode.id?.substring(0, 60),
-      isDownloaded,
-      downloadStatus: downloadState.status,
-      downloadProgress: downloadState.progress,
-      hasQueueItem: !!downloadState.queueItem,
-      queueItemStatus: downloadState.queueItem?.status,
-      queueItemProgress: downloadState.queueItem?.progress,
-    });
-  }
-  
-  
   // Check if download is in queue or downloading
   const isInQueue = downloadState.status === 'pending';
   const isDownloading = downloadState.status === 'downloading';
   const isPausedDownload = downloadState.status === 'paused';
   const hasDownloadError = downloadState.status === 'error' || downloadState.status === 'failed';
-  
-  // Debug: Log computed download flags for BTP-LR19
-  if (__DEV__ && episode.title.includes('BTP-LR19')) {
-    console.log('[EpisodeListItem] 🎯 BTP-LR19 computed flags:', {
-      title: episode.title.substring(0, 40),
-      isDownloaded,
-      isInQueue,
-      isDownloading,
-      isPausedDownload,
-      hasDownloadError,
-      willShowProgressCircle: isDownloading,
-      willShowPlayButton: !isDownloading,
-    });
-  }
   
   
   // Get status icon for download state

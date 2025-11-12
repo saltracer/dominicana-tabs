@@ -72,21 +72,6 @@ export class DownloadStatusCache {
   static get(episodeId: string): DownloadStatus {
     const cached = this.cache.get(episodeId);
     
-    // Debug: Log cache lookup for BTP-LR19
-    if (__DEV__ && episodeId === '13dcace0-3857-4d55-aeb5-fde45e948ec7') {
-      console.log('[DownloadStatusCache] 🔍 Cache lookup for BTP-LR19:', {
-        episodeId: episodeId.substring(0, 40),
-        foundInCache: !!cached,
-        isDownloaded: cached?.isDownloaded,
-        status: cached?.status,
-        progress: cached?.progress,
-        hasQueueItem: !!cached?.queueItem,
-        queueItemStatus: cached?.queueItem?.status,
-        queueItemProgress: cached?.queueItem?.progress,
-        hasLocalPath: !!cached?.localPath,
-      });
-    }
-    
     if (cached) {
       return cached;
     }

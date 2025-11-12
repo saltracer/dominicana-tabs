@@ -136,18 +136,6 @@ export class PodcastDownloadQueueService {
         state.lastUpdated = new Date().toISOString();
       }
       
-      // Debug: Log BTP-LR19 if it's in the queue
-      if (__DEV__) {
-        const btp19 = state.items.find((i: any) => i.episodeId === '13dcace0-3857-4d55-aeb5-fde45e948ec7');
-        if (btp19) {
-          console.log('[DownloadQueue] 📍 BTP-LR19 found in queue:', {
-            status: btp19.status,
-            progress: btp19.progress,
-            episodeId: btp19.episodeId?.substring(0, 40),
-            inActiveDownloads: state.activeDownloads.includes(btp19.episodeId),
-          });
-        }
-      }
       
       // Fix stale "downloading" items that are actually complete (progress=100)
       // Check if file exists on disk - if yes, mark complete regardless of timing
@@ -595,15 +583,20 @@ export class PodcastDownloadQueueService {
         statusBreakdown[item.status] = (statusBreakdown[item.status] || 0) + 1;
       }
       
-      if (__DEV__) {
-        console.log('[DownloadQueue] 📊 Queue breakdown:', {
-          total: state.items.length,
-          active: state.activeDownloads.length,
-          maxConcurrent: this.MAX_CONCURRENT,
-          statusBreakdown,
-          canStartMore: state.activeDownloads.length < this.MAX_CONCURRENT,
-        });
-      }
+      // ALWAYS log breakdown (not just in __DEV__) to diagnose queue issues
+      console.log('[DownloadQueue] 📊 Queue breakdown:', {
+        total: state.items.length,
+        active: state.activeDownloads.length,
+        maxConcurrent: this.MAX_CONCURRENT,
+        statusBreakdown,
+        canStartMore: state.activeDownloads.length < this.MAX_CONCURRENT,
+      });
+      
+      // Log each item's status
+      console.log('[DownloadQueue] 📋 Items in queue:');
+      state.items.forEach((item, index) => {
+        console.log(`  [${index}] ${item.episode.title.substring(0, 40)} - Status: ${item.status}, Progress: ${item.progress}%`);
+      });
       
       for (const item of state.items) {
         if (item.status === 'pending' && state.activeDownloads.length + toStart.length < this.MAX_CONCURRENT) {
@@ -611,23 +604,27 @@ export class PodcastDownloadQueueService {
           // Temporarily mark as active to prevent duplicate starts
           state.activeDownloads.push(item.episodeId);
           item.status = 'downloading';
-          if (__DEV__) {
-            console.log('[DownloadQueue] 📤 Will start:', item.episode.title.substring(0, 40));
-          }
+          console.log('[DownloadQueue] 📤 Will start:', item.episode.title.substring(0, 40), {
+            previousStatus: 'pending',
+            newStatus: 'downloading',
+            activeCount: state.activeDownloads.length,
+            maxConcurrent: this.MAX_CONCURRENT,
+          });
         }
       }
       
       if (toStart.length > 0) {
         // Save state with items marked as downloading
         await this.saveQueueState(state);
-        console.log('[DownloadQueue] Starting', toStart.length, 'concurrent downloads');
+        console.log('[DownloadQueue] ✅ Starting', toStart.length, 'concurrent downloads');
         
         // Start all downloads WITHOUT awaiting - they run in parallel
         toStart.forEach(item => {
+          console.log('[DownloadQueue] 🚀 Launching download:', item.episode.title.substring(0, 40));
           this.startDownload(item);
         });
-      } else if (__DEV__) {
-        console.log('[DownloadQueue] ℹ️  No pending items to start');
+      } else {
+        console.log('[DownloadQueue] ℹ️  No pending items to start (all items are either completed, downloading, paused, or failed)');
       }
       
       console.log('[DownloadQueue] ✅ Queue processing complete');
