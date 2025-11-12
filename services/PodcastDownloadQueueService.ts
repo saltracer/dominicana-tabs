@@ -136,6 +136,86 @@ export class PodcastDownloadQueueService {
         state.lastUpdated = new Date().toISOString();
       }
       
+      // Debug: Log BTP-LR19 if it's in the queue
+      if (__DEV__) {
+        const btp19 = state.items.find((i: any) => i.episodeId === '13dcace0-3857-4d55-aeb5-fde45e948ec7');
+        if (btp19) {
+          console.log('[DownloadQueue] 📍 BTP-LR19 found in queue:', {
+            status: btp19.status,
+            progress: btp19.progress,
+            episodeId: btp19.episodeId?.substring(0, 40),
+            inActiveDownloads: state.activeDownloads.includes(btp19.episodeId),
+          });
+        }
+      }
+      
+      // Fix stale "downloading" items that are actually complete (progress=100)
+      // Check if file exists on disk - if yes, mark complete regardless of timing
+      let fixedStaleItems = false;
+      const { PodcastDownloadService } = require('./PodcastDownloadService');
+      
+      for (const item of state.items) {
+        // Any item stuck at 100% with downloading status is suspect
+        if (item.status === 'downloading' && item.progress === 100) {
+          // Check if file actually exists
+          const filePath = await PodcastDownloadService.getDownloadedEpisodePath(item.episodeId);
+          if (filePath) {
+            if (__DEV__) {
+              console.log('[DownloadQueue] 🔧 Fixing stale item stuck at 100%, file exists:', item.episode.title.substring(0, 40), {
+                wasInActiveDownloads: state.activeDownloads.includes(item.episodeId),
+                startedAt: item.startedAt,
+              });
+            }
+            item.status = 'completed';
+            item.completedAt = new Date().toISOString();
+            
+            // Remove from activeDownloads if present
+            const idx = state.activeDownloads.indexOf(item.episodeId);
+            if (idx > -1) {
+              state.activeDownloads.splice(idx, 1);
+              if (__DEV__) {
+                console.log('[DownloadQueue] 🧹 Removed from activeDownloads');
+              }
+            }
+            
+            fixedStaleItems = true;
+            
+            // Mark as downloaded in cache (file is confirmed to exist)
+            DownloadStatusCache.markDownloaded(item.episodeId, filePath);
+          } else {
+            // File doesn't exist - remove the stale item entirely
+            if (__DEV__) {
+              console.log('[DownloadQueue] 🗑️  Removing stale item at 100% (file missing):', item.episode.title.substring(0, 40));
+            }
+            const idx = state.items.indexOf(item);
+            if (idx > -1) {
+              state.items.splice(idx, 1);
+              fixedStaleItems = true;
+            }
+            // Also remove from activeDownloads
+            const activeIdx = state.activeDownloads.indexOf(item.episodeId);
+            if (activeIdx > -1) {
+              state.activeDownloads.splice(activeIdx, 1);
+            }
+          }
+        }
+      }
+      
+      if (fixedStaleItems) {
+        await AsyncStorage.setItem(this.QUEUE_KEY, JSON.stringify(state));
+        // Update caches for fixed items
+        for (const item of state.items) {
+          if (item.status === 'completed') {
+            DownloadStatusCache.updateQueueItem(item);
+          }
+        }
+        // Notify listeners of state change
+        await this.notifyListeners();
+        if (__DEV__) {
+          console.log('[DownloadQueue] 💾 Saved queue state and notified listeners after fixing stale items');
+        }
+      }
+      
       // Clean up completed items older than 24 hours
       const now = new Date().getTime();
       state.items = state.items.filter(item => {
@@ -508,12 +588,32 @@ export class PodcastDownloadQueueService {
 
       // Collect pending items that can be started (up to MAX_CONCURRENT total)
       const toStart: QueueItem[] = [];
+      const statusBreakdown: Record<string, number> = {};
+      
+      // Count statuses for debugging
+      for (const item of state.items) {
+        statusBreakdown[item.status] = (statusBreakdown[item.status] || 0) + 1;
+      }
+      
+      if (__DEV__) {
+        console.log('[DownloadQueue] 📊 Queue breakdown:', {
+          total: state.items.length,
+          active: state.activeDownloads.length,
+          maxConcurrent: this.MAX_CONCURRENT,
+          statusBreakdown,
+          canStartMore: state.activeDownloads.length < this.MAX_CONCURRENT,
+        });
+      }
+      
       for (const item of state.items) {
         if (item.status === 'pending' && state.activeDownloads.length + toStart.length < this.MAX_CONCURRENT) {
           toStart.push(item);
           // Temporarily mark as active to prevent duplicate starts
           state.activeDownloads.push(item.episodeId);
           item.status = 'downloading';
+          if (__DEV__) {
+            console.log('[DownloadQueue] 📤 Will start:', item.episode.title.substring(0, 40));
+          }
         }
       }
       
@@ -526,6 +626,8 @@ export class PodcastDownloadQueueService {
         toStart.forEach(item => {
           this.startDownload(item);
         });
+      } else if (__DEV__) {
+        console.log('[DownloadQueue] ℹ️  No pending items to start');
       }
       
       console.log('[DownloadQueue] ✅ Queue processing complete');

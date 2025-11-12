@@ -253,6 +253,25 @@ export function usePodcastDownloads() {
     // OPTIMIZATION: Use DownloadStatusCache for instant lookup
     if (DownloadStatusCache.isInitialized()) {
       const cachedStatus = DownloadStatusCache.get(episodeId);
+      
+      // Debug: Log what cache returns for BTP-LR19
+      if (__DEV__ && episodeId === '13dcace0-3857-4d55-aeb5-fde45e948ec7') {
+        console.log('[usePodcastDownloads] 🔍 getDownloadState for BTP-LR19:', {
+          episodeId: episodeId.substring(0, 40),
+          cachedIsDownloaded: cachedStatus.isDownloaded,
+          cachedStatus: cachedStatus.status,
+          cachedProgress: cachedStatus.progress,
+          hasQueueItem: !!cachedStatus.queueItem,
+          queueItemStatus: cachedStatus.queueItem?.status,
+          queueItemProgress: cachedStatus.queueItem?.progress,
+          willReturnStatus: cachedStatus.isDownloaded ? 'downloaded' : 
+                            cachedStatus.status === 'downloading' ? 'downloading' :
+                            cachedStatus.status === 'pending' ? 'pending' :
+                            cachedStatus.status === 'failed' ? 'error' :
+                            cachedStatus.status === 'paused' ? 'paused' : 'idle',
+        });
+      }
+      
       return {
         episodeId,
         status: cachedStatus.isDownloaded ? 'downloaded' : 
