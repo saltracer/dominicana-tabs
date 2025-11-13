@@ -5,6 +5,25 @@ import { FixedCelebration, CelebrationRank } from "@/types/celebrations-types"
 export function fixedDominicanCelebrations(): FixedCelebration[] {
   return [
     {
+      id: "holy-name-of-jesus",
+      name: "The Most Holy Name of Jesus",
+      date: "01-03",
+      rank: CelebrationRank.OPTIONAL_MEMORIAL,
+      color: LiturgicalColor.WHITE,
+      proper: "Proper of Dominican Saints",
+      type: "dominican",
+      short_desc: "Celebrates the sacred name of Jesus and its power for salvation.",
+      description: [
+        "The feast of the Most Holy Name of Jesus celebrates the sacred name given to the Son of God at his circumcision, as commanded by the angel before his conception. The name 'Jesus' (Yeshua in Hebrew) means 'God saves' or 'The Lord is salvation,' expressing the mission of the Incarnate Word to save humanity from sin.",
+        "Devotion to the Holy Name has ancient roots in Christianity, but was particularly promoted by St. Bernardino of Siena, a Franciscan friar, in the 15th century. St. Bernardino preached powerfully on the name of Jesus and popularized the IHS monogram (from the Greek spelling of Jesus). However, it was through the efforts of the Dominicans, particularly St. Peter Canisius, that the feast spread throughout Europe.",
+        "St. Bernardino's preaching emphasized that the name of Jesus contains all power and grace. He encouraged the faithful to invoke the holy name in times of temptation, danger, and need. This devotion was formally approved by Pope Sixtus V in 1585, and the feast was extended to the universal Church in 1721 by Pope Innocent XIII.",
+        "The Dominican Order adopted this feast with particular fervor, incorporating it into their proper calendar. The devotion to the Holy Name aligns with the Dominican emphasis on preaching the name of Jesus for the salvation of souls. Many Dominican churches and institutions have been dedicated to the Holy Name of Jesus.",
+        "Scripture gives great significance to the name of Jesus. St. Peter proclaimed: 'There is no other name under heaven given to men by which we must be saved' (Acts 4:12). St. Paul wrote that 'at the name of Jesus every knee should bow, in heaven and on earth and under the earth' (Philippians 2:10).",
+        "The feast was moved to January 3 in the reformed calendar of 1969, placing it near the celebration of the Epiphany. In the Dominican calendar, it may be observed as an Optional Memorial. On Saturdays in Ordinary Time when no obligatory memorial occurs, an Optional Memorial of the Blessed Virgin Mary may also be celebrated.",
+        "The celebration invites the faithful to reflect on the power and sweetness of the name of Jesus. It encourages reverent use of the holy name and reparation for blasphemy and profanity. The devotion teaches that calling upon the name of Jesus with faith opens the heart to grace and brings consolation in trials.",
+      ],
+    },
+    {
       id: "all-saints-of-the-order",
       name: "All Saints of the Order of Preachers",
       date: "11-07",
