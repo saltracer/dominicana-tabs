@@ -80,5 +80,24 @@ export function fixedDominicanCelebrations(): FixedCelebration[] {
         "In Dominican communities, this day is often marked by special observances that recall the Order's history and traditions. These may include processions, the blessing of roses (in memory of the roses found in Dominic's tomb), and communal renewal of commitment to the Dominican charism.",
       ],
     },
+    {
+      id: "anniversary-approval-of-order",
+      name: "Anniversary of the Approval of the Order",
+      date: "12-22",
+      rank: CelebrationRank.MEMORIAL,
+      color: LiturgicalColor.WHITE,
+      proper: "Proper of Dominican Saints",
+      type: "dominican",
+      short_desc: "Commemorates the papal approval of the Order of Preachers in 1216.",
+      description: [
+        "This memorial commemorates December 22, 1216, when Pope Honorius III officially approved the Order of Preachers (Dominicans) with the bull 'Religiosam vitam.' This papal confirmation marked the formal establishment of St. Dominic's vision of an order dedicated to preaching, study, and the salvation of souls.",
+        "The journey to approval had begun years earlier when St. Dominic, while on a diplomatic mission through southern France, encountered the Albigensian heresy. Moved by the spiritual crisis, he conceived of a new kind of religious order—one that would combine the contemplative life with active preaching, and whose members would be highly educated and live in evangelical poverty.",
+        "Dominic first sought approval at the Fourth Lateran Council in 1215, but the council had decreed that no new religious rules could be established. Instead, Pope Innocent III advised Dominic to adopt an existing rule. Dominic chose the Rule of St. Augustine, adapting it with constitutions that reflected his vision of a mendicant preaching order.",
+        "After Innocent III's death, his successor Pope Honorius III recognized the need for well-educated preachers to combat heresy and renew the faith. On December 22, 1216, he issued the bull officially confirming the Order of Preachers, granting it the authority to preach throughout the world and establish houses wherever needed.",
+        "This approval was revolutionary for its time. Unlike traditional monastic orders that were tied to specific locations, the Dominicans were given unprecedented freedom to travel and preach. They were also the first order to place study at the center of religious life, recognizing that effective preaching required solid theological and philosophical formation.",
+        "Within a few years of the approval, the Order spread rapidly throughout Europe, establishing houses in major university cities. By the time of St. Dominic's death in 1221, just five years after the Order's approval, there were already over 60 Dominican houses across Europe.",
+        "The anniversary of the Order's approval is celebrated with thanksgiving for over 800 years of Dominican life and mission. It is a day for Dominicans to reflect on their founding charism and to renew their commitment to preaching the truth through the four pillars established by St. Dominic: prayer, study, community, and preaching.",
+      ],
+    },
   ]
 }
