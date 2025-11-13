@@ -63,8 +63,8 @@
 - [x] The province map doesn't show the continent filters on mobile. Appears to be behind the feast banner.
 - [x] Saints page on web isn't responsive
 - [ ] Extract books from saints; link saints books to library
-- [ ] Import dominican calendar
-- [ ] Import general calendar
+- [x] Import dominican calendar
+- [x] Import general calendar
 - [ ] Are sundays ferial days?
 
 ## Preaching
@@ -75,6 +75,7 @@
 - [ ] Create podcast specific preferences
 - [x] Improve performance of podcasts by using device caching
 - [x] Add "Played" status to podcasts
+- [ ] Allow users to add their own podcasts
 - [ ] Add skip forward and skip backward buttons
 - [ ] Add to playlists popup is ugly
 - [x] Improve the swipable gestures, their functions, and their look and feel
