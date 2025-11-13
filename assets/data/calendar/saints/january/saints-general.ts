@@ -333,10 +333,4 @@ export const januaryGeneralSaints: Saint[] = [
     color: LiturgicalColor.WHITE,
     proper: "Common of Virgins",
   },
-  {
-    id: "john-bosco",
-    name: "St. John Bosco",
-    feast_day: "01-31",
-    short_bio:
-      "Priest, educator, and founder of the Salesian Society dedicated to the education of poor and disadvantaged youth",
-    biography: [
+]
