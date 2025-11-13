@@ -155,5 +155,24 @@ export function fixedDominicanCelebrations(): FixedCelebration[] {
         "The anniversary of the Order's approval is celebrated with thanksgiving for over 800 years of Dominican life and mission. It is a day for Dominicans to reflect on their founding charism and to renew their commitment to preaching the truth through the four pillars established by St. Dominic: prayer, study, community, and preaching.",
       ],
     },
+    {
+      id: "anniversary-deceased-friends-benefactors",
+      name: "Anniversary of Deceased Friends and Benefactors",
+      date: "09-05",
+      rank: CelebrationRank.OPTIONAL_MEMORIAL,
+      color: LiturgicalColor.VIOLET,
+      proper: "Proper of Dominican Saints",
+      type: "dominican",
+      short_desc: "Commemorates deceased friends and benefactors of the Dominican Order.",
+      description: [
+        "This optional memorial in the Dominican calendar commemorates all deceased friends and benefactors of the Order of Preachers. It recognizes those who, though not members of the Order, supported the Dominican mission through their friendship, prayers, material assistance, or encouragement.",
+        "Throughout its 800-year history, the Dominican Order has been blessed with countless benefactors. These include kings and queens who endowed Dominican foundations, wealthy patrons who provided financial support for Dominican works, scholars who collaborated with Dominican theologians, and simple faithful who offered prayers and alms for the Order's apostolate.",
+        "The celebration also honors friends of individual Dominicans—those who supported them in their vocation, encouraged them in difficulties, or collaborated with them in ministry. St. Dominic himself had many such friends, including Bishop Diego of Osma, Count Simon de Montfort, and the devout women who formed the first Dominican nuns at Prouille.",
+        "St. Catherine of Siena, a Dominican tertiary, was surrounded by a 'bella brigata' (beautiful company) of friends and spiritual children who supported her mission to reform the Church. St. Thomas Aquinas had friends among scholars and benefactors who made his theological work possible. Every Dominican house has been sustained by the generosity of friends and supporters.",
+        "This memorial reflects the Dominican understanding that the mission of preaching and teaching cannot be accomplished in isolation. It requires a network of support, collaboration, and friendship. It acknowledges that lay supporters are essential partners in the Order's work and share in its spiritual fruits.",
+        "On this day, Dominicans are encouraged to remember in prayer all those who have supported the Order, to offer Masses for deceased benefactors, and to express gratitude for the communion of saints that unites the living and the dead. It is also an opportunity to renew commitment to friendship and support for those who share in the Dominican mission.",
+        "The observance reminds all Dominicans of their responsibility to pray for their benefactors, both living and deceased, and to be good stewards of the resources entrusted to them. It celebrates the truth that the Dominican family extends far beyond professed members to include all who support and participate in the Order's charism of truth.",
+      ],
+    },
   ]
 }
