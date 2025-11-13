@@ -56,7 +56,7 @@ export const reformationDoctors: Saint[] = [
   },
   {
     id: "teresa-of-avila",
-    name: "St. Teresa of Ávila",
+    name: "St. Teresa of Avila",
     feast_day: "10-15",
     short_bio: "Spanish mystic, Carmelite nun, and Doctor of the Church",
     biography: [
