@@ -60,6 +60,7 @@ export function getSaintsForDate(date: Date): Celebration[] {
     const generalSaintsForDate = generalSaints.filter((saint) => saint.feast_day === formattedDate)
 
     const saintsForDate = [...dominicanSaintsForDate, ...doctorSaintsForDate, ...generalSaintsForDate]
+      .filter((saint) => saint.show_on_calendar !== false)  // Default: true (show on calendar). Only hide if explicitly set to false
 
     // Convert saints to celebrations with more detailed information
     const saintCelebrations = saintsForDate.map((saint) => ({

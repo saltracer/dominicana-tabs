@@ -23,4 +23,5 @@ export interface Saint {
   birth_place?: string
   death_place?: string
   quotes?: string[]
+  show_on_calendar?: boolean  // Defaults to true. If explicitly set to false, saint will be available in Saints screen but not displayed on calendar
 }
