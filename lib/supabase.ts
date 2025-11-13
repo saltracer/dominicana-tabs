@@ -37,6 +37,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',
+    // Enable debug mode to see token refresh attempts in logs (development only)
+    debug: __DEV__,
+    // Use a more reliable flow type for better compatibility
+    flowType: 'pkce',
   },
 });
 

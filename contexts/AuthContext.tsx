@@ -42,10 +42,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileFetchTimeout, setProfileFetchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
+  // Helper to clear invalid sessions
+  const clearInvalidSession = async () => {
+    try {
+      // Clear AsyncStorage Supabase keys
+      const keys = await AsyncStorage.getAllKeys();
+      const supabaseKeys = keys.filter(key => key.startsWith('sb-'));
+      if (supabaseKeys.length > 0) {
+        await AsyncStorage.multiRemove(supabaseKeys);
+      }
+    } catch (error) {
+      console.error('Error clearing invalid session from storage:', error);
+    }
+    
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setLoading(false);
+    setProfileLoading(false);
+  };
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession()
-      .then(({ data: { session } }) => {
+      .then(async ({ data: { session } }) => {
+        // If we have a session, verify it's still valid
+        if (session) {
+          try {
+            // Try to get the user to verify the session is valid
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (error || !user) {
+              // Session is invalid, clear it
+              console.log('AuthContext: Session validation failed, clearing session');
+              await clearInvalidSession();
+              return;
+            }
+          } catch (error) {
+            console.log('AuthContext: Error validating session:', error);
+            await clearInvalidSession();
+            return;
+          }
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -55,14 +93,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setProfileLoading(false);
         }
       })
-      .catch((error) => {
+      .catch(async (error) => {
         // Handle invalid/expired refresh tokens gracefully
         console.log('AuthContext: Error getting session (treating as signed out):', error.message);
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        setProfileLoading(false);
+        await clearInvalidSession();
       });
 
     // Safety timeout to prevent infinite loading
@@ -85,16 +119,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             clearTimeout(profileFetchTimeout);
             setProfileFetchTimeout(null);
           }
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          setProfileLoading(false);
+          await clearInvalidSession();
           return;
         }
       
+      // Handle token refresh failures
+      if (event === 'TOKEN_REFRESH_FAILED') {
+        console.log('AuthContext: TOKEN_REFRESH_FAILED - clearing invalid session');
+        await clearInvalidSession();
+        return;
+      }
+      
       // Handle different auth events appropriately
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        console.log(`AuthContext: ${event} - updating session`);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -102,6 +140,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Only fetch profile for SIGNED_IN events, not TOKEN_REFRESHED
           if (event === 'SIGNED_IN') {
             await fetchProfileWithDebounce(session.user.id);
+          } else {
+            // For TOKEN_REFRESHED, just ensure loading is false
+            setLoading(false);
           }
         } else {
           setProfile(null);
@@ -122,11 +163,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Handle any errors in auth state change gracefully
         console.log('AuthContext: Error in onAuthStateChange:', error?.message || error);
         // Treat as signed out on error
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        setProfileLoading(false);
+        await clearInvalidSession();
       }
     });
 
