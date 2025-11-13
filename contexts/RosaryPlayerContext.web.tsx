@@ -101,6 +101,9 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
   // Track if we've attempted to restore state on mount
   const hasRestoredStateRef = useRef<boolean>(false);
   
+  // Track if the audio queue has been initialized
+  const isQueueInitializedRef = useRef<boolean>(false);
+  
   // Debounce timer for saving state
   const saveStateDebounceRef = useRef<number | null>(null);
   
@@ -219,7 +222,8 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
           });
         }
         
-        // Restore session variables
+        // Restore session variables only - don't initialize audio queue
+        // The queue will be initialized when user explicitly plays/resumes
         setCurrentMystery(savedState.currentMystery as MysterySet);
         setRosaryForm(savedState.rosaryForm as RosaryForm);
         setVoice(savedState.voice);
@@ -231,11 +235,12 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
         // Mark session as active (mini-player will show in paused state)
         setIsSessionActive(true);
         
-        // Initialize the rosary audio queue with restored beads (no auto-play)
-        setShouldInitializeOnly(true);
+        // NOTE: We do NOT initialize the audio queue here to avoid automatic
+        // downloads/playback on page reload. The queue will be initialized
+        // when the user explicitly clicks play/resume.
         
         if (__DEV__) {
-          console.log('[RosaryPlayerContext.web] Rosary state restored successfully');
+          console.log('[RosaryPlayerContext.web] Rosary state restored successfully (queue not initialized)');
         }
       } catch (error) {
         console.error('[RosaryPlayerContext.web] Error restoring rosary state:', error);
@@ -291,6 +296,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
       const initializeAndPlay = async () => {
         console.log('[RosaryPlayerContext.web HTML5] Initializing queue with', beads.length, 'beads');
         await rosaryAudio.initializeQueue();
+        isQueueInitializedRef.current = true;
         await rosaryAudio.play();
         
         // Set rosary as active audio type and emit event
@@ -311,6 +317,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
       const initializeOnly = async () => {
         console.log('[RosaryPlayerContext.web] Initializing queue for restoration with', beads.length, 'beads (no auto-play)');
         await rosaryAudio.initializeQueue();
+        isQueueInitializedRef.current = true;
         
         // Skip to saved bead without playing
         const beadToRestore = lastKnownBeadIdRef.current;
@@ -387,6 +394,7 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
     setBeads([]);
     onTrackChangeRef.current = null;
     lastKnownBeadIdRef.current = null;
+    isQueueInitializedRef.current = false;
     
     // Clear persisted state
     await clearRosaryState();
@@ -400,13 +408,26 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
   
   // Play control
   const play = useCallback(async () => {
+    // Initialize queue first if not already initialized (e.g., after page reload)
+    if (!isQueueInitializedRef.current && beads.length > 0) {
+      console.log('[RosaryPlayerContext.web HTML5] Queue not initialized, initializing now...');
+      await rosaryAudio.initializeQueue();
+      isQueueInitializedRef.current = true;
+      
+      // Position to last known bead if available (restoration case) - but don't play yet
+      if (lastKnownBeadIdRef.current) {
+        console.log('[RosaryPlayerContext.web HTML5] Setting position to last known bead:', lastKnownBeadIdRef.current);
+        rosaryAudio.setCurrentBeadWithoutPlaying(lastKnownBeadIdRef.current);
+      }
+    }
+    
     await rosaryAudio.play();
     
     // Notify AudioStateManager and emit event
     AudioStateManager.setActiveAudioType('rosary');
     AudioStateManager.emit('audio-play-started', { type: 'rosary' });
     console.log('[RosaryPlayerContext.web HTML5] Rosary playing, emitted audio-play-started event');
-  }, [rosaryAudio]);
+  }, [rosaryAudio, beads.length]);
   
   // Pause control
   const pause = useCallback(async () => {
@@ -417,13 +438,27 @@ export function RosaryPlayerProvider({ children }: { children: React.ReactNode }
   // Resume control (simplified - no queue rebuilding needed on web)
   const resume = useCallback(async () => {
     console.log('[RosaryPlayerContext.web HTML5] resume called');
+    
+    // Initialize queue first if not already initialized (e.g., after page reload)
+    if (!isQueueInitializedRef.current && beads.length > 0) {
+      console.log('[RosaryPlayerContext.web HTML5] Queue not initialized, initializing now...');
+      await rosaryAudio.initializeQueue();
+      isQueueInitializedRef.current = true;
+      
+      // Position to last known bead if available (restoration case) - but don't play yet
+      if (lastKnownBeadIdRef.current) {
+        console.log('[RosaryPlayerContext.web HTML5] Setting position to last known bead:', lastKnownBeadIdRef.current);
+        rosaryAudio.setCurrentBeadWithoutPlaying(lastKnownBeadIdRef.current);
+      }
+    }
+    
     await rosaryAudio.play();
     
     // Notify AudioStateManager and emit event
     AudioStateManager.setActiveAudioType('rosary');
     AudioStateManager.emit('audio-play-started', { type: 'rosary' });
     console.log('[RosaryPlayerContext.web HTML5] Rosary resumed, emitted audio-play-started event');
-  }, [rosaryAudio]);
+  }, [rosaryAudio, beads.length]);
   
   // Skip to next bead
   const skipToNext = useCallback(async () => {

@@ -46,6 +46,7 @@ interface UseRosaryAudioReturn {
   skipToPrevious: () => Promise<void>;
   skipToTrack: (trackIndex: number) => Promise<void>;
   skipToBead: (beadId: string) => Promise<void>;
+  setCurrentBeadWithoutPlaying: (beadId: string) => void;
   setSpeed: (speed: number) => Promise<void>;
   setVolume: (volume: number) => Promise<void>;
   cleanup: () => Promise<void>;
@@ -349,6 +350,30 @@ class RosaryAudioQueue {
     if (trackIndex >= 0) {
       console.log('[RosaryAudioQueue] Skipping to bead:', beadId, 'at index:', trackIndex);
       await this.loadAndPlay(trackIndex);
+    } else {
+      console.warn('[RosaryAudioQueue] Bead not found:', beadId);
+    }
+  }
+  
+  /**
+   * Set current position to a specific bead without playing
+   */
+  setCurrentBeadWithoutPlaying(beadId: string): void {
+    // Find first track with matching beadId
+    const trackIndex = this.tracks.findIndex(track => track.beadId === beadId);
+    
+    if (trackIndex >= 0) {
+      console.log('[RosaryAudioQueue] Setting current bead to:', beadId, 'at index:', trackIndex);
+      this.currentIndex = trackIndex;
+      const track = this.tracks[trackIndex];
+      
+      // Load audio source but don't play
+      this.audioElement.src = track.url;
+      
+      // Trigger track change callback
+      if (this.onTrackChange) {
+        this.onTrackChange(track.beadId, trackIndex);
+      }
     } else {
       console.warn('[RosaryAudioQueue] Bead not found:', beadId);
     }
@@ -772,6 +797,21 @@ export function useRosaryAudio({
   }, []);
 
   /**
+   * Set current bead position without playing
+   */
+  const setCurrentBeadWithoutPlaying = useCallback((beadId: string): void => {
+    try {
+      if (queueRef.current) {
+        queueRef.current.setCurrentBeadWithoutPlaying(beadId);
+        console.log('[useRosaryAudio HTML5] Set current bead to:', beadId);
+      }
+    } catch (error) {
+      console.error('[useRosaryAudio HTML5] Failed to set current bead:', error);
+      throw error;
+    }
+  }, []);
+
+  /**
    * Set playback speed
    */
   const setSpeed = useCallback(async (speed: number): Promise<void> => {
@@ -863,6 +903,7 @@ export function useRosaryAudio({
     skipToPrevious,
     skipToTrack,
     skipToBead,
+    setCurrentBeadWithoutPlaying,
     setSpeed,
     setVolume,
     cleanup,
