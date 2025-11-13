@@ -174,5 +174,24 @@ export function fixedDominicanCelebrations(): FixedCelebration[] {
         "The observance reminds all Dominicans of their responsibility to pray for their benefactors, both living and deceased, and to be good stewards of the resources entrusted to them. It celebrates the truth that the Dominican family extends far beyond professed members to include all who support and participate in the Order's charism of truth.",
       ],
     },
+    {
+      id: "anniversary-dedication-church",
+      name: "Anniversary of the Dedication of the Church",
+      date: "10-22",
+      rank: CelebrationRank.SOLEMNITY,
+      color: LiturgicalColor.WHITE,
+      proper: "Proper of Dominican Saints",
+      type: "dominican",
+      short_desc: "Commemorates the dedication of each Dominican church or community's place of worship.",
+      description: [
+        "This solemnity in the Dominican calendar commemorates the anniversary of the dedication of each local Dominican church or oratory. It is celebrated with the rank of solemnity, reflecting the sacred importance of the place where the community gathers for the Eucharist and the Divine Office.",
+        "The dedication of a church is a solemn liturgical rite in which a building is set apart exclusively for divine worship. The rite includes the anointing of the altar and walls with sacred chrism, the lighting of candles, and the celebration of the Eucharist. From that moment, the church becomes a sacred space where heaven and earth meet, where the faithful encounter Christ in Word and Sacrament.",
+        "For the Dominican Order, the church is central to community life. It is where the friars, nuns, and sisters gather multiple times daily for the celebration of the Liturgy of the Hours and the Eucharist. The church embodies the Order's commitment to liturgical prayer as the foundation of its preaching mission.",
+        "Many historic Dominican churches hold great significance in the Order's history. The Basilica of San Domenico in Bologna houses the tomb of St. Dominic and has been a pilgrimage site for centuries. Santa Maria sopra Minerva in Rome contains the tombs of St. Catherine of Siena and Blessed Fra Angelico. Santa Sabina, also in Rome, has been the headquarters of the Master General since the 13th century.",
+        "The anniversary of dedication is a time for Dominican communities to give thanks for their sacred space, to remember those who built and maintained it, and to renew their commitment to worship God worthily. It is also an opportunity to reflect on the Church as the living temple made of believers, the Body of Christ.",
+        "St. Paul teaches that Christians themselves are 'God's building' and 'God's temple' (1 Corinthians 3:9, 16). While the physical church is important, the ultimate temple is the community of believers animated by the Holy Spirit. The anniversary celebration reminds Dominicans that they are called to be living stones in the spiritual temple that is the Church.",
+        "This solemnity is celebrated on different dates in different Dominican communities, depending on when each church was dedicated. It takes precedence over most other celebrations and is marked with festive liturgies, often including the renewal of dedication vows and special prayers for the community and its mission.",
+      ],
+    },
   ]
 }
