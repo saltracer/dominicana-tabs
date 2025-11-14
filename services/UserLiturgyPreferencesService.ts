@@ -243,16 +243,43 @@ export class UserLiturgyPreferencesService {
     };
 
     try {
-      const { error } = await supabase
+      // Use upsert to handle race conditions where multiple components
+      // try to create preferences simultaneously for a new user
+      const { data, error } = await supabase
         .from('user_liturgy_preferences')
-        .insert(defaultPreferences);
+        .upsert(defaultPreferences, { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        })
+        .select()
+        .single();
 
       if (error) {
+        // If there's still an error (unlikely), try to fetch existing preferences
+        // This handles the edge case where preferences were created between our check and insert
+        if (error.code === '23505') {
+          if (__DEV__) {
+            console.log('Default preferences already exist, fetching them...');
+          }
+          const { data: existing, error: fetchError } = await supabase
+            .from('user_liturgy_preferences')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+          
+          if (fetchError) {
+            console.error('Error fetching existing preferences after conflict:', fetchError);
+            throw fetchError;
+          }
+          
+          return existing;
+        }
+        
         console.error('Error creating default preferences:', error);
         throw error;
       }
 
-      return defaultPreferences;
+      return data || defaultPreferences;
     } catch (error) {
       console.error('Error in createDefaultPreferences:', error);
       throw error;
