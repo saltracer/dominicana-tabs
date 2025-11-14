@@ -1,0 +1,44 @@
+# Supabase CLI Configuration
+# This configuration is set up for remote-only development
+# No local database or Docker containers are used
+
+# Project settings
+project_id = "rimpzfnxwqmamplowaoq"
+
+# Auth settings
+[auth]
+enabled = true
+site_url = "http://localhost:8081"
+additional_redirect_urls = ["https://localhost:8081"]
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+# Database settings - Remote only
+[db]
+major_version = 15
+# All operations use remote project
+
+# API settings
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+# Storage settings
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+# Edge Functions settings
+[functions]
+# Functions are deployed to remote project only
+
+# Analytics
+[analytics]
+enabled = false
