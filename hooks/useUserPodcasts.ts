@@ -67,45 +67,69 @@ export function useUserPodcasts() {
       // Check if it's a duplicate error
       if (errorMsg.startsWith('DUPLICATE:')) {
         const duplicatePodcastId = errorMsg.split(':')[1];
+        console.log('[useUserPodcasts.addCustomPodcast] Duplicate detected, subscribing to:', duplicatePodcastId);
+        
         try {
-          // Subscribe to the curated version
+          // Subscribe to the existing podcast
           await PodcastSubscriptionService.subscribe(duplicatePodcastId);
+          console.log('[useUserPodcasts.addCustomPodcast] ✅ Subscription successful');
           
-          // Get the podcast details
-          const { data } = await import('../lib/supabase').then(m => m.supabase)
-            .from('podcasts')
-            .select('*')
-            .eq('id', duplicatePodcastId)
-            .single();
+          // Try to get the podcast details (may fail due to RLS timing)
+          let podcastData = null;
+          try {
+            const { data } = await import('../lib/supabase').then(m => m.supabase)
+              .from('podcasts')
+              .select('*')
+              .eq('id', duplicatePodcastId)
+              .single();
+            podcastData = data;
+            console.log('[useUserPodcasts.addCustomPodcast] ✅ Fetched podcast details');
+          } catch (fetchErr) {
+            // If fetch fails, that's okay - subscription succeeded
+            console.log('[useUserPodcasts.addCustomPodcast] ⚠️ Could not fetch details, but subscription succeeded');
+          }
           
           setLoading(false);
           return {
             success: true,
             isDuplicate: true,
-            podcast: data ? {
-              id: data.id,
-              title: data.title,
-              description: data.description,
-              author: data.author,
-              rssUrl: data.rss_url,
-              artworkUrl: data.artwork_url,
-              websiteUrl: data.website_url,
-              language: data.language,
-              categories: data.categories,
-              isCurated: data.is_curated,
-              isActive: data.is_active,
-              createdBy: data.created_by,
-              lastFetchedAt: data.last_fetched_at,
-              createdAt: data.created_at,
-              updatedAt: data.updated_at,
-              shareCount: data.share_count || 0,
+            podcast: podcastData ? {
+              id: podcastData.id,
+              title: podcastData.title,
+              description: podcastData.description,
+              author: podcastData.author,
+              rssUrl: podcastData.rss_url,
+              artworkUrl: podcastData.artwork_url,
+              websiteUrl: podcastData.website_url,
+              language: podcastData.language,
+              categories: podcastData.categories,
+              isCurated: podcastData.is_curated,
+              isActive: podcastData.is_active,
+              createdBy: podcastData.created_by,
+              lastFetchedAt: podcastData.last_fetched_at,
+              createdAt: podcastData.created_at,
+              updatedAt: podcastData.updated_at,
+              shareCount: podcastData.share_count || 0,
             } : undefined,
           };
         } catch (subscribeErr) {
+          console.log('[useUserPodcasts.addCustomPodcast] ❌ Subscription failed:', subscribeErr);
+          
+          // Check if it's because already subscribed
+          const errMsg = subscribeErr instanceof Error ? subscribeErr.message : '';
+          if (errMsg.includes('duplicate') || errMsg.includes('already subscribed')) {
+            // Already subscribed is okay - return success
+            setLoading(false);
+            return {
+              success: true,
+              isDuplicate: true,
+            };
+          }
+          
           setLoading(false);
           return {
             success: false,
-            error: 'This podcast is already in our library, but we could not subscribe you to it.',
+            error: 'Failed to subscribe to this podcast. Please try again.',
           };
         }
       }

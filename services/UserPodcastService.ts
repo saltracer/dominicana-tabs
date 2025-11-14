@@ -13,27 +13,27 @@ export class UserPodcastService {
    * Validate RSS feed without adding to database
    */
   static async validateRssFeed(rssUrl: string): Promise<RssFeedValidationResult> {
+    console.log('[UserPodcastService.validateRssFeed] 🔍 Starting validation for:', rssUrl);
+    
     try {
       // Basic URL validation
       if (!RssFeedService.isValidRssUrl(rssUrl)) {
+        console.log('[UserPodcastService.validateRssFeed] ❌ Invalid URL format');
         return {
           isValid: false,
           error: 'Invalid URL format. Please enter a valid HTTP or HTTPS URL.',
         };
       }
 
-      // Check if RSS URL already exists as a curated podcast
+      console.log('[UserPodcastService.validateRssFeed] ✅ URL format valid, checking for duplicates...');
+      
+      // Check if RSS URL already exists (curated or user-added)
       const duplicateCheck = await this.checkDuplicateRssUrl(rssUrl);
-      if (duplicateCheck.isDuplicate) {
-        return {
-          isValid: true,
-          isDuplicate: true,
-          duplicatePodcastId: duplicateCheck.podcastId,
-          error: 'This podcast is already in our curated library.',
-        };
-      }
-
+      console.log('[UserPodcastService.validateRssFeed] Duplicate check result:', duplicateCheck);
+      
       // Try to parse the RSS feed (wrap in additional try-catch to prevent React error boundary)
+      // We parse even for duplicates so the modal can show a preview
+      console.log('[UserPodcastService.validateRssFeed] Parsing RSS feed...');
       let parsedFeed;
       try {
         parsedFeed = await RssFeedService.parseRssFeed(rssUrl);
@@ -55,10 +55,15 @@ export class UserPodcastService {
         };
       }
 
+      console.log('[UserPodcastService.validateRssFeed] ✅ RSS parsed successfully');
+      
+      // Return result with duplicate info if found
       return {
         isValid: true,
         feed: parsedFeed,
-        isDuplicate: false,
+        isDuplicate: duplicateCheck.isDuplicate,
+        duplicatePodcastId: duplicateCheck.podcastId,
+        isCurated: duplicateCheck.isCurated,
       };
     } catch (error) {
       // This catch is for other errors (duplicate check, etc.)
@@ -83,30 +88,34 @@ export class UserPodcastService {
   }
 
   /**
-   * Check if RSS URL already exists as a curated podcast
+   * Check if RSS URL already exists as ANY podcast (curated or user-added)
+   * This ensures podcasts are shared and UUIDs are preserved
+   * Uses a SECURITY DEFINER function to bypass RLS
    */
-  static async checkDuplicateRssUrl(rssUrl: string): Promise<{ isDuplicate: boolean; podcastId?: string }> {
-    try {
-      const { data, error } = await supabase
-        .from('podcasts')
-        .select('id, is_curated')
-        .eq('rss_url', rssUrl)
-        .eq('is_curated', true)
-        .single();
+  static async checkDuplicateRssUrl(rssUrl: string): Promise<{ isDuplicate: boolean; podcastId?: string; isCurated?: boolean }> {
+    console.log('[UserPodcastService.checkDuplicateRssUrl] Calling RPC for:', rssUrl);
+    
+    // Use RPC function to bypass RLS and check for duplicates
+    const { data, error } = await supabase.rpc('check_duplicate_podcast_by_rss', {
+      p_rss_url: rssUrl,
+    });
 
-      if (error) {
-        // No duplicate found (or other error)
-        return { isDuplicate: false };
-      }
+    console.log('[UserPodcastService.checkDuplicateRssUrl] RPC result:', { data, error });
 
-      return {
-        isDuplicate: true,
-        podcastId: data.id,
-      };
-    } catch (error) {
-      // Silently handle error
+    if (error || !data || data.length === 0) {
+      // No duplicate found
+      console.log('[UserPodcastService.checkDuplicateRssUrl] No duplicate found');
       return { isDuplicate: false };
     }
+
+    // Function returns an array with one result
+    const podcast = data[0];
+    console.log('[UserPodcastService.checkDuplicateRssUrl] Duplicate found:', podcast);
+    return {
+      isDuplicate: true,
+      podcastId: podcast.podcast_id,
+      isCurated: podcast.is_curated,
+    };
   }
 
   /**
@@ -123,7 +132,7 @@ export class UserPodcastService {
       throw new Error(validation.error || 'Invalid RSS feed');
     }
 
-    // If duplicate curated podcast exists, throw error with podcast ID
+    // If duplicate podcast exists (curated or user-added), auto-subscribe and return existing
     if (validation.isDuplicate && validation.duplicatePodcastId) {
       throw new Error(`DUPLICATE:${validation.duplicatePodcastId}`);
     }
@@ -159,6 +168,20 @@ export class UserPodcastService {
       if (__DEV__) {
         console.error('Error creating podcast:', error);
       }
+      
+      // Handle duplicate key constraint as a special case
+      // This should rarely happen now that we use RPC for duplicate checking
+      if (error.code === '23505' && error.message.includes('podcasts_rss_url_key')) {
+        // Try to find the existing podcast and trigger auto-subscribe
+        const existingCheck = await this.checkDuplicateRssUrl(rssUrl);
+        if (existingCheck.isDuplicate && existingCheck.podcastId) {
+          // Throw DUPLICATE error which will be caught by the hook and trigger auto-subscribe
+          throw new Error(`DUPLICATE:${existingCheck.podcastId}`);
+        }
+        // If we still can't find it, something is very wrong
+        throw new Error('This podcast already exists but could not be located.');
+      }
+      
       throw new Error(`Failed to add podcast: ${error.message}`);
     }
 

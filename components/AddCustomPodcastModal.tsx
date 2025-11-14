@@ -37,8 +37,11 @@ export default function AddCustomPodcastModal({ visible, onClose, onSuccess }: A
   const [validating, setValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'input' | 'preview'>('input');
+  const [duplicateInfo, setDuplicateInfo] = useState<{ podcastId: string; isCurated: boolean } | null>(null);
 
   const handleValidate = async () => {
+    console.log('[AddCustomPodcastModal.handleValidate] Starting validation for:', rssUrl);
+    
     if (!rssUrl.trim()) {
       setError('Please enter a podcast RSS URL');
       return;
@@ -47,50 +50,75 @@ export default function AddCustomPodcastModal({ visible, onClose, onSuccess }: A
     setValidating(true);
     setError(null);
 
-    const result = await validateFeed(rssUrl.trim());
+    try {
+      const result = await validateFeed(rssUrl.trim());
+      console.log('[AddCustomPodcastModal.handleValidate] Validation result:', JSON.stringify(result));
 
-    setValidating(false);
+      setValidating(false);
 
-    if (!result.isValid) {
-      setError(result.error || 'Invalid RSS feed');
-      return;
-    }
+      if (!result.isValid) {
+        setError(result.error || 'Invalid RSS feed');
+        return;
+      }
 
-    if (result.isDuplicate) {
-      Alert.alert(
-        'Already in Library',
-        'This podcast is already in our curated library. You have been subscribed to it.',
-        [{ text: 'OK', onPress: () => {
-          handleClose();
-          onSuccess?.();
-        }}]
-      );
-      return;
-    }
+      // If duplicate, store the info and show preview with "Subscribe" button
+      if (result.isDuplicate && result.duplicatePodcastId) {
+        console.log('[AddCustomPodcastModal.handleValidate] Duplicate detected, showing subscribe button');
+        setDuplicateInfo({
+          podcastId: result.duplicatePodcastId,
+          isCurated: result.isCurated || false,
+        });
+      } else {
+        console.log('[AddCustomPodcastModal.handleValidate] New podcast, showing add button');
+        setDuplicateInfo(null);
+      }
 
-    if (result.feed) {
-      setPreview(result.feed);
-      setStep('preview');
+      if (result.feed) {
+        console.log('[AddCustomPodcastModal.handleValidate] Moving to preview step');
+        setPreview(result.feed);
+        setStep('preview');
+      } else {
+        console.log('[AddCustomPodcastModal.handleValidate] WARNING: No feed in result');
+      }
+    } catch (error) {
+      console.log('[AddCustomPodcastModal.handleValidate] ERROR:', error);
+      setValidating(false);
+      setError('An unexpected error occurred');
     }
   };
 
   const handleAdd = async () => {
+    // If it's a duplicate, subscribe directly
+    if (duplicateInfo) {
+      const result = await addCustomPodcast(rssUrl.trim());
+      
+      if (result.success) {
+        const title = duplicateInfo.isCurated 
+          ? 'Subscribed to Curated Podcast'
+          : 'Subscribed to Podcast';
+        const message = duplicateInfo.isCurated
+          ? `"${preview?.title}" was in our curated library. You've been subscribed to it.`
+          : `You've been subscribed to "${preview?.title}".`;
+        
+        Alert.alert(title, message, [{ text: 'OK' }]);
+        handleClose();
+        onSuccess?.();
+      } else {
+        setError(result.error || 'Failed to subscribe');
+        setStep('input');
+      }
+      return;
+    }
+
+    // Otherwise, add as a new podcast
     const result = await addCustomPodcast(rssUrl.trim());
 
     if (result.success) {
-      if (result.isDuplicate) {
-        Alert.alert(
-          'Subscribed to Curated Podcast',
-          `"${result.podcast?.title}" was already in our library. You've been subscribed to it.`,
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert(
-          'Podcast Added',
-          `"${result.podcast?.title}" has been added to your podcasts.`,
-          [{ text: 'OK' }]
-        );
-      }
+      Alert.alert(
+        'Podcast Added',
+        `"${result.podcast?.title}" has been added to your podcasts.`,
+        [{ text: 'OK' }]
+      );
       handleClose();
       onSuccess?.();
     } else {
@@ -104,6 +132,7 @@ export default function AddCustomPodcastModal({ visible, onClose, onSuccess }: A
     setPreview(null);
     setError(null);
     setStep('input');
+    setDuplicateInfo(null);
     onClose();
   };
 
@@ -235,7 +264,9 @@ export default function AddCustomPodcastModal({ visible, onClose, onSuccess }: A
                       {loading ? (
                         <ActivityIndicator color="#fff" />
                       ) : (
-                        <Text style={styles.buttonText}>Add Podcast</Text>
+                        <Text style={styles.buttonText}>
+                          {duplicateInfo ? 'Subscribe' : 'Add Podcast'}
+                        </Text>
                       )}
                     </TouchableOpacity>
                   </View>

@@ -206,6 +206,7 @@ export interface RssFeedValidationResult {
   error?: string;
   isDuplicate?: boolean;
   duplicatePodcastId?: string;
+  isCurated?: boolean;
 }
 
 /**
