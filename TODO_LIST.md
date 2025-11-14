@@ -66,6 +66,8 @@
 - [x] Import dominican calendar
 - [x] Import general calendar
 - [ ] Are sundays ferial days?
+- [ ] Expand province information to complete the fields that are present
+- [ ] Support vice province linking with the main province
 
 ## Preaching
 - [ ] Subscribe to blogs

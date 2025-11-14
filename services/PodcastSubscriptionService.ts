@@ -1,6 +1,6 @@
 /**
  * Podcast Subscription Service
- * Manage user podcast subscriptions
+ * Manage user podcast subscriptions (both curated and user-added podcasts)
  */
 
 import { supabase } from '../lib/supabase';
@@ -8,7 +8,8 @@ import { Podcast, UserPodcastSubscription } from '../types';
 
 export class PodcastSubscriptionService {
   /**
-   * Get user's subscribed podcasts
+   * Get user's subscribed podcasts (includes both curated and user-added podcasts)
+   * This represents "My Podcasts" in the UI
    */
   static async getUserSubscriptions(): Promise<Podcast[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -34,7 +35,8 @@ export class PodcastSubscriptionService {
           created_by,
           last_fetched_at,
           created_at,
-          updated_at
+          updated_at,
+          share_count
         )
       `)
       .eq('user_id', user.id)
@@ -58,6 +60,7 @@ export class PodcastSubscriptionService {
       lastFetchedAt: sub.podcasts.last_fetched_at || undefined,
       createdAt: sub.podcasts.created_at,
       updatedAt: sub.podcasts.updated_at,
+      shareCount: sub.podcasts.share_count || 0,
     }));
   }
 

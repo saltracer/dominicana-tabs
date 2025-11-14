@@ -22,7 +22,7 @@ import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastWithEpisodes, PodcastEpisode } from '../../../../types';
 import { refreshFeed, getEpisodesMap, getFeed } from '../../../../lib/podcast/cache';
 import { ensureImageCached, imagePathForUrl, fileExists } from '../../../../lib/podcast/storage';
-import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptions';
+import { useMyPodcasts } from '../../../../hooks/useMyPodcasts';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
@@ -47,7 +47,7 @@ export default function PodcastDetailScreen() {
   const [dbGuidToId, setDbGuidToId] = useState<Map<string, string>>(new Map());
   const [dbAudioToId, setDbAudioToId] = useState<Map<string, string>>(new Map());
 
-  const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
+  const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = useMyPodcasts();
   const { currentEpisode, playEpisode, pause, resume, isPlaying, isPaused } = usePodcastPlayer();
   const { 
     effectiveSpeed, 

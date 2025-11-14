@@ -22,13 +22,14 @@ import { useTheme } from '../../../components/ThemeProvider';
 import Footer from '../../../components/Footer.web';
 import { PodcastCard } from '../../../components/PodcastCard.web';
 import { usePodcasts } from '../../../hooks/usePodcasts';
-import { usePodcastSubscriptions } from '../../../hooks/usePodcastSubscriptions';
+import { useMyPodcasts } from '../../../hooks/useMyPodcasts';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useIsMobile, useIsTablet, useIsDesktop } from '../../../hooks/useMediaQuery';
 import { usePlaylists } from '../../../hooks/usePlaylists';
 import { useQueue } from '../../../hooks/useQueue';
+import AddCustomPodcastModal from '../../../components/AddCustomPodcastModal.web';
 
-type TabType = 'library' | 'subscriptions' | 'playlists' | 'queue';
+type TabType = 'library' | 'my_podcasts' | 'playlists' | 'queue';
 
 export default function PodcastsWebScreen() {
   const { colorScheme } = useTheme();
@@ -39,7 +40,9 @@ export default function PodcastsWebScreen() {
   const isDesktop = useIsDesktop();
   
   const [activeTab, setActiveTab] = useState<TabType>('library');
+  const [showAddPodcastModal, setShowAddPodcastModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
@@ -50,7 +53,7 @@ export default function PodcastsWebScreen() {
   });
 
   // Load user subscriptions (only if authenticated)
-  const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = usePodcastSubscriptions();
+  const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = useMyPodcasts();
   
   // Load playlists and queue
   const { playlists, loading: playlistsLoading } = usePlaylists();
@@ -101,7 +104,7 @@ export default function PodcastsWebScreen() {
     switch (activeTab) {
       case 'library':
         return { data: libraryPodcasts, loading: libraryLoading, type: 'podcasts' as const };
-      case 'subscriptions':
+      case 'my_podcasts':
         return { data: subscriptions, loading: subsLoading, type: 'podcasts' as const };
       case 'playlists':
         return { data: playlists, loading: playlistsLoading, type: 'playlists' as const };
@@ -165,18 +168,18 @@ export default function PodcastsWebScreen() {
           {user && (
             <TouchableOpacity
               style={styles.tab}
-              onPress={() => setActiveTab('subscriptions')}
+              onPress={() => setActiveTab('my_podcasts')}
             >
               <Ionicons 
-                name={activeTab === 'subscriptions' ? "bookmark" : "bookmark-outline"}
+                name={activeTab === 'my_podcasts' ? "bookmark" : "bookmark-outline"}
                 size={20}
-                color={activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
+                color={activeTab === 'my_podcasts' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary}
               />
               <Text style={[
                 styles.tabText,
-                { color: activeTab === 'subscriptions' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
+                { color: activeTab === 'my_podcasts' ? Colors[colorScheme ?? 'light'].primary : Colors[colorScheme ?? 'light'].textSecondary }
               ]}>
-                Subscriptions
+                My Podcasts
               </Text>
             </TouchableOpacity>
           )}
@@ -223,6 +226,8 @@ export default function PodcastsWebScreen() {
             placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -230,6 +235,19 @@ export default function PodcastsWebScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Add Custom Podcast Button - Show when search is active */}
+        {user && isSearchFocused && (activeTab === 'library' || activeTab === 'my_podcasts') && (
+          <TouchableOpacity
+            style={[styles.addCustomButton, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
+            onPress={() => setShowAddPodcastModal(true)}
+          >
+            <Ionicons name="add-circle-outline" size={20} color={Colors[colorScheme ?? 'light'].primary} />
+            <Text style={[styles.addCustomButtonText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+              Add new podcast via link
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Content */}
         {loading && !hasLoadedOnce ? (
@@ -244,7 +262,7 @@ export default function PodcastsWebScreen() {
             <Ionicons 
               name={
                 activeTab === 'library' ? 'radio-outline' :
-                activeTab === 'subscriptions' ? 'person-outline' :
+                activeTab === 'my_podcasts' ? 'person-outline' :
                 activeTab === 'playlists' ? 'list-outline' :
                 'list'
               } 
@@ -253,13 +271,13 @@ export default function PodcastsWebScreen() {
             />
             <Text style={[styles.emptyTitle, { color: Colors[colorScheme ?? 'light'].text }]}>
               {activeTab === 'library' && 'No podcasts found'}
-              {activeTab === 'subscriptions' && 'No subscriptions yet'}
+              {activeTab === 'my_podcasts' && 'No podcasts yet'}
               {activeTab === 'playlists' && 'No playlists yet'}
               {activeTab === 'queue' && 'Queue is empty'}
             </Text>
             <Text style={[styles.emptyDescription, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
               {activeTab === 'library' && 'Try adjusting your search or check back later for new content.'}
-              {activeTab === 'subscriptions' && 'Browse the curated library to discover podcasts to subscribe to.'}
+              {activeTab === 'my_podcasts' && 'Browse the curated library to discover podcasts to subscribe to.'}
               {activeTab === 'playlists' && 'Create your first playlist to organize your favorite episodes.'}
               {activeTab === 'queue' && 'Add episodes to your queue to see them here.'}
             </Text>
@@ -334,6 +352,16 @@ export default function PodcastsWebScreen() {
 
         <Footer />
       </View>
+
+      {/* Add Custom Podcast Modal */}
+      <AddCustomPodcastModal
+        visible={showAddPodcastModal}
+        onClose={() => setShowAddPodcastModal(false)}
+        onSuccess={() => {
+          refetchSubs();
+          setSearchQuery('');
+        }}
+      />
     </ScrollView>
   );
 }
@@ -513,6 +541,20 @@ const styles = StyleSheet.create({
   queueMeta: {
     fontSize: 12,
     fontFamily: 'Georgia',
+  },
+  addCustomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    gap: 8,
+    cursor: 'pointer' as any,
+  },
+  addCustomButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

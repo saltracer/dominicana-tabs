@@ -3,7 +3,7 @@ import { PodcastSubscriptionService } from '../services/PodcastSubscriptionServi
 import { Podcast } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
-export function usePodcastSubscriptions() {
+export function useMyPodcasts() {
   const { user } = useAuth();
   const [subscriptions, setSubscriptions] = useState<Podcast[]>([]);
   const [loading, setLoading] = useState(true);

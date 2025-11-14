@@ -28,6 +28,7 @@ export class AdminPodcastService {
       lastFetchedAt: data.last_fetched_at || undefined,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
+      shareCount: data.share_count || 0,
     };
   }
 
@@ -54,9 +55,9 @@ export class AdminPodcastService {
   }
 
   /**
-   * Helper to add episodes for a podcast
+   * Helper to add episodes for a podcast (public for use by UserPodcastService)
    */
-  private static async addEpisodes(podcastId: string, episodes: ParsedRssEpisode[]) {
+  static async addEpisodes(podcastId: string, episodes: ParsedRssEpisode[]) {
     const episodeData = episodes.map(ep => ({
       podcast_id: podcastId,
       title: ep.title,
@@ -339,5 +340,193 @@ export class AdminPodcastService {
   static async deleteEpisode(id: string): Promise<void> {
     const { error } = await supabase.from('podcast_episodes').delete().eq('id', id);
     if (error) throw new Error(`Failed to delete episode: ${error.message}`);
+  }
+
+  /**
+   * List all user-added (non-curated) podcasts
+   */
+  static async listUserAddedPodcasts(
+    filters: PodcastFilters & { userId?: string } = {},
+    pagination = { page: 1, limit: 50 }
+  ): Promise<PodcastListResponse & { podcastsWithUserInfo: Array<Podcast & { userEmail?: string }> }> {
+    const { page, limit } = pagination;
+    const offset = (page - 1) * limit;
+
+    let query = supabase
+      .from('podcasts')
+      .select(`
+        *,
+        profiles:created_by (
+          id,
+          username
+        )
+      `, { count: 'exact' })
+      .eq('is_curated', false);
+
+    if (filters.search) {
+      query = query.or(
+        `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,author.ilike.%${filters.search}%`
+      );
+    }
+
+    if (filters.userId) {
+      query = query.eq('created_by', filters.userId);
+    }
+
+    if (filters.category) {
+      query = query.contains('categories', [filters.category]);
+    }
+
+    const sortBy = filters.sortBy || 'created_at';
+    const sortOrder = filters.sortOrder || 'desc';
+    query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+
+    query = query.range(offset, offset + limit - 1);
+
+    const { data, error, count } = await query;
+
+    if (error) throw new Error(`Failed to list user-added podcasts: ${error.message}`);
+
+    const podcasts = (data || []).map(row => this.transformPodcast(row));
+    const podcastsWithUserInfo = (data || []).map(row => ({
+      ...this.transformPodcast(row),
+      userEmail: row.profiles?.username || 'Unknown',
+    }));
+
+    return {
+      podcasts,
+      podcastsWithUserInfo,
+      total: count || 0,
+      page,
+      totalPages: Math.ceil((count || 0) / limit),
+    };
+  }
+
+  /**
+   * Get users with their custom feed counts
+   */
+  static async getUsersWithCustomFeeds(): Promise<Array<{
+    userId: string;
+    userEmail: string;
+    podcastCount: number;
+  }>> {
+    const { data, error } = await supabase
+      .from('podcasts')
+      .select(`
+        created_by,
+        profiles:created_by (
+          id,
+          username
+        )
+      `)
+      .eq('is_curated', false)
+      .not('created_by', 'is', null);
+
+    if (error) {
+      throw new Error(`Failed to fetch users with custom feeds: ${error.message}`);
+    }
+
+    // Group by user and count podcasts
+    const userMap = new Map<string, { userEmail: string; count: number }>();
+    
+    for (const row of data || []) {
+      if (!row.created_by) continue;
+      
+      const userId = row.created_by;
+      const userEmail = row.profiles?.username || 'Unknown';
+      
+      if (userMap.has(userId)) {
+        userMap.get(userId)!.count++;
+      } else {
+        userMap.set(userId, { userEmail, count: 1 });
+      }
+    }
+
+    return Array.from(userMap.entries()).map(([userId, info]) => ({
+      userId,
+      userEmail: info.userEmail,
+      podcastCount: info.count,
+    })).sort((a, b) => b.podcastCount - a.podcastCount);
+  }
+
+  /**
+   * Get specific user's custom podcasts
+   */
+  static async getUserPodcasts(userId: string): Promise<Podcast[]> {
+    const { data, error } = await supabase
+      .from('podcasts')
+      .select('*')
+      .eq('created_by', userId)
+      .eq('is_curated', false)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch user podcasts: ${error.message}`);
+    }
+
+    return (data || []).map(this.transformPodcast);
+  }
+
+  /**
+   * Promote a user-added podcast to curated status
+   * Preserves podcast ID so all subscriptions, downloads, and progress remain intact
+   */
+  static async promoteToCurated(podcastId: string): Promise<Podcast> {
+    // Get the podcast to verify it exists and is not already curated
+    const { data: podcast, error: fetchError } = await supabase
+      .from('podcasts')
+      .select('*')
+      .eq('id', podcastId)
+      .single();
+
+    if (fetchError || !podcast) {
+      throw new Error('Podcast not found');
+    }
+
+    if (podcast.is_curated) {
+      throw new Error('Podcast is already curated');
+    }
+
+    // Get subscription count for logging
+    const { count: subCount } = await supabase
+      .from('user_podcast_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('podcast_id', podcastId);
+
+    console.log(`Promoting podcast ${podcast.title} to curated. ${subCount || 0} users subscribed.`);
+
+    // Update podcast to curated status
+    const { data: updatedPodcast, error: updateError } = await supabase
+      .from('podcasts')
+      .update({ is_curated: true })
+      .eq('id', podcastId)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(`Failed to promote podcast: ${updateError.message}`);
+    }
+
+    return this.transformPodcast(updatedPodcast);
+  }
+
+  /**
+   * Refresh single podcast feed (alias for refreshEpisodes for consistency)
+   */
+  static async refreshFeed(podcastId: string): Promise<void> {
+    return this.refreshEpisodes(podcastId);
+  }
+
+  /**
+   * Refresh all feeds (both curated and user-added)
+   */
+  static async refreshAllFeeds(): Promise<{
+    total: number;
+    succeeded: number;
+    failed: number;
+    errors: Array<{ podcastId: string; podcastTitle: string; error: string }>;
+  }> {
+    // Refresh all active podcasts (both curated and user-added)
+    return this.refreshAllEpisodes({ onlyActive: true, onlyCurated: false });
   }
 }

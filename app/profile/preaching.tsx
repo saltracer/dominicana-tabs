@@ -16,7 +16,7 @@ import LiturgyPreferencesToggle from '../../components/LiturgyPreferencesToggle'
 import { UserLiturgyPreferencesService, UserLiturgyPreferencesData } from '../../services/UserLiturgyPreferencesService';
 import { getUsage, deleteAll, getFeedUsage, deleteFeedData } from '../../lib/podcast/cache';
 import { recalcUsageByScan, imagePathForUrl, fileExists, getFileSize } from '../../lib/podcast/storage';
-import { usePodcastSubscriptions } from '../../hooks/usePodcastSubscriptions';
+import { useMyPodcasts } from '../../hooks/useMyPodcasts';
 
 export default function PreachingSettingsScreen() {
   const { colorScheme } = useTheme();
@@ -24,7 +24,7 @@ export default function PreachingSettingsScreen() {
   const [liturgyPreferences, setLiturgyPreferences] = useState<UserLiturgyPreferencesData | null>(null);
   const [preferencesLoading, setPreferencesLoading] = useState(false);
   const [usage, setUsage] = useState<{ audioBytes: number; imageBytes: number } | null>(null);
-  const { subscriptions } = usePodcastSubscriptions();
+  const { subscriptions } = useMyPodcasts();
   const [perFeedUsage, setPerFeedUsage] = useState<Record<string, { audioBytes: number; imageBytes: number }>>({});
 
   const availableOptions = UserLiturgyPreferencesService.getAvailableOptions();

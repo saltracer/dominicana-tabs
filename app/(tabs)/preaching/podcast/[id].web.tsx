@@ -17,7 +17,7 @@ import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { PodcastService } from '../../../../services/PodcastService';
 import { PodcastWithEpisodes, PodcastEpisode } from '../../../../types';
-import { usePodcastSubscriptions } from '../../../../hooks/usePodcastSubscriptions';
+import { useMyPodcasts } from '../../../../hooks/useMyPodcasts';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { EpisodeListItem } from '../../../../components/EpisodeListItem';
 import { usePodcastPlayer } from '../../../../contexts/PodcastPlayerContext';
@@ -43,7 +43,7 @@ export default function PodcastDetailWebScreen() {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
-  const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = usePodcastSubscriptions();
+  const { subscribe, unsubscribe, isSubscribed: checkIsSubscribed, subscriptions } = useMyPodcasts();
   const { currentEpisode, playEpisode, pause, resume, isPlaying, isPaused } = usePodcastPlayer();
   const { 
     effectiveSpeed, 

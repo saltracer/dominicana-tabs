@@ -18,6 +18,7 @@ export interface Podcast {
   lastFetchedAt?: string;
   createdAt: string;
   updatedAt: string;
+  shareCount?: number; // Number of times this podcast has been shared via share links
 }
 
 export interface PodcastEpisode {
@@ -194,4 +195,24 @@ export interface QueueItem {
   episodeId: string;
   position: number;
   addedAt: string;
+}
+
+/**
+ * RSS Feed validation result
+ */
+export interface RssFeedValidationResult {
+  isValid: boolean;
+  feed?: ParsedRssFeed;
+  error?: string;
+  isDuplicate?: boolean;
+  duplicatePodcastId?: string;
+}
+
+/**
+ * Share link data
+ */
+export interface PodcastShareLink {
+  token: string;
+  podcastId: string;
+  url: string;
 }
