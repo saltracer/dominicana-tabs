@@ -297,31 +297,71 @@ export default function PodcastsWebScreen() {
                 </View>
               ))
             ) : dataType === 'playlists' ? (
-              (displayData as any[]).map((playlist) => (
-                <View key={playlist.id} style={{ width: columnWidth as any, padding: isMobile ? 8 : 12 }}>
-                  <TouchableOpacity
-                    style={[styles.playlistCard, { backgroundColor: Colors[colorScheme ?? 'light'].card }]}
-                    onPress={() => router.push(`/(tabs)/preaching/playlists/${playlist.id}` as any)}
-                  >
-                    <View style={styles.playlistIcon}>
-                      <Ionicons 
-                        name={playlist.isSystem ? "cloud-download" : "list"} 
-                        size={24} 
-                        color={Colors[colorScheme ?? 'light'].primary} 
-                      />
-                    </View>
-                    <View style={styles.playlistInfo}>
-                      <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>
-                        {playlist.name}
-                      </Text>
-                      <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                        {playlist.isSystem ? 'System Playlist' : 'User Playlist'}
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              ))
+              (displayData as any[]).map((playlist, index) => {
+                const isBuiltin = playlist.id === 'downloaded' || playlist.is_builtin || playlist.isSystem;
+                // Generate accent color based on playlist index for variety
+                const accentColors = [
+                  Colors[colorScheme ?? 'light'].primary,
+                  '#6366f1',
+                  '#8b5cf6',
+                  '#ec4899',
+                  '#f59e0b',
+                  '#10b981',
+                ];
+                const accentColor = accentColors[index % accentColors.length];
+                const iconName = isBuiltin ? "cloud-download" : 
+                               index === 0 ? "musical-notes" : 
+                               index === 1 ? "bookmark" : 
+                               index === 2 ? "star" : 
+                               "list";
+                
+                return (
+                  <View key={playlist.id} style={{ width: columnWidth as any, padding: isMobile ? 8 : 12 }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.playlistCard, 
+                        { 
+                          backgroundColor: Colors[colorScheme ?? 'light'].card,
+                          borderLeftWidth: 4,
+                          borderLeftColor: accentColor,
+                        }
+                      ]}
+                      onPress={() => router.push(`/(tabs)/preaching/playlists/${playlist.id}` as any)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[
+                        styles.playlistIcon,
+                        { backgroundColor: accentColor + '15' }
+                      ]}>
+                        <Ionicons 
+                          name={iconName} 
+                          size={28} 
+                          color={accentColor} 
+                        />
+                      </View>
+                      <View style={styles.playlistInfo}>
+                        <Text 
+                          style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}
+                          numberOfLines={2}
+                        >
+                          {playlist.name}
+                        </Text>
+                        <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                          {isBuiltin ? 'System Playlist' : 'User Playlist'}
+                          {playlist.updated_at && ' • '}
+                          {playlist.updated_at && (
+                            new Date(playlist.updated_at).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })
+                          )}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                );
+              })
             ) : dataType === 'episodes' ? (
               (displayData as any[]).map((episode, index) => (
                 <View key={episode.id} style={{ width: columnWidth as any, padding: isMobile ? 8 : 12 }}>
@@ -472,36 +512,40 @@ const styles = StyleSheet.create({
   playlistCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    elevation: 2,
+    padding: 20,
+    borderRadius: 16,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
     cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    minHeight: 80,
   },
   playlistIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   playlistInfo: {
     flex: 1,
+    minWidth: 0,
   },
   playlistName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 24,
   },
   playlistMeta: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Georgia',
+    lineHeight: 18,
   },
   queueCard: {
     flexDirection: 'row',

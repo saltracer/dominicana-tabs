@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, ScrollView, Image, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle } from 'react-native-svg';
 import { PodcastEpisode } from '../types';
@@ -19,6 +19,7 @@ import { keys as playlistCacheKeys, getCachedItems, setCachedItems } from '../li
 import { useSharedPlaylistHooks } from '../contexts/SharedPlaylistHooksContext';
 import { EpisodeMetadataCache } from '../services/EpisodeMetadataCache';
 import { PodcastPlaybackService } from '../services/PodcastPlaybackService';
+import * as Haptics from 'expo-haptics';
 
 interface EpisodeListItemProps {
   episode: PodcastEpisode;
@@ -310,6 +311,59 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
   // Use shared playlists from context/props or local hook
   const { playlists } = effectivePlaylistsHooks || localPlaylistsHooks;
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [playlistItemCounts, setPlaylistItemCounts] = useState<Record<string, number>>({});
+  const [episodeInPlaylists, setEpisodeInPlaylists] = useState<Record<string, boolean>>({});
+
+  // Load playlist item counts when modal opens
+  useEffect(() => {
+    if (!pickerVisible) return;
+    
+    let cancelled = false;
+    (async () => {
+      const userPlaylists = (playlists || []).filter((p: any) => !p.is_builtin);
+      const counts: Record<string, number> = {};
+      const inPlaylists: Record<string, boolean> = {};
+      
+      for (const playlist of userPlaylists) {
+        try {
+          const items = await getCachedItems(playlist.id);
+          counts[playlist.id] = items.length;
+          
+          // Check if episode is already in this playlist
+          const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(episode.id);
+          const alreadyInPlaylist = items.some((item: any) => {
+            if (isUuid && item.episode_id) {
+              return item.episode_id === episode.id;
+            }
+            if (item.external_ref?.guid && episode.guid) {
+              return item.external_ref.guid === episode.guid;
+            }
+            if (item.external_ref?.audioUrl && episode.audioUrl) {
+              return item.external_ref.audioUrl === episode.audioUrl;
+            }
+            return false;
+          });
+          inPlaylists[playlist.id] = alreadyInPlaylist;
+        } catch (e) {
+          counts[playlist.id] = 0;
+          inPlaylists[playlist.id] = false;
+        }
+      }
+      
+      if (!cancelled) {
+        setPlaylistItemCounts(counts);
+        setEpisodeInPlaylists(inPlaylists);
+      }
+    })();
+    
+    return () => {
+      cancelled = true;
+      if (!pickerVisible) {
+        setSearchQuery('');
+      }
+    };
+  }, [pickerVisible, playlists, episode.id, episode.guid, episode.audioUrl]);
 
   const handleAddToPlaylist = useCallback((e: any) => {
     e?.stopPropagation?.();
@@ -318,6 +372,7 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
       Alert.alert('No playlists', 'Create a playlist first in the Playlists tab.');
       return;
     }
+    setSearchQuery('');
     setPickerVisible(true);
   }, [playlists]);
 
@@ -592,24 +647,173 @@ export const EpisodeListItem = React.memo(function EpisodeListItem({
         </View>
 
         {/* Playlist picker modal */}
-        <Modal visible={pickerVisible} transparent animationType="fade" onRequestClose={() => setPickerVisible(false)}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-            <View style={{ width: '100%', maxWidth: 420, borderRadius: 12, padding: 16, backgroundColor: Colors[colorScheme ?? 'light'].card }}>
-              <Text style={{ fontFamily: 'Georgia', fontWeight: '700', fontSize: 16, color: themeStyles.text, marginBottom: 8 }}>Add to playlist</Text>
-              <ScrollView style={{ maxHeight: 300 }}>
-                {(playlists || []).filter((p: any) => !p.is_builtin).map((p: any) => (
-                  <TouchableOpacity key={p.id} onPress={() => addToTarget(p.id, p.name)} style={{ paddingVertical: 10 }}>
-                    <Text style={{ color: themeStyles.text, fontFamily: 'Georgia' }}>{p.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
-                <TouchableOpacity onPress={() => setPickerVisible(false)} style={{ paddingVertical: 10, paddingHorizontal: 12 }}>
-                  <Text style={{ color: themeStyles.textSecondary, fontFamily: 'Georgia' }}>Cancel</Text>
+        <Modal visible={pickerVisible} transparent animationType="slide" onRequestClose={() => setPickerVisible(false)}>
+          <TouchableOpacity 
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 }}
+            activeOpacity={1}
+            onPress={() => setPickerVisible(false)}
+          >
+            <TouchableOpacity 
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+              style={{ width: '100%', maxWidth: 480, maxHeight: '80%', borderRadius: 20, backgroundColor: Colors[colorScheme ?? 'light'].card, overflow: 'hidden', elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 }}
+            >
+              {/* Header */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: Colors[colorScheme ?? 'light'].border }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: 'Georgia', fontWeight: '700', fontSize: 20, color: themeStyles.text, marginBottom: 4 }}>Select Playlist</Text>
+                  <Text style={{ fontFamily: 'Georgia', fontSize: 13, color: themeStyles.textSecondary }} numberOfLines={1}>
+                    {episode.title?.replace(/<[^>]*>/g, '') || 'This episode'}
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setPickerVisible(false)} 
+                  style={{ padding: 8, marginLeft: 12 }}
+                >
+                  <Ionicons name="close" size={24} color={themeStyles.textSecondary} />
                 </TouchableOpacity>
               </View>
-            </View>
-          </View>
+
+              {/* Search Bar */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: Colors[colorScheme ?? 'light'].border }}>
+                <Ionicons name="search" size={20} color={themeStyles.textSecondary} style={{ marginRight: 12 }} />
+                <TextInput
+                  style={{ flex: 1, fontSize: 16, fontFamily: 'Georgia', color: themeStyles.text, paddingVertical: 8 }}
+                  placeholder="Search playlists..."
+                  placeholderTextColor={themeStyles.textSecondary}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoFocus={false}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 4, marginLeft: 8 }}>
+                    <Ionicons name="close-circle" size={20} color={themeStyles.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Playlist List */}
+              <ScrollView 
+                style={{ maxHeight: 400 }}
+                showsVerticalScrollIndicator={true}
+              >
+                {(() => {
+                  const userPlaylists = (playlists || []).filter((p: any) => !p.is_builtin);
+                  const filteredPlaylists = searchQuery.trim()
+                    ? userPlaylists.filter((p: any) => 
+                        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+                      )
+                    : userPlaylists;
+                  
+                  if (filteredPlaylists.length === 0) {
+                    return (
+                      <View style={{ padding: 40, alignItems: 'center' }}>
+                        <Ionicons name="search-outline" size={48} color={themeStyles.textSecondary} />
+                        <Text style={{ fontFamily: 'Georgia', fontSize: 16, color: themeStyles.textSecondary, marginTop: 16, textAlign: 'center' }}>
+                          {searchQuery.trim() ? 'No playlists found' : 'No playlists available'}
+                        </Text>
+                      </View>
+                    );
+                  }
+
+                  const accentColors = [
+                    themeStyles.primary,
+                    '#6366f1',
+                    '#8b5cf6',
+                    '#ec4899',
+                    '#f59e0b',
+                    '#10b981',
+                  ];
+
+                  return filteredPlaylists.map((p: any, index: number) => {
+                    const itemCount = playlistItemCounts[p.id] ?? 0;
+                    const alreadyInPlaylist = episodeInPlaylists[p.id] ?? false;
+                    const accentColor = accentColors[index % accentColors.length];
+                    const iconName = index === 0 ? 'musical-notes' : 
+                                   index === 1 ? 'bookmark' : 
+                                   index === 2 ? 'star' : 
+                                   'list';
+
+                    return (
+                      <TouchableOpacity
+                        key={p.id}
+                        onPress={() => {
+                          if (!alreadyInPlaylist) {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            addToTarget(p.id, p.name);
+                          }
+                        }}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          padding: 16,
+                          paddingHorizontal: 20,
+                          borderBottomWidth: 1,
+                          borderBottomColor: Colors[colorScheme ?? 'light'].border,
+                          backgroundColor: alreadyInPlaylist ? (themeStyles.primary + '08') : 'transparent',
+                        }}
+                        disabled={alreadyInPlaylist}
+                        activeOpacity={0.7}
+                      >
+                        <View style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: 24,
+                          backgroundColor: accentColor + '15',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginRight: 16,
+                        }}>
+                          <Ionicons name={iconName} size={24} color={accentColor} />
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                            <Text 
+                              style={{ 
+                                fontFamily: 'Georgia', 
+                                fontWeight: '600', 
+                                fontSize: 16, 
+                                color: themeStyles.text,
+                                flex: 1,
+                              }}
+                              numberOfLines={1}
+                            >
+                              {p.name}
+                            </Text>
+                            {alreadyInPlaylist && (
+                              <Ionicons name="checkmark-circle" size={20} color={themeStyles.primary} style={{ marginLeft: 8 }} />
+                            )}
+                          </View>
+                          <Text style={{ fontFamily: 'Georgia', fontSize: 13, color: themeStyles.textSecondary }}>
+                            {itemCount} {itemCount === 1 ? 'episode' : 'episodes'}
+                            {alreadyInPlaylist && ' • Already added'}
+                          </Text>
+                        </View>
+                        {!alreadyInPlaylist && (
+                          <Ionicons name="chevron-forward" size={20} color={themeStyles.textSecondary} style={{ marginLeft: 8 }} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  });
+                })()}
+              </ScrollView>
+
+              {/* Footer */}
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 16, borderTopWidth: 1, borderTopColor: Colors[colorScheme ?? 'light'].border }}>
+                <TouchableOpacity 
+                  onPress={() => setPickerVisible(false)} 
+                  style={{ 
+                    paddingVertical: 10, 
+                    paddingHorizontal: 20,
+                    borderRadius: 8,
+                    backgroundColor: Colors[colorScheme ?? 'light'].surface,
+                  }}
+                >
+                  <Text style={{ color: themeStyles.text, fontFamily: 'Georgia', fontWeight: '600', fontSize: 16 }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
 
         {!hideDescription && episode.description && (

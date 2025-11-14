@@ -487,13 +487,34 @@ export default function PodcastsScreen() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
                 renderItem={({ item: playlist, drag, isActive, getIndex }: RenderItemParams<any>) => {
                   const isBuiltin = playlist.id === 'downloaded' || playlist.is_builtin;
+                  const index = getIndex?.() ?? 0;
+                  
+                  // Generate accent color based on playlist index for variety
+                  const accentColors = [
+                    Colors[colorScheme ?? 'light'].primary,
+                    '#6366f1',
+                    '#8b5cf6',
+                    '#ec4899',
+                    '#f59e0b',
+                    '#10b981',
+                  ];
+                  const accentColor = accentColors[index % accentColors.length];
+                  const iconName = isBuiltin ? 'cloud-download' : 
+                                 index === 0 ? 'musical-notes' : 
+                                 index === 1 ? 'bookmark' : 
+                                 index === 2 ? 'star' : 
+                                 'list';
                   
                   return (
                     <ScaleDecorator>
                       <TouchableOpacity
                         style={[
                           styles.playlistCard, 
-                          { backgroundColor: Colors[colorScheme ?? 'light'].card },
+                          { 
+                            backgroundColor: Colors[colorScheme ?? 'light'].card,
+                            borderLeftWidth: 4,
+                            borderLeftColor: accentColor,
+                          },
                           isActive && { opacity: 0.8 }
                         ]}
                         onPress={() => {
@@ -505,19 +526,39 @@ export default function PodcastsScreen() {
                         }}
                         onLongPress={!isBuiltin ? drag : undefined}
                         disabled={isActive}
+                        activeOpacity={0.7}
                       >
                         {!isBuiltin && (
                           <TouchableOpacity onLongPress={drag} style={{ padding: 8, marginRight: 4 }}>
                             <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
                           </TouchableOpacity>
                         )}
-                        <View style={styles.playlistIcon}>
-                          <Ionicons name={isBuiltin ? 'cloud-download' : 'list'} size={24} color={Colors[colorScheme ?? 'light'].primary} />
+                        <View style={[
+                          styles.playlistIcon,
+                          { backgroundColor: accentColor + '15' }
+                        ]}>
+                          <Ionicons 
+                            name={iconName} 
+                            size={28} 
+                            color={accentColor} 
+                          />
                         </View>
                         <View style={styles.playlistInfo}>
-                          <Text style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}>{playlist.name}</Text>
+                          <Text 
+                            style={[styles.playlistName, { color: Colors[colorScheme ?? 'light'].text }]}
+                            numberOfLines={2}
+                          >
+                            {playlist.name}
+                          </Text>
                           <Text style={[styles.playlistMeta, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                             {isBuiltin ? 'Downloaded (device)' : 'User Playlist'}
+                            {playlist.updated_at && ' • '}
+                            {playlist.updated_at && (
+                              new Date(playlist.updated_at).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })
+                            )}
                           </Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -529,9 +570,9 @@ export default function PodcastsScreen() {
                                 setPromptValue(playlist.name || '');
                                 setPromptVisible(true);
                               }}
-                              style={{ padding: 6 }}
+                              style={{ padding: 8 }}
                             >
-                              <Ionicons name='pencil' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                              <Ionicons name='pencil' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
                             </TouchableOpacity>
                           )}
                           {!isBuiltin && (
@@ -542,9 +583,9 @@ export default function PodcastsScreen() {
                                   { text: 'Delete', style: 'destructive', onPress: async () => { await deletePlaylist(playlist.id); } },
                                 ]);
                               }}
-                              style={{ padding: 6 }}
+                              style={{ padding: 8 }}
                             >
-                              <Ionicons name='trash' size={18} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                              <Ionicons name='trash' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
                             </TouchableOpacity>
                           )}
                           <Ionicons name='chevron-forward' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
@@ -724,36 +765,39 @@ const styles = StyleSheet.create({
   playlistCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    elevation: 2,
+    padding: 20,
+    marginBottom: 14,
+    borderRadius: 16,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    minHeight: 80,
   },
   playlistIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   playlistInfo: {
     flex: 1,
+    minWidth: 0,
   },
   playlistName: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     fontFamily: 'Georgia',
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 24,
   },
   playlistMeta: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Georgia',
+    lineHeight: 18,
   },
   queueCard: {
     flexDirection: 'row',
