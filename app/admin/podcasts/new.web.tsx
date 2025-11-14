@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -36,7 +35,7 @@ export default function NewPodcastWebScreen() {
 
   const handlePreviewRss = async () => {
     if (!rssUrl.trim()) {
-      Alert.alert('Error', 'Please enter an RSS feed URL');
+      window.alert('Please enter an RSS feed URL');
       return;
     }
 
@@ -56,7 +55,7 @@ export default function NewPodcastWebScreen() {
       });
     } catch (error) {
       console.error('Error previewing RSS feed:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to fetch RSS feed');
+      window.alert(error instanceof Error ? error.message : 'Failed to fetch RSS feed');
     } finally {
       setLoading(false);
     }
@@ -79,12 +78,12 @@ export default function NewPodcastWebScreen() {
 
   const handleSubmit = async () => {
     if (!rssUrl.trim()) {
-      Alert.alert('Error', 'Please enter an RSS feed URL');
+      window.alert('Please enter an RSS feed URL');
       return;
     }
 
     if (!showPreview) {
-      Alert.alert('Error', 'Please fetch and preview the RSS feed first');
+      window.alert('Please fetch and preview the RSS feed first');
       return;
     }
 
@@ -95,15 +94,11 @@ export default function NewPodcastWebScreen() {
         rssUrl,
       });
       
-      Alert.alert('Success', 'Podcast added successfully', [
-        {
-          text: 'OK',
-          onPress: () => router.push('/admin/podcasts'),
-        },
-      ]);
+      window.alert('Podcast added successfully');
+      router.push('/admin/podcasts');
     } catch (error) {
       console.error('Error creating podcast:', error);
-      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create podcast');
+      window.alert(error instanceof Error ? error.message : 'Failed to create podcast');
     } finally {
       setSaving(false);
     }

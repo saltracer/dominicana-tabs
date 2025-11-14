@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,7 +49,7 @@ export default function BooksListScreenWeb() {
       setTotalPages(result.totalPages);
     } catch (error) {
       console.error('Error loading books:', error);
-      Alert.alert('Error', 'Failed to load books');
+      window.alert('Failed to load books');
     } finally {
       setLoading(false);
     }
@@ -69,26 +68,17 @@ export default function BooksListScreenWeb() {
   };
 
   const handleDeleteBook = async (book: Book) => {
-    Alert.alert(
-      'Delete Book',
-      `Are you sure you want to delete "${book.title}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AdminBookService.deleteBook(book.id);
-              Alert.alert('Success', 'Book deleted successfully');
-              loadBooks();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete book');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Are you sure you want to delete "${book.title}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await AdminBookService.deleteBook(book.id);
+      window.alert('Book deleted successfully');
+      loadBooks();
+    } catch (error) {
+      window.alert('Failed to delete book');
+    }
   };
 
   return (

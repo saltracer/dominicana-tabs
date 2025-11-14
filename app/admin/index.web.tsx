@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
+  
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -96,7 +96,7 @@ export default function AdminDashboardWeb() {
       });
     } catch (error) {
       console.error('Error loading stats:', error);
-      Alert.alert('Error', 'Failed to load dashboard statistics');
+      window.alert('Failed to load dashboard statistics');
     } finally {
       setLoading(false);
     }

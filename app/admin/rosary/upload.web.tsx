@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -71,19 +70,19 @@ export default function UploadAudioScreenWeb() {
 
   const handleCreateVoice = async () => {
     if (!newVoiceName.trim()) {
-      Alert.alert('Error', 'Please enter a voice name');
+      window.alert('Please enter a voice name');
       return;
     }
 
     try {
       setLoading(true);
       await AdminRosaryService.createVoice(newVoiceName.toLowerCase());
-      Alert.alert('Success', 'Voice created successfully');
+      window.alert('Voice created successfully');
       setNewVoiceName('');
       loadVoices();
     } catch (error) {
       console.error('Error creating voice:', error);
-      Alert.alert('Error', 'Failed to create voice');
+      window.alert('Failed to create voice');
     } finally {
       setLoading(false);
     }
@@ -91,13 +90,13 @@ export default function UploadAudioScreenWeb() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      Alert.alert('Error', 'Please select an audio file');
+      window.alert('Please select an audio file');
       return;
     }
 
     const voiceToUse = selectedVoice || newVoiceName.toLowerCase();
     if (!voiceToUse.trim()) {
-      Alert.alert('Error', 'Please select or create a voice');
+      window.alert('Please select or create a voice');
       return;
     }
 
@@ -118,23 +117,14 @@ export default function UploadAudioScreenWeb() {
         metadata
       );
 
-      Alert.alert(
-        'Success',
-        'Audio file uploaded and manifest updated automatically!',
-        [
-          {
-            text: 'Upload Another',
-            onPress: () => setSelectedFile(null),
-          },
-          {
-            text: 'View Files',
-            onPress: () => router.push('/admin/rosary'),
-          },
-        ]
-      );
+      if (window.confirm('Audio file uploaded and manifest updated automatically! Upload another?')) {
+        setSelectedFile(null);
+      } else {
+        router.push('/admin/rosary');
+      }
     } catch (error) {
       console.error('Error uploading file:', error);
-      Alert.alert('Error', 'Failed to upload audio file');
+      window.alert('Failed to upload audio file');
     } finally {
       setUploading(false);
     }

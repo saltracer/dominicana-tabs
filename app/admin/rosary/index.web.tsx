@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,7 +41,7 @@ export default function RosaryAudioScreenWeb() {
       }
     } catch (error) {
       console.error('Error loading voices:', error);
-      Alert.alert('Error', 'Failed to load voice list');
+      window.alert('Failed to load voice list');
     } finally {
       setLoading(false);
     }
@@ -55,59 +54,45 @@ export default function RosaryAudioScreenWeb() {
       setAudioFiles(files);
     } catch (error) {
       console.error('Error loading audio files:', error);
-      Alert.alert('Error', 'Failed to load audio files');
+      window.alert('Failed to load audio files');
     } finally {
       setLoadingFiles(false);
     }
   };
 
   const handleDeleteFile = (file: AudioFile) => {
-    Alert.alert(
-      'Delete Audio File',
-      `Delete ${file.name}? This will also update the manifest automatically.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (!selectedVoice) return;
-              await AdminRosaryService.deleteAudioFile(selectedVoice, file.name);
-              Alert.alert('Success', 'Audio file deleted and manifest updated');
-              loadAudioFiles(selectedVoice);
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete audio file');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Delete ${file.name}? This will also update the manifest automatically.`)) {
+      return;
+    }
+    
+    (async () => {
+      try {
+        if (!selectedVoice) return;
+        await AdminRosaryService.deleteAudioFile(selectedVoice, file.name);
+        window.alert('Audio file deleted and manifest updated');
+        loadAudioFiles(selectedVoice);
+      } catch (error) {
+        window.alert('Failed to delete audio file');
+      }
+    })();
   };
 
   const handleDeleteVoice = () => {
     if (!selectedVoice) return;
 
-    Alert.alert(
-      'Delete Voice',
-      `Delete entire voice "${selectedVoice}" and all its audio files? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AdminRosaryService.deleteVoice(selectedVoice);
-              Alert.alert('Success', 'Voice deleted and manifest updated');
-              loadVoices();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete voice');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Delete entire voice "${selectedVoice}" and all its audio files? This cannot be undone.`)) {
+      return;
+    }
+    
+    (async () => {
+      try {
+        await AdminRosaryService.deleteVoice(selectedVoice);
+        window.alert('Voice deleted and manifest updated');
+        loadVoices();
+      } catch (error) {
+        window.alert('Failed to delete voice');
+      }
+    })();
   };
 
   const formatFileSize = (bytes: number): string => {

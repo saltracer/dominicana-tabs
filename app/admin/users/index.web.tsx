@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
+  
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -43,7 +43,7 @@ export default function UsersListScreenWeb() {
       setTotalPages(result.totalPages);
     } catch (error) {
       console.error('Error loading users:', error);
-      Alert.alert('Error', 'Failed to load users');
+      window.alert('Failed to load users');
     } finally {
       setLoading(false);
     }

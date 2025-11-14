@@ -29,6 +29,8 @@ export class AdminPodcastService {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
       shareCount: data.share_count || 0,
+      episodeCount: data.episode_count?.[0]?.count || 0,
+      subscriptionCount: data.subscription_count?.[0]?.count || 0,
     };
   }
 
@@ -101,7 +103,11 @@ export class AdminPodcastService {
 
     let query = supabase
       .from('podcasts')
-      .select('*', { count: 'exact' });
+      .select(`
+        *,
+        episode_count:podcast_episodes(count),
+        subscription_count:user_podcast_subscriptions(count)
+      `, { count: 'exact' });
 
     if (filters.search) {
       query = query.or(
@@ -111,6 +117,10 @@ export class AdminPodcastService {
 
     if (filters.isCurated !== undefined) {
       query = query.eq('is_curated', filters.isCurated);
+    }
+
+    if (filters.isActive !== undefined) {
+      query = query.eq('is_active', filters.isActive);
     }
 
     if (filters.category) {

@@ -6,7 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
+  
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,33 +41,26 @@ export default function RolesManagementScreenWeb() {
       setSubscribedUsers(subscribedResult.users);
     } catch (error) {
       console.error('Error loading roles:', error);
-      Alert.alert('Error', 'Failed to load role information');
+      window.alert('Failed to load role information');
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemoveRole = (user: AdminUser) => {
-    Alert.alert(
-      'Remove Special Role',
-      `Remove ${user.role} role from ${user.name}? They will become a regular authenticated user.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AdminUserService.deleteUserRole(user.id);
-              Alert.alert('Success', 'Role removed successfully');
-              loadRoles();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to remove role');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Remove ${user.role} role from ${user.name}? They will become a regular authenticated user.`)) {
+      return;
+    }
+    
+    (async () => {
+      try {
+        await AdminUserService.deleteUserRole(user.id);
+        window.alert('Role removed successfully');
+        loadRoles();
+      } catch (error) {
+        window.alert('Failed to remove role');
+      }
+    })();
   };
 
   if (loading) {

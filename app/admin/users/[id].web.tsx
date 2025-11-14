@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
+  
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,7 +52,7 @@ export default function EditUserScreenWeb() {
       setReadingProgress(progress);
     } catch (error) {
       console.error('Error loading user:', error);
-      Alert.alert('Error', 'Failed to load user details');
+      window.alert('Failed to load user details');
       router.back();
     } finally {
       setLoading(false);
@@ -61,11 +61,11 @@ export default function EditUserScreenWeb() {
 
   const handleSave = async () => {
     if (!fullName.trim()) {
-      Alert.alert('Error', 'Please enter a name');
+      window.alert('Please enter a name');
       return;
     }
     if (!username.trim()) {
-      Alert.alert('Error', 'Please enter a username');
+      window.alert('Please enter a username');
       return;
     }
 
@@ -85,11 +85,11 @@ export default function EditUserScreenWeb() {
         }
       }
 
-      Alert.alert('Success', 'User updated successfully');
+      window.alert('User updated successfully');
       loadUser();
     } catch (error) {
       console.error('Error updating user:', error);
-      Alert.alert('Error', 'Failed to update user');
+      window.alert('Failed to update user');
     } finally {
       setSaving(false);
     }
@@ -98,24 +98,18 @@ export default function EditUserScreenWeb() {
   const handleResetPassword = async () => {
     if (!user?.email) return;
 
-    Alert.alert(
-      'Reset Password',
-      `Send password reset email to ${user.email}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Send',
-          onPress: async () => {
-            try {
-              await AdminUserService.resetUserPassword(user.email);
-              Alert.alert('Success', 'Password reset email sent');
-            } catch (error) {
-              Alert.alert('Error', 'Failed to send password reset email');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Send password reset email to ${user.email}?`)) {
+      return;
+    }
+    
+    (async () => {
+      try {
+        await AdminUserService.resetUserPassword(user.email);
+        window.alert('Password reset email sent');
+      } catch (error) {
+        window.alert('Failed to send password reset email');
+      }
+    })();
   };
 
   if (loading) {

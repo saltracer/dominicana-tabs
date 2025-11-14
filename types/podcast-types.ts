@@ -19,6 +19,8 @@ export interface Podcast {
   createdAt: string;
   updatedAt: string;
   shareCount?: number; // Number of times this podcast has been shared via share links
+  episodeCount?: number; // Number of episodes for this podcast
+  subscriptionCount?: number; // Number of users subscribed to this podcast
 }
 
 export interface PodcastEpisode {
@@ -98,6 +100,7 @@ export interface PodcastFilters {
   search?: string;
   category?: string;
   isCurated?: boolean;
+  isActive?: boolean;
   sortBy?: 'title' | 'created_at' | 'last_fetched_at';
   sortOrder?: 'asc' | 'desc';
   limit?: number;

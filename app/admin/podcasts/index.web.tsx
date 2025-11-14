@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -26,6 +25,8 @@ export default function PodcastsListWebScreen() {
   const [sortBy, setSortBy] = useState<'title' | 'created_at' | 'last_fetched'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [refreshingAll, setRefreshingAll] = useState(false);
+  const [selectedPodcastIds, setSelectedPodcastIds] = useState<Set<string>>(new Set());
+  const [bulkActionInProgress, setBulkActionInProgress] = useState(false);
 
   const loadPodcasts = async () => {
     try {
@@ -34,6 +35,8 @@ export default function PodcastsListWebScreen() {
       
       if (searchQuery) filters.search = searchQuery;
       if (statusFilter === 'curated') filters.isCurated = true;
+      if (statusFilter === 'active') filters.isActive = true;
+      if (statusFilter === 'inactive') filters.isActive = false;
       filters.sortBy = sortBy;
       filters.sortOrder = sortOrder;
 
@@ -41,7 +44,7 @@ export default function PodcastsListWebScreen() {
       setPodcasts(result.podcasts);
     } catch (error) {
       console.error('Error loading podcasts:', error);
-      Alert.alert('Error', 'Failed to load podcasts');
+      window.alert('Failed to load podcasts');
     } finally {
       setLoading(false);
     }
@@ -62,81 +65,52 @@ export default function PodcastsListWebScreen() {
   };
 
   const handleDeletePodcast = async (podcast: Podcast) => {
-    Alert.alert(
-      'Delete Podcast',
-      `Are you sure you want to delete "${podcast.title}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AdminPodcastService.deletePodcast(podcast.id);
-              Alert.alert('Success', 'Podcast deleted successfully');
-              loadPodcasts();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete podcast');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Are you sure you want to delete "${podcast.title}"? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await AdminPodcastService.deletePodcast(podcast.id);
+      window.alert('Podcast deleted successfully');
+      loadPodcasts();
+    } catch (error) {
+      window.alert('Failed to delete podcast');
+    }
   };
 
   const handleRefreshEpisodes = async (podcast: Podcast) => {
-    Alert.alert(
-      'Refresh Episodes',
-      `Fetch latest episodes from "${podcast.title}"? This will check for new episodes and update existing ones.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Refresh',
-          style: 'default',
-          onPress: async () => {
-            try {
-              Alert.alert('Refreshing', 'Fetching latest episodes from RSS feed...');
-              await AdminPodcastService.refreshEpisodes(podcast.id);
-              Alert.alert('Success', 'Episodes refreshed successfully');
-              loadPodcasts();
-            } catch (error) {
-              Alert.alert('Error', 'Failed to refresh episodes');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Fetch latest episodes from "${podcast.title}"? This will check for new episodes and update existing ones.`)) {
+      return;
+    }
+    
+    try {
+      await AdminPodcastService.refreshEpisodes(podcast.id);
+      window.alert('Episodes refreshed successfully');
+      loadPodcasts();
+    } catch (error) {
+      window.alert('Failed to refresh episodes');
+    }
   };
 
   const handleForceReparse = async (podcast: Podcast) => {
-    Alert.alert(
-      'Force Reparse RSS Feed',
-      `This will force a complete re-fetch and re-parse of the RSS feed for "${podcast.title}", updating all episode metadata including durations. Continue?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Force Reparse',
-          style: 'default',
-          onPress: async () => {
-            try {
-              Alert.alert('Reparsing', 'Force reparsing RSS feed...');
-              await AdminPodcastService.refreshEpisodes(podcast.id);
-              Alert.alert('Success', 'RSS feed reparsed successfully. All episode data has been updated.');
-              loadPodcasts();
-            } catch (error) {
-              console.error('Force reparse error:', error);
-              Alert.alert('Error', 'Failed to reparse RSS feed');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`This will force a complete re-fetch and re-parse of the RSS feed for "${podcast.title}", updating all episode metadata including durations. Continue?`)) {
+      return;
+    }
+    
+    try {
+      await AdminPodcastService.refreshEpisodes(podcast.id);
+      window.alert('RSS feed reparsed successfully. All episode data has been updated.');
+      loadPodcasts();
+    } catch (error) {
+      console.error('Force reparse error:', error);
+      window.alert('Failed to reparse RSS feed');
+    }
   };
 
   const handleRefreshAll = async () => {
     const activePodcastCount = podcasts.filter(p => p.isActive).length;
     
-    if (!confirm(`Fetch latest episodes from all ${activePodcastCount} active podcasts? This may take a few minutes.`)) {
+    if (!window.confirm(`Fetch latest episodes from all ${activePodcastCount} active podcasts? This may take a few minutes.`)) {
       return;
     }
 
@@ -154,13 +128,137 @@ export default function PodcastsListWebScreen() {
         }
       }
       
-      alert(message);
+      window.alert(message);
       loadPodcasts();
     } catch (error) {
       console.error('Refresh all error:', error);
-      alert('Failed to refresh podcasts. Please try again.');
+      window.alert('Failed to refresh podcasts. Please try again.');
     } finally {
       setRefreshingAll(false);
+    }
+  };
+
+  // Bulk selection handlers
+  const handleSelectAll = () => {
+    if (selectedPodcastIds.size === podcasts.length) {
+      setSelectedPodcastIds(new Set());
+    } else {
+      setSelectedPodcastIds(new Set(podcasts.map(p => p.id)));
+    }
+  };
+
+  const handleSelectPodcast = (podcastId: string) => {
+    const newSelection = new Set(selectedPodcastIds);
+    if (newSelection.has(podcastId)) {
+      newSelection.delete(podcastId);
+    } else {
+      newSelection.add(podcastId);
+    }
+    setSelectedPodcastIds(newSelection);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedPodcastIds.size} selected podcast(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setBulkActionInProgress(true);
+      let succeeded = 0;
+      let failed = 0;
+
+      for (const id of selectedPodcastIds) {
+        try {
+          await AdminPodcastService.deletePodcast(id);
+          succeeded++;
+        } catch (error) {
+          failed++;
+        }
+      }
+
+      window.alert(`Deleted ${succeeded} podcast(s)${failed > 0 ? `, ${failed} failed` : ''}`);
+      setSelectedPodcastIds(new Set());
+      loadPodcasts();
+    } catch (error) {
+      window.alert('Failed to delete podcasts');
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  };
+
+  const handleBulkActivate = async () => {
+    if (!window.confirm(`Activate ${selectedPodcastIds.size} selected podcast(s)?`)) {
+      return;
+    }
+
+    try {
+      setBulkActionInProgress(true);
+      let succeeded = 0;
+      let failed = 0;
+
+      for (const id of selectedPodcastIds) {
+        try {
+          await AdminPodcastService.updatePodcast(id, { isActive: true });
+          succeeded++;
+        } catch (error) {
+          failed++;
+        }
+      }
+
+      window.alert(`Activated ${succeeded} podcast(s)${failed > 0 ? `, ${failed} failed` : ''}`);
+      setSelectedPodcastIds(new Set());
+      loadPodcasts();
+    } catch (error) {
+      window.alert('Failed to activate podcasts');
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (!window.confirm(`Deactivate ${selectedPodcastIds.size} selected podcast(s)?`)) {
+      return;
+    }
+
+    try {
+      setBulkActionInProgress(true);
+      let succeeded = 0;
+      let failed = 0;
+
+      for (const id of selectedPodcastIds) {
+        try {
+          await AdminPodcastService.updatePodcast(id, { isActive: false });
+          succeeded++;
+        } catch (error) {
+          failed++;
+        }
+      }
+
+      window.alert(`Deactivated ${succeeded} podcast(s)${failed > 0 ? `, ${failed} failed` : ''}`);
+      setSelectedPodcastIds(new Set());
+      loadPodcasts();
+    } catch (error) {
+      window.alert('Failed to deactivate podcasts');
+    } finally {
+      setBulkActionInProgress(false);
+    }
+  };
+
+  const handlePromoteToCurated = async (podcast: Podcast) => {
+    const subCount = podcast.subscriptionCount || 0;
+    const message = `Promote "${podcast.title}" to curated status?\n\nThis will make it visible to all users in the curated library.${subCount > 0 ? `\n\nCurrently ${subCount} user(s) are subscribed.` : ''}`;
+    
+    if (!window.confirm(message)) {
+      return;
+    }
+    
+    try {
+      await AdminPodcastService.promoteToCurated(podcast.id);
+      window.alert(`Successfully promoted "${podcast.title}" to curated status!`);
+      loadPodcasts();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Failed to promote podcast';
+      window.alert(errorMsg);
     }
   };
 
@@ -264,12 +362,25 @@ export default function PodcastsListWebScreen() {
           <ActivityIndicator size="large" color={Colors[colorScheme ?? 'light'].primary} />
         </View>
       ) : (
-        <ScrollView style={styles.scrollView}>
+        <ScrollView 
+          style={styles.scrollView}
+          horizontal={true}
+          showsHorizontalScrollIndicator={true}
+        >
           {/* Podcasts Table */}
           <View style={[styles.tableContainer, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}>
             <View style={[styles.tableHeader, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}>
+              <View style={styles.checkboxCell}>
+                <TouchableOpacity onPress={handleSelectAll}>
+                  <Ionicons 
+                    name={selectedPodcastIds.size === podcasts.length && podcasts.length > 0 ? 'checkbox' : 'square-outline'} 
+                    size={20} 
+                    color={Colors[colorScheme ?? 'light'].primary} 
+                  />
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity
-                style={styles.tableHeaderCell}
+                style={[styles.tableHeaderCell, { width: 300 }]}
                 onPress={() => handleSort('title')}
               >
                 <Text style={[styles.tableHeaderText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
@@ -283,32 +394,32 @@ export default function PodcastsListWebScreen() {
                   />
                 )}
               </TouchableOpacity>
-              <View style={styles.tableHeaderCell}>
+              <View style={[styles.tableHeaderCell, { width: 120 }]}>
                 <Text style={[styles.tableHeaderText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                   Author
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.tableHeaderCell}
-                onPress={() => handleSort('created_at')}
-              >
+              <View style={[styles.tableHeaderCell, { width: 80 }]}>
                 <Text style={[styles.tableHeaderText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                  Created
+                  Episodes
                 </Text>
-                {sortBy === 'created_at' && (
-                  <Ionicons
-                    name={sortOrder === 'asc' ? 'chevron-up' : 'chevron-down'}
-                    size={16}
-                    color={Colors[colorScheme ?? 'light'].textSecondary}
-                  />
-                )}
-              </TouchableOpacity>
-              <View style={styles.tableHeaderCell}>
+              </View>
+              <View style={[styles.tableHeaderCell, { width: 80 }]}>
+                <Text style={[styles.tableHeaderText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Subs
+                </Text>
+              </View>
+              <View style={[styles.tableHeaderCell, { width: 120 }]}>
+                <Text style={[styles.tableHeaderText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
+                  Last Fetched
+                </Text>
+              </View>
+              <View style={[styles.tableHeaderCell, { width: 180 }]}>
                 <Text style={[styles.tableHeaderText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                   Status
                 </Text>
               </View>
-              <View style={styles.tableHeaderCell}>
+              <View style={[styles.tableHeaderCell, { width: 240 }]}>
                 <Text style={[styles.tableHeaderText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
                   Actions
                 </Text>
@@ -324,7 +435,27 @@ export default function PodcastsListWebScreen() {
               </View>
             ) : (
               podcasts.map((podcast) => (
-                <View key={podcast.id} style={[styles.tableRow, { borderBottomColor: Colors[colorScheme ?? 'light'].border }]}>
+                <View 
+                  key={podcast.id} 
+                  style={[
+                    styles.tableRow, 
+                    { 
+                      borderBottomColor: Colors[colorScheme ?? 'light'].border,
+                      backgroundColor: podcast.isCurated 
+                        ? (colorScheme === 'dark' ? 'rgba(139, 92, 59, 0.1)' : 'rgba(139, 92, 59, 0.05)')
+                        : 'transparent'
+                    }
+                  ]}
+                >
+                  <View style={styles.checkboxCell}>
+                    <TouchableOpacity onPress={() => handleSelectPodcast(podcast.id)}>
+                      <Ionicons 
+                        name={selectedPodcastIds.has(podcast.id) ? 'checkbox' : 'square-outline'} 
+                        size={20} 
+                        color={Colors[colorScheme ?? 'light'].primary} 
+                      />
+                    </TouchableOpacity>
+                  </View>
                   <View style={styles.podcastInfo}>
                     {podcast.artworkUrl ? (
                       <Image
@@ -357,22 +488,39 @@ export default function PodcastsListWebScreen() {
                       )}
                     </View>
                   </View>
-                  <View style={styles.tableCell}>
-                    <Text style={[styles.tableCellText, { color: Colors[colorScheme ?? 'light'].text }]}>
+                  <View style={[styles.tableCell, { width: 120 }]}>
+                    <Text style={[styles.tableCellText, { color: Colors[colorScheme ?? 'light'].text }]} numberOfLines={1}>
                       {podcast.author || '—'}
                     </Text>
                   </View>
-                  <View style={styles.tableCell}>
-                    <Text style={[styles.tableCellText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                      {new Date(podcast.createdAt).toLocaleDateString()}
+                  <View style={[styles.tableCellCompact, { width: 80 }]}>
+                    <Text style={[styles.tableCellText, { color: Colors[colorScheme ?? 'light'].text, textAlign: 'center' }]}>
+                      {podcast.episodeCount || 0}
                     </Text>
                   </View>
-                  <View style={styles.tableCell}>
+                  <View style={[styles.tableCellCompact, { width: 80 }]}>
+                    <Text style={[styles.tableCellText, { color: Colors[colorScheme ?? 'light'].text, textAlign: 'center' }]}>
+                      {podcast.subscriptionCount || 0}
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCell, { width: 120 }]}>
+                    <Text style={[styles.tableCellText, { color: Colors[colorScheme ?? 'light'].textSecondary, fontSize: 12 }]}>
+                      {podcast.lastFetchedAt ? new Date(podcast.lastFetchedAt).toLocaleDateString() : 'Never'}
+                    </Text>
+                  </View>
+                  <View style={[styles.tableCell, { width: 180 }]}>
                     <View style={styles.badges}>
                       {podcast.isCurated && (
                         <View style={[styles.badge, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}>
                           <Text style={[styles.badgeText, { color: Colors[colorScheme ?? 'light'].dominicanWhite }]}>
                             Curated
+                          </Text>
+                        </View>
+                      )}
+                      {!podcast.isCurated && (
+                        <View style={[styles.badge, { backgroundColor: '#3b82f6' }]}>
+                          <Text style={[styles.badgeText, { color: '#fff' }]}>
+                            User-Added
                           </Text>
                         </View>
                       )}
@@ -385,7 +533,7 @@ export default function PodcastsListWebScreen() {
                       )}
                     </View>
                   </View>
-                  <View style={styles.tableCell}>
+                  <View style={[styles.tableCell, { width: 240 }]}>
                     <View style={styles.actions}>
                       <View title="Edit podcast details">
                         <TouchableOpacity
@@ -411,6 +559,16 @@ export default function PodcastsListWebScreen() {
                           <Ionicons name="sync-outline" size={18} color="#8b5cf6" />
                         </TouchableOpacity>
                       </View>
+                      {!podcast.isCurated && (
+                        <View title="Promote to Curated - Make this podcast visible to all users in curated library">
+                          <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => handlePromoteToCurated(podcast)}
+                          >
+                            <Ionicons name="star-outline" size={18} color="#f59e0b" />
+                          </TouchableOpacity>
+                        </View>
+                      )}
                       <View title="Delete podcast and all episodes permanently">
                         <TouchableOpacity
                           style={styles.actionButton}
@@ -426,6 +584,48 @@ export default function PodcastsListWebScreen() {
             )}
           </View>
         </ScrollView>
+      )}
+
+      {/* Bulk Action Bar */}
+      {selectedPodcastIds.size > 0 && (
+        <View style={[styles.bulkActionBar, { backgroundColor: Colors[colorScheme ?? 'light'].surface, borderTopColor: Colors[colorScheme ?? 'light'].border }]}>
+          <Text style={[styles.bulkActionText, { color: Colors[colorScheme ?? 'light'].text }]}>
+            {selectedPodcastIds.size} selected
+          </Text>
+          <View style={styles.bulkActions}>
+            <TouchableOpacity
+              style={[styles.bulkActionButton, { backgroundColor: '#10b981', opacity: bulkActionInProgress ? 0.5 : 1 }]}
+              onPress={handleBulkActivate}
+              disabled={bulkActionInProgress}
+            >
+              <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+              <Text style={styles.bulkActionButtonText}>Activate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.bulkActionButton, { backgroundColor: '#f59e0b', opacity: bulkActionInProgress ? 0.5 : 1 }]}
+              onPress={handleBulkDeactivate}
+              disabled={bulkActionInProgress}
+            >
+              <Ionicons name="pause-circle-outline" size={18} color="#fff" />
+              <Text style={styles.bulkActionButtonText}>Deactivate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.bulkActionButton, { backgroundColor: '#ef4444', opacity: bulkActionInProgress ? 0.5 : 1 }]}
+              onPress={handleBulkDelete}
+              disabled={bulkActionInProgress}
+            >
+              <Ionicons name="trash-outline" size={18} color="#fff" />
+              <Text style={styles.bulkActionButtonText}>Delete</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.bulkActionButton, { backgroundColor: '#6b7280', opacity: bulkActionInProgress ? 0.5 : 1 }]}
+              onPress={() => setSelectedPodcastIds(new Set())}
+              disabled={bulkActionInProgress}
+            >
+              <Text style={styles.bulkActionButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
     </View>
   );
@@ -526,15 +726,15 @@ const styles = StyleSheet.create({
   tableContainer: {
     margin: 24,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   tableHeader: {
     flexDirection: 'row',
     padding: 16,
     borderBottomWidth: 2,
+    minWidth: 1400,
   },
   tableHeaderCell: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -549,9 +749,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     alignItems: 'center',
+    minWidth: 1400,
   },
   podcastInfo: {
-    flex: 2,
+    width: 300,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -593,32 +794,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tableCell: {
-    flex: 1,
+    width: 120,
   },
   tableCellText: {
     fontSize: 14,
     fontFamily: 'Georgia',
   },
+  tableCellCompact: {
+    width: 80,
+    alignItems: 'center',
+  },
   badges: {
-    flexDirection: 'row',
-    gap: 6,
+    flexDirection: 'column',
+    gap: 4,
   },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
+    alignSelf: 'flex-start',
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'Georgia',
     fontWeight: '600',
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 4,
+    width: 240,
   },
   actionButton: {
-    padding: 8,
+    padding: 6,
   },
   emptyContainer: {
     padding: 48,
@@ -628,5 +835,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Georgia',
     marginTop: 16,
+  },
+  checkboxCell: {
+    width: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bulkActionBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderTopWidth: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  bulkActionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
+  },
+  bulkActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  bulkActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  bulkActionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Georgia',
   },
 });

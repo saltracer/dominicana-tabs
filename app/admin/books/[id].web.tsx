@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
+  
   Image,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -65,7 +65,7 @@ export default function EditBookScreenWeb() {
       }
     } catch (error) {
       console.error('Error loading book:', error);
-      Alert.alert('Error', 'Failed to load book details');
+      window.alert('Failed to load book details');
       router.back();
     } finally {
       setLoading(false);
@@ -74,23 +74,23 @@ export default function EditBookScreenWeb() {
 
   const handleSubmit = async () => {
     if (!formData.title.trim()) {
-      Alert.alert('Error', 'Please enter a book title');
+      window.alert('Please enter a book title');
       return;
     }
     if (!formData.author.trim()) {
-      Alert.alert('Error', 'Please enter an author name');
+      window.alert('Please enter an author name');
       return;
     }
     if (!formData.description.trim()) {
-      Alert.alert('Error', 'Please enter a description');
+      window.alert('Please enter a description');
       return;
     }
     if (!formData.categories || formData.categories.length === 0) {
-      Alert.alert('Error', 'Please select at least one category');
+      window.alert('Please select at least one category');
       return;
     }
     if (formData.categories.length > 10) {
-      Alert.alert('Error', 'Maximum 10 categories allowed');
+      window.alert('Maximum 10 categories allowed');
       return;
     }
 
@@ -108,38 +108,30 @@ export default function EditBookScreenWeb() {
         long_description: paragraphs.length > 0 ? paragraphs : undefined,
       });
       
-      Alert.alert('Success', 'Book updated successfully');
+      window.alert('Book updated successfully');
       loadBook();
     } catch (error) {
       console.error('Error updating book:', error);
-      Alert.alert('Error', 'Failed to update book');
+      window.alert('Failed to update book');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteBook = () => {
-    Alert.alert(
-      'Delete Book',
-      `Are you sure you want to delete "${book?.title}"? This action cannot be undone and will delete all associated files.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AdminBookService.deleteBook(Number(id));
-              Alert.alert('Success', 'Book deleted successfully', [
-                { text: 'OK', onPress: () => router.push('/admin/books') },
-              ]);
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete book');
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Are you sure you want to delete "${book?.title}"? This action cannot be undone and will delete all associated files.`)) {
+      return;
+    }
+    
+    (async () => {
+      try {
+        await AdminBookService.deleteBook(Number(id));
+        window.alert('Book deleted successfully');
+        router.push('/admin/books');
+      } catch (error) {
+        window.alert('Failed to delete book');
+      }
+    })();
   };
 
   const handleTogglePublished = async () => {
@@ -187,11 +179,11 @@ export default function EditBookScreenWeb() {
 
       try {
         await AdminBookService.uploadCoverImage(file, Number(id));
-        Alert.alert('Success', 'Cover image uploaded successfully');
+        window.alert('Cover image uploaded successfully');
         loadBook();
       } catch (error) {
         console.error('Error uploading cover:', error);
-        Alert.alert('Error', 'Failed to upload cover image');
+        window.alert('Failed to upload cover image');
       }
     };
     input.click();
@@ -207,56 +199,46 @@ export default function EditBookScreenWeb() {
 
       try {
         await AdminBookService.uploadEpubFile(file, Number(id), isSample);
-        Alert.alert('Success', `${isSample ? 'Sample ' : ''}EPUB uploaded successfully`);
+        window.alert(`${isSample ? 'Sample ' : ''}EPUB uploaded successfully`);
         loadBook();
       } catch (error) {
         console.error('Error uploading EPUB:', error);
-        Alert.alert('Error', `Failed to upload ${isSample ? 'sample ' : ''}EPUB`);
+        window.alert(`Failed to upload ${isSample ? 'sample ' : ''}EPUB`);
       }
     };
     input.click();
   };
 
   const handleDeleteCover = () => {
-    Alert.alert('Delete Cover', 'Remove the cover image?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await AdminBookService.deleteCoverImage(Number(id));
-            Alert.alert('Success', 'Cover image deleted');
-            loadBook();
-          } catch (error) {
-            Alert.alert('Error', 'Failed to delete cover');
-          }
-        },
-      },
-    ]);
+    if (!window.confirm('Remove the cover image?')) {
+      return;
+    }
+    
+    (async () => {
+      try {
+        await AdminBookService.deleteCoverImage(Number(id));
+        window.alert('Cover image deleted');
+        loadBook();
+      } catch (error) {
+        window.alert('Failed to delete cover');
+      }
+    })();
   };
 
   const handleDeleteEpub = (isSample: boolean = false) => {
-    Alert.alert(
-      'Delete EPUB',
-      `Remove the ${isSample ? 'sample ' : ''}EPUB file?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AdminBookService.deleteEpubFile(Number(id), isSample);
-              Alert.alert('Success', `${isSample ? 'Sample ' : ''}EPUB deleted`);
-              loadBook();
-            } catch (error) {
-              Alert.alert('Error', `Failed to delete ${isSample ? 'sample ' : ''}EPUB`);
-            }
-          },
-        },
-      ]
-    );
+    if (!window.confirm(`Remove the ${isSample ? 'sample ' : ''}EPUB file?`)) {
+      return;
+    }
+    
+    (async () => {
+      try {
+        await AdminBookService.deleteEpubFile(Number(id), isSample);
+        window.alert(`${isSample ? 'Sample ' : ''}EPUB deleted`);
+        loadBook();
+      } catch (error) {
+        window.alert(`Failed to delete ${isSample ? 'sample ' : ''}EPUB`);
+      }
+    })();
   };
 
 

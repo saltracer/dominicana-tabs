@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -46,23 +45,23 @@ export default function NewBookScreenWeb() {
   const handleSubmit = async () => {
     // Validation
     if (!formData.title.trim()) {
-      Alert.alert('Error', 'Please enter a book title');
+      window.alert('Please enter a book title');
       return;
     }
     if (!formData.author.trim()) {
-      Alert.alert('Error', 'Please enter an author name');
+      window.alert('Please enter an author name');
       return;
     }
     if (!formData.description.trim()) {
-      Alert.alert('Error', 'Please enter a description');
+      window.alert('Please enter a description');
       return;
     }
     if (!formData.categories || formData.categories.length === 0) {
-      Alert.alert('Error', 'Please select at least one category');
+      window.alert('Please select at least one category');
       return;
     }
     if (formData.categories.length > 10) {
-      Alert.alert('Error', 'Maximum 10 categories allowed');
+      window.alert('Maximum 10 categories allowed');
       return;
     }
 
@@ -89,19 +88,14 @@ export default function NewBookScreenWeb() {
         }
       );
       
-      Alert.alert('Success', 'Book created successfully with all files!', [
-        {
-          text: 'View Book',
-          onPress: () => router.push(`/admin/books/${book.id}`),
-        },
-        {
-          text: 'Back to List',
-          onPress: () => router.push('/admin/books'),
-        },
-      ]);
+      if (window.confirm('Book created successfully! View book now?')) {
+        router.push(`/admin/books/${book.id}`);
+      } else {
+        router.push('/admin/books');
+      }
     } catch (error) {
       console.error('Error creating book:', error);
-      Alert.alert('Error', 'Failed to create book');
+      window.alert('Failed to create book');
     } finally {
       setSaving(false);
     }
