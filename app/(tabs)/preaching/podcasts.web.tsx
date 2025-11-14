@@ -365,7 +365,6 @@ export default function PodcastsWebScreen() {
                           )}
                         </Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
                     </TouchableOpacity>
                   </View>
                 );

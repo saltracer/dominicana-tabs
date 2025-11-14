@@ -536,11 +536,6 @@ export default function PodcastsScreen() {
                         disabled={isActive}
                         activeOpacity={0.7}
                       >
-                        {!isBuiltin && (
-                          <TouchableOpacity onLongPress={drag} style={{ padding: 8, marginRight: 4 }}>
-                            <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                          </TouchableOpacity>
-                        )}
                         <View style={[
                           styles.playlistIcon,
                           { backgroundColor: accentColor + '15' }
@@ -569,7 +564,11 @@ export default function PodcastsScreen() {
                             )}
                           </Text>
                         </View>
-                        <Ionicons name='chevron-forward' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                        {!isBuiltin && (
+                          <TouchableOpacity onLongPress={drag} style={{ padding: 8, marginLeft: 4 }}>
+                            <Ionicons name="reorder-three" size={24} color={Colors[colorScheme ?? 'light'].textSecondary} />
+                          </TouchableOpacity>
+                        )}
                       </TouchableOpacity>
                     </ScaleDecorator>
                   );
