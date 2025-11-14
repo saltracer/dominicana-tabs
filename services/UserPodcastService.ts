@@ -156,7 +156,9 @@ export class UserPodcastService {
       .single();
 
     if (error) {
-      console.error('Error creating podcast:', error);
+      if (__DEV__) {
+        console.error('Error creating podcast:', error);
+      }
       throw new Error(`Failed to add podcast: ${error.message}`);
     }
 
@@ -167,8 +169,10 @@ export class UserPodcastService {
       try {
         await AdminPodcastService.addEpisodes(podcast.id, parsedFeed.episodes);
       } catch (error) {
-        console.error('Error adding episodes:', error);
-        // Don't throw - podcast was created successfully
+        // Don't throw - podcast was created, episodes will be retried later
+        if (__DEV__) {
+          console.warn('[UserPodcastService.addCustomPodcast] Failed to add episodes:', error);
+        }
       }
     }
 

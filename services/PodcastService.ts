@@ -134,7 +134,6 @@ export class PodcastService {
       .single();
 
     if (podcastError) {
-      console.error('Error fetching podcast:', podcastError);
       throw new Error(`Failed to fetch podcast: ${podcastError.message}`);
     }
 
@@ -150,7 +149,6 @@ export class PodcastService {
         .order('published_at', { ascending: false, nullsFirst: false });
 
       if (episodesError) {
-        console.error('Error fetching episodes:', episodesError);
         // Don't throw, just return empty episodes
         result.episodes = [];
       } else {
@@ -184,9 +182,6 @@ export class PodcastService {
     if (__DEV__) console.log('[PodcastService.getEpisode] Query took', Date.now() - queryStart, 'ms');
 
     if (error) {
-      if (!silent) {
-        console.error('Error fetching episode:', error);
-      }
       throw new Error(`Failed to fetch episode: ${error.message}`);
     }
 

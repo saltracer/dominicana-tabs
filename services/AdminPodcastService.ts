@@ -56,10 +56,10 @@ export class AdminPodcastService {
 
   /**
    * Helper to add episodes for a podcast (public for use by UserPodcastService)
+   * Uses a secure database function to bypass RLS restrictions
    */
   static async addEpisodes(podcastId: string, episodes: ParsedRssEpisode[]) {
     const episodeData = episodes.map(ep => ({
-      podcast_id: podcastId,
       title: ep.title,
       description: ep.description || null,
       audio_url: ep.audioUrl,
@@ -73,19 +73,19 @@ export class AdminPodcastService {
       mime_type: ep.mimeType || null,
     }));
 
-    // Use upsert to handle both new episodes and updates to existing ones
-    // This prevents duplicate key errors when refreshing/reparsing
-    const { error } = await supabase
-      .from('podcast_episodes')
-      .upsert(episodeData, { 
-        onConflict: 'podcast_id,guid',
-        ignoreDuplicates: false // Update existing episodes with new data
-      })
-      .select();
+    // Use the SECURITY DEFINER function to insert episodes
+    // This bypasses RLS in a controlled way
+    const { data, error } = await supabase.rpc('insert_podcast_episodes', {
+      p_podcast_id: podcastId,
+      p_episodes: episodeData,
+    });
 
     if (error) {
-      console.error('Error upserting episodes:', error);
-      throw new Error(`Failed to upsert episodes: ${error.message}`);
+      if (__DEV__) {
+        console.log('[AdminPodcastService.addEpisodes] RPC error:', JSON.stringify(error, null, 2));
+        console.log('[AdminPodcastService.addEpisodes] Episode count:', episodes.length);
+      }
+      throw new Error(`Failed to insert episodes: ${error.message || error.code || 'Unknown error'}`);
     }
   }
 

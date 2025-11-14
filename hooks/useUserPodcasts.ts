@@ -61,6 +61,7 @@ export function useUserPodcasts() {
         podcast,
       };
     } catch (err) {
+      setLoading(false);
       const errorMsg = err instanceof Error ? err.message : 'Failed to add podcast';
       
       // Check if it's a duplicate error
