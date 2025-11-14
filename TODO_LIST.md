@@ -77,7 +77,7 @@
 - [ ] Create podcast specific preferences
 - [x] Improve performance of podcasts by using device caching
 - [x] Add "Played" status to podcasts
-- [ ] Allow users to add their own podcasts
+- [x] Allow users to add their own podcasts
 - [ ] Add skip forward and skip backward buttons
 - [ ] Add to playlists popup is ugly
 - [x] Improve the swipable gestures, their functions, and their look and feel
@@ -98,6 +98,7 @@
 - [ ] support device rotation on native (focusing on a responsive design)
 - [ ] support linking directly to tabs (like linking to a particular day on the calendar list view)
 - [x] the profile should be a bottom drawer or a modal. The page change is weird.
+- [x] setup the project to use supabase directly
 
 ## Admin
 - [ ] Allow the Rosary Audio to be renamed
