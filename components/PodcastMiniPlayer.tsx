@@ -82,9 +82,18 @@ export default function PodcastMiniPlayer() {
       } else {
         setArtworkPath(null);
       }
-    } catch (error) {
-      console.error('[PodcastMiniPlayer] Error fetching podcast:', error);
-      setPodcast(null);
+    } catch (error: any) {
+      // Silently handle podcast not found errors (e.g., podcast was deleted)
+      const errorMessage = error?.message || '';
+      if (errorMessage.includes('multiple (or no) rows returned') || 
+          errorMessage.includes('Failed to fetch podcast')) {
+        // Podcast doesn't exist - handle silently, no error logging
+        setPodcast(null);
+      } else {
+        // Other errors - log as warning but don't show to user
+        console.warn('[PodcastMiniPlayer] Error fetching podcast:', error);
+        setPodcast(null);
+      }
     } finally {
       setLoadingPodcast(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import PodcastMiniPlayer from './PodcastMiniPlayer';
 import RosaryMiniPlayer from './RosaryMiniPlayer';
 import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
 import { useRosaryPlayer } from '../contexts/RosaryPlayerContext';
+import { PodcastService } from '../services/PodcastService';
 
 interface FeastBannerProps {
   liturgicalDay: LiturgicalDay;
@@ -44,11 +45,37 @@ export default function FeastBanner({
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  const [podcastExists, setPodcastExists] = useState(true);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Check if podcast exists when episode changes
+  useEffect(() => {
+    if (currentEpisode?.podcastId) {
+      const checkPodcastExists = async () => {
+        try {
+          await PodcastService.getPodcast(currentEpisode.podcastId, false);
+          setPodcastExists(true);
+        } catch (error: any) {
+          // Silently handle podcast not found errors
+          const errorMessage = error?.message || '';
+          if (errorMessage.includes('multiple (or no) rows returned') || 
+              errorMessage.includes('Failed to fetch podcast')) {
+            setPodcastExists(false);
+          } else {
+            // Other errors - assume podcast exists to avoid hiding unnecessarily
+            setPodcastExists(true);
+          }
+        }
+      };
+      checkPodcastExists();
+    } else {
+      setPodcastExists(true);
+    }
+  }, [currentEpisode?.podcastId]);
+
   // Determine if we should show the podcast player
-  // Show if there's a current episode (playing, paused, stopped, or loading)
-  const showPodcastPlayer = !!currentEpisode;
+  // Show if there's a current episode AND the podcast exists
+  const showPodcastPlayer = !!currentEpisode && podcastExists;
   
   // Determine if we should show the rosary player
   // Show if there's an active session (playing, paused, or stopped)
