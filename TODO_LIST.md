@@ -79,7 +79,7 @@
 - [x] Add "Played" status to podcasts
 - [x] Allow users to add their own podcasts
 - [ ] Add skip forward and skip backward buttons
-- [ ] Add to playlists popup is ugly
+- [x] Add to playlists popup is ugly
 - [x] Improve the swipable gestures, their functions, and their look and feel
 - [x] Improve download reliability and the user feedback on what and when items are being downloaded
 - [x] Playlist features don't actually continue to the next episode.

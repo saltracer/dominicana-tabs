@@ -7,7 +7,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
@@ -30,6 +30,7 @@ export default function PodcastMiniPlayer() {
     playEpisode,
     pause,
     resume,
+    seek,
     setSpeed,
   } = usePodcastPlayer();
 
@@ -113,6 +114,16 @@ export default function PodcastMiniPlayer() {
     setShowFullScreen(true);
   };
 
+  const handleSkipBack = () => {
+    const newPosition = Math.max(0, position - 30); // 30 seconds back
+    seek(newPosition);
+  };
+
+  const handleSkipForward = () => {
+    const newPosition = Math.min(duration, position + 30); // 30 seconds forward
+    seek(newPosition);
+  };
+
   const handleSpeedPress = () => {
     // Cycle through common speeds: 0.75x -> 1.0x -> 1.25x -> 1.5x -> 2.0x -> 0.75x
     const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
@@ -171,6 +182,19 @@ export default function PodcastMiniPlayer() {
         </Text>
       </View>
 
+      {/* Skip Back Button */}
+      <TouchableOpacity
+        style={styles.skipButton}
+        onPress={handleSkipBack}
+        activeOpacity={0.7}
+      >
+        <FontAwesome
+          name="rotate-left"
+          size={18}
+          color={Colors[colorScheme ?? 'light'].text}
+        />
+      </TouchableOpacity>
+
       {/* Play/Pause Button */}
       <TouchableOpacity
         style={[
@@ -189,6 +213,19 @@ export default function PodcastMiniPlayer() {
             color="#fff"
           />
         )}
+      </TouchableOpacity>
+
+      {/* Skip Forward Button */}
+      <TouchableOpacity
+        style={styles.skipButton}
+        onPress={handleSkipForward}
+        activeOpacity={0.7}
+      >
+        <FontAwesome
+          name="rotate-right"
+          size={18}
+          color={Colors[colorScheme ?? 'light'].text}
+        />
       </TouchableOpacity>
 
       {/* Speed Control */}
@@ -262,6 +299,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden', // Hide overflow text
   },
   playButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+    cursor: 'pointer',
+  },
+  skipButton: {
     width: 28,
     height: 28,
     borderRadius: 14,

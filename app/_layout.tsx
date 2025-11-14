@@ -37,6 +37,7 @@ import { defineDownloadTask, DOWNLOAD_TASK_NAME } from '@/lib/background/downloa
 import { PodcastDownloadQueueService } from '@/services/PodcastDownloadQueueService';
 import { useCacheInitialization } from '@/hooks/useCacheInitialization';
 import { Provider as PaperProvider } from 'react-native-paper';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 
 // Initialize TrackPlayer immediately at module level (before any component renders)
 // Skip on web - use HTML5 Audio instead
@@ -214,21 +215,23 @@ export default function RootLayout() {
   }
 
   return (
-    <PaperProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <CalendarProvider>
-            <RosaryPlayerProvider>
-              <PodcastPlayerProvider>
-                <BibleProvider>
-                  <ThemedNavigation />
-                </BibleProvider>
-              </PodcastPlayerProvider>
-            </RosaryPlayerProvider>
-          </CalendarProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </PaperProvider>
+    <ActionSheetProvider>
+      <PaperProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <CalendarProvider>
+              <RosaryPlayerProvider>
+                <PodcastPlayerProvider>
+                  <BibleProvider>
+                    <ThemedNavigation />
+                  </BibleProvider>
+                </PodcastPlayerProvider>
+              </RosaryPlayerProvider>
+            </CalendarProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </PaperProvider>
+    </ActionSheetProvider>
   );
 }
 

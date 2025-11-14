@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator, TextInput, Modal, Platform, findNodeHandle } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Menu } from 'react-native-paper';
+import { useActionSheet } from '@expo/react-native-action-sheet';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-item';
 import { ReduceMotion } from 'react-native-reanimated';
@@ -36,10 +36,11 @@ export default function PlaylistDetailScreen() {
   const { playlists, loading: playlistsLoading, renamePlaylist, deletePlaylist } = usePlaylists();
   const playlist = useMemo(() => (isDownloaded ? { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any : playlists.find(p => p.id === id)), [isDownloaded, id, playlists]);
   
-  // Menu and rename modal state
-  const [menuVisible, setMenuVisible] = useState(false);
+  // Action sheet and rename modal state
+  const { showActionSheetWithOptions } = useActionSheet();
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+  const menuButtonRef = useRef<TouchableOpacity>(null);
 
   const { items: downloadedItems, loading: dlLoading, refetch: refetchDownloaded, updateOrder: updateDownloadedOrder } = useDownloadedPlaylist();
   const { items: hookItems, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
@@ -572,6 +573,30 @@ export default function PlaylistDetailScreen() {
     );
   };
 
+  const handleShowMenu = () => {
+    // Get anchor for iOS (especially useful on iPad where action sheets appear as popovers)
+    const anchor = Platform.OS === 'ios' && menuButtonRef.current 
+      ? findNodeHandle(menuButtonRef.current)
+      : undefined;
+
+    showActionSheetWithOptions(
+      {
+        options: ['Rename Playlist', 'Delete Playlist', 'Cancel'],
+        cancelButtonIndex: 2,
+        destructiveButtonIndex: 1,
+        ...(anchor && { anchor }), // Only include anchor on iOS
+      },
+      (buttonIndex) => {
+        if (buttonIndex === 0) {
+          handleRename();
+        } else if (buttonIndex === 1) {
+          handleDelete();
+        }
+        // Cancel (buttonIndex === 2 or undefined) - do nothing
+      }
+    );
+  };
+
   // Underlay component for right swipe (remove from playlist)
   const UnderlayRight = ({ item, onPress }: { item: any; onPress: () => void }) => {
     const theme = colorScheme ?? 'light';
@@ -689,42 +714,17 @@ export default function PlaylistDetailScreen() {
             headerRight: () => {
               if (isDownloaded || playlist?.is_builtin) return null;
               return (
-                <Menu
-                  visible={menuVisible}
-                  onDismiss={() => setMenuVisible(false)}
-                  anchor={
-                    <TouchableOpacity 
-                      onPress={() => setMenuVisible(true)}
-                      style={{ marginRight: 15, padding: 4 }}
-                    >
-                      <Ionicons 
-                        name="ellipsis-vertical" 
-                        size={24} 
-                        color={Colors[colorScheme ?? 'light'].text} 
-                      />
-                    </TouchableOpacity>
-                  }
-                  contentStyle={{ backgroundColor: Colors[colorScheme ?? 'light'].surface }}
+                <TouchableOpacity 
+                  ref={menuButtonRef}
+                  onPress={handleShowMenu}
+                  style={{ marginRight: 15, padding: 4 }}
                 >
-                  <Menu.Item 
-                    onPress={() => {
-                      setMenuVisible(false);
-                      handleRename();
-                    }} 
-                    title="Rename Playlist"
-                    leadingIcon="pencil-outline"
-                    titleStyle={{ color: Colors[colorScheme ?? 'light'].text }}
+                  <Ionicons 
+                    name="ellipsis-horizontal" 
+                    size={24} 
+                    color={Colors[colorScheme ?? 'light'].text} 
                   />
-                  <Menu.Item 
-                    onPress={() => {
-                      setMenuVisible(false);
-                      handleDelete();
-                    }} 
-                    title="Delete Playlist"
-                    leadingIcon="delete-outline"
-                    titleStyle={{ color: '#e53935' }}
-                  />
-                </Menu>
+                </TouchableOpacity>
               );
             },
           }} 

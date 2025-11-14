@@ -15,6 +15,7 @@ import { RosaryPlayerProvider } from '@/contexts/RosaryPlayerContext';
 import { PodcastPlayerProvider } from '@/contexts/PodcastPlayerContext';
 import { ProfilePanelProvider, useProfilePanel } from '@/contexts/ProfilePanelContext';
 import { Provider as PaperProvider } from 'react-native-paper';
+import { ActionSheetProvider } from '@expo/react-native-action-sheet';
 import { Colors } from '@/constants/Colors';
 import FeastBanner from '@/components/FeastBanner.web';
 import MobileMenu from '@/components/MobileMenu.web';
@@ -69,24 +70,26 @@ export default function RootLayout() {
   }
 
   return (
-    <PaperProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <CalendarProvider>
-            <RosaryPlayerProvider>
-              <PodcastPlayerProvider>
-                <BibleProvider>
-                  <ProfilePanelProvider>
-                    <RootLayoutNav />
-                    <ProfilePanelContainerWeb />
-                  </ProfilePanelProvider>
-                </BibleProvider>
-              </PodcastPlayerProvider>
-            </RosaryPlayerProvider>
-          </CalendarProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </PaperProvider>
+    <ActionSheetProvider>
+      <PaperProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <CalendarProvider>
+              <RosaryPlayerProvider>
+                <PodcastPlayerProvider>
+                  <BibleProvider>
+                    <ProfilePanelProvider>
+                      <RootLayoutNav />
+                      <ProfilePanelContainerWeb />
+                    </ProfilePanelProvider>
+                  </BibleProvider>
+                </PodcastPlayerProvider>
+              </RosaryPlayerProvider>
+            </CalendarProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </PaperProvider>
+    </ActionSheetProvider>
   );
 }
 

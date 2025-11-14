@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
@@ -205,12 +205,12 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   };
 
   const handleSkipBack = () => {
-    const newPosition = Math.max(0, position - 15000); // 15 seconds back
+    const newPosition = Math.max(0, position - 30); // 30 seconds back
     seek(newPosition);
   };
 
   const handleSkipForward = () => {
-    const newPosition = Math.min(duration, position + 30000); // 30 seconds forward
+    const newPosition = Math.min(duration, position + 30); // 30 seconds forward
     seek(newPosition);
   };
 
@@ -396,7 +396,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
               style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
               onPress={handleSkipBack}
             >
-              <Ionicons name="play-skip-back" size={24} color={Colors[colorScheme ?? 'light'].text} />
+              <FontAwesome name="rotate-left" size={24} color={Colors[colorScheme ?? 'light'].text} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -414,7 +414,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
               style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
               onPress={handleSkipForward}
             >
-              <Ionicons name="play-skip-forward" size={24} color={Colors[colorScheme ?? 'light'].text} />
+              <FontAwesome name="rotate-right" size={24} color={Colors[colorScheme ?? 'light'].text} />
             </TouchableOpacity>
           </View>
 
