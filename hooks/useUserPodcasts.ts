@@ -20,21 +20,13 @@ export function useUserPodcasts() {
       };
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await UserPodcastService.validateRssFeed(rssUrl);
-      return result;
-    } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to validate feed');
-      setError(error);
-      return {
-        isValid: false,
-        error: error.message,
-      };
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    setError(null);
+    
+    const result = await UserPodcastService.validateRssFeed(rssUrl);
+    setLoading(false);
+    
+    return result;
   }, [user]);
 
   /**
@@ -54,14 +46,16 @@ export function useUserPodcasts() {
       };
     }
 
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
       const podcast = await UserPodcastService.addCustomPodcast(rssUrl);
       
       // Auto-subscribe to the newly added podcast
       await PodcastSubscriptionService.subscribe(podcast.id);
       
+      setLoading(false);
       return {
         success: true,
         podcast,
@@ -83,6 +77,7 @@ export function useUserPodcasts() {
             .eq('id', duplicatePodcastId)
             .single();
           
+          setLoading(false);
           return {
             success: true,
             isDuplicate: true,
@@ -106,7 +101,7 @@ export function useUserPodcasts() {
             } : undefined,
           };
         } catch (subscribeErr) {
-          console.error('Error subscribing to duplicate:', subscribeErr);
+          setLoading(false);
           return {
             success: false,
             error: 'This podcast is already in our library, but we could not subscribe you to it.',
@@ -116,12 +111,11 @@ export function useUserPodcasts() {
       
       const error = err instanceof Error ? err : new Error(errorMsg);
       setError(error);
+      setLoading(false);
       return {
         success: false,
         error: error.message,
       };
-    } finally {
-      setLoading(false);
     }
   }, [user]);
 

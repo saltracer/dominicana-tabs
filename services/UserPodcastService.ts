@@ -33,8 +33,27 @@ export class UserPodcastService {
         };
       }
 
-      // Try to parse the RSS feed
-      const parsedFeed = await RssFeedService.parseRssFeed(rssUrl);
+      // Try to parse the RSS feed (wrap in additional try-catch to prevent React error boundary)
+      let parsedFeed;
+      try {
+        parsedFeed = await RssFeedService.parseRssFeed(rssUrl);
+      } catch (parseError) {
+        // Immediately catch and convert to result object
+        let errorMessage = 'Failed to parse RSS feed. Please check the URL and try again.';
+        
+        if (parseError instanceof Error) {
+          if (parseError.message.includes('Network request failed') || parseError.message.includes('Failed to fetch') || parseError.message.includes('HTTP')) {
+            errorMessage = 'Unable to reach the podcast feed. Please check the URL and your internet connection.';
+          } else if (parseError.message.includes('Unsupported feed format')) {
+            errorMessage = 'This URL does not appear to be a valid podcast RSS feed.';
+          }
+        }
+        
+        return {
+          isValid: false,
+          error: errorMessage,
+        };
+      }
 
       return {
         isValid: true,
@@ -42,10 +61,23 @@ export class UserPodcastService {
         isDuplicate: false,
       };
     } catch (error) {
-      console.error('Error validating RSS feed:', error);
+      // This catch is for other errors (duplicate check, etc.)
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error instanceof Error) {
+        // Check for common error patterns and provide helpful messages
+        if (error.message.includes('Network request failed') || error.message.includes('Failed to fetch') || error.message.includes('HTTP')) {
+          errorMessage = 'Unable to reach the podcast feed. Please check the URL and your internet connection.';
+        } else if (error.message.includes('Unsupported feed format')) {
+          errorMessage = 'This URL does not appear to be a valid podcast RSS feed.';
+        } else if (error.message.includes('Failed to parse')) {
+          errorMessage = 'The feed could not be parsed. Please ensure this is a valid podcast RSS feed.';
+        }
+      }
+      
       return {
         isValid: false,
-        error: error instanceof Error ? error.message : 'Failed to parse RSS feed. Please check the URL and try again.',
+        error: errorMessage,
       };
     }
   }
@@ -72,7 +104,7 @@ export class UserPodcastService {
         podcastId: data.id,
       };
     } catch (error) {
-      console.error('Error checking for duplicate RSS URL:', error);
+      // Silently handle error
       return { isDuplicate: false };
     }
   }
@@ -158,7 +190,6 @@ export class UserPodcastService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching user podcasts:', error);
       throw new Error(`Failed to fetch your podcasts: ${error.message}`);
     }
 
@@ -263,7 +294,6 @@ export class UserPodcastService {
 
       return podcastId;
     } catch (error) {
-      console.error('Error validating share link:', error);
       throw new Error('Invalid share link');
     }
   }

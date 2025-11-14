@@ -64,14 +64,14 @@ export class RssFeedService {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch RSS feed: ${response.statusText}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       // Ensure UTF-8 decoding
       const text = await response.text();
       return text;
     } catch (error) {
       lastError = error as Error;
-      console.warn('Direct fetch failed, trying CORS proxy...', error);
+      // Silently continue to proxy attempt
     }
 
     // Second attempt: use CORS proxy (only on web)
@@ -92,7 +92,7 @@ export class RssFeedService {
         const response = await fetch(proxiedUrl, { headers });
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch via proxy: ${response.statusText}`);
+          throw new Error(`Proxy fetch failed: HTTP ${response.status}`);
         }
 
         // Check if response is wrapped in JSON (allorigins format)
@@ -107,25 +107,21 @@ export class RssFeedService {
         const text = await response.text();
         return text;
       } catch (error) {
-        console.error('CORS proxy also failed:', error);
-        // Fall through to throw the original error
+        // Silently fall through to throw the original error
       }
     }
 
-    throw new Error(`Failed to fetch RSS feed: ${lastError?.message || 'Unknown error'}`);
+    // Simplify error message for end user
+    const errorMsg = lastError?.message || 'Network request failed';
+    throw new Error(errorMsg);
   }
 
   /**
    * Parse RSS feed from URL
    */
   static async parseRssFeed(rssUrl: string): Promise<ParsedRssFeed> {
-    try {
-      const xmlText = await this.fetchWithFallback(rssUrl);
-      return this.parseRssXml(xmlText);
-    } catch (error) {
-      console.error('Error parsing RSS feed:', error);
-      throw new Error(`Failed to parse RSS feed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    const xmlText = await this.fetchWithFallback(rssUrl);
+    return this.parseRssXml(xmlText);
   }
 
   /**
