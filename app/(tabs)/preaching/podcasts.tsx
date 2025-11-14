@@ -17,7 +17,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { ReduceMotion } from 'react-native-reanimated';
@@ -72,9 +72,17 @@ export default function PodcastsScreen() {
   const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = useMyPodcasts();
   
   // Load playlists and queue
-  const { playlists, loading: playlistsLoading, createPlaylist, renamePlaylist, deletePlaylist, updatePlaylistsOrder } = usePlaylists();
+  const { playlists, loading: playlistsLoading, createPlaylist, renamePlaylist, deletePlaylist, updatePlaylistsOrder, refetch: refetchPlaylists } = usePlaylists();
   const { items: downloadedItems } = useDownloadedPlaylist();
   const { queue, loading: queueLoading } = useQueue();
+
+  // Refresh playlists when screen comes into focus (e.g., after renaming/deleting in detail screen)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refetch playlists to ensure changes made in detail screen are reflected
+      refetchPlaylists();
+    }, [refetchPlaylists])
+  );
 
   // Track initial load completion
   useEffect(() => {
@@ -561,35 +569,7 @@ export default function PodcastsScreen() {
                             )}
                           </Text>
                         </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          {!isBuiltin && (
-                            <TouchableOpacity
-                              onPress={async () => {
-                                setPromptMode('rename');
-                                setPromptTargetId(playlist.id);
-                                setPromptValue(playlist.name || '');
-                                setPromptVisible(true);
-                              }}
-                              style={{ padding: 8 }}
-                            >
-                              <Ionicons name='pencil' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                            </TouchableOpacity>
-                          )}
-                          {!isBuiltin && (
-                            <TouchableOpacity
-                              onPress={async () => {
-                                Alert.alert('Delete playlist?', 'This will remove the playlist and its items (episodes remain).', [
-                                  { text: 'Cancel', style: 'cancel' },
-                                  { text: 'Delete', style: 'destructive', onPress: async () => { await deletePlaylist(playlist.id); } },
-                                ]);
-                              }}
-                              style={{ padding: 8 }}
-                            >
-                              <Ionicons name='trash' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                            </TouchableOpacity>
-                          )}
-                          <Ionicons name='chevron-forward' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
-                        </View>
+                        <Ionicons name='chevron-forward' size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
                       </TouchableOpacity>
                     </ScaleDecorator>
                   );

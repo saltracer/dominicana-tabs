@@ -36,6 +36,7 @@ import { RosaryAudioDownloadService } from '@/services/RosaryAudioDownloadServic
 import { defineDownloadTask, DOWNLOAD_TASK_NAME } from '@/lib/background/download-task';
 import { PodcastDownloadQueueService } from '@/services/PodcastDownloadQueueService';
 import { useCacheInitialization } from '@/hooks/useCacheInitialization';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 // Initialize TrackPlayer immediately at module level (before any component renders)
 // Skip on web - use HTML5 Audio instead
@@ -213,19 +214,21 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <CalendarProvider>
-          <RosaryPlayerProvider>
-            <PodcastPlayerProvider>
-              <BibleProvider>
-                <ThemedNavigation />
-              </BibleProvider>
-            </PodcastPlayerProvider>
-          </RosaryPlayerProvider>
-        </CalendarProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <PaperProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <CalendarProvider>
+            <RosaryPlayerProvider>
+              <PodcastPlayerProvider>
+                <BibleProvider>
+                  <ThemedNavigation />
+                </BibleProvider>
+              </PodcastPlayerProvider>
+            </RosaryPlayerProvider>
+          </CalendarProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </PaperProvider>
   );
 }
 

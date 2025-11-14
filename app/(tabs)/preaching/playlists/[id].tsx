@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated, RefreshControl, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { useLocalSearchParams, router, useFocusEffect, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Menu } from 'react-native-paper';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import SwipeableItem, { useSwipeableItemParams } from 'react-native-swipeable-item';
 import { ReduceMotion } from 'react-native-reanimated';
@@ -32,8 +33,13 @@ export default function PlaylistDetailScreen() {
   const { playEpisode, currentEpisode, isPlaying, isPaused, pause, resume } = usePodcastPlayer();
   const { id } = useLocalSearchParams<{ id: string }>();
   const isDownloaded = id === 'downloaded';
-  const { playlists, loading: playlistsLoading } = usePlaylists();
+  const { playlists, loading: playlistsLoading, renamePlaylist, deletePlaylist } = usePlaylists();
   const playlist = useMemo(() => (isDownloaded ? { id: 'downloaded', name: 'Downloaded', is_builtin: true } as any : playlists.find(p => p.id === id)), [isDownloaded, id, playlists]);
+  
+  // Menu and rename modal state
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
 
   const { items: downloadedItems, loading: dlLoading, refetch: refetchDownloaded, updateOrder: updateDownloadedOrder } = useDownloadedPlaylist();
   const { items: hookItems, loading, removeItem, moveItem } = usePlaylistItems(isDownloaded ? undefined : (id as string));
@@ -516,6 +522,56 @@ export default function PlaylistDetailScreen() {
     }
   };
 
+  const handleRename = () => {
+    if (playlist?.name) {
+      setRenameValue(playlist.name);
+      setRenameModalVisible(true);
+    }
+  };
+
+  const handleRenameConfirm = async () => {
+    const name = renameValue.trim();
+    if (!name || !id) return;
+    
+    setRenameModalVisible(false);
+    try {
+      await renamePlaylist(id, name);
+      //Alert.alert('Success', 'Playlist renamed successfully');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to rename playlist');
+    }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Delete playlist?',
+      'This will remove the playlist and its items (episodes remain).',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (!id) return;
+              await deletePlaylist(id);
+              Alert.alert('Success', 'Playlist deleted successfully', [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    router.back();
+                  },
+                },
+              ]);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete playlist');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Underlay component for right swipe (remove from playlist)
   const UnderlayRight = ({ item, onPress }: { item: any; onPress: () => void }) => {
     const theme = colorScheme ?? 'light';
@@ -630,6 +686,47 @@ export default function PlaylistDetailScreen() {
         <Stack.Screen 
           options={{ 
             title: playlist?.name || '',
+            headerRight: () => {
+              if (isDownloaded || playlist?.is_builtin) return null;
+              return (
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <TouchableOpacity 
+                      onPress={() => setMenuVisible(true)}
+                      style={{ marginRight: 15, padding: 4 }}
+                    >
+                      <Ionicons 
+                        name="ellipsis-vertical" 
+                        size={24} 
+                        color={Colors[colorScheme ?? 'light'].text} 
+                      />
+                    </TouchableOpacity>
+                  }
+                  contentStyle={{ backgroundColor: Colors[colorScheme ?? 'light'].surface }}
+                >
+                  <Menu.Item 
+                    onPress={() => {
+                      setMenuVisible(false);
+                      handleRename();
+                    }} 
+                    title="Rename Playlist"
+                    leadingIcon="pencil-outline"
+                    titleStyle={{ color: Colors[colorScheme ?? 'light'].text }}
+                  />
+                  <Menu.Item 
+                    onPress={() => {
+                      setMenuVisible(false);
+                      handleDelete();
+                    }} 
+                    title="Delete Playlist"
+                    leadingIcon="delete-outline"
+                    titleStyle={{ color: '#e53935' }}
+                  />
+                </Menu>
+              );
+            },
           }} 
         />
         {showLoadingSpinner ? (
@@ -1055,6 +1152,51 @@ export default function PlaylistDetailScreen() {
           );
         }}
       />
+      )}
+
+      {/* Rename Modal */}
+      {renameModalVisible && (
+        <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ width: '100%', maxWidth: 420, borderRadius: 12, padding: 16, backgroundColor: Colors[colorScheme ?? 'light'].card }}>
+            <Text style={{ fontFamily: 'Georgia', fontWeight: '700', fontSize: 16, color: Colors[colorScheme ?? 'light'].text, marginBottom: 8 }}>
+              Rename Playlist
+            </Text>
+            <TextInput
+              value={renameValue}
+              onChangeText={setRenameValue}
+              placeholder="Playlist name"
+              placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
+              style={{ 
+                borderWidth: 1, 
+                borderColor: Colors[colorScheme ?? 'light'].border, 
+                borderRadius: 8, 
+                paddingHorizontal: 12, 
+                paddingVertical: 10, 
+                fontFamily: 'Georgia', 
+                color: Colors[colorScheme ?? 'light'].text,
+                marginBottom: 12
+              }}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 12 }}>
+              <TouchableOpacity 
+                onPress={() => {
+                  setRenameModalVisible(false);
+                  setRenameValue('');
+                }} 
+                style={{ paddingVertical: 10, paddingHorizontal: 12, marginRight: 8 }}
+              >
+                <Text style={{ color: Colors[colorScheme ?? 'light'].textSecondary, fontFamily: 'Georgia' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleRenameConfirm}
+                style={{ paddingVertical: 10, paddingHorizontal: 12 }}
+              >
+                <Text style={{ color: Colors[colorScheme ?? 'light'].primary, fontFamily: 'Georgia', fontWeight: '700' }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       )}
       </View>
     </SharedPlaylistHooksProvider>

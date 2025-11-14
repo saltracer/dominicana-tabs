@@ -223,6 +223,29 @@ export function usePlaylists() {
     globalPlaylistsInstance = null;
   }, [userId, playlists]);
 
+  const refetch = useCallback(async () => {
+    if (!userId) return;
+    
+    // Invalidate global cache to force reload
+    globalPlaylistsInstance = null;
+    
+    // Sync down to get latest from server
+    await syncDown(userId);
+    
+    // Get fresh playlists from cache
+    const freshPlaylists = await getCachedPlaylists(userId);
+    setPlaylists(freshPlaylists);
+    
+    // Update global cache
+    globalPlaylistsInstance = {
+      playlists: freshPlaylists,
+      loading: false,
+      error: null,
+      timestamp: Date.now(),
+      userId,
+    };
+  }, [userId]);
+
   return {
     playlists,
     loading,
@@ -231,6 +254,7 @@ export function usePlaylists() {
     renamePlaylist,
     deletePlaylist,
     updatePlaylistsOrder,
+    refetch,
   };
 }
 

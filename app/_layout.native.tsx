@@ -15,6 +15,7 @@ import { RosaryPlayerProvider } from '@/contexts/RosaryPlayerContext';
 import { PodcastPlayerProvider } from '@/contexts/PodcastPlayerContext';
 import { ProfilePanelProvider } from '@/contexts/ProfilePanelContext';
 import ProfilePanelContainer from '@/components/ProfilePanel/ProfilePanelContainer';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -63,22 +64,24 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <CalendarProvider>
-          <RosaryPlayerProvider>
-            <PodcastPlayerProvider>
-              <BibleProvider>
-                <ProfilePanelProvider>
-                  <RootLayoutNav />
-                  <ProfilePanelContainer />
-                </ProfilePanelProvider>
-              </BibleProvider>
-            </PodcastPlayerProvider>
-          </RosaryPlayerProvider>
-        </CalendarProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <PaperProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <CalendarProvider>
+            <RosaryPlayerProvider>
+              <PodcastPlayerProvider>
+                <BibleProvider>
+                  <ProfilePanelProvider>
+                    <RootLayoutNav />
+                    <ProfilePanelContainer />
+                  </ProfilePanelProvider>
+                </BibleProvider>
+              </PodcastPlayerProvider>
+            </RosaryPlayerProvider>
+          </CalendarProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </PaperProvider>
   );
 }
 

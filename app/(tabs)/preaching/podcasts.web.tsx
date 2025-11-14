@@ -15,7 +15,7 @@ import {
   Alert,
 } from 'react-native';
 import { useWindowDimensions } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/Colors';
 import { useTheme } from '../../../components/ThemeProvider';
@@ -56,8 +56,16 @@ export default function PodcastsWebScreen() {
   const { subscriptions, loading: subsLoading, subscribe, unsubscribe, refetch: refetchSubs } = useMyPodcasts();
   
   // Load playlists and queue
-  const { playlists, loading: playlistsLoading } = usePlaylists();
+  const { playlists, loading: playlistsLoading, refetch: refetchPlaylists } = usePlaylists();
   const { queue, loading: queueLoading } = useQueue();
+
+  // Refresh playlists when screen comes into focus (e.g., after renaming/deleting in detail screen)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Refetch playlists to ensure changes made in detail screen are reflected
+      refetchPlaylists();
+    }, [refetchPlaylists])
+  );
 
   // Track initial load completion
   useEffect(() => {
