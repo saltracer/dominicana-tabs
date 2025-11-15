@@ -96,6 +96,7 @@ function RootLayoutNav() {
       <SafeAreaProvider>
         <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
+            <Stack.Screen name="index" options={{ headerShown: false, animation: 'none' }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false,
               headerBackButtonDisplayMode: "minimal", }} />
             <Stack.Screen name="admin" options={{ headerShown: false }} />

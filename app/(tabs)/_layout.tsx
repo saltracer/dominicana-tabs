@@ -50,6 +50,7 @@ function TabLayoutContent() {
     <View style={styles.container}>
       <Tabs
       screenOptions={{
+        animationEnabled: false, // Disable tab switching animations
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].text,
         tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].textMuted,
         tabBarStyle: {

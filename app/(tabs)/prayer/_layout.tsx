@@ -6,6 +6,8 @@ import { useTheme } from '../../../components/ThemeProvider';
 import { useProfilePanel } from '../../../contexts/ProfilePanelContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { CommonActions } from '@react-navigation/native';
 import { Colors } from '../../../constants/Colors';
 
 export default function PrayerLayout() {
@@ -13,14 +15,31 @@ export default function PrayerLayout() {
   const { openPanel } = useProfilePanel();
   const { user } = useAuth();
   const router = useRouter();
+  const navigation = useNavigation();
   
   // Memoize header components to prevent re-renders
   const headerLeftComponent = useMemo(() => (
-    <View style={{ 
-      marginLeft: 15,
-      alignItems: 'center', 
-      backgroundColor: 'transparent',
-    }}>
+    <TouchableOpacity 
+      style={{ 
+        marginLeft: 15,
+        alignItems: 'center', 
+        backgroundColor: 'transparent',
+      }}
+      // onPress={() => {
+      //   // Reset the current stack to index without animation
+      //   navigation.reset({
+      //     index: 0,
+      //     routes: [{ name: 'index' as never }],
+      //   });
+      // }}
+      onPress={() => {
+        // Navigate to prayer tab - use router to switch tabs
+        router.replace('/(tabs)/prayer' as any);
+      }}
+      activeOpacity={0.6}
+      accessibilityLabel="Go to home"
+      accessibilityRole="button"
+    >
       <Image 
         source={require('../../../assets/images/dominicana_logo.png')} 
         style={{ 
@@ -30,8 +49,8 @@ export default function PrayerLayout() {
         }}
         resizeMode="contain"
       />
-    </View>
-  ), []);
+    </TouchableOpacity>
+  ), [router, navigation]);
 
   const headerRightComponent = useMemo(() => (
     <TouchableOpacity 
@@ -76,6 +95,7 @@ export default function PrayerLayout() {
           headerTitle: 'Prayer',
           headerLeft: () => headerLeftComponent,
           headerRight: () => headerRightComponent,
+          animation: 'none', // Disable animation when navigating to index
         }}
       />
       <Stack.Screen 

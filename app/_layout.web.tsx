@@ -277,42 +277,62 @@ function RootLayoutNav() {
                 >
                   <Ionicons name="menu" size={28} color={Colors[colorScheme ?? 'light'].text} />
                 </TouchableOpacity>
-                <Link href="/" asChild>
-                  <TouchableOpacity style={styles.logoSection}>
-                    <View style={styles.logoIcon}>
-                      <Image
-                        source={require('../assets/images/dominicana_logo.png')}
-                        style={[styles.logoImage, styles.logoImageMobile]}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <Text style={[styles.logoText, styles.logoTextMobile, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                      Dominicana
-                    </Text>
-                  </TouchableOpacity>
-                </Link>
+                <TouchableOpacity 
+                  style={styles.logoSection}
+                  onPress={() => {
+                    // On web, use window.location for instant navigation without animation
+                    if (typeof window !== 'undefined') {
+                      window.location.href = '/';
+                    } else {
+                      router.replace('/');
+                    }
+                  }}
+                  accessibilityLabel="Go to home"
+                  accessibilityRole="button"
+                >
+                  <View style={styles.logoIcon}>
+                    <Image
+                      source={require('../assets/images/dominicana_logo.png')}
+                      style={[styles.logoImage, styles.logoImageMobile]}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text style={[styles.logoText, styles.logoTextMobile, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                    Dominicana
+                  </Text>
+                </TouchableOpacity>
               </>
             )}
 
             {/* Desktop/Tablet: Logo */}
             {!isMobile && (
-              <Link href="/" asChild>
-                <TouchableOpacity style={styles.logoSection}>
-                  <View style={styles.logoIcon}>
-                    <Image
-                      source={require('../assets/images/dominicana_logo.png')}
-                      style={styles.logoImage}
-                      resizeMode="contain"
-                    />
-                  </View>
-                  {/* Hide "Dominicana" text on narrow tablets (< 820px) */}
-                  {isNarrowTablet && (
-                    <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
-                      Dominicana
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              </Link>
+              <TouchableOpacity 
+                style={styles.logoSection}
+                onPress={() => {
+                  // On web, use window.location for instant navigation without animation
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/';
+                  } else {
+                    router.replace('/');
+                  }
+                }}
+                accessibilityLabel="Go to home"
+                accessibilityRole="button"
+              >
+                <View style={styles.logoIcon}>
+                  <Image
+                    source={require('../assets/images/dominicana_logo.png')}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </View>
+                {/* Hide "Dominicana" text on narrow tablets (< 820px) */}
+                {isNarrowTablet && (
+                  <Text style={[styles.logoText, { color: Colors[colorScheme ?? 'light'].primary }]}>
+                    Dominicana
+                  </Text>
+                )}
+              </TouchableOpacity>
             )}
 
             {/* Desktop/Tablet: Navigation Links */}
@@ -643,6 +663,7 @@ function RootLayoutNav() {
             screenOptions={{
               headerShown: false,
             }}>
+            <Stack.Screen name="index" options={{ headerShown: false, animation: 'none' }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           </Stack>

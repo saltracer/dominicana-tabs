@@ -34,6 +34,7 @@
 - [ ] text highlighting as the audio is read
 - [x] Redesign Prayer section navigation on native
 - [ ] Get exsurge working on the web
+- [ ] Did jumping to the right prayer for litugy of the hours break?
 
 
 ## Study
@@ -49,6 +50,8 @@
 - [x] Double check the book cover cache, it seems to re-load them every time I open the screen
 - [x] Add a setting to remove the download
 - [x] Add a admin only, web only, CMS to manage the books and their covers and other metadata
+- [ ] Book reader can be a little disorienting .... work on ways to improve that
+- [ ] Bookmarking may be broken or so slow it seems broken
 - [ ] Dark mode menu isn't working right. Perhaps this can be extracted and refactored as a high-level component?
 - [x] Book categories should be tags not single options
 - [ ] Books need to have versions (for when epubs are updated and users are already reading an other epub) and for when books are pulled from the library but as still "owned" by users.
@@ -78,7 +81,7 @@
 - [x] Improve performance of podcasts by using device caching
 - [x] Add "Played" status to podcasts
 - [x] Allow users to add their own podcasts
-- [ ] Add skip forward and skip backward buttons
+- [x] Add skip forward and skip backward buttons
 - [x] Add to playlists popup is ugly
 - [x] Improve the swipable gestures, their functions, and their look and feel
 - [x] Improve download reliability and the user feedback on what and when items are being downloaded
@@ -108,6 +111,7 @@
 ## User Workflow
 - [ ] How do users subscribe? How do I upsell in the app?
 - [ ] Test and validate the user signup and email validation process
+- [ ] Inital application breadcrumbs to guide user training
 
 ### Books to add
  - [x] st Patrick’s autobiography 
@@ -128,7 +132,6 @@
 The admin console is designed to easily add new management areas:
 
 - **Blog Posts** - CRUD for blog_posts table
-- **Podcasts** - New table + storage bucket
 - **Liturgy Components** - Manage liturgy_components and liturgy_templates
 - **Daily Offices** - Content management for daily_offices
 - **Notifications** - Send push notifications to users
