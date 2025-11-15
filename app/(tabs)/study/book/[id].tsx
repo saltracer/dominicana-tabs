@@ -90,8 +90,14 @@ export default function BookDetailScreen() {
   useEffect(() => {
     if (book) {
       navigation.setOptions({
-        title: book.title,
+        headerTitle: book.title || '',
         headerBackTitle: '', // Ensure back button has no text
+      });
+    } else {
+      // Set to empty string if book is not loaded yet
+      navigation.setOptions({
+        headerTitle: '',
+        headerBackTitle: '',
       });
     }
   }, [book, navigation]);
@@ -109,8 +115,11 @@ export default function BookDetailScreen() {
       // Update reading state for feast banner visibility
       setIsReading(showReader);
       
+      // Set header options including title (preserve title when setting other options)
       navigation.setOptions({
+        headerTitle: book?.title || '',
         headerShown: !showReader, // Hide header when reader is shown
+        headerBackTitle: '', // Ensure back button has no text
         // Control back button menu based on reader state
         headerBackButtonMenuEnabled: !showReader, // Enabled when reader is hidden, disabled when shown
       });
@@ -141,7 +150,7 @@ export default function BookDetailScreen() {
           });
         }
       };
-    }, [navigation, showReader, setIsReading, insets, colorScheme])
+    }, [navigation, showReader, setIsReading, insets, colorScheme, book])
   );
 
   const loadBook = async () => {

@@ -101,6 +101,7 @@ export default function StudyLayout() {
           name="book/[id]" 
           options={{
             headerShown: true,
+            headerTitle: '', // Default to empty string
             headerBackTitle: '', // Just show back arrow, no text
             headerBackTitleStyle: { fontSize: 0 }, // Force hide if text persists
             presentation: 'card',
