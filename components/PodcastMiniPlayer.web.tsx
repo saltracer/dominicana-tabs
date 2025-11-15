@@ -11,11 +11,16 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
-import { PodcastService } from '../services/PodcastService';
-import { Podcast } from '../types';
 import { router } from 'expo-router';
 import FullScreenPlayer from './FullScreenPlayer.web';
 import HtmlRenderer from './HtmlRenderer';
+import { 
+  getNextSpeed, 
+  SPEED_OPTIONS,
+  getArtworkUrl 
+} from '../utils/podcastUtils';
+import { usePodcastControls } from '../hooks/usePodcastControls';
+import { usePodcastData } from '../hooks/usePodcastData';
 
 export default function PodcastMiniPlayer() {
   const { colorScheme } = useTheme();
@@ -28,14 +33,12 @@ export default function PodcastMiniPlayer() {
     duration,
     playbackSpeed,
     playEpisode,
-    pause,
-    resume,
-    seek,
     setSpeed,
   } = usePodcastPlayer();
+  
+  const { skipBack, skipForward, playPause } = usePodcastControls();
+  const { podcast, loading: loadingPodcast } = usePodcastData(currentEpisode);
 
-  const [podcast, setPodcast] = useState<Podcast | null>(null);
-  const [loadingPodcast, setLoadingPodcast] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
@@ -64,83 +67,23 @@ export default function PodcastMiniPlayer() {
     }
   }, [currentEpisode?.id, currentEpisode?.title, isPlaying, isPaused, isLoading]);
 
-  // Fetch podcast data when episode changes
-  useEffect(() => {
-    if (currentEpisode) {
-      fetchPodcast();
-    } else {
-      setPodcast(null);
-    }
-  }, [currentEpisode?.id]);
-
-  const fetchPodcast = async () => {
-    if (!currentEpisode) return;
-    
-    try {
-      setLoadingPodcast(true);
-      const podcastData = await PodcastService.getPodcast(currentEpisode.podcastId);
-      setPodcast(podcastData);
-    } catch (error: any) {
-      // Silently handle podcast not found errors (e.g., podcast was deleted)
-      const errorMessage = error?.message || '';
-      if (errorMessage.includes('multiple (or no) rows returned') || 
-          errorMessage.includes('Failed to fetch podcast')) {
-        // Podcast doesn't exist - handle silently, no error logging
-        setPodcast(null);
-      } else {
-        // Other errors - log as warning but don't show to user
-        console.warn('[PodcastMiniPlayer.web] Error fetching podcast:', error);
-        setPodcast(null);
-      }
-    } finally {
-      setLoadingPodcast(false);
-    }
-  };
 
   if (!currentEpisode) {
     return null;
   }
-
-  const handlePlayPause = async () => {
-    if (isPlaying) {
-      pause();
-    } else {
-      resume();
-    }
-  };
 
   const handlePress = () => {
     // Open full screen player drawer
     setShowFullScreen(true);
   };
 
-  const handleSkipBack = () => {
-    const newPosition = Math.max(0, position - 30); // 30 seconds back
-    seek(newPosition);
-  };
-
-  const handleSkipForward = () => {
-    const newPosition = Math.min(duration, position + 30); // 30 seconds forward
-    seek(newPosition);
-  };
-
   const handleSpeedPress = () => {
-    // Cycle through common speeds: 0.75x -> 1.0x -> 1.25x -> 1.5x -> 2.0x -> 0.75x
-    const speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
-    const currentIndex = speeds.findIndex(speed => Math.abs(speed - playbackSpeed) < 0.01);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-    setSpeed(speeds[nextIndex]);
+    const nextSpeed = getNextSpeed(playbackSpeed, SPEED_OPTIONS);
+    setSpeed(nextSpeed);
   };
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
 
   // Determine which artwork to use (episode first, then podcast)
-  const artworkUrl = currentEpisode.artworkUrl || podcast?.artworkUrl;
+  const artworkUrl = getArtworkUrl(currentEpisode, podcast);
 
   return (
     <>
@@ -185,7 +128,7 @@ export default function PodcastMiniPlayer() {
       {/* Skip Back Button */}
       <TouchableOpacity
         style={styles.skipButton}
-        onPress={handleSkipBack}
+        onPress={skipBack}
         activeOpacity={0.7}
       >
         <FontAwesome
@@ -201,7 +144,7 @@ export default function PodcastMiniPlayer() {
           styles.playButton,
           { backgroundColor: Colors[colorScheme ?? 'light'].primary }
         ]}
-        onPress={handlePlayPause}
+        onPress={playPause}
         activeOpacity={0.7}
       >
         {isLoading ? (
@@ -218,7 +161,7 @@ export default function PodcastMiniPlayer() {
       {/* Skip Forward Button */}
       <TouchableOpacity
         style={styles.skipButton}
-        onPress={handleSkipForward}
+        onPress={skipForward}
         activeOpacity={0.7}
       >
         <FontAwesome

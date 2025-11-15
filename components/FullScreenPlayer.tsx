@@ -20,12 +20,20 @@ import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
 import { useQueue } from '../hooks/useQueue';
 import { router } from 'expo-router';
 import HtmlRenderer from './HtmlRenderer';
-import { PodcastService } from '../services/PodcastService';
-import { Podcast } from '../types';
 import SpeedSelectorModal from './SpeedSelectorModal';
 import { ensureImageCached } from '../lib/podcast/storage';
-import { EpisodeMetadataCache } from '../services/EpisodeMetadataCache';
-import { PodcastPlaybackService } from '../services/PodcastPlaybackService';
+import {
+  formatTime,
+  formatTimeRemaining,
+  formatDate,
+  calculateSliderPosition,
+  calculateProgressPercentage,
+  getArtworkUrl,
+  getSpeedLabel,
+} from '../utils/podcastUtils';
+import { usePodcastControls } from '../hooks/usePodcastControls';
+import { usePodcastData } from '../hooks/usePodcastData';
+import { useEpisodePlayedStatus } from '../hooks/useEpisodePlayedStatus';
 
 interface FullScreenPlayerProps {
   visible: boolean;
@@ -43,19 +51,18 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     position,
     duration,
     playbackSpeed,
-    resume,
-    pause,
     seek,
     setSpeed,
   } = usePodcastPlayer();
   
+  const { skipBack, skipForward, playPause } = usePodcastControls();
+  
   const { queue, playNext, playLast } = useQueue();
-  const [podcast, setPodcast] = useState<Podcast | null>(null);
-  const [loadingPodcast, setLoadingPodcast] = useState(false);
+  const { podcast, loading: loadingPodcast } = usePodcastData(currentEpisode);
+  const playedStatus = useEpisodePlayedStatus(currentEpisode?.id || null);
   const [showSpeedModal, setShowSpeedModal] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [artworkPath, setArtworkPath] = useState<string | null>(null);
-  const [playedStatus, setPlayedStatus] = useState<{ played: boolean; position: number } | null>(null);
 
   // Memoize style objects for HtmlRenderer to prevent re-renders
   const episodeTitleStyle = useMemo(() => [
@@ -68,10 +75,9 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     { color: Colors[colorScheme ?? 'light'].textSecondary }
   ], [colorScheme]);
 
-  // Load podcast data when episode changes
+  // Cache artwork when episode changes (native only)
   useEffect(() => {
     if (currentEpisode) {
-      loadPodcastData();
       const artUrl = currentEpisode.artworkUrl;
       if (artUrl) {
         ensureImageCached(artUrl)
@@ -83,134 +89,15 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     }
   }, [currentEpisode?.id]);
 
-  // Fetch played status from cache or service
-  useEffect(() => {
-    if (!currentEpisode) return;
-    
-    let cancelled = false;
-    
-    const fetchPlayedStatus = async () => {
-      // Try cache first
-      const cached = EpisodeMetadataCache.get(currentEpisode.id);
-      if (cached) {
-        if (!cancelled) {
-          setPlayedStatus({
-            played: cached.played,
-            position: cached.playbackPosition,
-          });
-        }
-        return;
-      }
-      
-      // Fallback to service
-      try {
-        const progressData = await PodcastPlaybackService.getProgress(currentEpisode.id);
-        if (!cancelled) {
-          setPlayedStatus({
-            played: progressData?.played || false,
-            position: progressData?.position || 0,
-          });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setPlayedStatus({ played: false, position: 0 });
-        }
-      }
-    };
-    
-    fetchPlayedStatus();
-    
-    // Subscribe to cache updates
-    const unsubscribe = EpisodeMetadataCache.subscribe((episodeId, metadata) => {
-      if (episodeId === currentEpisode.id && metadata && !cancelled) {
-        setPlayedStatus({
-          played: metadata.played,
-          position: metadata.playbackPosition,
-        });
-      }
-    });
-    
-    return () => {
-      cancelled = true;
-      unsubscribe();
-    };
-  }, [currentEpisode?.id]);
-
-  const loadPodcastData = async () => {
-    if (!currentEpisode) return;
-    
-    setLoadingPodcast(true);
-    try {
-      // Try to fetch podcast by episode.podcastId first (works for RSS-cached episodes)
-      if (currentEpisode.podcastId) {
-        try {
-          const podcastData = await PodcastService.getPodcast(currentEpisode.podcastId);
-          setPodcast(podcastData);
-          setLoadingPodcast(false);
-          return;
-        } catch (e) {
-          if (__DEV__) console.log('[FullScreenPlayer] Could not fetch podcast by podcastId, trying by episodeId');
-        }
-      }
-      
-      // Fallback: try to get podcast via episode ID (for DB episodes)
-      const podcastData = await PodcastService.getPodcastByEpisodeId(currentEpisode.id);
-      setPodcast(podcastData);
-    } catch (error) {
-      // Expected for RSS-cached episodes not in database - use fallback
-      if (__DEV__) console.log('[FullScreenPlayer] Episode not in DB, using fallback podcast info');
-      // Set a fallback podcast object
-      setPodcast({
-        id: 'unknown',
-        title: 'Unknown Podcast',
-        description: '',
-        author: '',
-        rssUrl: '',
-        artworkUrl: undefined,
-        websiteUrl: undefined,
-        language: 'en',
-        categories: [],
-        isCurated: false,
-        isActive: true,
-        createdBy: undefined,
-        lastFetchedAt: undefined,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    } finally {
-      setLoadingPodcast(false);
-    }
-  };
-
-  // Artwork priority helper
-  const getArtworkUrl = () => {
-    return artworkPath || currentEpisode?.artworkUrl || podcast?.artworkUrl || null;
-  };
+  // Artwork URL with priority: cached path → episode → podcast
+  const artworkUrl = getArtworkUrl(currentEpisode, podcast, artworkPath);
 
   // Get responsive artwork size
   const getArtworkSize = () => {
     return 280; // Mobile size for now
   };
 
-  const handlePlay = () => {
-    if (isPlaying) {
-      pause();
-    } else {
-      resume();
-    }
-  };
-
   const handleSeek = (newPosition: number) => {
-    seek(newPosition);
-  };
-
-  const handleSkipBack = () => {
-    const newPosition = Math.max(0, position - 30); // 30 seconds back
-    seek(newPosition);
-  };
-
-  const handleSkipForward = () => {
-    const newPosition = Math.min(duration, position + 30); // 30 seconds forward
     seek(newPosition);
   };
 
@@ -219,7 +106,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   };
 
   const handleSliderChange = (value: number) => {
-    const newPosition = (value / 100) * duration;
+    const newPosition = calculateSliderPosition(value, duration);
     seek(newPosition);
   };
 
@@ -230,25 +117,9 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
-  };
-
   const handleQueuePress = () => {
     onClose();
     router.push('/(tabs)/preaching/queue');
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (!currentEpisode) {
@@ -256,7 +127,6 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
   }
 
   const artworkSize = getArtworkSize();
-  const artworkUrl = getArtworkUrl();
 
   return (
     <Modal
@@ -338,7 +208,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
                 <View style={styles.metaItem}>
                   <Ionicons name="calendar-outline" size={14} color={Colors[colorScheme ?? 'light'].textSecondary} />
                   <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary }]}>
-                    {formatDate(currentEpisode.publishedAt)}
+                    {formatDate(currentEpisode.publishedAt, { absolute: true })}
                   </Text>
                 </View>
               )}
@@ -350,19 +220,10 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
                   </Text>
                 </View>
               )}
-              {playedStatus && !playedStatus.played && playedStatus.position > 0 && currentEpisode.duration && currentEpisode.duration > 0 && (
+                {playedStatus && !playedStatus.played && playedStatus.position > 0 && currentEpisode.duration && currentEpisode.duration > 0 && (
                 <View style={styles.metaItem}>
                   <Text style={[styles.metaText, { color: Colors[colorScheme ?? 'light'].textSecondary, fontSize: 12 }]}>
-                    {(() => {
-                      const remaining = Math.max(0, currentEpisode.duration - playedStatus.position);
-                      const hours = Math.floor(remaining / 3600);
-                      const minutes = Math.floor((remaining % 3600) / 60);
-                      const secs = Math.floor(remaining % 60);
-                      if (hours > 0) {
-                        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} left`;
-                      }
-                      return `${minutes}:${secs.toString().padStart(2, '0')} left`;
-                    })()}
+                    {formatTimeRemaining(currentEpisode.duration, playedStatus.position)}
                   </Text>
                 </View>
               )}
@@ -376,7 +237,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
               {formatTime(position)}
             </Text>
             <Slider
-              value={duration > 0 ? (position / duration) * 100 : 0}
+              value={calculateProgressPercentage(position, duration)}
               onValueChange={handleSliderChange}
               minimumValue={0}
               maximumValue={100}
@@ -394,14 +255,14 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
           <View style={styles.controls}>
             <TouchableOpacity
               style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-              onPress={handleSkipBack}
+              onPress={skipBack}
             >
               <FontAwesome name="rotate-left" size={24} color={Colors[colorScheme ?? 'light'].text} />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.playButton, { backgroundColor: Colors[colorScheme ?? 'light'].primary }]}
-              onPress={handlePlay}
+              onPress={playPause}
             >
               <Ionicons
                 name={isPaused ? 'play' : isPlaying ? 'pause' : 'play'}
@@ -412,7 +273,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
 
             <TouchableOpacity
               style={[styles.skipButton, { backgroundColor: Colors[colorScheme ?? 'light'].surface }]}
-              onPress={handleSkipForward}
+              onPress={skipForward}
             >
               <FontAwesome name="rotate-right" size={24} color={Colors[colorScheme ?? 'light'].text} />
             </TouchableOpacity>
@@ -426,7 +287,7 @@ export default function FullScreenPlayer({ visible, onClose }: FullScreenPlayerP
             >
               <Ionicons name="speedometer" size={20} color={Colors[colorScheme ?? 'light'].primary} />
               <Text style={[styles.speedText, { color: Colors[colorScheme ?? 'light'].text }]}>
-                {playbackSpeed}x
+                {getSpeedLabel(playbackSpeed)}
               </Text>
             </TouchableOpacity>
           </View>

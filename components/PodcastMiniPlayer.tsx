@@ -11,12 +11,18 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useTheme } from './ThemeProvider';
 import { usePodcastPlayer } from '../contexts/PodcastPlayerContext';
-import { PodcastService } from '../services/PodcastService';
-import { Podcast } from '../types';
 import { router } from 'expo-router';
 import FullScreenPlayer from './FullScreenPlayer';
 import HtmlRenderer from './HtmlRenderer';
 import { ensureImageCached } from '../lib/podcast/storage';
+import { 
+  getNextSpeed, 
+  SPEED_OPTIONS,
+  getArtworkUrl,
+  formatTimeRemaining,
+} from '../utils/podcastUtils';
+import { usePodcastControls } from '../hooks/usePodcastControls';
+import { usePodcastData } from '../hooks/usePodcastData';
 
 export default function PodcastMiniPlayer() {
   const { colorScheme } = useTheme();
@@ -29,14 +35,12 @@ export default function PodcastMiniPlayer() {
     duration,
     playbackSpeed,
     playEpisode,
-    pause,
-    resume,
-    seek,
     setSpeed,
   } = usePodcastPlayer();
+  
+  const { skipBack, skipForward, playPause } = usePodcastControls();
+  const { podcast, loading: loadingPodcast } = usePodcastData(currentEpisode);
 
-  const [podcast, setPodcast] = useState<Podcast | null>(null);
-  const [loadingPodcast, setLoadingPodcast] = useState(false);
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [artworkPath, setArtworkPath] = useState<string | null>(null);
 
@@ -54,96 +58,45 @@ export default function PodcastMiniPlayer() {
   //   duration
   // });
 
-  // Fetch podcast data when episode changes
+  // Cache artwork when episode changes (native only)
   useEffect(() => {
     if (currentEpisode) {
-      fetchPodcast();
-    } else {
-      setPodcast(null);
-      setArtworkPath(null);
-    }
-  }, [currentEpisode?.id]);
-
-  const fetchPodcast = async () => {
-    if (!currentEpisode) return;
-    
-    try {
-      setLoadingPodcast(true);
-      const podcastData = await PodcastService.getPodcast(currentEpisode.podcastId);
-      setPodcast(podcastData);
-      const artUrl = currentEpisode.artworkUrl || podcastData?.artworkUrl;
+      const artUrl = currentEpisode.artworkUrl || podcast?.artworkUrl;
       if (artUrl) {
         try {
-          const { path } = await ensureImageCached(artUrl);
-          setArtworkPath(path);
+          ensureImageCached(artUrl)
+            .then(({ path }) => setArtworkPath(path))
+            .catch((e) => {
+              console.warn('[PodcastMiniPlayer] Image cache skipped:', e);
+              setArtworkPath(null);
+            });
         } catch (e) {
-          console.warn('[PodcastMiniPlayer] Image cache skipped:', e);
           setArtworkPath(null);
         }
       } else {
         setArtworkPath(null);
       }
-    } catch (error: any) {
-      // Silently handle podcast not found errors (e.g., podcast was deleted)
-      const errorMessage = error?.message || '';
-      if (errorMessage.includes('multiple (or no) rows returned') || 
-          errorMessage.includes('Failed to fetch podcast')) {
-        // Podcast doesn't exist - handle silently, no error logging
-        setPodcast(null);
-      } else {
-        // Other errors - log as warning but don't show to user
-        console.warn('[PodcastMiniPlayer] Error fetching podcast:', error);
-        setPodcast(null);
-      }
-    } finally {
-      setLoadingPodcast(false);
+    } else {
+      setArtworkPath(null);
     }
-  };
+  }, [currentEpisode?.id, currentEpisode?.artworkUrl, podcast?.artworkUrl]);
 
   if (!currentEpisode) {
     return null;
   }
-
-  const handlePlayPause = async () => {
-    if (isPlaying) {
-      pause();
-    } else {
-      resume();
-    }
-  };
 
   const handlePress = () => {
     // Open full screen player drawer
     setShowFullScreen(true);
   };
 
-  const handleSkipBack = () => {
-    const newPosition = Math.max(0, position - 30); // 30 seconds back
-    seek(newPosition);
-  };
-
-  const handleSkipForward = () => {
-    const newPosition = Math.min(duration, position + 30); // 30 seconds forward
-    seek(newPosition);
-  };
-
   const handleSpeedPress = () => {
-    // Cycle through common speeds: 0.75x -> 1.0x -> 1.25x -> 1.5x -> 2.0x -> 0.75x
-    const speeds = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0];
-    const currentIndex = speeds.findIndex(speed => Math.abs(speed - playbackSpeed) < 0.01);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-    setSpeed(speeds[nextIndex]);
+    const nextSpeed = getNextSpeed(playbackSpeed, SPEED_OPTIONS);
+    setSpeed(nextSpeed);
   };
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-
-  // Determine which artwork to use (episode first, then podcast)
-  const artworkUrl = artworkPath || currentEpisode.artworkUrl || podcast?.artworkUrl;
+  // Determine which artwork to use (episode first, then cached path, then podcast)
+  const artworkUrl = getArtworkUrl(currentEpisode, podcast, artworkPath);
 
   return (
     <>
@@ -181,19 +134,19 @@ export default function PodcastMiniPlayer() {
           style={[styles.podcastName, { color: Colors[colorScheme ?? 'light'].textSecondary }]}
           numberOfLines={1}
         >
-          {podcast?.title || 'Podcast'}
+          {podcast?.title || 'Podcast'} {duration > 0 && formatTimeRemaining(duration, position)} ({playbackSpeed}x)
         </Text>
       </View>
 
       {/* Skip Back Button */}
       <TouchableOpacity
         style={styles.skipButton}
-        onPress={handleSkipBack}
+        onPress={skipBack}
         activeOpacity={0.7}
       >
         <FontAwesome
           name="rotate-left"
-          size={24}
+          size={30}
           color={Colors[colorScheme ?? 'light'].text}
         />
       </TouchableOpacity>
@@ -204,7 +157,7 @@ export default function PodcastMiniPlayer() {
           styles.playButton,
           { backgroundColor: Colors[colorScheme ?? 'light'].primary }
         ]}
-        onPress={handlePlayPause}
+        onPress={playPause}
         activeOpacity={0.7}
       >
         {isLoading ? (
@@ -212,7 +165,7 @@ export default function PodcastMiniPlayer() {
         ) : (
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
-            size={18}
+            size={24}
             color="#fff"
           />
         )}
@@ -221,12 +174,12 @@ export default function PodcastMiniPlayer() {
       {/* Skip Forward Button */}
       <TouchableOpacity
         style={styles.skipButton}
-        onPress={handleSkipForward}
+        onPress={skipForward}
         activeOpacity={0.7}
       >
         <FontAwesome
           name="rotate-right"
-          size={24}
+          size={30}
           color={Colors[colorScheme ?? 'light'].text}
         />
       </TouchableOpacity>
@@ -299,12 +252,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden', // Hide overflow text
   },
   playButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 6,
+    marginRight: 16,
   },
   skipButton: {
     width: 28,
@@ -312,7 +265,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 6,
+    marginRight: 16,
   },
   speedContainer: {
     marginRight: 4,
