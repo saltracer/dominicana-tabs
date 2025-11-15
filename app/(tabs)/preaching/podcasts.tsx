@@ -175,22 +175,54 @@ export default function PodcastsScreen() {
     return subscriptions.some(s => s.id === podcastId);
   };
 
+  // Filter data based on search query
+  const filterData = <T extends any[]>(
+    data: T,
+    searchQuery: string,
+    getSearchableText: (item: T[0]) => string
+  ): T => {
+    if (!searchQuery.trim()) return data;
+    const query = searchQuery.toLowerCase().trim();
+    return data.filter(item => 
+      getSearchableText(item).toLowerCase().includes(query)
+    ) as T;
+  };
+
   const getDisplayData = () => {
     switch (activeTab) {
       case 'library':
+        // Library uses server-side search via usePodcasts
         return { 
           data: (cachedCurated && (!hasLoadedOnce || libraryLoading)) ? cachedCurated : libraryPodcasts, 
           loading: libraryLoading, 
           type: 'podcasts' as const 
         };
       case 'my_podcasts':
-        return { data: subscriptions, loading: subsLoading, type: 'podcasts' as const };
+        // Client-side filter for subscriptions
+        const filteredSubscriptions = filterData(
+          subscriptions,
+          searchQuery,
+          (podcast) => `${podcast.title} ${podcast.author || ''} ${podcast.description || ''}`
+        );
+        return { data: filteredSubscriptions, loading: subsLoading, type: 'podcasts' as const };
       case 'playlists':
+        // Client-side filter for playlists
         const downloaded = { id: 'downloaded', name: 'Downloaded', is_builtin: true, display_order: -1 } as any;
-        const list = [downloaded, ...playlists];
-        return { data: list, loading: playlistsLoading, type: 'playlists' as const };
+        const allPlaylists = [downloaded, ...playlists];
+        const filteredPlaylists = filterData(
+          allPlaylists,
+          searchQuery,
+          (playlist) => playlist.name || ''
+        );
+        return { data: filteredPlaylists, loading: playlistsLoading, type: 'playlists' as const };
       case 'queue':
-        return { data: queue, loading: queueLoading, type: 'episodes' as const };
+        // Client-side filter for queue episodes
+        const filteredQueue = filterData(
+          queue,
+          searchQuery,
+          (episode) => `${episode.title} ${episode.podcastTitle || ''} ${episode.description || ''}`
+        );
+        return { data: filteredQueue, loading: queueLoading, type: 'episodes' as const };
       default:
         return { data: [], loading: false, type: 'podcasts' as const };
     }
@@ -346,7 +378,12 @@ export default function PodcastsScreen() {
         <Ionicons name="search" size={20} color={Colors[colorScheme ?? 'light'].textSecondary} />
         <TextInput
           style={[styles.searchInput, { color: Colors[colorScheme ?? 'light'].text }]}
-          placeholder="Search podcasts..."
+          placeholder={
+            activeTab === 'library' ? 'Search podcasts...' :
+            activeTab === 'my_podcasts' ? 'Search your podcasts...' :
+            activeTab === 'playlists' ? 'Search playlists...' :
+            'Search queue...'
+          }
           placeholderTextColor={Colors[colorScheme ?? 'light'].textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
