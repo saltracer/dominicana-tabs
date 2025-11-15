@@ -35,6 +35,7 @@
 - [x] Redesign Prayer section navigation on native
 - [ ] Get exsurge working on the web
 - [ ] Did jumping to the right prayer for litugy of the hours break?
+- [ ] The mysteries in the rosary screen should be clickable to take me directly to praying that mystery
 
 
 ## Study
