@@ -193,7 +193,7 @@ export default function PodcastMiniPlayer() {
       >
         <FontAwesome
           name="rotate-left"
-          size={18}
+          size={24}
           color={Colors[colorScheme ?? 'light'].text}
         />
       </TouchableOpacity>
@@ -226,13 +226,13 @@ export default function PodcastMiniPlayer() {
       >
         <FontAwesome
           name="rotate-right"
-          size={18}
+          size={24}
           color={Colors[colorScheme ?? 'light'].text}
         />
       </TouchableOpacity>
 
       {/* Speed Control */}
-      <TouchableOpacity 
+      {/* <TouchableOpacity 
         style={styles.speedContainer}
         onPress={handleSpeedPress}
         activeOpacity={0.7}
@@ -240,7 +240,7 @@ export default function PodcastMiniPlayer() {
         <Text style={[styles.speedText, { color: Colors[colorScheme ?? 'light'].text }]}>
           x{playbackSpeed}
         </Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       </TouchableOpacity>
 
       <FullScreenPlayer 
