@@ -126,7 +126,8 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
     console.log('🔘 Is tap?', isTap);
     
     if (isTap) {
-      console.log('🔘 Tapping FAB toggle');
+      const next = !showFab;
+      console.log('[EpubReader] tap detected → toggling FAB', { next, willShowStatusBar: next });
       // Toggle FAB visibility on tap
       setShowFab(prev => !prev);
       
@@ -149,7 +150,9 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
 
   // Cleanup timeout on unmount
   useEffect(() => {
+    console.log('[EpubReader] mount', { colorScheme });
     return () => {
+      console.log('[EpubReader] unmount');
       if (fabTimeoutRef.current) {
         clearTimeout(fabTimeoutRef.current);
       }
@@ -618,6 +621,7 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
   return (
     <>
       {/* Hide status bar when FAB is hidden for immersive reading experience */}
+      {console.log('[EpubReader] StatusBar render', { hidden: !showFab })}
       <StatusBar hidden={!showFab} />
       <View style={styles.container}>
         {/* Bookmark Ribbon Indicator */}
@@ -639,6 +643,11 @@ export const EpubReader: React.FC<EpubReaderProps> = ({ book, onClose }) => {
           onPressOut={handlePressOut}
         >
           <View style={styles.readiumView}>
+            {(() => {
+              const readiumTheme = colorScheme === 'dark' ? 'dark' : 'light';
+              console.log('[EpubReader] ReadiumView preferences', { theme: readiumTheme });
+              return null;
+            })()}
             <ReadiumView 
               ref={(ref: any) => {
                 if (ref && !readiumViewRef) {

@@ -90,10 +90,14 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const { colorScheme } = useTheme();
+  useEffect(() => {
+    console.log('[root] colorScheme changed', { colorScheme });
+  }, [colorScheme]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
+        {console.log('[root] NavigationThemeProvider', { colorScheme, theme: colorScheme === 'dark' ? 'DarkTheme' : 'DefaultTheme' })}
         <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false, animation: 'none' }} />

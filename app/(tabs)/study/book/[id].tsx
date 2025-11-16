@@ -14,7 +14,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams, useNavigation, useFocusEffect } from 'expo-router';
-import { usePreventRemove } from '@react-navigation/native';
+import { usePreventRemove, useTheme as useNavTheme } from '@react-navigation/native';
+import { HeaderBackButton } from '@react-navigation/elements';
 import { Colors } from '../../../../constants/Colors';
 import { useTheme } from '../../../../components/ThemeProvider';
 import { Book, Annotation } from '../../../../types';
@@ -33,6 +34,7 @@ import { AnnotationNoteEditor } from '../../../../components/AnnotationNoteEdito
 
 export default function BookDetailScreen() {
   const { colorScheme } = useTheme();
+  const navTheme = useNavTheme();
   const { user } = useAuth();
   const { setIsReading } = useReading();
   const { getBookProgressPercentage, isBookInProgress, deleteProgress, refreshProgress } = useReadingProgress();
@@ -87,20 +89,20 @@ export default function BookDetailScreen() {
   }, [id]);
 
   // Set header title when book is loaded
-  useEffect(() => {
-    if (book) {
-      navigation.setOptions({
-        headerTitle: book.title || '',
-        headerBackTitle: '', // Ensure back button has no text
-      });
-    } else {
-      // Set to empty string if book is not loaded yet
-      navigation.setOptions({
-        headerTitle: '',
-        headerBackTitle: '',
-      });
-    }
-  }, [book, navigation]);
+  // useEffect(() => {
+  //   if (book) {
+  //     navigation.setOptions({
+  //       headerTitle: book.title || '',
+  //       headerBackTitle: '', // Ensure back button has no text
+  //     });
+  //   } else {
+  //     // Set to empty string if book is not loaded yet
+  //     navigation.setOptions({
+  //       headerTitle: '',
+  //       headerBackTitle: '',
+  //     });
+  //   }
+  // }, [book, navigation]);
 
   // Intercept back navigation when reader is shown
   usePreventRemove(showReader, () => {
@@ -116,20 +118,60 @@ export default function BookDetailScreen() {
       setIsReading(showReader);
       
       // Set header options including title (preserve title when setting other options)
+      console.log('[book/[id]] nav theme before setOptions', {
+        navPrimary: navTheme.colors?.primary,
+        navText: navTheme.colors?.text,
+        navBackground: navTheme.colors?.background,
+        navCard: navTheme.colors?.card,
+      });
+      console.log('[book/[id]] setOptions before', {
+        showReader,
+        colorScheme,
+        intendedHeaderTintColor: Colors[colorScheme ?? 'light'].text,
+        intendedHeaderBg: Colors[colorScheme ?? 'light'].surface,
+        bookTitle: book?.title,
+      });
       navigation.setOptions({
+        headerStyle: { backgroundColor: Colors[colorScheme ?? 'light'].surface }, 
+        headerTintColor: Colors[colorScheme ?? 'light'].text,
         headerTitle: book?.title || '',
         headerShown: !showReader, // Hide header when reader is shown
         headerBackTitle: '', // Ensure back button has no text
+        // Provide a custom back button so its color isn't driven by NavigationTheme.colors.primary
+        headerLeft: (props) => (
+          <HeaderBackButton
+            {...props}
+            tintColor={Colors[colorScheme ?? 'light'].text}
+            onPress={() => {
+              console.log('[book/[id]] headerBack pressed');
+              if ((navigation as any).canGoBack?.()) {
+                (navigation as any).goBack();
+              }
+            }}
+            // optional: ensure minimal back button style if needed
+            labelVisible={false}
+          />
+        ),
         // Control back button menu based on reader state
         headerBackButtonMenuEnabled: !showReader, // Enabled when reader is hidden, disabled when shown
       });
+      console.log('[book/[id]] setOptions after submit');
+      // Post-commit check (next tick)
+      setTimeout(() => {
+        console.log('[book/[id]] nav theme after setOptions (timeout 0)', {
+          navPrimary: navTheme.colors?.primary,
+          navText: navTheme.colors?.text,
+          navBackground: navTheme.colors?.background,
+          navCard: navTheme.colors?.card,
+        });
+      }, 0);
       
       // Hide tab bar when reader is shown
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
         parentNavigation.setOptions({
           tabBarStyle: getTabBarStyle({
-            colorScheme: colorScheme ?? 'light',
+            //colorScheme: colorScheme ?? 'light',
             insets,
             isHidden: showReader,
           }),
@@ -139,11 +181,12 @@ export default function BookDetailScreen() {
       
       // Cleanup function to restore tab bar when leaving
       return () => {
+        console.log('[book/[id]] cleanup (leaving focus)', { showReaderAtCleanup: showReader });
         setIsReading(false); // Reset reading state
         if (parentNavigation) {
           parentNavigation.setOptions({
             tabBarStyle: getTabBarStyle({
-              colorScheme: colorScheme ?? 'light',
+              //colorScheme: colorScheme ?? 'light',
               insets,
               isHidden: false,
             })
@@ -152,6 +195,29 @@ export default function BookDetailScreen() {
       };
     }, [navigation, showReader, setIsReading, insets, colorScheme, book])
   );
+
+  // Debug: track dependency changes that can affect header options
+  useEffect(() => {
+    console.log('[book/[id]] deps changed', { showReader, colorScheme, bookTitle: book?.title });
+  }, [showReader, colorScheme, book]);
+
+  // Debug: navigation lifecycle events
+  useEffect(() => {
+    const unsub1 = navigation.addListener('focus', () => console.log('[book/[id]] navigation focus'));
+    const unsub2 = navigation.addListener('blur', () => console.log('[book/[id]] navigation blur'));
+    const unsub3 = navigation.addListener('transitionEnd', () => console.log('[book/[id]] navigation transitionEnd'));
+    return () => { unsub1(); unsub2(); unsub3(); };
+  }, [navigation]);
+
+  // Debug: observe navigation theme changes
+  useEffect(() => {
+    console.log('[book/[id]] nav theme changed', {
+      navPrimary: navTheme.colors?.primary,
+      navText: navTheme.colors?.text,
+      navBackground: navTheme.colors?.background,
+      navCard: navTheme.colors?.card,
+    });
+  }, [navTheme.colors?.primary, navTheme.colors?.text, navTheme.colors?.background, navTheme.colors?.card]);
 
   const loadBook = async () => {
     try {

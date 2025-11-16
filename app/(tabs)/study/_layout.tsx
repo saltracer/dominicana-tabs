@@ -68,6 +68,12 @@ export default function StudyLayout() {
   
   return (
     <ReadingProgressProvider>
+      {console.log('[study/_layout] colorScheme', { colorScheme })}
+      {console.log('[study/_layout] screenOptions baseline', {
+        colorScheme,
+        headerTintColor: Colors[colorScheme ?? 'light'].text,
+        headerBg: Colors[colorScheme ?? 'light'].surface,
+      })}
       <Stack
         screenOptions={{
           headerShown: true,
